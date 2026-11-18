@@ -1,0 +1,135 @@
+{
+  "_comment": "P16c (Ghidra hızlandırma: toplu BSim sorgusu, süreli otomatik analiz, JVM yığını ayarı, çözümleyici kapatma ayarı) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p16c.json",
+  "mutants": [
+    {
+      "id": "p16c_toplu_adres_kayik",
+      "desc": "Kalem 3: sonuç yanlış fonksiyona eşlenir (taban adresi kaydırılmış)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16c_bsim_toplu.py::test_toplu_sorgu_eski_yolla_ayni_eslesme_sira_ve_sayac",
+      "find": "key = int(base.getAddress())",
+      "replace": "key = int(base.getAddress()) + 1"
+    },
+    {
+      "id": "p16c_toplu_adres_konum",
+      "desc": "Kalem 3: fonksiyonun adresi yerine boş liste (eşleme kurulmaz)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16c_bsim_toplu.py::test_toplu_sorgu_eski_yolla_ayni_eslesme_sira_ve_sayac",
+      "find": "by_addr.get(int(entry.getOffset()), [])",
+      "replace": "by_addr.get(-1, [])"
+    },
+    {
+      "id": "p16c_toplu_kapali",
+      "desc": "Kalem 3: toplu yol hiç seçilmez (eski fonksiyon başına sorgu)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16c_bsim_toplu.py::test_veritabani_toplu_yolu_kullanir",
+      "find": "if self._batch_query_enabled() and len(funcs) > 1:",
+      "replace": "if self._batch_query_enabled() and len(funcs) > 10**9:"
+    },
+    {
+      "id": "p16c_toplu_sayac_geri_alinmaz",
+      "desc": "Kalem 3: toplu yol düşünce yarım dışlama sayımı tekli yolun üstüne eklenir",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16c_bsim_toplu.py::test_veritabani_toplu_duserse_tekli_yol_sayac_cift_sayilmaz",
+      "find": "exclusion.counts = counts_before",
+      "replace": "exclusion.counts = exclusion.counts"
+    },
+    {
+      "id": "p16c_kirpma_kayik",
+      "desc": "Kalem 3: aday kırpması max_results'ı aşar (ortak yardımcı)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16c_bsim_toplu.py::test_toplu_sorgu_eski_yolla_ayni_eslesme_sira_ve_sayac",
+      "find": "out = matches[:max_results]",
+      "replace": "out = matches[:max_results + 1]",
+      "occurrence": 2
+    },
+    {
+      "id": "p16c_taranamayan_sayilmaz",
+      "desc": "Kalem 3: taranamayan fonksiyon sayılmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16c_bsim_toplu.py::test_toplu_sorgu_taranamayan_fonksiyon_sayilir",
+      "find": "scan_failed += 1",
+      "replace": "scan_failed += 0 * 1"
+    },
+    {
+      "id": "p16c_toplu_ek_yuva_yok",
+      "desc": "Kalem 3: toplu sorgu dışlanacak adaylar için ek yuva istemez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_p16c_bsim_toplu.py::test_toplu_sorgu_tek_imza_uretimi_tek_sorgu",
+      "find": "query.max = int(max_results + max(0, extra_slots))",
+      "replace": "query.max = int(max_results)",
+      "occurrence": 2
+    },
+    {
+      "id": "p16c_analiz_suresiz",
+      "desc": "Kalem 1: open_program yine analizi kendisi (süresiz) yapar",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_open_program_analizsiz_acilir_ve_sure_aktarilir",
+      "find": "analyze=False,",
+      "replace": "analyze=True, "
+    },
+    {
+      "id": "p16c_zaman_asimi_ok_der",
+      "desc": "Kalem 1: zaman aşımında durum yine ok",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_analiz_zaman_asiminda_kismi_isaretlenmez",
+      "find": "info[\"status\"] = \"timeout\" if timed_out else \"ok\"",
+      "replace": "info[\"status\"] = \"ok\""
+    },
+    {
+      "id": "p16c_zaman_asiminda_isaretler",
+      "desc": "Kalem 1: kısmi analiz yine 'çözümlendi' diye işaretlenir",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_analiz_zaman_asiminda_kismi_isaretlenmez",
+      "find": "if not timed_out:",
+      "replace": "if timed_out or True:"
+    },
+    {
+      "id": "p16c_zaman_asimi_adim_hatasi_yok",
+      "desc": "Kalem 1: zaman aşımı adım hatası olarak yazılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_zaman_asimi_adim_hatasi_ve_kayit",
+      "find": "if analysis_info.get(\"status\") == \"timeout\":",
+      "replace": "if analysis_info.get(\"status\") == \"timeout_x\":"
+    },
+    {
+      "id": "p16c_sure_izleyicisi_yok",
+      "desc": "Kalem 1: izleyici süresiz (çok uzun sınır)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_analiz_sureli_izleyiciyle_ve_pyghidra_adimlariyla",
+      "find": "TimeoutTaskMonitor.timeoutIn(max(1, int(timeout_s)), TimeUnit.SECONDS)",
+      "replace": "TimeoutTaskMonitor.timeoutIn(10**9, TimeUnit.SECONDS)"
+    },
+    {
+      "id": "p16c_izleyici_bitirilmez",
+      "desc": "Kalem 1: süre izleyicisi analizden sonra kapatılmaz (zamanlayıcı sonradan iptal eder)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_analiz_zaman_asiminda_kismi_isaretlenmez",
+      "find": "monitor.finished()",
+      "replace": "monitor.isCancelled()"
+    },
+    {
+      "id": "p16c_yigin_sabit",
+      "desc": "Kalem 1: JVM yığını yine sabitten",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_jvm_baslatici_yigin_argumani",
+      "find": "f\"-Xmx{int(heap_mb) if heap_mb else GHIDRA_HEAP_MB}m\",",
+      "replace": "f\"-Xmx{GHIDRA_HEAP_MB}m\","
+    },
+    {
+      "id": "p16c_yigin_aktarilmaz",
+      "desc": "Kalem 1: analysis.ghidra_max_heap_mb JVM başlatıcıya aktarılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_jvm_yigini_ayardan",
+      "find": "heap_mb=getattr(getattr(self.config, \"analysis\", None), \"ghidra_max_heap_mb\", None),",
+      "replace": "heap_mb=None,"
+    },
+    {
+      "id": "p16c_cozumleyici_kapanmaz",
+      "desc": "Kalem 2: ayardaki çözümleyici kapatılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16c_analiz_suresi.py::test_cozumleyici_kapatma_ayari_analizden_once",
+      "find": "opts.setBoolean(name, False)",
+      "replace": "opts.setBoolean(name, True)"
+    }
+  ]
+}
