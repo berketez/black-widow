@@ -32,10 +32,14 @@ def _kosu(tmp_path: Path, harita: dict) -> str:
     """``<kosu>/clean/{report.json,naming_map.json}`` ve altında bir çalışma alanı dizini."""
     temiz = tmp_path / "kosu" / "clean"
     temiz.mkdir(parents=True)
-    (temiz / "report.json").write_text("{}", encoding="utf-8")
+    # P17 / ARAYUZ-09: temiz çıktı yalnız ikili özeti çalışma alanınınkiyle aynıysa okunur
+    (temiz / "report.json").write_text(json.dumps({"target": {"hash": "cd" * 32}}),
+                                       encoding="utf-8")
     (temiz / "naming_map.json").write_text(json.dumps(harita), encoding="utf-8")
     ws = tmp_path / "kosu" / "ws"
-    ws.mkdir()
+    (ws / "reports").mkdir(parents=True)
+    (ws / "reports" / "report.json").write_text(json.dumps({"target": {"hash": "cd" * 32}}),
+                                                encoding="utf-8")
     return str(ws)
 
 

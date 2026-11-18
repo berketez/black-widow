@@ -264,6 +264,38 @@
       "test": "tests/test_p17_gosterim.py",
       "find": "        reason = (f\"BSim adayı: '{bsim['name']}', %{round(sim * 100)} benzer. Aday ad kanalına \"\n                  \"bağlı değil (gölge kipi) ve bu kanalın doğruluğu ölçülmedi; adı kodla \"\n                  \"karşılaştırıp elle verin.\")",
       "replace": "        reason = (f\"BSim güçlü benzer buldu ('{bsim['name']}', %{round(sim * 100)}). \"\n                  \"İmzalar → BSim'i füzyona açarsan otomatik isimlenebilir.\")"
+    },
+    {
+      "id": "t09_ozet_denetimi_yok",
+      "desc": "başka ikilinin temiz çıktısı kabul edilir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_temiz_cikti.py",
+      "find": "            if isinstance(h, str) and h.lower() == want:",
+      "replace": "            if isinstance(h, str) or h.lower() == want:"
+    },
+    {
+      "id": "t09_derinlik_sinirsiz",
+      "desc": "temiz çıktı aramasında üst dizin sınırı kalkar",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_temiz_cikti.py",
+      "find": "list(ws_path.parents)[:_CLEAN_SEARCH_DEPTH]",
+      "replace": "list(ws_path.parents)[:99]"
+    },
+    {
+      "id": "t09_ilk_harita",
+      "desc": "en yeni yerine ilk rastlanan ad haritası seçilir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_temiz_cikti.py",
+      "find": "    nm = maps[-1] if maps else None",
+      "replace": "    nm = maps[0] if maps else None"
+    },
+    {
+      "id": "t09_decompile_baska_kosudan",
+      "desc": "decompile dizini haritanın çalışma alanı dışından alınır",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_temiz_cikti.py",
+      "find": "    root = nm.parents[2] if nm is not None else p",
+      "replace": "    root = p"
     }
   ]
 }

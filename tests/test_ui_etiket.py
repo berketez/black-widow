@@ -117,7 +117,11 @@ def _make_ws(root: Path, *, kayitlar=_KAYITLAR, adlar=_ADLAR, stats=None,
         (dec / f"{addr}.c").write_text(f"void {addr}(void){{ return; }}\n", encoding="utf-8")
     clean = root / "clean"
     clean.mkdir(parents=True)
-    report = {"pipeline": {"stages": {"reconstruct": {"stats": stats or {}}}}}
+    # P17 / ARAYUZ-09: arayüz temiz çıktıyı yalnız ikili özeti çalışma alanınınkiyle aynıysa okur
+    (root / "raw").mkdir()
+    (root / "raw" / "target_info.json").write_text(json.dumps({"file_hash": "ab" * 32}))
+    report = {"target": {"hash": "ab" * 32},
+              "pipeline": {"stages": {"reconstruct": {"stats": stats or {}}}}}
     (clean / "report.json").write_text(json.dumps(report, ensure_ascii=False), encoding="utf-8")
     if temiz_harita:
         (clean / "naming_map.json").write_text(

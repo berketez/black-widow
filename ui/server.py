@@ -127,10 +127,19 @@ def _under(path: Path, root: Path) -> bool:
 # Workspace modeli (fonksiyon listesi + call graph)
 # ---------------------------------------------------------------------------
 def find_ws(ws_root: str) -> tuple[Path | None, Path | None]:
+    """Ad haritası ve decompile dizini AYNI çalışma alanından (ARAYUZ-09, arayüz tarafı).
+
+    Kök birden çok koşu içeriyorsa (ör. aynı hedefin iki zaman damgalı çalışma alanı) eskiden
+    ilk rastlanan harita ile ilk rastlanan decompile dizini ayrı koşulardan gelebiliyordu.
+    Artık en yeni ad haritası seçilir; decompile dizini yalnız onun çalışma alanında aranır.
+    """
     p = Path(ws_root)
-    nm = next(iter(p.rglob("reconstructed/src/naming_map.json")), None)
+    maps = sorted(p.rglob("reconstructed/src/naming_map.json"),
+                  key=lambda x: (x.stat().st_mtime, str(x)))
+    nm = maps[-1] if maps else None
+    root = nm.parents[2] if nm is not None else p
     dec = None
-    for d in p.rglob("decompiled"):
+    for d in sorted(root.rglob("decompiled")):
         if d.is_dir() and next(d.glob("FUN_*.c"), None):
             dec = d
             if "ghidra" in str(d):
@@ -400,14 +409,48 @@ def _atomic_write_json(path: Path, obj) -> None:
             pass
 
 
-def _active_run_dir(ws: str | None) -> Path | None:
-    """WS'ten yukari yuruyerek clean/report.json iceren run dizinini bul."""
+# Çalışma alanından temiz çıktıya bakılacak en çok üst dizin sayısı. Düzen
+# <koşu>/<output-dir>/workspaces/<ad>/<zaman> (arayüz koşusu: <koşu>=ui/_runs/<iş>, temiz çıktı
+# <koşu>/clean; CLI koşusu: temiz çıktı --output ile verilen herhangi bir ad, ör. <koşu>/out).
+_CLEAN_SEARCH_DEPTH = 4
+
+
+def _clean_output_dir(ws: str | None) -> Path | None:
+    """Bu çalışma alanının temiz çıktı dizini (``report.json`` + ``naming_map.json``) ya da None.
+
+    ARAYUZ-09 (arayüz tarafı): eskiden yalnız ``clean/report.json`` adı aranıyor, bulunamayınca
+    üst dizinlere köke kadar çıkılıyordu; CLI'ın ``--output out`` koşusunda etiketler hiç
+    okunmuyor, başka bir koşunun ``clean/``'ı da seçilebiliyordu. Artık en çok
+    ``_CLEAN_SEARCH_DEPTH`` üst dizinin doğrudan alt dizinlerine bakılır ve yalnız
+    ``report.json``'daki ``target.hash`` çalışma alanının kendi özetine eşit olan çıktı kabul
+    edilir (başka ikilinin çıktısı karışmaz). Özet bilinmiyorsa hiçbir çıktı kabul edilmez.
+    """
     if not ws:
         return None
-    p = Path(ws)
-    for anc in [p, *p.parents]:
-        if (anc / "clean" / "report.json").is_file():
-            return anc
+    want = _workspace_target_hash(ws)
+    if not want:
+        return None
+    want = want.lower()
+    try:
+        ws_path = Path(ws).resolve()
+    except OSError:
+        return None
+    for anc in [ws_path, *list(ws_path.parents)[:_CLEAN_SEARCH_DEPTH]]:
+        try:
+            kids = sorted((d for d in anc.iterdir() if d.is_dir()),
+                          key=lambda d: (d.name != "clean", d.name))
+        except OSError:
+            continue
+        for d in kids:
+            rep = d / "report.json"
+            if not (rep.is_file() and (d / "naming_map.json").is_file()):
+                continue
+            try:
+                h = json.loads(rep.read_text(encoding="utf-8"))["target"]["hash"]
+            except (json.JSONDecodeError, KeyError, OSError, TypeError, ValueError):
+                continue
+            if isinstance(h, str) and h.lower() == want:
+                return d
         if anc.name == "_runs":  # ui/_runs sinirini gecme
             break
     return None
@@ -417,8 +460,7 @@ def _workspace_target_hash(ws: str) -> str | None:
     """Çalışma alanının KENDİ kaydındaki ikili özeti (sha256); bulunamazsa None.
 
     Sıra: ``reports/report.json`` → ``target.hash``; ``raw/target_info.json`` → ``file_hash``;
-    UI koşusunun ``clean/report.json``'u; son olarak ``raw/`` altındaki tek ikili kopyanın
-    sha256'sı. Analiz hattı elle verilen adları ``context.target.file_hash`` ile bulur
+    son olarak ``raw/`` altındaki tek ikili kopyanın sha256'sı. Analiz hattı elle verilen adları ``context.target.file_hash`` ile bulur
     (stages.py); aynı değer budur. İkili ADA göre aranmaz (ARAYUZ-14: ``ls`` →
     ``/bin/ls`` gibi başka bir dosyanın özetine yazılıyordu).
     """
@@ -435,10 +477,6 @@ def _workspace_target_hash(ws: str) -> str | None:
 
     h = (_json_field(root / "reports" / "report.json", "target", "hash")
          or _json_field(root / "raw" / "target_info.json", "file_hash"))
-    if not h:
-        rd = _active_run_dir(ws)
-        if rd:
-            h = _json_field(rd / "clean" / "report.json", "target", "hash")
     if not h:
         raw = root / "raw"
         bins = [p for p in raw.iterdir() if p.is_file() and p.name != "target_info.json"] \
@@ -492,10 +530,10 @@ def _clean_mappings(ws: str | None = None) -> dict:
         if _CACHE.get("cmap_ws") == ws and "cmap" in _CACHE:
             return _CACHE["cmap"]
     m: dict = {}
-    rd = _active_run_dir(ws)
+    rd = _clean_output_dir(ws)
     if rd:
         try:
-            data = json.loads((rd / "clean" / "naming_map.json").read_text())
+            data = json.loads((rd / "naming_map.json").read_text())
             m = {**(data.get("candidates") or {}), **(data.get("mappings") or {})}
         except (json.JSONDecodeError, OSError, TypeError, AttributeError):
             m = {}
