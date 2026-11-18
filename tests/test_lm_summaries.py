@@ -460,3 +460,64 @@ def test_d0_kosullari():
         assert S.d0_fact(bozuk, grafik, 1) is None
     assert S.cfg_block_counts(Path("/nonexistent")) is None
 
+
+# --------------------------------------------------------------------------------------------
+# (e) körlük kuralı ve sızıntı taraması özetlerde
+
+def kor_ws(root):
+    funcs = {R: {"calls": [X, Y], "strings": ["kok dizgisi"]}, X: {"calls": [L], "strings": ["x dizgisi"]},
+             Y: {"calls": [Z], "strings": ["y dizgisi"]}, Z: {"calls": [Y, L], "strings": ["z dizgisi"]},
+             L: {"calls": [DEEP], "strings": ["l dizgisi"]}, DEEP: {"calls": []}}
+
+    def rec(name, label):
+        return {"new_name": name, "label": label, "confidence": 0.9, "source": "c_namer"}
+
+    names = {R: "root_secret", L: "leaf_reader", Y: "y_known", Z: "typed_z", X: "x_checked"}
+    prov = {R: rec("root_secret", "doğrulandı"), L: rec("leaf_reader", "doğrulanmadı"), Y: rec("y_known", "kesin"),
+            Z: {"new_name": "typed_z", "pre_name_kind": "elle"}, X: rec("x_checked", "doğrulandı")}
+    return T.Workspace(build_ws(root, funcs, names=names, provenance=prov))
+
+
+def _istemler(arka) -> str:
+    return "\n".join(m["content"] for c in arka.calls for m in c["messages"])
+
+
+def test_korluk_ozet_istemlerinde_yasak_adlar_yok(tmp_path):
+    # Körlük kapalı (denetim): adlar etiketleriyle görünür
+    ajan, arka, _, _ = zincir_ajan(kor_ws(tmp_path / "a"))
+    ajan.explain(fun(R))
+    acik = _istemler(arka)
+    assert "[verified: root_secret]" in acik and "[unverified: leaf_reader]" in acik
+    assert "[manual: typed_z]" in acik and "[proven: y_known]" in acik
+    # Körlük açık: hiçbir özet isteminde [unverified] / [manual] / [model] adı ve kökün adı yok; adresler kalır
+    ajan, arka, gunluk, akis = zincir_ajan(kor_ws(tmp_path / "b"), blind_target=True)
+    run = ajan.explain(fun(R))
+    assert [r.status for r in run.results] == [G.STATUS_DONE] * 5 and arka.istenen == [L, X, Y, Z, R]
+    kor = _istemler(arka)
+    for yasak in ("root_secret", "leaf_reader", "typed_z", "[unverified:", "[manual:", "[model:"):
+        assert yasak not in kor, yasak
+    assert "[proven: y_known]" in kor and "[verified: x_checked]" in kor     # motorun K yapılandırması kalır
+    kx = next(e for e in arka.paketler[X] if e["tool"] == "get_evidence")["data"]
+    assert kx["callers"] == fun(R) and kx["callees"] == fun(L)
+    # Modelin gördüğü (atılmış) hâl içerik deposuna ve olaya geçer; atılan etiketler sayılır
+    assert sum(r.counters.blind_blocked for r in run.results) >= 4
+    esler_tutarli(akis, gunluk)
+
+
+def test_korluk_kokun_adini_tasiyan_ozet_pakete_girmez(tmp_path):
+    metin = {**ZINCIR_METIN, L: "root_secret için yaprağı okur."}
+    ajan, arka, _, _ = zincir_ajan(kor_ws(tmp_path / "b"), metin, blind_target=True)
+    run = ajan.explain(fun(R))
+    assert run.results[0].summary["metin"] == metin[L]          # özet üretildi ve kayıtta görünür
+    assert ozet_girisi(arka.paketler[X]) is None and ozet_girisi(arka.paketler[Z]) is None
+    assert run.results[1].counters.blind_blocked >= 1
+    assert "root_secret" not in _istemler(arka).split("explain what the function FUN_00002400")[1]
+    # Körlük kapalıyken aynı özet pakete girer (kural yalnız ölçüm kipinde)
+    ajan, arka, _, _ = zincir_ajan(kor_ws(tmp_path / "c"), metin)
+    ajan.explain(fun(R))
+    assert ozet_girisi(arka.paketler[X])["data"]["items"][0]["ozet"] == metin[L]
+    # Yardımcılar
+    assert C.strip_name_tags("FUN_1 [unverified: a], FUN_2 [proven: b], FUN_3 [proven: _gizli]",
+                             C.SUMMARY_BLIND_TAGS, ["gizli"]) == ("FUN_1, FUN_2 [proven: b], FUN_3", 2)
+    assert C.remaining_name_tags(["FUN_1 [model: a]", "FUN_2 [proven: b]"], C.SUMMARY_BLIND_TAGS) == 1
+

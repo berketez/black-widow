@@ -618,6 +618,35 @@ class ContextBudget:
 _IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
+# Özet istemlerinin körlük kuralı (KaradulLM v2 §3.6 madde 7): ölçüm kipinde hiçbir özet isteminde program
+# fonksiyonlarının ``[unverified]``, ``[manual]`` ya da ``[model]`` adı bulunmaz. Kanıt listelerindeki
+# ``FUN_x [etiket: ad]`` etiketi (``evidence_fields``'in yazdığı biçim) adresi bırakılarak atılır.
+SUMMARY_BLIND_TAGS = ("unverified", "manual", "model")
+_NAME_TAG_RE = re.compile(r" \[([a-z]+): ([A-Za-z_][A-Za-z0-9_]*)\]")
+
+
+def strip_name_tags(text: str, tags: Iterable[str], names: Iterable[str] = ()) -> tuple[str, int]:
+    """Listedeki ``[etiket: ad]`` eklerinden etiketi ``tags``'te ya da adı ``names``'te olanları atar;
+    ``(yeni metin, atılan sayısı)``. Adres (``FUN_x``) kalır: model fonksiyonu görür, adını görmez."""
+    hidden_tags, hidden_names = set(tags), {n for n in names if n}
+    count = 0
+
+    def repl(m: re.Match[str]) -> str:
+        nonlocal count
+        if m.group(1) in hidden_tags or m.group(2) in hidden_names or m.group(2).lstrip("_") in hidden_names:
+            count += 1
+            return ""
+        return m.group(0)
+
+    return _NAME_TAG_RE.sub(repl, text), count
+
+
+def remaining_name_tags(texts: Iterable[str], tags: Iterable[str]) -> int:
+    """Metinlerde etiketi ``tags``'te olan ``[etiket: ad]`` eki sayısı (körlük denetiminin ikinci gözü)."""
+    hidden = set(tags)
+    return sum(1 for t in texts for m in _NAME_TAG_RE.finditer(t) if m.group(1) in hidden)
+
+
 def blind_leaks(texts: Iterable[str], forbidden: Iterable[str]) -> int:
     """Metinlerde tam sözcük olarak geçen yasak adların sayısı (baştaki ``_`` atılmış biçim dahil).
     Körlük kipinde hedefin Karadul adı kanıt alanlarında (dizgi alanı dışında) 0 kez geçmelidir."""

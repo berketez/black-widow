@@ -46,9 +46,9 @@ from karadul.lm.audit import AuditLog, canonical_json, sha256_text
 from karadul.lm.backend import STATE_ERROR, STATE_MEMORY_STOPPED, Backend, BackendError, ChatResult, LMError
 from karadul.lm.context import (
     MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, PROMPT_VERSION_KL1, SUMMARY_KIND, SUMMARY_LIMITS,
-    SUMMARY_SOURCE, SUMMARY_SOURCE_FACT, SUMMARY_SOURCE_MODEL, SUMMARY_TOOL, ContextBudget, blind_leaks,
-    estimate_result_tokens, estimate_text_tokens, explain_question, fixed_prefix, max_calls_for, name_question,
-    safe_assistant_content, summary_items, user_message,
+    SUMMARY_BLIND_TAGS, SUMMARY_SOURCE, SUMMARY_SOURCE_FACT, SUMMARY_SOURCE_MODEL, SUMMARY_TOOL, ContextBudget,
+    blind_leaks, estimate_result_tokens, estimate_text_tokens, explain_question, fixed_prefix, max_calls_for,
+    name_question, remaining_name_tags, safe_assistant_content, strip_name_tags, summary_items, user_message,
 )
 from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, ContentStore, touched_refs
 from karadul.lm.memory_guard import MemoryGuard
@@ -639,13 +639,37 @@ class Agent:
         self._log_tool(task, result, args, caller, duration)
         return result
 
-    def _build_package(self, task: _Task, a: str, *, single_shot: bool) -> Optional[list[ToolResult]]:
-        """Fonksiyon paketi: kanıt + kod (tasarım §4.3). Kurulamazsa görev biter ve ``None`` döner."""
+    def _blind_strip(self, task: _Task, result: ToolResult, root: str) -> ToolResult:
+        """Özet istemlerinin körlük kuralı (tasarım §3.6 madde 7): kanıt listelerinden ``[unverified]`` /
+        ``[manual]`` / ``[model]`` etiketli adlar ve zincirin kökünün (ölçülen hedefin) Karadul adı atılır;
+        adresler kalır. Araç sonucu modelin gördüğü hâliyle (atılmış) depoya ve olaya geçer."""
+        if not result.ok or not isinstance(result.data, dict):
+            return result
+        hidden = [n for n in (self.workspace.raw_name(root),) if n]
+        data = dict(result.data)
+        removed = 0
+        for k in _BLIND_SCANNED:
+            if isinstance(data.get(k), str):
+                data[k], n = strip_name_tags(data[k], SUMMARY_BLIND_TAGS, hidden)
+                removed += n
+        if not removed:
+            return result
+        task.result.counters.blind_blocked += removed
+        return ToolResult(id=result.id, tool=result.tool, ok=True, data=data, kind=result.kind, source=result.source,
+                          limits=result.limits, truncated=result.truncated, executed=result.executed)
+
+    def _build_package(self, task: _Task, a: str, *, single_shot: bool,
+                       blind_root: Optional[str] = None) -> Optional[list[ToolResult]]:
+        """Fonksiyon paketi: kanıt + kod (tasarım §4.3). Kurulamazsa görev biter ve ``None`` döner.
+        ``blind_root`` (körlük kipindeki özet görevleri): kanıttan özet körlük kuralının adları atılır ve
+        paket hem hedefin hem kökün adına karşı taranır."""
         ctx = ToolContext(single_shot=single_shot, blind_target=a if self.blind_target else None)
         package: list[ToolResult] = []
         for tool, args in (("get_evidence", {"addr": f"FUN_{a}"}),
                            ("get_decompiled", {"addr": f"FUN_{a}", "part": "bas"})):
             result = self._run_tool(task, tool, args, ctx, CALLER_SERVER)
+            if blind_root is not None and tool == "get_evidence":
+                result = self._blind_strip(task, result, blind_root)
             self._tool_done(task, result)
             task.result.counters.package_calls += 1
             task.seen.add(self._call_key(tool, args))
@@ -660,6 +684,11 @@ class Agent:
         if self.blind_target and self._blind_leak(evidence, a):
             task.finish(STATUS_BLIND_LEAK)
             return None
+        if blind_root is not None:
+            texts = [evidence.data[k] for k in _BLIND_SCANNED if isinstance(evidence.data.get(k), str)]
+            if self._blind_leak(evidence, blind_root) or remaining_name_tags(texts, SUMMARY_BLIND_TAGS):
+                task.finish(STATUS_BLIND_LEAK)
+                return None
         return package
 
     def _blind_leak(self, result: ToolResult, a: str) -> bool:
@@ -898,10 +927,15 @@ class Agent:
         ``arac_basladi`` / ``arac_bitti`` çifti ve bir ``arac_cagrisi`` kaydı (E-1); içerik deposuna yazılır."""
         callees = self.workspace.callees(a) or []
         mine = chain.layer.get(a)
+        hidden = self.workspace.raw_name(chain.root) if self.blind_target else None
         entries: list[tuple[str, str, str, bool]] = []
         for c in callees:
             s = chain.fresh.get(c)
             if s is None or mine is None or chain.layer.get(c, mine) >= mine or not s["pakete_girer"]:
+                continue
+            if hidden and blind_leaks([s["metin"]], [hidden]):
+                # Körlük (tasarım §3.6 madde 7): kökün Karadul adını taşıyan özet hiçbir pakete girmez.
+                task.result.counters.blind_blocked += 1
                 continue
             source = SUMMARY_SOURCE_FACT if s["kaynak"] == SOURCE_FACT else SUMMARY_SOURCE_MODEL
             entries.append((c, source, s["metin"], bool(s["belirsiz"])))
@@ -965,7 +999,8 @@ class Agent:
         if a is None:
             return task.finish(STATUS_UNKNOWN_ADDRESS)
         task.result.addr = f"FUN_{a}"
-        package = self._build_package(task, a, single_shot=True)
+        root = chain.root if chain is not None else a
+        package = self._build_package(task, a, single_shot=True, blind_root=root if self.blind_target else None)
         if package is None:
             return None
         fact = self._d0_fact(a)
