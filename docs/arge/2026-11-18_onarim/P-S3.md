@@ -9,8 +9,8 @@ Brif: `ONARIM_BRIF.md`. Karar: K-2 (Berke: "amacımız isim üretmek; düzelt, y
 | Kalem | Durum | Commit |
 |---|---|---|
 | 0 — ön kayıt | bitti | c4eab8b |
-| 1 — AD-03 / B-A3: gnulib kanalı kanıta bağlı | kod bitti; ürün koşusu (8 ikili) sürüyor | 0a49fba |
-| 2 — veri akışı belirlenimciliği | kod bitti; ürün koşusunda tüketici denetimi sürüyor | 19bc7fa |
+| 1 — AD-03 / B-A3: gnulib kanalı kanıta bağlı | bitti (H1-H4, H6 tuttu; **H5 tutmadı**: Mach-O gnulib 2024+'ı tanımıyor) | 0a49fba |
+| 2 — veri akışı belirlenimciliği | bitti (H7-H9 tuttu) | 19bc7fa |
 | 3 — temizlik (kullanılmayan yereller / içe aktarımlar) | bitti | 2415625 |
 
 - P12a'nın `stages.py` yaması (AD-07): `yamalar/` altında `P12a__stages*.patch` yok (yalnız `P12a__binary_name_extractor.py.patch`) → istem gereği geçildi.
@@ -96,3 +96,94 @@ Aynı kod (097fdff), `PYTHONHASHSEED=0`, paralel 1, koşu başına ayrı `KARADU
 - `tests/test_ps3_veri_akisi.py` (3): bitiş sırası `as_completed` yamasıyla iki uca zorlanır; iki koşu aynı kenar kümesi, eksiz dosyanın gövdesinden çıkan kenar var, hata iletileri girdi sırasıyla. **Eski kodda 3/3 kırmızı.**
 - İlgili test dosyaları (stages / gnulib / köken / ön ad anan 1 730 test) kalem 1'le geçti.
 - **Mutasyon** `scripts/measurement/mutation_specs_ps3.json`: **17/17 öldü** (kalem 1: 14 — varlık kapısı kalkar, eşik 1, her işaret bulunur, çağrı işareti sayılmaz, işaret kaynakta yok, yerleşim kuralı kalkar, ince eşiği 99, `all`→`any`, çağıransız tutulur, kural her girdiye, tutulan aday yeniden aday, başka ön ad ezilir, tutulan 'applied' yazılır, aday kaydı yazılmaz; kalem 2: 3 — son gövde kazanır, ters sıra, bitiş sırası). Mutant metinlerinin uzunluğu özgününden farklı (`mutant_denetle.py`); koşum sonrası `karadul/` dondurulmuş A kopyasıyla sha256 düzeyinde aynı.
+
+## Ürün koşusu (8 ikili; ön kayıt H5, H6)
+Koşular: **B0a** (097fdff, worktree, `urun_kos.py`), **B0b** (097fdff, dondurulmuş `taban_kod/`), **A** (yeni kod: dondurulmuş `yeni_kod/`; `karadul/` 337 dosyası **19bc7fa**'nın `git archive`'ıyla sha256 düzeyinde aynı). Hepsi `PYTHONHASHSEED=0`, paralel 1, koşu başına önbellek. A, B0b ile **eşzamanlı** koştu (B0a tek başına): makine yükü iki kolda farklı; gürültü B0a ↔ B0b'de ölçüldü. Süreler (A): zstd 518, openssl 447, tmux 697, Mac tmux 867, redis-cli 262, cat 52, expr 55, gcat 88 sn.
+
+### Ad ölçüsü, geliştirme setinin 7 ikilisi (`urun_olc.py olc` + `karsilastir --eksik-izinli`, B0a ↔ A; `fark_B0a_A.md`)
+| Birim | B0a: ad / doğru / yanlış | A: ad / doğru / yanlış | Giderilen yanlış | Kaybedilen doğru | Yeni yanlış |
+|---|---|---|---|---|---|
+| debian/coreutils (cat, expr) | 26 / 21 / 5 | 21 / **21** / **0** | 5 (`version_etc` ×2, `hard_locale` ×2, `full_write`) | 0 | 0 |
+| debian/openssl | 35 / 24 / 11 | 34 / 24 / 10 | 1 (`full_write`) | 0 | 0 |
+| debian/redis-tools (redis-cli) | 7 / 3 / 4 | 6 / 3 / 3 | 1 (`full_write`) | 0 | 0 |
+| debian/tmux | 295 / 148 / 147 | 294 / 148 / 146 | 1 (`close_stdout`) | 0 | 0 |
+| debian/zstd | 65 / 9 / 56 | 63 / 8 / 55 | 1 (`close_stdout`) | 1 (`usage`) | 0 |
+| mac/tmux | 395 / 205 / 190 | 394 / 205 / 189 | 1 (`close_stdout`) | 0 | 0 |
+| **Toplam** | 823 / 410 / 413 | **812 / 409 / 403** | **10** | **1** | **0** |
+
+- **H6a tuttu:** `on_ad:gnulib` uygulanan ad debian/tmux, mac/tmux, redis-cli, openssl, zstd'de 5 → **0** (`out/naming_map.json`).
+- **H6b tuttu:** cat + expr'de gnulib kanalının doğru adı 21 → 21; yanlış 5 → 0.
+- **Aykırı öncül 3 çürütüldü:** tutulan 11 anahtarın hiçbirine başka kanal ad yazmadı (`out/naming_map.json`'da anahtar yok: FUN_ kalıyor); yeni yanlış 0. Tabanın köken kaydında bu anahtarların ikincil adayları ürün eşiğinin (0,7) altında (ör. cat `full_write` ↔ `write_fd_6b40` 0,45, `hard_locale` ↔ `set_locale` 0,6, `version_etc` ↔ `calls_fputc_unlocked` 0,4).
+- Kesin etiketli adlar değişmedi (262 / 249). Makro yanlış oranı %46,4 → %41,4.
+- **Sağlamlık denetimi** (`saglamlik_denetle.py`, 7 ikili, B0a ↔ A): yalnız `eski_fonksiyon_adi_yorumda_kalan` 724 → 713 (−11 = tutulan 11 ad; yeniden adlanmayan fonksiyonun eski adı yorumda kalmıyor); öbür bütün kusur türleri aynı (`baslik_tanim_farkli` 3, `fonksiyon_anahtari_ghidrada_yok` 12, `yerel_son_tur_baska_adla_fonksiyon` 2 585 …). Not: `kos_kopya.py` künyesi urun_kos biçimine `kunye_uyumla.py` ile uyumlandı (denetim `agac` sözlüğü bekliyor).
+
+### Mach-O gnulib doğrulama ikilisi gcat (H5) — **TUTMADI**
+- A'da varlık kanıtı **yetersiz: 1 / 2 modül** (yalnız version-etc: "General help using GNU software"); kanal ad yazmadı, 3 aday tutuldu (`gcat_hukum.py`, GT `macho_f1`): `usage` (**GT'ye göre doğru**), `version_etc` (yanlış: ateşlendiği fonksiyon `version_etc_arn`; LTO'suz yerleşim), `close_stdout` (yanlış). Taban kod bu üçünü yazıyordu (1 doğru / 2 yanlış; B0a / B0b gcat aşağıda).
+- **Neden:** (i) progname işareti ("A NULL argv[0] was passed through an exec system call") coreutils 9.12'nin gnulib'inde YOK (ikilinin `strings` çıktısında da yok; `set_program_name` var) — işaret 2023 gnulib'inden seçilmişti, sürüme bağlı çıktı; (ii) çağrı işaretleri (`__fpending`, `__freading`) glibc'ye özgü: macOS'ta gnulib bunları kendisi tanımlıyor (gcat `nm`: `___fpending` T, `_freading` T), soyulmuş ikilide adsız FUN_ oluyorlar. Aykırı öncül 1 ("işaretler gnulib'li başka bir yapıda bulunmaz, kanal gereksiz yere susar") **doğrulandı**.
+- **Süreç sapması:** kalem 1 commit'i (0a49fba) Ghidra'sız ölçümler (H1–H4 tuttu) bittikten sonra ama H5 sonucu gelmeden atıldı; ön kayıt "H5 tutmazsa kural commit'lenmeden önce yeniden düşünülür" diyordu. Kural sonradan değiştirilmedi (ön kayıt gereği eşik / işaret listesi aynı kaldı). Değerlendirme: commit'lenen kural gcat'te 2 yanlışı 1 doğruyla birlikte kaldırıyor (kesinlik %33 → ad yok); geliştirme setinde ve dört GT'li korpusta doğru ad kaybı yok (zstd `usage` gnulib'siz). Yani kural güvenli tarafta, ama K-2'nin "gnulib'li ikilide doğru adları üretmeye devam eder" koşulunu gnulib 2024+ / Mach-O'da karşılamıyor.
+- **Öneri (yeni ön kayıt gerekir, bu pakette uygulanmadı):** sürüm ve platformdan bağımsız işaretler. gcat'te bulunan gnulib'e özgü metinler: version-etc'nin birden çok ayrı fonksiyonu ("Written by %s, %s, and %s." version_etc_arn; "General help using GNU software" emit_bug_reporting_address — bugün tek modül sayılıyor), getopt.c (macOS'ta gnulib getopt'u derlenir: "%s: unrecognized option '%s%s'", "%s: option '%s%s' doesn't allow an argument"; glibc'li Linux'ta bu metinler ikilide değil libc'de), error.c ("Unknown system error"). Taze doğrulama: geliştirme seti dışından gnulib'li Mach-O GNU programları (Homebrew m4 1.4.21, gettext 1.0 araçları, coreutils'in başka ikilileri) ve gnulib'siz masum Mach-O'lar; bu pakette ürün koşusu bütçesi (8 ikili) doldu.
+- gcat taban (B0a ve B0b, aynı): `on_ad:gnulib` 3 ad — `usage` doğru, `version_etc` ve `close_stdout` yanlış (`ad_karsilastir.py`). A: 0 ad, 3 aday kayıtta.
+
+### Gürültü tabanı sonucu (B0a ↔ B0b, `karsilastir.py` → `gurultu_B0a_B0b.json`; `ad_karsilastir.py` → `ad_karsilastir.json`)
+| İkili | `out/` gerçek fark (oynak alan dışı) | Ad haritası farkı |
+|---|---|---|
+| debian/tmux | `report.json` / `report.html`: `data_flow_edges` 83 813 ↔ 83 821 | 0 |
+| debian/redis-cli | `report.html` / `algorithms.md`: algoritma satırlarının sırası (TLS read ↔ write) | 0 |
+| debian/openssl | `report.html`, `algorithms.md`, `xref_index.md` ve 4 `.c` dosyasının "Callers:" yorumunda liste sırası | 0 |
+| macgnu/gcat | `bsim_shadow_functions` 0 ↔ 61, `bsim_shadow_total` 0 ↔ 249 (BSim gölge kipi; ad kanalına bağlı değil) | 0 |
+| mac/tmux, zstd, cat, expr | 0 | 0 |
+
+- 8/8 ikilide ad haritası (`out/naming_map.json`) iki taban koşusunda aynı (gürültü anahtarı 0).
+
+### A ↔ B0a (H6c, H6d; `fark_B0a_A_cikti.json`, `ad_karsilastir.json`)
+- **H6c tuttu:** değişen genel ad anahtarı 14 (tmux 1, Mac tmux 1, redis-cli 1, openssl 1, zstd 2, cat 3, expr 2, gcat 3); 14'ünün de tabanda kanalı `on_ad:gnulib` ve A'da adı yok; başka değişen anahtar **0**. `.c` metnindeki farklar yalnız bu anahtarların adının FUN_ olarak kalması (ör. `bufferevent_new(…, FUN_00143ecc, …)`, cat `FUN_00106fa8` içinde `FUN_00106bc0()`), ve gürültüdeki gibi liste sıraları.
+- **H6d tuttu:** `static/gnulib_candidates.json` 8/8 koşuda var; tutulan adaylar tabandaki gnulib adlarıyla anahtar ve ad olarak aynı, `taban − (tutulan + uygulanan) = ∅` (8/8).
+- GT (gnulib kanalı, 8 ikili): taban 13 doğru / 12 yanlış → A **11 doğru / 0 yanlış**; kaybedilen doğru 2 (zstd `usage`, gcat `usage`).
+- Rapor sayaçları: yeni `gnulib_evidence` (sözlük) ve `gnulib_withheld`; `gnulib_recovered` / `gnulib_callshape_recovered` / `name_merger_*` tutulan ad kadar azaldı. `enums_recovered` cat 6 → 5, expr 4 → 3, gcat 1 → 0; üçünde de `reconstructed/typed/types.h` B0a ile bayt bayt aynı (fark yalnız sayaçta: switch / karşılaştırma desenlerinden sentezlenen enum adayı, değişen yerel adlarla anahtarlanıyor; koda giren bir şey değişmedi).
+
+### Veri akışı tüketicileri (H9)
+| İkili | `data_flow_edges` B0a / B0b / A | `data_flow_pipelines` | `compositions` |
+|---|---|---|---|
+| debian/tmux | 83 813 / 83 821 / **83 821** | 257 / 257 / 257 | 0 / 0 / 0 |
+| debian/redis-cli | 6 710 / 6 710 / **6 721** | 59 / 59 / 59 | 8 / 8 / 8 |
+| debian/zstd | 16 374 / 16 374 / **16 437** | 52 / 52 / **51** | 0 / 0 / 0 |
+| mac/tmux, openssl, cat, expr, gcat | aynı (75 273; 2 783; 42; 80; 78) | aynı | aynı (0; 35; 0; 0; 0) |
+
+- **Kaynak ayrımı** (Ghidra'sız, ürünün girdisiyle: `reconstructed/annotated`, `veri_akisi_kenar.py`, 4 tekrar, taban kodu ↔ yeni kod, B0a ↔ A girdisi): zstd taban kodla 16 374 ↔ 16 437 oynuyor (63 kenar; iki girdide de), yeni kodla iki girdide de 16 437; redis-cli taban 6 710, yeni 6 721 (iki girdide); tmux taban 83 813 ↔ 83 821, yeni 83 821 (iki girdide). Yani A'daki veri akışı farkları **kalem 2'den** (belirlenimci birleştirme, büyük değer); kalem 1'in ad değişiklikleri kenar sayısını değiştirmiyor (aynı kod, B0a ↔ A girdisi aynı sayı). Bileşim çözümleyicisi (`compositions`) 8/8 aynı; zstd'de boru hattı sayısı 52 → 51 (kenar kümesi değişince). **H9 tuttu** (fark açıklandı).
+
+## Ön kayıt hükümleri
+| # | Hüküm | Not |
+|---|---|---|
+| H1 | tuttu | coreutils dışı 13 ikilide gnulib yazımı 7 → 0 |
+| H2 | tuttu | coreutils doğru 620 → 620 |
+| H3 | tuttu | coreutils yanlış 217 → 1 (≤ 21); kalan `sort` `full_write` çağrı şekli yanlış pozitifi |
+| H4 | tuttu | Debian 9.4 yanlış 11 → 0, doğru 29 → 29 |
+| H4b | tuttu | Ubuntu 9.4 + od/pr üç girdinin doğrusu 14 → 13 (bilinen expr kaybı) |
+| H5 | **TUTMADI** | gcat'te varlık kanıtı 1 / 2 modül; kanal ad yazmadı (taban 1 doğru / 2 yanlış) |
+| H6a | tuttu | 5 → 0 |
+| H6b | tuttu | cat + expr doğru 21 → 21 (yanlış 5 → 0) |
+| H6c | tuttu | başka değişen anahtar 0 |
+| H6d | tuttu | 8/8 aday kaydı, kümeler tutarlı |
+| H7 | tuttu | 10 tekrarda tek değer (htop, tree) |
+| H8 | tuttu | htop 4 286, tree 131 |
+| H9 | tuttu | tüketici farkları kalem 2'ye bağlandı; bileşim sayısı aynı |
+| Aykırı öncül 1 | **doğrulandı** | işaretler gnulib 2024+ / Mach-O'da yetmiyor (H5) |
+| Aykırı öncül 2 | çürütüldü | ince çağıran kuralı 9.7'de 216/217 yanlışı ayırdı |
+| Aykırı öncül 3 | çürütüldü | tutulan anahtarlara başka ad yazılmadı |
+
+## Tam takım
+`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree, 2415625; çalışma zamanı verisi symlink'li; ürün koşularıyla eşzamanlı): **9 394 geçti, 10 atlandı, 153 seçim dışı, 0 kaldı** (488 sn).
+
+## Ana oturumun bilmesi gerekenler
+1. **H5 tutmadı ve kalem 1 H5'ten önce commit'lendi** (süreç sapması; yukarıda). Kural güvenli tarafta (gnulib'siz programda ve LTO'suz yerleşimde yanlış ad yok; geliştirme seti ve dört GT'li korpusta doğru ad kaybı 0, zstd `usage` hariç), ama gnulib 2024+ / Mach-O'da (Homebrew coreutils 9.12) varlığı tanımıyor: gcat'te 1 doğru ad (`usage`) da 2 yanlışla birlikte düştü. Öneri: sürümden ve platformdan bağımsız işaret listesi (getopt.c metinleri, version-etc'nin ayrı fonksiyonları, error.c) **yeni ön kayıtla** ve geliştirme seti dışı taze Mach-O gnulib programlarıyla (m4, gettext araçları) ölçülsün; bu pakette 8 ikililik ürün koşusu bütçesi doldu.
+2. **Aday kaydı yalnız `static/gnulib_candidates.json`'da.** Rapora ya da `naming_map.json` `candidates`'ına taşınması (fonksiyon kartı) `output_formatter.py` / c_namer işi (P07 / P12a); bu paketin dosyası değil. Kayıtta tutulan her adayın kanıt satırı ve nedeni var.
+3. **Kaybedilen doğru adlar:** zstd `usage` (gnulib'siz program; "Usage: %s" C / GNU geleneği) ve gcat `usage`. `usage` gnulib fonksiyonu değil; gelenek kanalı olarak ayrı ön kayıtla ölçülebilir.
+4. **Kalan yanlış:** coreutils `sort`'ta `full_write` çağrı şekli (`write` + `_exit`); öneri `_exit` dışlaması (gnulib `full-write.c` `_exit` çağırmaz), ayrı ölçümle.
+5. **İç adlar** (`version_etc_arn`, `setlocale_null_r`, `safe_write`): LTO'suz yapıda tutulan 216 adayın (geliştirme seti) "yakın ve doğru" adı bunlar olabilir (K-2); sürüme bağlı (`setlocale_null_r_unlocked`), ön kayıtlı ölçüm ister. Bugün üretilmiyor.
+6. **Veri akışında tutarlılık:** `analyze` aynı adda İLK dosyanın gövdesini, `propagate_param_names` (dokunulmadı) SON dosyanınkini tutuyor. Aynı adlı thunk / dış kayıt fonksiyonlarının adla anahtarlanması kalıcı bir sınır (adres ile anahtarlanmalı); ayrı iş.
+7. **Ölçüm hijyeni:** yeniden oynatma betiğinin ilk yeni kod koşusu `urun-yeni2-f30ac9a`'nın 119 `static/` dizinine `gnulib_candidates.json` yazdı; hemen silindi (yalnız bu 119 yeni dosya), dizin mtime'ları değişti, içerik eski hâlinde. Betik düzeltildi.
+8. A koşusu B0b ile eşzamanlı koştu (B0a tek başına); ad haritasında gürültü 0 olduğu için kararları etkilemedi.
+9. Ölçüm betikleri depo dışında: `~/karadul_olcum/runs/onarim-2026-11-18/P-S3/` (`gnulib_yeniden.py`, `ozellik_dok.py`, `ozet_yeniden.py`, `veri_akisi_kenar.py`, `kos_kopya.py`, `kos_gcat.sh`, `ad_karsilastir.py`, `gcat_hukum.py`, `karsilastir.py`, `kopya_denetle.py`, `mutant_denetle.py`, `kunye_uyumla.py`); dondurulmuş ağaçlar `taban_kod/` (097fdff), `yeni_kod/` (19bc7fa), `gelistirme/` (geliştirme kopyası; silinebilir, onaya bağlı); Mach-O doğrulama ikilisi `mac_gnulib/` (Homebrew gcat'in kopyası ve `/usr/bin/strip`'li hâli + GT).
+10. `~/.claude/team-state/discussion.md`'ye yazılmadı (istem `~/.claude/**` yazmayı yasaklıyor).
+
+## PAKET BİTTİ
