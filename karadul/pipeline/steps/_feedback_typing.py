@@ -197,6 +197,15 @@ def _run_type_recovery(
         )
         if type_result.success:
             stats["structs_recovered"] = len(type_result.structs)
+            # P09 (K-1): koda bağlanmayan yapı adayları types.h'ye girmez;
+            # sayıları ve aday dosyası rapora ayrı satır olarak taşınır.
+            stats["struct_candidates_unbound"] = len(
+                getattr(type_result, "struct_candidates", []) or [])
+            stats["struct_conflicts"] = getattr(type_result, "struct_conflicts", 0)
+            stats["struct_unscaled_accesses"] = getattr(
+                type_result, "struct_unscaled_accesses", 0)
+            if getattr(type_result, "struct_candidates_file", None):
+                artifacts["struct_candidates_file"] = type_result.struct_candidates_file
             stats["enums_recovered"] = len(type_result.enums)
             stats["total_types_recovered"] = type_result.total_types_recovered
             if type_result.types_header:
