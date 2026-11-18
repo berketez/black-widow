@@ -74,6 +74,60 @@ def _safe_zip_read(zf: "zipfile.ZipFile", name: str, max_size: int = _MAX_JAR_EN
         )
     return zf.read(name)
 
+
+# BICIM-04: Üretilen build.gradle bir Groovy betiğidir; IDE "sync" sırasında
+# değerlendirilir. Analiz edilen dosyadan gelen değer (Main-Class, Android
+# paket adı) betiğe yalnız geçerli bir tanımlayıcıysa yazılır; değilse hiç
+# yazılmaz (yorum satırına da) ve reconstruct istatistiğine kaydedilir.
+# `fullmatch` şart: `re.match(r"...$")` sondaki "\n"i kabul eder.
+_JAVA_QUALIFIED_NAME_RE = re.compile(
+    r"[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*", re.ASCII,
+)
+# Android paket adında `$` olmaz; ayrıca değer yalnız tek tırnaklı Groovy
+# dizgisine yazılır (çift tırnak GString'tir, `$` yorumlanır).
+_ANDROID_PACKAGE_RE = re.compile(
+    r"[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*", re.ASCII,
+)
+# Bağımlılık adları sabit bir listeden gelir; yine de aynı süzgeçten geçer.
+_GRADLE_DEPENDENCY_RE = re.compile(r"[A-Za-z0-9_.:-]+", re.ASCII)
+_MAX_GENERATED_NAME_LEN = 255
+_REJECTED_PREVIEW_LEN = 120
+
+
+def _rejected_value_record(field_name: str, value: Any, reason: str) -> dict[str, Any]:
+    """Reddedilen düşman değer için zararsız kayıt (yüzde kodlu önizleme)."""
+    from urllib.parse import quote
+
+    text = value if isinstance(value, str) else repr(value)
+    return {
+        "field": field_name,
+        "reason": reason,
+        "length": len(text),
+        # Yüzde kodlama: önizlemede tırnak, `$`, `<`, satır sonu kalmaz.
+        "preview_percent_encoded": quote(text[:_REJECTED_PREVIEW_LEN], safe=""),
+    }
+
+
+def _validated_name(
+    value: Any, pattern: "re.Pattern[str]", field_name: str,
+    rejected: list[dict[str, Any]],
+) -> Optional[str]:
+    """Değer kalıba tam uyuyorsa döndür; uymuyorsa None ve `rejected`'e kayıt."""
+    if value is None or value == "":
+        return None
+    if not isinstance(value, str):
+        rejected.append(_rejected_value_record(field_name, value, "dizgi değil"))
+        return None
+    if len(value) > _MAX_GENERATED_NAME_LEN:
+        rejected.append(_rejected_value_record(field_name, value, "çok uzun"))
+        return None
+    if not pattern.fullmatch(value):
+        rejected.append(_rejected_value_record(
+            field_name, value, "geçerli tanımlayıcı kalıbına uymuyor",
+        ))
+        return None
+    return value
+
 # Constant pool tag degerleri (JVM Spec 4.4)
 _CP_UTF8 = 1
 _CP_INTEGER = 3
@@ -479,9 +533,15 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
         manifest = analysis.get("manifest", {})
         deps = analysis.get("dependencies", [])
 
-        # build.gradle olustur
-        build_gradle = self._generate_build_gradle(manifest, deps)
+        # build.gradle olustur (BICIM-04: düşman değerler süzülür ve kaydedilir)
+        build_gradle, rejected = self._build_gradle_and_rejections(manifest, deps)
         (output_dir / "build.gradle").write_text(build_gradle)
+        if rejected:
+            logger.warning(
+                "build.gradle: %d deger gecerli tanimlayici olmadigi icin yazilmadi "
+                "(alanlar: %s)", len(rejected),
+                ", ".join(sorted({r["field"] for r in rejected})),
+            )
 
         # Decompiled kaynaklari kopyala
         decompiled = analysis.get("decompiled", {})
@@ -495,7 +555,7 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
             stage_name="reconstruct", success=True,
             duration_seconds=time.monotonic() - start,
             artifacts={"java_project": output_dir},
-            stats={"reconstructed": True}, errors=[],
+            stats={"reconstructed": True, "rejected_values": rejected}, errors=[],
         )
 
     # ------------------------------------------------------------------
@@ -1073,51 +1133,101 @@ class JavaBinaryAnalyzer(BaseAnalyzer):
         return result
 
     def _generate_build_gradle(self, manifest: dict, deps: list[str]) -> str:
-        """build.gradle sablonu olustur."""
-        is_android = manifest.get("is_android", False)
+        """build.gradle sablonu olustur (reddedilenler: _build_gradle_and_rejections)."""
+        return self._build_gradle_and_rejections(manifest, deps)[0]
+
+    def _build_gradle_and_rejections(
+        self, manifest: dict, deps: list[str],
+    ) -> tuple[str, list[dict[str, Any]]]:
+        """build.gradle metni ve yazılmayan (reddedilen) değerlerin kaydı.
+
+        BICIM-04: Betiğe giden her dış değer tanımlayıcı kalıbından geçer ve
+        yalnız tek tırnaklı (yorumlanmayan) Groovy dizgisine yazılır. Kalıba
+        uymayan değer betiğin hiçbir yerine (yorum dahil) girmez; yerine
+        uydurma bir ad da (com.example.app) yazılmaz.
+        """
+        rejected: list[dict[str, Any]] = []
+        is_android = bool(manifest.get("is_android", False))
+        safe_deps = [
+            d for d in (
+                _validated_name(dep, _GRADLE_DEPENDENCY_RE, "dependency", rejected)
+                for dep in deps
+            ) if d
+        ]
+        dep_lines = "\n".join(f"    implementation '{d}'" for d in safe_deps)
+        header = (
+            "// Karadul tarafindan olusturuldu.\n"
+            "// UYARI: Bu dosya guvenilmeyen bir ikiliden uretildi; IDE'de acmadan\n"
+            "// ya da derlemeden once inceleyin.\n"
+        )
 
         if is_android:
-            return f"""// Karadul v1.0 tarafindan olusturuldu
-// Orijinal paket: {manifest.get('package', 'unknown')}
+            package = _validated_name(
+                manifest.get("package"), _ANDROID_PACKAGE_RE, "package", rejected,
+            )
+            if package:
+                pkg_comment = f"// Orijinal paket: {package}\n"
+                android_ids = (
+                    f"    namespace '{package}'\n"
+                    "    compileSdk 34\n"
+                    "    defaultConfig {\n"
+                    f"        applicationId '{package}'\n"
+                )
+            else:
+                pkg_comment = (
+                    "// Orijinal paket: bilinmiyor ya da gecerli bir paket adi "
+                    "degil (yazilmadi)\n"
+                )
+                android_ids = (
+                    "    compileSdk 34\n"
+                    "    defaultConfig {\n"
+                )
+            text = (
+                header + pkg_comment + "\n"
+                "plugins {\n"
+                "    id 'com.android.application'\n"
+                "    id 'org.jetbrains.kotlin.android'  // Kotlin tespit edildiyse\n"
+                "}\n\n"
+                "android {\n"
+                + android_ids
+                + "        minSdk 21\n"
+                "        targetSdk 34\n"
+                "    }\n"
+                "}\n\n"
+                "dependencies {\n"
+                f"{dep_lines}\n"
+                "}\n"
+            )
+            return text, rejected
 
-plugins {{
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'  // Kotlin tespit edildiyse
-}}
-
-android {{
-    namespace "{manifest.get('package', 'com.example.app')}"
-    compileSdk 34
-    defaultConfig {{
-        applicationId "{manifest.get('package', 'com.example.app')}"
-        minSdk 21
-        targetSdk 34
-    }}
-}}
-
-dependencies {{
-{chr(10).join(f'    implementation "{d}"' for d in deps)}
-}}
-"""
+        main_class = _validated_name(
+            manifest.get("Main-Class"), _JAVA_QUALIFIED_NAME_RE, "Main-Class", rejected,
+        )
+        if main_class:
+            main_comment = f"// Main-Class: {main_class}\n"
+            application_block = (
+                "application {\n"
+                f"    mainClass = '{main_class}'\n"
+                "}\n\n"
+            )
         else:
-            main_class = manifest.get("Main-Class", "")
-            return f"""// Karadul v1.0 tarafindan olusturuldu
-// Main-Class: {main_class}
-
-plugins {{
-    id 'java'
-    id 'application'
-}}
-
-application {{
-    mainClass = '{main_class}'
-}}
-
-repositories {{
-    mavenCentral()
-}}
-
-dependencies {{
-{chr(10).join(f'    implementation "{d}"' for d in deps)}
-}}
-"""
+            main_comment = (
+                "// Main-Class: bilinmiyor ya da gecerli bir sinif adi degil "
+                "(yazilmadi)\n"
+            )
+            application_block = ""
+        text = (
+            header + main_comment + "\n"
+            "plugins {\n"
+            "    id 'java'\n"
+            "    id 'application'\n"
+            "}\n\n"
+            + application_block
+            + "repositories {\n"
+            "    mavenCentral()\n"
+            "}\n\n"
+            "dependencies {\n"
+            f"{dep_lines}\n"
+            "}\n"
+        )
+        return text, rejected

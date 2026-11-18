@@ -1,0 +1,93 @@
+{
+  "_comment": "P19 (native olmayan hatlar: güvenlik ve tanıma) onarımlarının mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p19.json",
+  "mutants": [
+    {
+      "id": "b04_java_fullmatch",
+      "desc": "BICIM-04: tanımlayıcı kalıbı fullmatch yerine match (önek eşleşmesi; düşman Main-Class yazılır)",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_build_file_injection.py",
+      "find": "    if not pattern.fullmatch(value):",
+      "replace": "    if not pattern.match(value):"
+    },
+    {
+      "id": "b04_java_android_gstring",
+      "desc": "BICIM-04: Android namespace yeniden çift tırnaklı (GString) dizgiye yazılır",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_build_file_injection.py",
+      "find": "f\"    namespace '{package}'\\n\"",
+      "replace": "f'    namespace \"{package}\" \\n'"
+    },
+    {
+      "id": "b04_java_android_dollar",
+      "desc": "BICIM-04: Android paket adı `$`'a izin veren Java kalıbıyla süzülür",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_build_file_injection.py",
+      "find": "manifest.get(\"package\"), _ANDROID_PACKAGE_RE,",
+      "replace": "manifest.get(\"package\"), _JAVA_QUALIFIED_NAME_RE,"
+    },
+    {
+      "id": "b04_java_uzunluk",
+      "desc": "BICIM-04: ad uzunluk sınırı fiilen kalkar",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_build_file_injection.py::test_gradle_overlong_name_rejected",
+      "find": "    if len(value) > _MAX_GENERATED_NAME_LEN:",
+      "replace": "    if len(value) > _MAX_GENERATED_NAME_LEN * 99:"
+    },
+    {
+      "id": "b04_java_bagimlilik",
+      "desc": "BICIM-04: bağımlılık satırları süzülmemiş listeden yazılır",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_build_file_injection.py::test_gradle_hostile_dependency_not_written",
+      "find": "f\"    implementation '{d}'\" for d in safe_deps)",
+      "replace": "f\"    implementation '{d}'\" for d in deps)"
+    },
+    {
+      "id": "b04_java_kayit",
+      "desc": "BICIM-04: reddedilen değerler reconstruct istatistiğine yazılmaz",
+      "module": "karadul/analyzers/java_binary.py",
+      "test": "tests/test_p19_build_file_injection.py",
+      "find": "stats={\"reconstructed\": True, \"rejected_values\": rejected}, errors=[],",
+      "replace": "stats={\"reconstructed\": True, \"rejected_values\": []}, errors=[],"
+    },
+    {
+      "id": "b04_net_fullmatch",
+      "desc": "BICIM-04: NuGet kalıbı fullmatch yerine match",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_build_file_injection.py",
+      "find": "if not _NUGET_ID_RE.fullmatch(value) or \"--\" in value:",
+      "replace": "if not _NUGET_ID_RE.match(value) or \"--\" in value:"
+    },
+    {
+      "id": "b04_net_cift_tire",
+      "desc": "BICIM-04: `--` içeren ad XML yorumuna girer (yorum bozulur)",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_build_file_injection.py",
+      "find": "if not _NUGET_ID_RE.fullmatch(value) or \"--\" in value:",
+      "replace": "if not _NUGET_ID_RE.fullmatch(value) or \"--\" in value[:0]:"
+    },
+    {
+      "id": "b04_net_bilinen_liste",
+      "desc": "BICIM-04: bilinmeyen AssemblyRef adı da PackageReference olur (restore saldırganın paketini indirir)",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_build_file_injection.py::test_csproj_unknown_assembly_ref_is_comment_only",
+      "find": "            if safe in _KNOWN_NUGET_IDS:",
+      "replace": "            if safe or _KNOWN_NUGET_IDS:"
+    },
+    {
+      "id": "b04_net_uzunluk",
+      "desc": "BICIM-04: NuGet kimliği uzunluk sınırı fiilen kalkar",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_build_file_injection.py::test_csproj_overlong_id_rejected",
+      "find": "    if len(value) > _MAX_NUGET_ID_LEN:",
+      "replace": "    if len(value) > _MAX_NUGET_ID_LEN * 99:"
+    },
+    {
+      "id": "b04_net_kayit",
+      "desc": "BICIM-04: reddedilen değerler .NET reconstruct istatistiğine yazılmaz",
+      "module": "karadul/analyzers/dotnet_binary.py",
+      "test": "tests/test_p19_build_file_injection.py::test_dotnet_reconstruct_hostile_end_to_end",
+      "find": "stats={\"reconstructed\": True, \"rejected_values\": rejected}, errors=[],",
+      "replace": "stats={\"reconstructed\": True, \"rejected_values\": []}, errors=[],"
+    }
+  ]
+}

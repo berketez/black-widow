@@ -48,6 +48,72 @@ from karadul.core.workspace import Workspace
 
 logger = logging.getLogger(__name__)
 
+# BICIM-04: Üretilen .csproj bir MSBuild betiğidir; IDE açılışta "restore" ve
+# tasarım zamanı derlemesi yapar. Analiz edilen dosyadan gelen ad (AssemblyRef,
+# dosya adı kökü) yalnız NuGet kimliği kalıbına uyuyorsa yazılır; değilse hiç
+# yazılmaz (yorum dahil) ve kaydedilir. `fullmatch` şart (sondaki "\n").
+_NUGET_ID_RE = re.compile(r"[A-Za-z0-9_.-]+", re.ASCII)
+_MAX_NUGET_ID_LEN = 100  # NuGet kimliği üst sınırı
+_REJECTED_PREVIEW_LEN = 120
+
+# Bilinen NuGet paketleri: AssemblyRef/strings öneki -> NuGet kimliği.
+# Yalnız bu listedeki kimlikler <PackageReference> olur: düşman dosyanın
+# seçtiği bir adla `Version="*"` restore, saldırganın yayımladığı paketi
+# (build/*.targets dahil) analistin makinesine indirip derlemede çalıştırırdı.
+# Listede olmayan AssemblyRef adları yalnız XML yorumuna yazılır.
+_KNOWN_NUGET_PACKAGES: dict[str, str] = {
+    "Newtonsoft.Json": "Newtonsoft.Json",
+    "Serilog": "Serilog",
+    "AutoMapper": "AutoMapper",
+    "Dapper": "Dapper",
+    "MediatR": "MediatR",
+    "FluentValidation": "FluentValidation",
+    "Polly": "Polly",
+    "Swashbuckle": "Swashbuckle.AspNetCore",
+    "NLog": "NLog",
+    "EntityFramework": "Microsoft.EntityFrameworkCore",
+    "Npgsql": "Npgsql",
+    "StackExchange.Redis": "StackExchange.Redis",
+    "RabbitMQ": "RabbitMQ.Client",
+    "Hangfire": "Hangfire",
+    "Quartz": "Quartz",
+}
+_KNOWN_NUGET_IDS = frozenset(_KNOWN_NUGET_PACKAGES.values())
+
+
+def _rejected_value_record(field_name: str, value: Any, reason: str) -> dict[str, Any]:
+    """Reddedilen düşman değer için zararsız kayıt (yüzde kodlu önizleme)."""
+    from urllib.parse import quote
+
+    text = value if isinstance(value, str) else repr(value)
+    return {
+        "field": field_name,
+        "reason": reason,
+        "length": len(text),
+        "preview_percent_encoded": quote(text[:_REJECTED_PREVIEW_LEN], safe=""),
+    }
+
+
+def _validated_nuget_id(
+    value: Any, field_name: str, rejected: list[dict[str, Any]],
+) -> Optional[str]:
+    """NuGet kimliği kalıbına tam uyan değeri döndür; uymuyorsa None + kayıt."""
+    if value is None or value == "":
+        return None
+    if not isinstance(value, str):
+        rejected.append(_rejected_value_record(field_name, value, "dizgi değil"))
+        return None
+    if len(value) > _MAX_NUGET_ID_LEN:
+        rejected.append(_rejected_value_record(field_name, value, "çok uzun"))
+        return None
+    if not _NUGET_ID_RE.fullmatch(value) or "--" in value:
+        # "--" kalıba uyar ama XML yorumunu bozar; ad olarak da gereksiz.
+        rejected.append(_rejected_value_record(
+            field_name, value, "NuGet kimliği kalıbına uymuyor",
+        ))
+        return None
+    return value
+
 # PE format sabitleri
 _PE_MAGIC = b"MZ"
 _PE_SIGNATURE = b"PE\x00\x00"
@@ -708,10 +774,17 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
         analysis = json.loads(analysis_path.read_text())
         metadata = analysis.get("metadata", {})
 
-        # .csproj dosyasi olustur
-        csproj = self._generate_csproj(metadata, analysis.get("dependencies", []))
-        project_name = metadata.get("assembly_name", "DecompiledProject")
+        # .csproj dosyasi olustur (BICIM-04: düşman değerler süzülür, kaydedilir)
+        csproj, rejected, project_name = self._csproj_and_rejections(
+            metadata, analysis.get("dependencies", []),
+        )
         (output_dir / f"{project_name}.csproj").write_text(csproj)
+        if rejected:
+            logger.warning(
+                ".csproj: %d deger gecerli NuGet kimligi olmadigi icin yazilmadi "
+                "(alanlar: %s)", len(rejected),
+                ", ".join(sorted({r["field"] for r in rejected})),
+            )
 
         # Decompiled kaynaklari kopyala
         decompiled = analysis.get("decompiled", {})
@@ -724,7 +797,7 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
             stage_name="reconstruct", success=True,
             duration_seconds=time.monotonic() - start,
             artifacts={"dotnet_project": output_dir},
-            stats={"reconstructed": True}, errors=[],
+            stats={"reconstructed": True, "rejected_values": rejected}, errors=[],
         )
 
     # ------------------------------------------------------------------
@@ -904,36 +977,33 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
         deps = []
         refs = metadata.get("references", [])
 
-        known_packages = {
-            "Newtonsoft.Json": "Newtonsoft.Json",
-            "Serilog": "Serilog",
-            "AutoMapper": "AutoMapper",
-            "Dapper": "Dapper",
-            "MediatR": "MediatR",
-            "FluentValidation": "FluentValidation",
-            "Polly": "Polly",
-            "Swashbuckle": "Swashbuckle.AspNetCore",
-            "NLog": "NLog",
-            "EntityFramework": "Microsoft.EntityFrameworkCore",
-            "Npgsql": "Npgsql",
-            "StackExchange.Redis": "StackExchange.Redis",
-            "RabbitMQ": "RabbitMQ.Client",
-            "Hangfire": "Hangfire",
-            "Quartz": "Quartz",
-        }
-
         for ref in refs:
-            for prefix, pkg in known_packages.items():
+            for prefix, pkg in _KNOWN_NUGET_PACKAGES.items():
                 if prefix in ref and pkg not in deps:
                     deps.append(pkg)
 
         return deps
 
     def _generate_csproj(self, metadata: dict, deps: list[str]) -> str:
-        """.csproj dosyasi olustur."""
+        """.csproj dosyasi olustur (reddedilenler: _csproj_and_rejections)."""
+        return self._csproj_and_rejections(metadata, deps)[0]
+
+    def _csproj_and_rejections(
+        self, metadata: dict, deps: list[str],
+    ) -> tuple[str, list[dict[str, Any]], str]:
+        """(.csproj metni, reddedilen değerler, proje dosyası adı kökü).
+
+        BICIM-04: Her dış değer NuGet kimliği kalıbından geçer ve XML'e
+        `xml.sax.saxutils` kaçışıyla yazılır. <PackageReference> yalnız
+        `_KNOWN_NUGET_IDS` içindeki kimlikler için; geri kalan AssemblyRef
+        adları kalıba uyuyorsa yalnız yorum olarak listelenir.
+        """
+        from xml.sax.saxutils import escape as xml_escape, quoteattr
+
+        rejected: list[dict[str, Any]] = []
         framework = "net8.0"
         if metadata.get("target_framework"):
-            tf = metadata["target_framework"]
+            tf = str(metadata["target_framework"])
             if "6.0" in tf:
                 framework = "net6.0"
             elif "7.0" in tf:
@@ -941,21 +1011,60 @@ class DotNetBinaryAnalyzer(BaseAnalyzer):
             elif "Framework" in tf:
                 framework = "net48"
 
+        package_ids: list[str] = []
+        unverified_refs: list[str] = []
+        for dep in deps:
+            safe = _validated_nuget_id(dep, "dependency", rejected)
+            if not safe:
+                continue
+            if safe in _KNOWN_NUGET_IDS:
+                if safe not in package_ids:
+                    package_ids.append(safe)
+            elif safe not in unverified_refs:
+                unverified_refs.append(safe)
+
         pkg_refs = "\n".join(
-            f'    <PackageReference Include="{d}" Version="*" />'
-            for d in deps
+            f"    <PackageReference Include={quoteattr(d)} Version=\"*\" />"
+            for d in package_ids
         )
+        if unverified_refs:
+            ref_comment = (
+                "  <!-- Diger AssemblyRef adlari (NuGet karsiligi dogrulanmadi; "
+                "PackageReference olarak yazilmadi):\n"
+                + "\n".join(f"       {xml_escape(r)}" for r in unverified_refs)
+                + "\n  -->\n"
+            )
+        else:
+            ref_comment = ""
 
-        return f"""<Project Sdk="Microsoft.NET.Sdk">
-  <!-- Karadul v1.0 tarafindan olusturuldu -->
-  <PropertyGroup>
-    <TargetFramework>{framework}</TargetFramework>
-    <AssemblyName>{metadata.get('assembly_name', 'DecompiledProject')}</AssemblyName>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+        assembly_name = _validated_nuget_id(
+            metadata.get("assembly_name"), "assembly_name", rejected,
+        )
+        if assembly_name:
+            assembly_line = (
+                f"    <AssemblyName>{xml_escape(assembly_name)}</AssemblyName>\n"
+            )
+            project_stem = assembly_name
+        else:
+            assembly_line = (
+                "    <!-- AssemblyName bilinmiyor ya da gecerli bir ad degil "
+                "(yazilmadi) -->\n"
+            )
+            project_stem = "DecompiledProject"
 
-  <ItemGroup>
-{pkg_refs}
-  </ItemGroup>
-</Project>
-"""
+        text = (
+            '<Project Sdk="Microsoft.NET.Sdk">\n'
+            "  <!-- Karadul tarafindan olusturuldu. UYARI: guvenilmeyen bir "
+            "ikiliden uretildi; IDE'de acmadan ya da derlemeden once inceleyin. -->\n"
+            "  <PropertyGroup>\n"
+            f"    <TargetFramework>{framework}</TargetFramework>\n"
+            + assembly_line
+            + "    <Nullable>enable</Nullable>\n"
+            "  </PropertyGroup>\n\n"
+            + ref_comment
+            + "  <ItemGroup>\n"
+            f"{pkg_refs}\n"
+            "  </ItemGroup>\n"
+            "</Project>\n"
+        )
+        return text, rejected, project_stem
