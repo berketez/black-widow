@@ -203,3 +203,13 @@ def test_pdb_parser_reads_llvm_pdbutil_offset_as_decimal() -> None:
     assert _parse_addr("parent = 0, end = 488, addr = 0001:0672, code size = 6") == (1, 672)
     assert _parse_addr("addr = 0001:207056, code size = 118") == (1, 207056)
     assert 0x1000 + _parse_addr("addr = 0001:207056")[1] == 0x338D0
+
+
+def test_disabled_producer_and_unwired_rtti_are_not_reported_as_no_data() -> None:
+    """Sac ürün koşusunda görüldü: BN üreticisi kapalıyken kanal "veri_yok (disabled)", RTTI
+    üreticisi hiç yokken "sınıf bulunamadı" diyordu (aranmadığı hâlde)."""
+    stats: dict = {}
+    FC.add_k4_channels(**_k4(_index(0x1000), flags=_flags(bn_symbol=True, rtti=True),
+                             bn_status="disabled"), candidates={}, stats=stats)
+    assert stats["naming_channels"]["bn_symbol"]["durum"] == "kapali"
+    assert stats["naming_channels"]["rtti"]["durum"] == "desteklenmiyor"

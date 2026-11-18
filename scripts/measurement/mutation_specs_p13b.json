@@ -168,6 +168,22 @@
       "test": "tests/test_p13b_param_yayilim.py::test_counter_reports_applied_zero_and_candidates_separately",
       "find": "            stats[\"param_names_propagated\"] = 0\n",
       "replace": "            stats[\"param_names_propagated\"] = len(param_prop_result)\n"
+    },
+    {
+      "id": "p13b_k4_rtti_yalan_veri_yok",
+      "desc": "RTTI üreticisi yokken yine 'sınıf bulunamadı'",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13b_kanallar.py::test_disabled_producer_and_unwired_rtti_are_not_reported_as_no_data",
+      "find": "    if rtti_status is None:\n",
+      "replace": "    if rtti_status is None and False:\n"
+    },
+    {
+      "id": "p13b_k4_bn_kapali",
+      "desc": "BN üreticisi kapalıyken kanal yine veri_yok der",
+      "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+      "test": "tests/test_p13b_kanallar.py::test_disabled_producer_and_unwired_rtti_are_not_reported_as_no_data",
+      "find": "        elif bn_status == \"disabled\":\n",
+      "replace": "        elif bn_status == \"disabled_\":\n"
     }
   ]
 }

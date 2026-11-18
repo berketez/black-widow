@@ -598,6 +598,9 @@ def _add_bn_symbols(
     if not bn_functions:
         if bn_status in ("arac_yok", "not_available", "module_missing"):
             _set_status(stats, "bn_symbol", CH_NO_TOOL, "Binary Ninja Python API yok")
+        elif bn_status == "disabled":
+            _set_status(stats, "bn_symbol", CH_DISABLED,
+                        "üretici kapalı (binary_reconstruction.enable_binaryninja)")
         else:
             _set_status(stats, "bn_symbol", CH_NO_DATA, f"BN fonksiyonu yok ({bn_status})")
         return
@@ -680,7 +683,13 @@ def _add_rtti(
     ``rtti_classes``: ``{"name": sınıf, "methods": [adres, …]}``. Yuvanın gerçek yöntem adı RTTI'de
     yoktur; aday yalnız sınıf + yuva sırasıdır (ad doğruluğu ölçülmedi, bayrak arkasında).
     """
-    if rtti_status is not None and rtti_status[0] != CH_RAN:
+    if rtti_status is None:
+        # P13b kalem 4 yapılmadı: RTTI kurtarmayı (analyzers/cpp_rtti.py) analiz akışında koşturan
+        # üretici yok; "sınıf bulunamadı" demek yalan olur (hiç aranmadı).
+        _set_status(stats, "rtti", CH_UNSUPPORTED,
+                    "RTTI kurtarma analiz akışına bağlı değil (üretici yok)")
+        return
+    if rtti_status[0] != CH_RAN:
         _set_status(stats, "rtti", rtti_status[0], rtti_status[1])
         return
     if not rtti_classes:
