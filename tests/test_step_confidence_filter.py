@@ -190,8 +190,12 @@ class TestCapaMerge:
         assert out == {}
 
     def test_adds_name_when_empty_slot(self, fake_pc) -> None:
-        """CAPA capability'si olan ama isim almayan func'a isim verilir."""
+        """CAPA capability'si olan ama isim almayan func'a isim verilir.
+
+        K-1 (P-S1): yalniz ``enable_capa_code_feed`` gercekten True iken.
+        """
         fake_pc.config.binary_reconstruction.enable_capa = True
+        fake_pc.config.binary_reconstruction.enable_capa_code_feed = True
         fake_pc.workspace.load_json = MagicMock(return_value={
             "success": True,
             "function_capabilities": {

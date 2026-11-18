@@ -231,11 +231,21 @@ def run_byte_pattern_merge(
 def run_capa_merge(
     *, pc: Any, extracted_names: dict[str, str], ctx: StepContext,
 ) -> dict[str, Any]:
-    """CAPA capability sonuclarini naming'e entegre."""
+    """CAPA capability sonuclarini naming'e entegre.
+
+    K-1 (P-S1): capa'nin koda girisi ``enable_capa_code_feed`` bayragina bagli
+    (ontanimli kapali). Statik asama bayrak kapaliyken
+    ``static/capa_capabilities.json``'u zaten yazmiyor; bu denetim ikinci
+    kilit (eski bir calisma alanindan ya da baska bir yazicidan gelen dosya
+    ad uretmesin).
+    """
+    from karadul.pipeline.steps.capa_annotation import capa_code_feed_enabled
+
     capa_capabilities: dict[str, Any] = {}
     step_start = time.monotonic()
 
-    if not pc.config.binary_reconstruction.enable_capa:
+    if (not pc.config.binary_reconstruction.enable_capa
+            or not capa_code_feed_enabled(pc.config)):
         ctx.stats["timing_capa_naming"] = round(
             time.monotonic() - step_start, 1,
         )
