@@ -98,6 +98,38 @@
       "replace": "parts.append(\"\")"
     },
     {
+      "id": "k6_surumlu_dosya",
+      "desc": "sürümlü içe aktarımın kitaplığı yeniden veritabanından (ikilinin dosyası yazılmıyor)",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_kitaplik_kaniti.py::test_surumlu_ice_aktarim_ikilinin_kitapligina_baglanir",
+      "find": "            m.library = lib_file\n",
+      "replace": "            m.library = m.library\n"
+    },
+    {
+      "id": "k6_surumsuz_geri_cekme",
+      "desc": "DT_NEEDED dışı aileye sürümsüz içe aktarım iddiası geri çekilmiyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_kitaplik_kaniti.py::test_surumsuz_ice_aktarim_needed_disi_iddia_geri_cekilir",
+      "find": "if m.library and _lib_family(m.library) not in needed_fams:",
+      "replace": "if False and m.library:"
+    },
+    {
+      "id": "k6_surumlu_kanit_satiri",
+      "desc": "sürümlü içe aktarımın kanıt satırı yazılmıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_kitaplik_kaniti.py::test_surumlu_ice_aktarim_ikilinin_kitapligina_baglanir",
+      "find": "m.evidence = [f\"bağlanma: {name}@{version} → {lib_file} (ELF sürüm gereksinimi)\"]",
+      "replace": "m.evidence = None"
+    },
+    {
+      "id": "k6_match_all_baglanmiyor",
+      "desc": "match_all bağlanma kanıtını uygulamıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p15c_kitaplik_kaniti.py::test_match_all_ikili_yoluyla",
+      "find": "**apply_import_bindings(matches, bindings)}",
+      "replace": "**{}}"
+    },
+    {
       "id": "k7_paket_koku",
       "desc": "FortranParamDB yeniden yalnız paket kökünden okuyor (ortam değişkeni izlenmiyor)",
       "module": "karadul/reconstruction/fortran_param_db.py",

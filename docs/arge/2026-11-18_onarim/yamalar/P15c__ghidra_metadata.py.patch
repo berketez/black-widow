@@ -1,6 +1,18 @@
 --- a/karadul/pipeline/steps/ghidra_metadata.py	2026-11-18 19:46:59
-+++ b/karadul/pipeline/steps/ghidra_metadata.py	2026-11-18 19:47:09
-@@ -257,6 +257,12 @@
++++ b/karadul/pipeline/steps/ghidra_metadata.py	2026-11-18 20:02:02
+@@ -220,7 +220,11 @@
+                 call_graph_json,
+                 decompiled_dir,
+                 target_platform=platform,
++                # P15c kalem 6: kitaplık iddiası ikilinin bağlanma kanıtına (ELF sürüm
++                # gereksinimi / DT_NEEDED) bağlanır.
++                binary_path=getattr(target, "path", None),
+             )
++            ctx.stats["sigdb_import_binding"] = getattr(sig_db, "import_binding_info", None)
+             ctx.stats["signature_matches"] = len(sig_matches)
+             ctx.stats["sigdb_status"] = "matched" if sig_matches else "no_match"
+             # ARAYUZ-02: IOC bölümü "veri yok" (sigdb_status error/unavailable)
+@@ -257,6 +261,12 @@
                                  # Eşleşmenin yolu (symbol: fonksiyonun var olan adı aranır;
                                  # string_ref / call_pattern). Rapor bu dökümü yazar.
                                  "method": m.match_method,

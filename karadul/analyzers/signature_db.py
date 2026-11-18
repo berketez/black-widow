@@ -513,6 +513,96 @@ def _resolve_attribution(
     return "", "", libs
 
 
+# ---------------------------------------------------------------------------
+# P15c kalem 6: kitaplık iddiası ikilinin kendi bağlanma kanıtına bağlanır
+# ---------------------------------------------------------------------------
+# Veritabanının ad başına kitaplık listesi "bu ad hangi kitaplıklarda var" der; ikilideki bir
+# içe aktarımın HANGİ kitaplıktan geldiğini ikilinin kendisi söyler. ELF'te sürüm gereksinimi
+# (``.gnu.version_r``) her sürümlü içe aktarımı bir dosyaya bağlar: ``__cxa_begin_catch@
+# CXXABI_1.3`` → ``libstdc++.so.6``, ``__cxa_finalize@GLIBC_2.17`` → ``libc.so.6``,
+# ``_Unwind_Resume@GCC_3.0`` → ``libgcc_s.so.1``. Yeni veritabanı bunları ``libc++abi`` /
+# ``rust_std`` diye iddia ediyordu (P08'in kalan 711 yanlışının 583'ü). Sürümsüz içe
+# aktarımda dosya bilinmez: veritabanının iddia ettiği aile ikilinin ``DT_NEEDED`` listesinde
+# yoksa iddia geri çekilir (kitaplık boş, adaylar listede), uydurulmaz.
+
+
+def elf_import_bindings(binary_path: Path | str) -> dict[str, Any] | None:
+    """ELF dinamik içe aktarımlarının bağlanma kanıtı; ELF değilse / okunamazsa None.
+
+    Döner: ``{"needed": [...], "versioned": {ad: (dosya, sürüm)}, "unversioned": [ad, ...]}``.
+    """
+    try:
+        from elftools.common.exceptions import ELFError
+        from elftools.elf.elffile import ELFFile
+    except ImportError:  # pragma: no cover — pyelftools bağımlılık
+        return None
+    try:
+        with open(binary_path, "rb") as f:
+            if f.read(4) != b"\x7fELF":
+                return None
+            f.seek(0)
+            elf = ELFFile(f)
+            dyn = elf.get_section_by_name(".dynamic")
+            needed = ([t.needed for t in dyn.iter_tags() if t.entry.d_tag == "DT_NEEDED"]
+                      if dyn is not None else [])
+            vneed = elf.get_section_by_name(".gnu.version_r")
+            vsym = elf.get_section_by_name(".gnu.version")
+            dynsym = elf.get_section_by_name(".dynsym")
+            index: dict[int, tuple[str, str]] = {}
+            if vneed is not None:
+                for vn, auxs in vneed.iter_versions():
+                    for aux in auxs:
+                        index[int(aux["vna_other"])] = (vn.name, aux.name)
+            versioned: dict[str, tuple[str, str]] = {}
+            unversioned: list[str] = []
+            if dynsym is not None:
+                for i, sym in enumerate(dynsym.iter_symbols()):
+                    if sym["st_shndx"] != "SHN_UNDEF" or not sym.name:
+                        continue
+                    ndx = vsym.get_symbol(i)["ndx"] if vsym is not None else None
+                    if isinstance(ndx, int) and ndx in index:
+                        versioned[sym.name] = index[ndx]
+                    else:
+                        unversioned.append(sym.name)
+    except (OSError, ELFError, ValueError, KeyError, AttributeError) as exc:
+        logger.debug("ELF bağlanma kanıtı okunamadı: %s: %s", binary_path, exc)
+        return None
+    return {"needed": needed, "versioned": versioned, "unversioned": sorted(set(unversioned))}
+
+
+def apply_import_bindings(
+    matches: list["SignatureMatch"], bindings: dict[str, Any],
+) -> dict[str, int]:
+    """Simge eşleşmelerinin kitaplık iddiasını bağlanma kanıtına bağla (yerinde); sayaçlar döner."""
+    needed = list(bindings.get("needed") or [])
+    needed_fams = {_lib_family(n) for n in needed}
+    versioned = bindings.get("versioned") or {}
+    unversioned = set(bindings.get("unversioned") or [])
+    counts = {"surumlu": 0, "surumlu_duzeltilen": 0, "surumsuz": 0,
+              "surumsuz_geri_cekilen": 0}
+    for m in matches:
+        if m.match_method != "symbol":
+            continue
+        name = m.original_name
+        if name in versioned:
+            lib_file, version = versioned[name]
+            counts["surumlu"] += 1
+            if _lib_family(m.library) != _lib_family(lib_file):
+                counts["surumlu_duzeltilen"] += 1
+            m.library = lib_file
+            m.libraries = None
+            m.evidence = [f"bağlanma: {name}@{version} → {lib_file} (ELF sürüm gereksinimi)"]
+        elif name in unversioned:
+            counts["surumsuz"] += 1
+            if m.library and _lib_family(m.library) not in needed_fams:
+                counts["surumsuz_geri_cekilen"] += 1
+                m.libraries = sorted(set((m.libraries or []) + [m.library]))
+                m.library = ""
+                m.evidence = ["kitaplık iddiası ikilinin DT_NEEDED listesinde yok: "
+                              + (", ".join(needed) or "(boş)")]
+    return counts
+
+
 def _config_data_root(config: Any) -> Path | None:
     """Config'in veri kökü (GHIDRA-14); alan yoksa / yol değilse ``resolve_data_root``.
 
@@ -1663,6 +1753,8 @@ class SignatureDB:
         self._lmdb_symbol_count: int | None = None
         self._lmdb_version: dict[str, Any] = {}
         self._lmdb_schema_warning: str | None = None
+        # P15c kalem 6: son match_all'ın bağlanma kanıtı sayaçları.
+        self.import_binding_info: dict[str, Any] = {"durum": "eşleme koşulmadı"}
 
         # GHIDRA-14 (P15b): dış imza JSON'ları veri kökünden (``config.data_root``)
         # okunur, çıktı kökünden (``project_root``) değil. Ne yüklendiği / neden
@@ -2343,7 +2435,10 @@ class SignatureDB:
             # Platform mismatch -> builtin return etme, LMDB fallback'e dus.
             # Ayni sembol LMDB'de farkli platform ile tanimlanmis olabilir.
 
-        # _ prefix ile dene (macOS C convention, builtin)
+        # _ prefix ile dene (macOS C convention, builtin). P15c kalem 6: P08'in önerisi (geri
+        # düşüşü ELF'te kapatmak) ölçüldü ve UYGULANMADI — 119 ikilide 4 269 doğru içe aktarım
+        # kimliğini (SSL_*, SHA*_Init, acl_*…) siliyordu. ELF'te geri düşüşün yanlış kitaplık
+        # iddiası (acl_* -> libc) içe aktarımlarda bağlanma kanıtıyla düzelir (match_all).
         if not func_name.startswith("_"):
             prefixed = f"_{func_name}"
             info_p = self._symbol_db.get(prefixed)
@@ -3028,8 +3123,13 @@ class SignatureDB:
         call_graph_json: Path,
         decompiled_dir: Path,
         target_platform: str | None = None,
+        binary_path: Path | None = None,
     ) -> list[SignatureMatch]:
         """Tum fonksiyonlari DB ile eslestir.
+
+        P15c kalem 6: ``binary_path`` (ELF) verilirse simge eşleşmelerinin kitaplık iddiası
+        ikilinin bağlanma kanıtına bağlanır (:func:`apply_import_bindings`); sayaçlar
+        ``self.import_binding_info``'da (verilmezse / ELF değilse durum yazılır).
 
         Ghidra ciktisi dosyalarini okur ve her fonksiyon icin 3 katmanli
         eslestirme uygular.
@@ -3129,6 +3229,18 @@ class SignatureDB:
                 match.address = faddr
                 matched_count += 1
                 matches.append(match)
+
+        # P15c kalem 6: kitaplık iddiası ikilinin kendi bağlanma kanıtına bağlanır.
+        if binary_path is None:
+            self.import_binding_info = {"durum": "ikili verilmedi"}
+        else:
+            bindings = elf_import_bindings(binary_path)
+            if bindings is None:
+                self.import_binding_info = {"durum": "ELF değil ya da okunamadı"}
+            else:
+                self.import_binding_info = {
+                    "durum": "uygulandi", "needed": bindings["needed"],
+                    **apply_import_bindings(matches, bindings)}
 
         # Confidence sirala (yuksekten dusuge)
         matches.sort(key=lambda m: m.confidence, reverse=True)
