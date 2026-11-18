@@ -1,6 +1,7 @@
 # Karadul ARGE soru listesi (Mythos için) — 2026-11-18
 
 - **Yazan:** ana oturum (Opus 5.5), Berke'nin isteğiyle. Onarım dalgaları sürerken yazıldı; onarımın ilk günü bitince (2026-11-18 akşamı, sürüm 1.24.1) §1.1 ve §3.H eklendi.
+- **Durum: ARA SÜRÜM (2026-11-18).** Berke: ARGE soruları bütün düzeltmeler bittikten sonra son hâline getirilir; onarım bitince bu liste birleşik ürün ölçümünün sayılarıyla yeniden güncellenir, Mythos ancak ondan sonra devreye girer. Bu hâliyle Mythos'a verilmez.
 - **Kime:** Mythos, onarım bittikten sonraki ARGE oturumunda.
 - **Ne bekleniyor:** Mythos bu sorulardan hat seçer ve her hat için ölçülebilir bir plan yazar (§5'teki biçimde). Planları Opus ekibi uygular; ana oturum doğrular.
 - **Ne beklenmiyor:** kod yazmak. Ayrıca "şunu dene" türünden ölçütsüz fikir listesi de istenmiyor.

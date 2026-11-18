@@ -26,6 +26,12 @@ Ana oturumun ajanlara verdiği paket metinleri. Oturuma özel geçici dizin sili
 - **P22e** (oturum, kipler, izin, terminal ayrıştırıcısı): P22b + P22d'den sonra. **P22c** (arayüz, c1 sunucu → c2 sayfa): P17 + P22e'den sonra. **P22g** ölçüm ön kaydı.
 - **P23** (test, CI, düzen): en son.
 
+## Onarım bitince (sıra, Berke 2026-11-18)
+1. Bütün paketler biter (yukarıdakiler + P-S4, P13b, P22e, P22c, P23).
+2. Birleşik ürün ölçümü (119 ikili; ayrı `KARADUL_CACHE_DIR`, `PYTHONHASHSEED=0`; yeni imza veritabanı devreye alındıysa onunla).
+3. ARGE soru listesi (`docs/arge/2026-11-18_arge_soru_listesi.md`, şu an ARA SÜRÜM) bu sayılarla yeniden güncellenir.
+4. Sonra Mythos devreye girer.
+
 ## Bekçi
 `bekci.py` — CLAUDE.md §27 takılma bekçisi: `python3 bekci.py P18=<ajan_id> P20=<ajan_id> …`, Monitor ile (30 dk'da bir yeniden kurulur). Alt ajan transcript dizini oturuma özeldir: `BEKCI_OTURUM_DIZINI` verilmezse en son değişen oturumun `subagents` dizini alınır.
 
