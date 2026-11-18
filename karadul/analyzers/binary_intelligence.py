@@ -1234,8 +1234,16 @@ SECURITY_PATTERNS: dict[str, dict[str, str]] = {
         "description": "Indirilen dosya karantina sistemi",
         "risk_level": "standard",
     },
+    # Gosterge disiplini (P01b): ``ptrace`` icin aktarimi tek basina ayirt edici degil -- izleyiciler
+    # (macOS sc_usage: ptrace(PT_CONTINUE) + sysctl) da ice aktarir. Ikinci, bagimsiz gosterge
+    # ikilinin kendi tespit metnidir: "PT_DENY_ATTACH" (OpenSSH ssh-agent / sftp-server hata
+    # iletisi), "debugger detected", "being debugged", QA1361 ``AmIBeingDebugged``. "debugger
+    # present" BILEREK yok: MSVC CRT'deki ``IsDebuggerPresent`` her PE'de bulunur.
     "Anti-Debugging": {
-        "pattern": r"ptrace|PT_DENY_ATTACH|sysctl.*P_TRACED|anti.?debug",
+        "pattern": (
+            r"ptrace|PT_DENY_ATTACH|sysctl.*P_TRACED|anti.?debug"
+            r"|debugger.?detected|being.?debugged|AmIBeingDebugged"
+        ),
         "description": "Debug onleme teknikleri",
         "risk_level": "elevated",
     },

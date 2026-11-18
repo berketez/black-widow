@@ -1,0 +1,29 @@
+{
+  "_comment": "P01b (ikili istihbarat: girdi, kalıntı, başarım) mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinleri özgününden farklı uzunlukta (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p01b.json",
+  "mutants": [
+    {
+      "id": "p01b_k0_tespit_metni_yok",
+      "desc": "Anti-Debugging ikinci göstergesi (ikilinin kendi tespit metni) kaldırıldı → masum kapı örneği düşer",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_antidebug.py::TestAntiDebugGercekPozitif::test_masum_kapi_ornegi",
+      "find": "            r\"|debugger.?detected|being.?debugged|AmIBeingDebugged\"\n",
+      "replace": "            r\"|being.?debugged|AmIBeingDebugged\"\n"
+    },
+    {
+      "id": "p01b_k0_debugger_present",
+      "desc": "\"debugger present\" gösterge olur → MSVC CRT IsDebuggerPresent + ptrace iddia kurar",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_antidebug.py::TestAntiDebugSahteIddiaYok::test_msvc_crt_isdebuggerpresent",
+      "find": "|debugger.?detected|being",
+      "replace": "|debugger.?detected|debugger.?present|being"
+    },
+    {
+      "id": "p01b_k0_sysctl_ikinci_kanit",
+      "desc": "sysctl ikinci gösterge olur → izleyici (sc_usage) Anti-Debugging alır",
+      "module": "karadul/analyzers/binary_intelligence.py",
+      "test": "tests/test_p01b_antidebug.py::TestAntiDebugSahteIddiaYok::test_izleyici_ptrace_sysctl",
+      "find": "r\"ptrace|PT_DENY_ATTACH|sysctl.*P_TRACED|anti.?debug\"",
+      "replace": "r\"ptrace|PT_DENY_ATTACH|sysctl|anti.?debug\""
+    }
+  ]
+}
