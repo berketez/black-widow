@@ -1,0 +1,135 @@
+diff --git a/tests/test_ps3b_stages_yama.py b/tests/test_ps3b_stages_yama.py
+new file mode 100644
+index 0000000..9baf0ce
+--- /dev/null
++++ b/tests/test_ps3b_stages_yama.py
+@@ -0,0 +1,129 @@
++"""P-S3b yaması (stages.py, P-S4 uygular): `usage` gelenek kanalı ve LTO'suz yerleşimde iç adlar.
++
++Kalem 2: gnulib varlık kanıtı olmayan programda `usage` ancak iki bağımsız kanıtla yazılır: "Usage: %s"
++tek fonksiyonda VE ürünün entry'den kurtardığı `main` onu doğrudan çağırıyor (zstd doğru; xz'in
++"Usage: %s" fonksiyonu `message_help`, `main` çağırmıyor -> tutulur).
++Kalem 4: `lto_yerlesimi` koşulunda version_etc -> version_etc_arn, full_write -> safe_write (GT katı:
++113/113, 9/9); hard_locale tablo dışı (tutulur).
++"""
++
++from __future__ import annotations
++
++import json
++from pathlib import Path
++
++from karadul.stages import ReconstructionStage
++
++PROGNAME_GHIDRA = "A NULL argv[0] was passed through an exec system call.\\n"
++VERSION_ETC_GHIDRA = "General help using GNU software: <%s>\\n"
++
++
++def _write_c(decompiled: Path, stem: str, body: str) -> None:
++    (decompiled / f"{stem}.c").write_text(f"void {stem}(void)\n{{\n{body}\n}}\n", encoding="utf-8")
++
++
++def _node(addr: str, callees: list[str], callers: list[str] = ()) -> dict:
++    return {"name": f"FUN_{addr}", "address": addr, "callee_count": len(callees),
++            "callees": [{"name": c} for c in callees],
++            "callers": [{"name": f"FUN_{c}", "address": c} for c in callers]}
++
++
++def _static(tmp_path: Path, *, gnulib: bool, nodes: dict) -> Path:
++    static_dir = tmp_path / "static"
++    dec = static_dir / "decompiled"
++    dec.mkdir(parents=True)
++    _write_c(dec, "FUN_00100000", "  return;")
++    if gnulib:
++        _write_c(dec, "set_program_name", f'  fputs("{PROGNAME_GHIDRA}",stderr);')
++        _write_c(dec, "emit_bug_reporting_address", f'  printf("{VERSION_ETC_GHIDRA}");')
++    (static_dir / "call_graph.json").write_text(json.dumps({"nodes": nodes}), encoding="utf-8")
++    return static_dir
++
++
++def _kararlar(static_dir: Path) -> dict:
++    d = json.loads((static_dir / "gnulib_candidates.json").read_text(encoding="utf-8"))
++    return {x["key"]: x for x in d["decisions"]}
++
++
++class TestUsageGelenegi:
++    def _kur(self, tmp_path, main_cagirir: bool) -> Path:
++        cagiran = "00109000"
++        nodes = {"00104000": _node("00104000", ["fprintf", "fputs"], [cagiran]),
++                 cagiran: _node(cagiran, [f"x{i}" for i in range(9)] + ["FUN_00104000"])}
++        static_dir = _static(tmp_path, gnulib=False, nodes=nodes)
++        _write_c(static_dir / "decompiled", "FUN_00104000",
++                 '  fprintf(f,"Usage: %s [OPTIONS...] [INPUT... | -] [-o OUTPUT]\\n\\n",p);')
++        return static_dir
++
++    def test_main_cagiriyorsa_usage_yazilir(self, tmp_path):
++        """zstd düzeni: gnulib'siz, main 'Usage: %s' fonksiyonunu doğrudan çağırıyor -> usage."""
++        static_dir = self._kur(tmp_path, True)
++        names = {"FUN_00109000": "main"}
++        ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, {})
++        assert names["FUN_00104000"] == "usage"
++        k = _kararlar(static_dir)["FUN_00104000"]
++        assert (k["decision"], k["reason"]) == ("applied", "usage_gelenegi")
++        assert "main (FUN_00109000)" in k["evidence_convention"]
++
++    def test_main_cagirmiyorsa_usage_yazilmaz(self, tmp_path):
++        """xz düzeni: çağıran main değil (ya da main bilinmiyor) -> tutulur."""
++        static_dir = self._kur(tmp_path, False)
++        names: dict[str, str] = {}
++        ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, {})
++        assert "FUN_00104000" not in names
++        assert _kararlar(static_dir)["FUN_00104000"]["reason"] == "gnulib_kaniti_yetersiz"
++
++    def test_gelenek_yalniz_usage(self, tmp_path):
++        """main'in çağırdığı 'write error' fonksiyonu gnulib'siz programda close_stdout olmaz."""
++        nodes = {"00101000": _node("00101000", ["fputs"], ["00109000"]),
++                 "00109000": _node("00109000", ["FUN_00101000"])}
++        static_dir = _static(tmp_path, gnulib=False, nodes=nodes)
++        _write_c(static_dir / "decompiled", "FUN_00101000", '  error(0,0,"write error");')
++        names = {"FUN_00109000": "main"}
++        ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, {})
++        assert "FUN_00101000" not in names
++
++
++class TestIcAd:
++    def _lto(self, tmp_path, cagri_sayilari: list[int]) -> Path:
++        nodes = {"00105000": _node("00105000", ["fprintf"],
++                                   [f"0020{i}000" for i in range(len(cagri_sayilari))]),
++                 "00106000": _node("00106000", ["write", "__errno_location"], ["00207000"]),
++                 "00207000": _node("00207000", ["FUN_00106000"]),
++                 "00108000": _node("00108000", ["setlocale", "strcmp", "x"], ["00208000"]),
++                 "00208000": _node("00208000", ["FUN_00108000"])}
++        for i, n in enumerate(cagri_sayilari):
++            addr = f"0020{i}000"
++            nodes[addr] = _node(addr, ["FUN_00105000"] + [f"c{j}" for j in range(n - 1)])
++        static_dir = _static(tmp_path, gnulib=True, nodes=nodes)
++        _write_c(static_dir / "decompiled", "FUN_00105000", '  fprintf(stream,"Written by %s.\\n",a);')
++        return static_dir
++
++    def test_ince_cagiranlarda_ic_ad(self, tmp_path):
++        static_dir = self._lto(tmp_path, [2, 2, 1])
++        names: dict[str, str] = {}
++        stats: dict = {}
++        ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, stats)
++        assert names["FUN_00105000"] == "version_etc_arn"
++        assert names["FUN_00106000"] == "safe_write"
++        assert "FUN_00108000" not in names  # hard_locale: iç ad sürüme bağlı, tablo dışı
++        k = _kararlar(static_dir)
++        assert (k["FUN_00105000"]["reason"], k["FUN_00105000"]["outer_name"]) == (
++            "lto_yerlesimi_ic_ad", "version_etc")
++        assert k["FUN_00108000"]["reason"] == "lto_yerlesimi"
++        assert stats["gnulib_withheld"] == 1
++
++    def test_genis_cagiranda_dis_ad(self, tmp_path):
++        static_dir = self._lto(tmp_path, [40])
++        names: dict[str, str] = {}
++        ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, {})
++        assert names["FUN_00105000"] == "version_etc"
++
++    def test_ikinci_cagri_ayni(self, tmp_path):
++        static_dir = self._lto(tmp_path, [2, 1])
++        names: dict[str, str] = {}
++        ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, {})
++        ilk = dict(names)
++        k1 = _kararlar(static_dir)
++        ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, {})
++        assert names == ilk and _kararlar(static_dir) == k1

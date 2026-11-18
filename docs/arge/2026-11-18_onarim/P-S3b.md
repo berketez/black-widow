@@ -11,10 +11,10 @@ Brif: `ONARIM_BRIF.md`. Paket metni: `gonderim/PS3b.md`. Karar: K-2. Önceki pak
 |---|---|---|
 | 0 — ön kayıt | bitti | 7a86f56 |
 | 1 — varlık işaretleri | bitti (H1–H7 tuttu) | 41c8116 |
-| 2 — `usage` gelenek kanalı | bekliyor | |
+| 2 — `usage` gelenek kanalı | ölçüldü; kural yamada (H10 tuttu) | (kalem 2 + 4 commit'i) + yama |
 | 3 — `sort` `full_write` (`_exit`) | bitti (H8, H9 tuttu) | b58e3d5 |
-| 4 — LTO'suz iç adlar | bekliyor | |
-| 5 — aday kaydı raporda | bitti (H12 tuttu) | (kalem 5 commit'i) |
+| 4 — LTO'suz iç adlar | ölçüldü; tablo commit, davranış yamada (H11) | (kalem 2 + 4 commit'i) + yama |
+| 5 — aday kaydı raporda | bitti (H12 tuttu) | 212e301 |
 
 ## Kalem 1 — sürümden ve platformdan bağımsız varlık işaretleri
 
@@ -141,3 +141,106 @@ Brif: `ONARIM_BRIF.md`. Paket metni: `gonderim/PS3b.md`. Karar: K-2. Önceki pak
 
 - Taze 5 gnulib'li Mach-O: ürün çıktısında kanal **1 → 8 doğru, 0 yanlış**; başka değişen ad anahtarı 0. xz 0. Yeniden oynatmanın
   öngörüsü ürün çıktısıyla 6 / 6 aynı.
+
+## Kalem 2 — `usage` gelenek kanalı (ayrı ölçüm satırı; kural `stages.py` yamasında)
+
+### a. Göster (kalem 3 kodu, Ghidra'sız; `usage_olc.py k3`)
+| Grup | `usage` önerisi | Karar | GT |
+|---|---|---|---|
+| geliştirme seti coreutils (gnulib'li) | 101 | uygulandı | 101 doğru |
+| taze Mach-O gnulib'li (gettext, envsubst, gsort, gmktemp) + gcat | 5 | uygulandı (kalem 1'den sonra) | 5 doğru |
+| geliştirme seti gnulib'siz: zstd | 1 | tutuldu (`gnulib_kaniti_yetersiz`) | **doğru** (P-S3'te kaybedilen) |
+| taze Mach-O gnulib'siz: xz | 1 | tutuldu | **yanlış** (GT `message_help`) |
+
+- Yani "Usage: %s" tek başına gnulib'siz programda 1 doğru / 1 yanlış: kanıtsız `usage` yazılmamalı (xz).
+- İkinci bağımsız kanıt (ön kayıttaki aday kural): ürünün entry'den kurtardığı `main` adayı doğrudan çağırıyor. zstd: evet
+  (`main` = `FUN_001063c0`, aday 3 çağıranlı); xz: hayır (Mach-O'da `_recover_main_from_entry` `main` bulmuyor → kanıt yok →
+  tutulur). gnulib'li programlarda kanal değişmedi (varlık kanıtıyla).
+
+### b. Onar → yama (`yamalar/P-S3b__stages.py.patch`, P-S4 uygular)
+- `_offer`: varlık kanıtı yetersizken ad `USAGE_CONVENTION_NAME` (`usage`) ve `_main_caller(fk)` bir `main` anahtarı döndürüyorsa
+  ad yazılır, karar `applied` / `usage_gelenegi`, kanıt satırı `evidence_convention` ("gnulib varlık kanıtı yok; 'Usage: %s' tek
+  fonksiyonda ve main (FUN_…) onu doğrudan çağırıyor"). Başka ad için istisna yok.
+- `USAGE_CONVENTION_NAME` `gnulib_fingerprints.py`'de (bu pakette commit'lendi; yama onu içe aktarıyor).
+
+### c. Yeniden say (yama dalda uygulanmış `yama_kod/`, Ghidra'sız; `yama_fark.py`)
+| # | Ölçü | Yama öncesi | Yamalı | Hüküm |
+|---|---|---|---|---|
+| H10 | geliştirme seti gnulib'siz 13: `usage` doğru / yanlış | 0 / 0 | **1 / 0** (zstd) | tuttu |
+| — | xz (Mach-O gnulib'siz) | 0 | 0 (tutuldu: `main` yok) | — |
+- Örneklem küçük (yazılan 1): kesinlik iddiası yok. xz'in tutulması kuralın değil Mach-O'da `main` kurtarılamamasının sonucu;
+  Mach-O'da `main` kurtarılınca xz `message_help`'i `main` çağırmıyorsa (GT'de çağıran `FUN_` tek; bakılmadı) yine tutulur.
+
+## Kalem 4 — LTO'suz yapıda iç adlar (ölçüm + yama)
+
+### a. Ölç (kalem 3 kodu; `lto_yerlesimi` ile tutulan adaylar; `ic_ad_olc.py` → `ic_ad_k3.json`)
+| Set | Dış ad (tutulan) | GT adı | İç ad adayı | Katı | Gevşek |
+|---|---|---|---|---|---|
+| geliştirme seti coreutils | version_etc ×104 | version_etc_arn | version_etc_arn | **104 / 104** | 104 / 104 |
+| geliştirme seti coreutils | full_write ×8 | safe_write | safe_write | **8 / 8** | 8 / 8 |
+| geliştirme seti coreutils | hard_locale ×104 | setlocale_null_r_unlocked | setlocale_null_r | 0 / 104 | 104 / 104 |
+| Debian 9.4 (5) | version_etc ×5, hard_locale ×5, full_write ×1 | version_etc_arn, setlocale_null_r, safe_write | aynı | 11 / 11 | 11 / 11 |
+| Ubuntu 9.4 (LTO'lu) | hard_locale ×1 (expr) | hard_locale.constprop.0 | setlocale_null_r | 0 / 1 | 0 / 1 |
+| Mach-O (idn2, gsort, gmktemp, gcat) | version_etc ×4 | version_etc_arn | version_etc_arn | **4 / 4** | 4 / 4 |
+
+- **H11:** version_etc_arn katı 113 / 113 ve safe_write 9 / 9 (≥ %90) → kural + yama. setlocale_null_r katı 5 / 110 (yalnız 2023
+  gnulib'i; 2024+ adı `setlocale_null_r_unlocked`), gevşek 109 / 110 → **yazılmadı** (sürüme bağlı; Ubuntu expr'deki tek yanlış,
+  yerleşim kuralının LTO'lu yapıdaki bilinen yanlış tutması). Aday kaydında `hard_locale` `lto_yerlesimi` olarak kalıyor.
+- Geliştirme ile kabul ayrımı: tablo geliştirme setinde kuruldu; Mach-O 4 / 4 (3'ü taze) ve Debian 9.4 11 / 11 geliştirme seti dışı.
+
+### b. Onar
+- `gnulib_fingerprints.py` (bu pakette commit): `LTO_LESS_INNER_NAMES` (`version_etc` → `version_etc_arn` / version-etc.c,
+  `full_write` → `safe_write` / safe-read.c), `lto_less_inner_name`. Davranış `stages.py` yamasında: `lto_less_layout` tutuyorsa ve
+  tabloda iç ad varsa iç ad yazılır (`applied`, `lto_yerlesimi_ic_ad`, `outer_name`, `caller_callee_counts`, `evidence_layout`);
+  tabloda yoksa eskisi gibi tutulur. Çağrı şekli katmanı iç adla dolu anahtarı aday sayar (ikinci çağrı aynı kalsın).
+
+### c. Yeniden say (yamalı, Ghidra'sız; `yama_fark.py`) — kalem 3 ↔ yama değişen adlar
+| Set | Yeni ad | GT |
+|---|---|---|
+| geliştirme seti coreutils | version_etc_arn 104, safe_write 8 | 112 doğru |
+| geliştirme seti gnulib'siz | usage 1 (zstd, kalem 2) | doğru |
+| Debian 9.4 | version_etc_arn 5, safe_write 1 | 6 doğru |
+| Mach-O | version_etc_arn 4 (idn2, gsort, gmktemp, gcat) | 4 doğru |
+| başka değişen ad | 0 | — |
+- Yamalı toplam: geliştirme seti coreutils **732 doğru / 0 yanlış** (kalem 3 sonrası 620 / 0); gnulib'siz 1 / 0; Mach-O 13 / 1
+  (yanlış: gcat `close_stdout`, ek bulgu); korpus Debian 9.4 35 / 0, Ubuntu 9.4 35 / 0, od / pr 14 / 1 (P-S3'ten beri `mbslen`).
+
+### d. Test ve mutasyon
+- Commit'lenen: `tests/test_ps3b_ic_ad.py` (3: tablo, iç ad upstream kaynakta tanımlı, `usage` adı); mutant 3 / 3 (hard_locale
+  tabloya girer, version_etc_ar, kaynakta olmayan ad) → P-S3b spec toplamı **16 / 16**.
+- Yamayla gelen: `yamalar/P-S3b__test_ps3b_stages_yama.py.patch` (yeni dosya, 6 test: main çağırıyorsa usage, çağırmıyorsa yok,
+  gelenek yalnız usage; ince çağıranda iç ad + hard_locale tutulur, geniş çağıranda dış ad, ikinci çağrı aynı) — **yamasız kodda 2 / 6
+  kırmızı** (4 bekçi), yamalı kodda 6 / 6. `yamalar/P-S3b__test_ps3_gnulib_kanit.py.patch`: P-S3'ün iki yerleşim testi yeni davranışa
+  (iç ad) uyarlanır (beklenti: version_etc_arn yazılır, hard_locale tutulur; amaç aynı: dış ad ve başka gnulib adı yazılmaz).
+- Yamalı kodda mutasyon (`~/karadul_olcum/runs/onarim-2026-11-18/P-S3b/mutation_specs_ps3b_yama.json`): **5 / 5 öldü** (gelenek
+  kapalı, main kanıtı aranmaz, istisna her ada, iç ad yazılmaz, iç adla dolu anahtar çağrı şeklinde aday değil).
+- Yamalı kodda gnulib / ön ad / köken testleri (`grep -l "gnulib\|pre_name\|naming_provenance\|_offer" tests/*.py`): 752 geçti / 0.
+
+## Ek bulgu (ön kayıtta yok; kural değiştirilmedi) — gcat `close_stdout` → `write_error`
+- gcat'te "write error" dizgisi decompile çıktısında TEK fonksiyonda (`FUN_10000a924`); GT adı `write_error` (coreutils
+  `system.h` satır içi yardımcısı: `fflush` + `fpurge` + `clearerr` + `error`). Ayrıştırıcı (`close_stdout` ↔ `write_error`) yalnız
+  dizgi iki adaydayken çalışıyor; burada tek aday olduğu için `close_stdout` yazıldı. Geliştirme setinde (ELF) 105 / 105 doğru.
+- Öneri (ayrı ön kayıtla): `close_stdout` dizgi adayına tek aday olsa da ayrıştırıcının dışlama koşulu uygulansın (`__fpurge` /
+  `fpurge` / `clearerr` / `clearerr_unlocked` çağıran fonksiyon `close_stdout` olamaz; closeout.c'de yok). Mach-O'da çağrı adlarının
+  biçimi (`_fpurge` mi `fpurge` mı) Ghidra çıktısında doğrulanmalı. Bu pakette uygulanmadı (gcat taze değil; tek örnek).
+
+## P-S4 için (`yamalar/P-S3b__stages.py.patch`)
+- **Uygulanacak yamalar (sırayla, worktree kökünden):** `git apply docs/arge/2026-11-18_onarim/yamalar/P-S3b__stages.py.patch`,
+  `…/P-S3b__test_ps3_gnulib_kanit.py.patch`, `…/P-S3b__test_ps3b_stages_yama.py.patch` (yeni test dosyası). Taban: P-S3b dalının ucu
+  (`gnulib_fingerprints.py`'de `USAGE_CONVENTION_NAME`, `lto_less_inner_name` olmalı; yama onları içe aktarıyor). `git apply --check`
+  cce2e8c + P-S3b commit'leri üstünde temiz.
+- **Gerekçe:** (1) kalem 2 — gnulib'siz programda `usage` yalnız "Usage: %s" tekilliği + `main`'in doğrudan çağırması (iki bağımsız
+  kanıt) varsa: zstd `usage` geri gelir (GT doğru), xz'in `message_help`'i (GT) `usage` olmaz. (2) kalem 4 — LTO'suz yerleşimde dış ad
+  yerine iç ad: version_etc_arn 113 / 113, safe_write 9 / 9 katı doğru; hard_locale bilerek tablo dışı. Yamalı yeniden oynatma: yeni 123
+  ad, hepsi doğru; başka değişen ad 0 (bkz. kalem 2-c, 4-c).
+- **Değişen davranış (ürün):** `static/gnulib_candidates.json`'da yeni nedenler `usage_gelenegi` ve `lto_yerlesimi_ic_ad` (`applied`;
+  ek alanlar `evidence_convention`, `outer_name`); `stats["gnulib_withheld"]` geliştirme setinde ikili başına 3 → 1 (yalnız hard_locale).
+  Kalem 5'in rapor bölümü bunları kendiliğinden doğru sayar (yalnız `withheld` sayılıyor).
+- **Sınanacak testler:** `tests/test_ps3b_stages_yama.py` (6; yamasız kodda 2 kırmızı), `tests/test_ps3_gnulib_kanit.py` (yamayla
+  uyarlanan 2 test dahil 15), `tests/test_ps3b_gnulib_varlik.py`, `tests/test_ps3b_full_write.py`, `tests/test_ps3b_ic_ad.py`,
+  `tests/test_main_gnulib_seed_ordering.py`, `tests/test_gnulib_fingerprints.py`; geniş: `grep -l "gnulib\|pre_name\|naming_provenance"`
+  (yamalı kodda 752 geçti). Mutasyon: `~/karadul_olcum/runs/onarim-2026-11-18/P-S3b/mutation_specs_ps3b_yama.json` (5 mutant; yama
+  uygulanınca `scripts/measurement/mutation_specs_ps3b.json`'a taşınabilir) + `mutation_specs_ps3.json` (17) + `mutation_specs_ps3b.json` (16).
+- **Ölçüm önerisi:** yama birleşince geliştirme setinde `on_ad:gnulib` doğru ad 620 → 732 beklenir (yeniden oynatma); birleşik ölçümde
+  gnulib kanalının güven etiketi (`naming_labels.MEASURED_PRE_NAME_PRECISION`, şu an 0,706) yenilenmeli: P-S3 + P-S3b sonrası
+  geliştirme seti katı kesinlik 620 / 620 (yamasız), 732 / 732 (yamalı).

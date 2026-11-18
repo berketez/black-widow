@@ -104,6 +104,30 @@
    "test": "tests/test_ps3b_rapor_gnulib.py::test_aday_kaydi_dort_ciktida",
    "find": "    if not gc or not gc.get(\"items\"):\n",
    "replace": "    if True or not gc:\n"
+  },
+  {
+   "id": "ps3b_ic_ad_hard_locale_eklenir",
+   "desc": "kalem 4: sürüme bağlı hard_locale -> setlocale_null_r iç ad tablosuna girer (katı 5/110)",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_ic_ad.py::test_ic_ad_tablosu",
+   "find": "    \"full_write\": (\"safe_write\", \"safe-read.c\"),\n}\n",
+   "replace": "    \"full_write\": (\"safe_write\", \"safe-read.c\"),\n    \"hard_locale\": (\"setlocale_null_r\", \"setlocale_null.c\"),\n}\n"
+  },
+  {
+   "id": "ps3b_ic_ad_yanlis_fonksiyon",
+   "desc": "kalem 4: version_etc'nin iç adı version_etc_ar olur",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_ic_ad.py::test_ic_ad_tablosu",
+   "find": "    \"version_etc\": (\"version_etc_arn\", \"version-etc.c\"),\n",
+   "replace": "    \"version_etc\": (\"version_etc_ar\", \"version-etc.c\"),\n"
+  },
+  {
+   "id": "ps3b_ic_ad_kaynakta_yok",
+   "desc": "kalem 4: iç ad upstream kaynakta tanımlı olmayan bir ada döner",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3b_ic_ad.py::test_ic_adlar_upstream_kaynakta_tanimli",
+   "find": "    \"full_write\": (\"safe_write\", \"safe-read.c\"),\n}\n",
+   "replace": "    \"full_write\": (\"safe_writer\", \"safe-read.c\"),\n}\n"
   }
  ]
 }

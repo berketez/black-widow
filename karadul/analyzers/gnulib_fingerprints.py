@@ -537,6 +537,30 @@ def presence_evidence(literals, callee_names) -> GnulibPresence:
 LAYOUT_DEPENDENT_NAMES = frozenset({"version_etc", "hard_locale", "full_write"})
 THIN_CALLER_MAX_CALLEES = 2
 
+# P-S3b kalem 4 (2026-11-18): LTO'suz yerleşimde ateşlenen fonksiyonun GERÇEK adı (iç fonksiyon).
+# GT ölçümü (lto_yerlesimi ile tutulan adaylar; katı eşitlik): version_etc_arn geliştirme seti
+# 104/104, Debian 9.4 5/5, Mach-O (idn2, gsort, gmktemp, gcat) 4/4; safe_write geliştirme seti 8/8,
+# Debian 9.4 1/1. Her ad gnulib upstream kaynağında tanımlı (version-etc.c; safe-read.c'deki
+# `# define safe_rw safe_write`). hard_locale -> setlocale_null_r BİLEREK YOK: katı 5/110 (2024+
+# gnulib'de ad setlocale_null_r_unlocked; sürüme bağlı), gevşek 109/110 — ayrı karar (P-S3b.md).
+# Ürün bu tabloyu `stages.py` yamasıyla kullanır (yamalar/P-S3b__stages.py.patch; P-S4 uygular).
+LTO_LESS_INNER_NAMES: dict[str, tuple[str, str]] = {
+    "version_etc": ("version_etc_arn", "version-etc.c"),
+    "full_write": ("safe_write", "safe-read.c"),
+}
+
+# P-S3b kalem 2: `usage` gnulib fonksiyonu değil, C / GNU geleneği ("Usage: %s"). gnulib varlık kanıtı
+# olmayan programda bu ad ancak ikinci bağımsız kanıtla yazılır: ürünün entry'den kurtardığı `main`
+# aday fonksiyonu doğrudan çağırıyor (yama; geliştirme seti zstd doğru, Mach-O xz'te `main` yok ->
+# tutulur; xz'in "Usage: %s" fonksiyonu GT'ye göre message_help).
+USAGE_CONVENTION_NAME = "usage"
+
+
+def lto_less_inner_name(name: str) -> str | None:
+    """LTO'suz yerleşimde ``name`` girdisinin ateşlendiği fonksiyonun iç adı; tablo dışıysa ``None``."""
+    entry = LTO_LESS_INNER_NAMES.get(name)
+    return entry[0] if entry else None
+
 
 def lto_less_layout(caller_callee_counts) -> bool:
     """Ateşlenen fonksiyonun bütün çağıranları ince sarmalayıcı mı (LTO'suz yerleşim)?

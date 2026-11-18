@@ -1,0 +1,38 @@
+diff --git a/tests/test_ps3_gnulib_kanit.py b/tests/test_ps3_gnulib_kanit.py
+index 410fb48..70039c4 100644
+--- a/tests/test_ps3_gnulib_kanit.py
++++ b/tests/test_ps3_gnulib_kanit.py
+@@ -196,12 +196,14 @@ class TestLtoYerlesimi:
+         names: dict[str, str] = {}
+         stats: dict = {}
+         ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, stats)
+-        assert "FUN_00105000" not in names and "FUN_00108000" not in names
+-        nedenler = {d["name"]: d for d in _kayit(static_dir)["decisions"]}
+-        assert nedenler["version_etc"]["reason"] == "lto_yerlesimi"
+-        assert nedenler["version_etc"]["caller_callee_counts"] == [2, 2, 1]
+-        assert nedenler["hard_locale"]["reason"] == "lto_yerlesimi"
+-        assert stats["gnulib_withheld"] == 2
++        # P-S3b yaması: version_etc dış adı yazılmaz, iç ad (version_etc_arn) yazılır; hard_locale tutulur.
++        assert names.get("FUN_00105000") == "version_etc_arn" and "FUN_00108000" not in names
++        nedenler = {d["key"]: d for d in _kayit(static_dir)["decisions"]}
++        assert nedenler["FUN_00105000"]["reason"] == "lto_yerlesimi_ic_ad"
++        assert nedenler["FUN_00105000"]["outer_name"] == "version_etc"
++        assert nedenler["FUN_00105000"]["caller_callee_counts"] == [2, 2, 1]
++        assert nedenler["FUN_00108000"]["reason"] == "lto_yerlesimi"
++        assert stats["gnulib_withheld"] == 1
+ 
+     def test_genis_cagiranda_ad_yazilir(self, tmp_path):
+         """LTO'lu yerleşim: çağıran main gibi geniş (40 çağrı) -> ad yazılır."""
+@@ -234,9 +236,10 @@ class TestLtoYerlesimi:
+         _write_c(static_dir / "decompiled", "FUN_00105000", '  fprintf(stream,"Written by %s.\\n",a);')
+         names: dict[str, str] = {}
+         ReconstructionStage()._recover_gnulib_from_fingerprints(names, static_dir, {})
+-        assert "FUN_00105000" not in names
++        # P-S3b yaması: iç ad (version_etc_arn) yazılır; close_stream adı yine verilmez.
++        assert names.get("FUN_00105000") == "version_etc_arn"
+         [karar] = [d for d in _kayit(static_dir)["decisions"] if d["key"] == "FUN_00105000"]
+-        assert (karar["name"], karar["reason"]) == ("version_etc", "lto_yerlesimi")
++        assert (karar["name"], karar["reason"]) == ("version_etc_arn", "lto_yerlesimi_ic_ad")
+ 
+     def test_kural_yalniz_uc_girdiye(self, tmp_path):
+         """Yerleşime bağlı olmayan girdi (close_stream) ince çağıranda da ad alır."""
