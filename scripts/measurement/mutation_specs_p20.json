@@ -184,6 +184,30 @@
       "test": "tests/test_p20_jsnice_gate.py::test_explicit_permission_runs_and_does_not_invent_rename_count",
       "find": "                variables_renamed=None,",
       "replace": "                variables_renamed=len(set(output.split()) - set(input_path.read_text().split())),"
+    },
+    {
+      "id": "p20_k6_bayrak_ontanimli_acik",
+      "desc": "synchrony ön geçişi öntanımlı açık / dize 'false' açık sayılır",
+      "module": "karadul/deobfuscators/deep_pipeline.py",
+      "test": "tests/test_p20_synchrony_prepass.py::test_prepass_is_off_by_default",
+      "find": "        return getattr(analysis, \"deep_synchrony_prepass\", False) is True",
+      "replace": "        return getattr(analysis, \"deep_synchrony_prepass\", True) is not False"
+    },
+    {
+      "id": "p20_k6_ayristirma_denetimi_yok",
+      "desc": "ayrıştırılamayan synchrony çıktısı zincire girer",
+      "module": "karadul/deobfuscators/deep_pipeline.py",
+      "test": "tests/test_p20_synchrony_prepass.py::test_unparseable_synchrony_output_is_rejected",
+      "find": "        if not check.success:\n            output_file.unlink(missing_ok=True)",
+      "replace": "        if False:\n            output_file.unlink(missing_ok=True)"
+    },
+    {
+      "id": "p20_k6_cikti_kullanilmaz",
+      "desc": "synchrony çıktısı sonraki adıma verilmez",
+      "module": "karadul/deobfuscators/deep_pipeline.py",
+      "test": "tests/test_p20_synchrony_prepass.py::test_obfuscated_strings_recovered_only_with_prepass",
+      "find": "                current = produced = syn_output",
+      "replace": "                produced = syn_output"
     }
   ]
 }

@@ -1,0 +1,13 @@
+--- a/karadul/config.py	2026-11-18 18:38:22
++++ b/karadul/config.py	2026-11-18 18:38:22
+@@ -297,6 +297,10 @@
+         default_factory=lambda: ["beautify", "synchrony", "babel_transforms"]
+     )
+     use_deep_deobfuscation: bool = True
++    # P20 (2026-11-18): derin hatta synchrony ön geçişi (obfuscator.io dize
++    # dizisi / denetim akışı geri alma). Öntanımlı KAPALI; açıkken synchrony
++    # çıktısı yalnız ayrıştırılabiliyorsa kullanılır (deep_pipeline.py).
++    deep_synchrony_prepass: bool = False
+     # NOT (2026-05-13): LLM-Assisted Variable Naming kaldirildi.
+     # Berke kalici karari: feedback_no_llm.md — deterministic, CPU-only.
+ 

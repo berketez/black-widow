@@ -185,6 +185,18 @@ class DeepDeobfuscationPipeline:
                 "reason": "skip_beautify=True: çağıran beautify'ı atladı",
             }
 
+        # --- Adim 1.5: synchrony ön geçişi (P20 kalem 6; öntanımlı KAPALI) ---
+        # obfuscator.io (javascript-obfuscator) dize dizisi çözme / denetim akışı
+        # düzleştirmesini geri alma derin hatta yok. Bayrak açıksa synchrony
+        # çıktısı yalnız ayrıştırılabiliyorsa (node --check) zincire girer.
+        if self._synchrony_prepass_enabled():
+            syn_output = deob_dir / "01b_synchrony.js"
+            step_result = self._step_synchrony_prepass(current, syn_output)
+            result.steps["synchrony"] = step_result
+            if step_result["success"]:
+                current = produced = syn_output
+                result.stats["synchrony_size"] = syn_output.stat().st_size
+
         # --- Adim 2: Deep Deobfuscate (10 phase) ---
         deep_output = deob_dir / "02_deep_deobfuscated.js"
         step_result = self._step_deep_deobfuscate(current, deep_output, phases)
@@ -302,6 +314,56 @@ class DeepDeobfuscationPipeline:
         if isinstance(errs, list) and errs:
             return str(errs[0])
         return "ayrıntı yok"
+
+    def _synchrony_prepass_enabled(self) -> bool:
+        """``analysis.deep_synchrony_prepass`` (öntanımlı False; yalnız ``is True``).
+
+        Alan ``config.py``'de henüz yok (P15b'nin dosyası; yama
+        ``yamalar/P20__config.py.patch``): yoksa kapalı sayılır.
+        """
+        analysis = getattr(self._config, "analysis", None)
+        return getattr(analysis, "deep_synchrony_prepass", False) is True
+
+    def _step_synchrony_prepass(self, input_file: Path, output_file: Path) -> dict:
+        """synchrony (npm ``deobfuscator``) ile obfuscator.io kalıplarını geri al.
+
+        synchrony statik bir dönüştürücüdür (acorn + escodegen; paketinde
+        eval / vm / Function yok). Çıktısı ayrıştırılamıyorsa (gerçek Electron
+        Fiddle paketinde görüldü) KULLANILMAZ: adım başarısız, zincir önceki
+        dosyayla sürer.
+        """
+        from .synchrony_wrapper import SynchronyWrapper
+
+        start = time.monotonic()
+        wrapper = SynchronyWrapper(self._config)
+        if not wrapper.is_available():
+            return {
+                "success": False, "skipped": True,
+                "reason": f"synchrony bulunamadı: {self._config.tools.synchrony}",
+            }
+        try:
+            ok = wrapper.deobfuscate(input_file, output_file)
+        except Exception as exc:  # noqa: BLE001 -- adım hatası raporlanır
+            return {"success": False, "error": f"synchrony hatası: {exc}",
+                    "duration": time.monotonic() - start}
+        if not ok or not output_file.exists() or output_file.stat().st_size == 0:
+            return {"success": False, "error": "synchrony çıktı üretmedi",
+                    "duration": time.monotonic() - start}
+        check = self._runner.run_command(
+            [str(self._config.tools.node), "--check", str(output_file)], timeout=120,
+        )
+        if not check.success:
+            output_file.unlink(missing_ok=True)
+            return {
+                "success": False,
+                "error": (
+                    "synchrony çıktısı ayrıştırılamıyor (node --check); "
+                    "kullanılmadı: " + (check.stderr or "").strip()[-200:]
+                ),
+                "duration": time.monotonic() - start,
+            }
+        return {"success": True, "duration": time.monotonic() - start,
+                "output_size": output_file.stat().st_size}
 
     def _step_beautify(self, input_file: Path, output_file: Path) -> dict:
         """js-beautify ile format.
