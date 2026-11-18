@@ -207,6 +207,35 @@ def evidence_fields(pack: Any, name_lookup: NameLookup, target: str,
     }
 
 
+# --- Çağrılanların özeti: paketteki ``[model-özet]`` girişi (KaradulLM v2 §3.6 madde 3; P22b) -----------
+# Kanıt alanlarının (``evidence_fields``) yanına giren ayrı bir giriştir: ``get_evidence`` çıktısı ve pilot
+# kopyası değişmez. Ayrı giriş olması denetimin özeti kanıttan ayırabilmesi için de gerekir (``guard``:
+# ``SUMMARY_TOOL`` sonucu kanıt sayılmaz). Satır başına ``{"addr": "FUN_x", "kaynak": "model-özet" | "olgu",
+# "ozet": <metin>}``; belirsiz özet "özet yok (belirsiz)" diye girer (modelin "ne eksik" metni taşınmaz).
+SUMMARY_UNCLEAR_TEXT = "özet yok (belirsiz)"
+SUMMARY_SOURCE = "ozet_deposu"
+SUMMARY_LIMITS = (
+    "Yalnız bu zincirde hesaplanmış ve denetimden geçmiş özetler listelenir; listede olmayan çağrılanın özeti yok.",
+    "model-özet satırı bir dil modelinin çıkarımıdır; kanıt değildir, yanlış olabilir.",
+)
+
+
+def summary_items(entries: Sequence[tuple[str, str, str, bool]],
+                  limit: int = EVIDENCE_MAX_CALLEES) -> tuple[list[dict[str, str]], Optional[dict[str, int]]]:
+    """Girişin satırları ve kırpma bilgisi. ``entries``: (adres, kaynak, metin, belirsiz) — kaynak
+    ``SUMMARY_SOURCE_MODEL`` ya da ``SUMMARY_SOURCE_FACT``. Adrese göre sıralanır; ``limit``'i aşan
+    satır atılır ve ``{"omitted", "total"}`` döner (K-A4: kırpma sessiz değil)."""
+    rows: list[dict[str, str]] = []
+    for addr, source, text, unclear in sorted(entries, key=lambda e: int(e[0], 16)):
+        if source not in (SUMMARY_SOURCE_MODEL, SUMMARY_SOURCE_FACT):
+            raise ValueError(f"bilinmeyen özet kaynağı: {source!r}")
+        rows.append({"addr": f"FUN_{address_key(addr)}", "kaynak": source,
+                     "ozet": SUMMARY_UNCLEAR_TEXT if unclear else text})
+    if len(rows) > limit:
+        return rows[:limit], {"omitted": len(rows) - limit, "total": len(rows)}
+    return rows, None
+
+
 def evidence_truncation(pack: Any, limits: EvidenceLimits = PILOT_LIMITS) -> Optional[dict[str, Any]]:
     """Kanıt alanlarında sınıra takılan öğeler (K-A4: kırpma sessiz değildir).
 

@@ -82,7 +82,7 @@ def test_aciklama_semasi_ve_sorusu():
 
 def test_acikla_gorevi_kl1_ile_tek_cagri_ve_gorev_turu(tmp_path):
     ajan, arka, gunluk, akis = olayli(tmp_path, [yanit(OZET)])
-    r = ajan.explain(fun(A))
+    r = ajan.explain(fun(A), depth=0).root_result
     assert r.status == G.STATUS_DONE and r.task == "acikla" and r.prompt_version == "KL-1"
     assert r.answer == OZET
     assert r.summary["kaynak"] == "model" and r.summary["metin"] == OZET["ozet"] and not r.summary["belirsiz"]
@@ -121,18 +121,18 @@ def test_ad_oner_kl0_ve_tur_degismez(tmp_path):
 
 def test_acikla_belirsiz_ve_gecersiz_cevap(tmp_path):
     ajan, arka, gunluk, akis = olayli(tmp_path, [yanit(BELIRSIZ)])
-    r = ajan.explain(fun(A))
+    r = ajan.explain(fun(A), depth=0).root_result
     assert r.status == G.STATUS_DONE and r.summary["belirsiz"] is True and r.summary["kanit"] == []
     assert ilk(akis, "ozet")["belirsiz"] is True
     # L2: şemaya uymayan cevap bir kez onarılır; ikincisi de bozuksa görev biter, özet yok
     ajan, arka, gunluk, akis = olayli(tmp_path / "b", [yanit({"ozet": "", "belirsiz": False, "kanit": []}),
                                                       yanit({"isim": "x"})], duzey="L2")
-    r = ajan.explain(fun(A))
+    r = ajan.explain(fun(A), depth=0).root_result
     assert r.status == "sema_ihlali" and r.summary is None and r.counters.repairs == 1 and len(arka.calls) == 2
     assert "ozet" not in turler(akis)
     # Bilinmeyen adres: model çağrılmaz
     ajan, arka, gunluk, akis = olayli(tmp_path / "c", [])
-    r = ajan.explain("FUN_99999999")
+    r = ajan.explain("FUN_99999999").root_result
     assert r.status == G.STATUS_UNKNOWN_ADDRESS and not arka.calls and r.task == "acikla"
 
 
@@ -251,3 +251,144 @@ def test_depo_bozuk_satir_sayilir_yabanci_ve_sembolik_bag(tmp_path):
     with pytest.raises(OSError):
         S.SummaryStore(SHA, root=kok2).put(kayit())
     assert not list((tmp_path / "gercek").iterdir())
+
+
+# --------------------------------------------------------------------------------------------
+# (c) zincir: paketteki [model-özet] girişi, depo, geçersiz kılma
+
+import re  # noqa: E402
+
+from karadul.lm import events as E  # noqa: E402
+from karadul.lm.audit import AuditLog  # noqa: E402
+from tests.test_lm_tools import build_ws  # noqa: E402
+
+# R → X, Y ; X → L ; Y ↔ Z (döngü) ; Z → L ; L → DEEP (derinlik 3: kapanış dışında)
+R, X, Y, Z, L, DEEP = "00002000", "00002100", "00002200", "00002300", "00002400", "00002500"
+
+
+def zincir_ws(root, *, l_kodu: str | None = None, adlar: dict | None = None):
+    funcs = {R: {"calls": [X, Y], "strings": ["kok dizgisi"]},
+             X: {"calls": [L], "strings": ["x dizgisi"]},
+             Y: {"calls": [Z], "strings": ["y dizgisi"]},
+             Z: {"calls": [Y, L], "strings": ["z dizgisi"]},
+             L: {"calls": [DEEP], "strings": ["l dizgisi"]},
+             DEEP: {"calls": []}}
+    if l_kodu is not None:
+        funcs[L]["code"] = l_kodu
+    return T.Workspace(build_ws(root, funcs, names=adlar))
+
+
+class OzetArka(B.FakeBackend):
+    """Cevabı istekten kuran sahte arka uç: sorudaki adrese göre metin (``None`` → belirsiz); ``kanit``
+    o istekte verilen ilk kimlik. İstenen adresler ve her isteğin paketi kaydedilir."""
+
+    def __init__(self, metinler: dict, **kw):
+        super().__init__([], **kw)
+        self.metinler = metinler
+        self.istenen: list[str] = []
+        self.paketler: dict[str, list[dict]] = {}
+
+    def _chat(self, messages, schema, stream, max_tokens, on_token):
+        soru = messages[-1]["content"]
+        adres = re.search(r"explain what the function FUN_([0-9a-f]+) does", soru).group(1)
+        self.istenen.append(adres)
+        self.paketler[adres] = C.unwrap_results(soru)
+        ids = schema["anyOf"][0]["properties"]["kanit"]["items"]["enum"]
+        t = self.metinler[adres]
+        obj = ({"ozet": t, "belirsiz": False, "kanit": ids[:1]} if t is not None
+               else {"ozet": "Eksik bilgi.", "belirsiz": True, "kanit": []})
+        self.replies = [B.FakeReply(content=json.dumps(obj, ensure_ascii=False))]
+        return super()._chat(messages, schema, stream, max_tokens, on_token)
+
+
+ZINCIR_METIN = {R: "Kök işi yapar.", X: "X işini yapar.", Y: "Y işini yapar.", Z: "Z işini yapar.", L: "L yaprağı okur."}
+
+
+def zincir_ajan(ws, metinler=None, *, depo=None, **kw):
+    gunluk = AuditLog()
+    arka = OzetArka(dict(ZINCIR_METIN if metinler is None else metinler), audit=gunluk)
+    akis = E.EventStream("o1")
+    return G.Agent(arka, ws, on_event=akis.emit, summary_store=depo, **kw), arka, gunluk, akis
+
+
+def ozet_girisi(paket: list[dict]):
+    g = [e for e in paket if e["tool"] == C.SUMMARY_TOOL]
+    return g[0] if g else None
+
+
+def test_zincir_sirasi_ve_model_ozet_girisi(tmp_path):
+    ajan, arka, gunluk, akis = zincir_ajan(zincir_ws(tmp_path / "ws"))
+    run = ajan.explain(fun(R))
+    # Plan: yapraklar önce; döngü ortakları (Y, Z) aynı katmanda; kök sonda; DEEP kapanış dışında
+    assert run.layers == [[fun(L)], [fun(X), fun(Y), fun(Z)], [fun(R)]] and run.stopped is None
+    assert [r.addr for r in run.results] == [fun(L), fun(X), fun(Y), fun(Z), fun(R)]
+    assert [r.task for r in run.results] == ["ozet_alt"] * 4 + ["acikla"]
+    assert all(r.status == G.STATUS_DONE for r in run.results) and run.root_result is run.results[-1]
+    assert arka.istenen == [L, X, Y, Z, R]
+    # L: çağrılanı DEEP zincirde değil → giriş yok. X: L'nin özeti [model-özet]. Y: döngü ortağı Z aynı
+    # katmanda → giriş yok. Z: yalnız L (Y aynı katman). R: X ve Y.
+    assert ozet_girisi(arka.paketler[L]) is None and ozet_girisi(arka.paketler[Y]) is None
+    gx = ozet_girisi(arka.paketler[X])
+    assert gx["data"] == {"addr": fun(X), "items": [{"addr": fun(L), "kaynak": "model-özet", "ozet": ZINCIR_METIN[L]}]}
+    assert gx["kind"] == "model-ozet" and gx["limits"] == list(C.SUMMARY_LIMITS) and "truncated" not in gx
+    assert ozet_girisi(arka.paketler[Z])["data"]["items"] == [
+        {"addr": fun(L), "kaynak": "model-özet", "ozet": ZINCIR_METIN[L]}]
+    assert ozet_girisi(arka.paketler[R])["data"]["items"] == [
+        {"addr": fun(X), "kaynak": "model-özet", "ozet": ZINCIR_METIN[X]},
+        {"addr": fun(Y), "kaynak": "model-özet", "ozet": ZINCIR_METIN[Y]}]
+    # Paket sırası: kanıt, kod, özetler; soru girişin kimliğini de sayar
+    assert [e["tool"] for e in arka.paketler[R]] == ["get_evidence", "get_decompiled", C.SUMMARY_TOOL]
+    assert run.root_result.result_ids == tuple(e["id"] for e in arka.paketler[R])
+    # Olaylar: her görev için gorev_turu doğru; giriş bir sunucu aracı (E-1 eşleşmesi + denetim kaydı)
+    olay = akis.since(0)["olaylar"]
+    assert [e["gorev_turu"] for e in olay if e["tur"] == "gorev_basladi"] == ["ozet_alt"] * 4 + ["acikla"]
+    bas = [e for e in olay if e["tur"] == "arac_basladi" and e["arac"] == C.SUMMARY_TOOL]
+    assert len(bas) == 3 and all(e["cagiran"] == "sunucu" for e in bas)
+    assert bas[-1]["hedef"] == {"fn": fun(R), "adres": R} and bas[-1]["arguman"] == {"addr": fun(R)}
+    bit = [e for e in olay if e["tur"] == "arac_bitti" and e["arac"] == C.SUMMARY_TOOL]
+    assert bit[-1]["dokunulan"] == [fun(X), fun(Y)] and bit[-1]["tur_kind"] == "model-ozet"
+    esler_tutarli(akis, gunluk)
+    assert [e["metin"] for e in olay if e["tur"] == "ozet"] == [ZINCIR_METIN[a] for a in (L, X, Y, Z, R)]
+
+
+def test_zincir_belirsiz_ozet_ve_derinlik(tmp_path):
+    ajan, arka, _, _ = zincir_ajan(zincir_ws(tmp_path / "ws"), {**ZINCIR_METIN, X: None})
+    run = ajan.explain(fun(R))
+    assert run.results[1].summary["belirsiz"] is True
+    assert ozet_girisi(arka.paketler[R])["data"]["items"][0] == {
+        "addr": fun(X), "kaynak": "model-özet", "ozet": C.SUMMARY_UNCLEAR_TEXT}   # "ne eksik" metni taşınmaz
+    # Derinlik 1: L ve Z kapanış dışında
+    ajan, arka, _, _ = zincir_ajan(zincir_ws(tmp_path / "ws1"))
+    run = ajan.explain(fun(R), depth=1)
+    assert run.layers == [[fun(X), fun(Y)], [fun(R)]] and arka.istenen == [X, Y, R]
+    assert ozet_girisi(arka.paketler[X]) is None
+
+
+def test_zincir_depo_yeniden_kullanim_ve_gecersiz_kilma(tmp_path):
+    depo = S.SummaryStore(SHA, root=tmp_path / "lm")
+    ajan, arka, _, _ = zincir_ajan(zincir_ws(tmp_path / "ws"), depo=depo)
+    ajan.explain(fun(R))
+    assert len(arka.istenen) == 5 and len(depo.records()) == 5
+    # Aynı çalışma alanı, aynı model: hiçbir özet yeniden hesaplanmaz
+    ajan, arka, gunluk, akis = zincir_ajan(zincir_ws(tmp_path / "ws2"), depo=S.SummaryStore(SHA, root=tmp_path / "lm"))
+    run = ajan.explain(fun(R))
+    assert arka.istenen == [] and all(r.summary["depodan"] for r in run.results)
+    assert [r.summary["metin"] for r in run.results] == [ZINCIR_METIN[a] for a in (L, X, Y, Z, R)]
+    assert not [k for k in gunluk.records if k["olay"] == "model_istegi"]
+    assert all(k["ozet"]["depodan"] for k in gunluk.records if k["olay"] == "gorev")
+    # L'nin kodu değişti: L yeniden; L'nin özeti değiştiği için onu paketinde taşıyan X ve Z de yeniden;
+    # Y (paketi değişmedi) ve R (X'in ve Y'nin özet metni aynı kaldı) depodan
+    kod = "void FUN_00002400(void)\n\n{\n  int local_8 = 1;\n  FUN_00002500();\n  return;\n}\n"
+    ajan, arka, _, _ = zincir_ajan(zincir_ws(tmp_path / "ws3", l_kodu=kod), {**ZINCIR_METIN, L: "L yeni işi yapar."},
+                                   depo=S.SummaryStore(SHA, root=tmp_path / "lm"))
+    run = ajan.explain(fun(R))
+    assert arka.istenen == [L, X, Z]
+    assert [r.summary["depodan"] for r in run.results] == [False, False, True, False, True]
+    assert ozet_girisi(arka.paketler[X])["data"]["items"][0]["ozet"] == "L yeni işi yapar."
+    # L'nin adı değişti (Karadul ad haritası): L'nin anahtarı ve L'yi komşu diye gösteren X, Z paketleri
+    ajan, arka, _, _ = zincir_ajan(zincir_ws(tmp_path / "ws4", adlar={L: "read_leaf"}),
+                                   depo=S.SummaryStore(SHA, root=tmp_path / "lm"))
+    run = ajan.explain(fun(R))
+    assert arka.istenen == [L, X, Z]
+    d = S.SummaryStore(SHA, root=tmp_path / "lm")
+    assert len(d.records()) == 5 + 3 + 3 and d.corrupt_lines == 0

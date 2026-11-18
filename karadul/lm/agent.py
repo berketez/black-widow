@@ -45,12 +45,16 @@ from karadul.lm import (
 from karadul.lm.audit import AuditLog, canonical_json, sha256_text
 from karadul.lm.backend import STATE_ERROR, STATE_MEMORY_STOPPED, Backend, BackendError, ChatResult, LMError
 from karadul.lm.context import (
-    MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, PROMPT_VERSION_KL1, ContextBudget, blind_leaks,
+    MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, PROMPT_VERSION_KL1, SUMMARY_KIND, SUMMARY_LIMITS,
+    SUMMARY_SOURCE, SUMMARY_SOURCE_FACT, SUMMARY_SOURCE_MODEL, SUMMARY_TOOL, ContextBudget, blind_leaks,
     estimate_result_tokens, estimate_text_tokens, explain_question, fixed_prefix, max_calls_for, name_question,
-    safe_assistant_content, user_message,
+    safe_assistant_content, summary_items, user_message,
 )
 from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, ContentStore, touched_refs
 from karadul.lm.memory_guard import MemoryGuard
+from karadul.lm.order import DEFAULT_CLOSURE_DEPTH, bottom_up_layers, layer_of
+from karadul.lm.summaries import SOURCE_FACT, SOURCE_MODEL, SummaryKey, SummaryRecord, SummaryStore, model_key, \
+    package_digest
 from karadul.lm.tools import (
     ADDR_PATTERN, ERR_BUDGET, ERR_REPEAT, ERR_TOOL_CLOSED, INVALID_CALL_ERRORS, ToolContext, ToolRegistry,
     ToolResult, Workspace, WorkspaceError, default_registry, error_result, normalize_args,
@@ -209,6 +213,35 @@ class TaskResult:
 
 
 @dataclass
+class ExplainRun:
+    """Aşağıdan yukarı "açıkla" zincirinin sonucu (tasarım §3.6; karar 2 (a)).
+
+    ``layers``: kapanışın katmanları (``FUN_<adres>``; yapraklar önce) — zincirin planı. ``results``:
+    açılan görevler yürütme sırasıyla; kök ``acikla`` en sondadır (zincir durmadıysa). ``stopped``:
+    zinciri durduran görev durumu (``iptal``, ``bellek_durdu`` …) ya da arka uç durumu; durmadıysa ``None``.
+    """
+
+    root: Optional[str]
+    layers: list[list[str]]
+    results: list[TaskResult]
+    stopped: Optional[str] = None
+
+    @property
+    def root_result(self) -> Optional[TaskResult]:
+        last = self.results[-1] if self.results else None
+        return last if last is not None and last.task == TASK_EXPLAIN else None
+
+
+@dataclass
+class _Chain:
+    """Zincirin görevler arası durumu: bu zincirde hesaplanan özetler ve katmanlar."""
+
+    root: str
+    layer: dict[str, int]
+    fresh: dict[str, dict[str, Any]] = field(default_factory=dict)
+
+
+@dataclass
 class _Task:
     """Yürüyen görevin iç durumu."""
 
@@ -242,7 +275,7 @@ class Agent:
                  rejected_names: Optional[Mapping[str, Iterable[str]]] = None,
                  expected_task_sec: Optional[float] = None,
                  on_event: Optional[Callable[..., Any]] = None, stream: Optional[bool] = None,
-                 content_store: Optional[ContentStore] = None):
+                 content_store: Optional[ContentStore] = None, summary_store: Optional[SummaryStore] = None):
         modes = frozenset(enabled_modes)
         if not modes <= frozenset(MODES):
             raise ValueError(f"bilinmeyen ajan kipi: {sorted(modes - frozenset(MODES))}")
@@ -288,6 +321,12 @@ class Agent:
         # bağımsızdır (olay geri çağrısı yokken de yazar). Yazılamazsa görev sürer; ``arac_bitti``
         # ``icerik_saklandi: false`` der.
         self.content_store = content_store
+        # Özet deposu (P22b; tasarım §3.6 madde 4): anahtarı birebir aynı özet yeniden hesaplanmaz; yeni
+        # özet eklenir. Verilmezse zincir her özeti hesaplar ve hiçbir şey yazmaz.
+        self.summary_store = summary_store
+        # Zincir (aşağıdan yukarı özet) yürürken ``cancel_current`` zincirin kalanını da durdurur.
+        self._chain_active = False
+        self._chain_stop = threading.Event()
 
     # --- olaylar (P22a) -----------------------------------------------------------------------
 
@@ -395,11 +434,16 @@ class Agent:
         return TASK_TIME_BUDGET_FALLBACK_SEC
 
     def cancel_current(self) -> bool:
-        """Yürüyen görevi iptal eder (tur arasında biter). Görev yoksa hiçbir şey yapmaz, ``False``."""
-        if not self._running:
-            return False
-        self.cancel.set()
-        return True
+        """Yürüyen görevi iptal eder (tur arasında ya da akış parçasında biter). Bir özet zinciri
+        yürüyorsa zincirin kalan görevleri de açılmaz. Ne görev ne zincir varsa hiçbir şey yapmaz, ``False``."""
+        hit = False
+        if self._chain_active:
+            self._chain_stop.set()
+            hit = True
+        if self._running:
+            self.cancel.set()
+            hit = True
+        return hit
 
     def run_loop(self, addr: str, *, mode: str = MODE_K2, abstain_allowed: bool = True,
                  deadline_sec: Optional[float] = None) -> TaskResult:
@@ -421,12 +465,46 @@ class Agent:
         finally:
             self._lock.release()
 
-    def explain(self, addr: str, *, deadline_sec: Optional[float] = None) -> TaskResult:
-        """"Açıkla" (KL-1, belirlenimci hat; tasarım §3.2): paket kur → model tek çağrı → ayrıştır →
-        denetim → özet. K0 kipinde koşar (model araç çağıramaz); ``K0`` etkin değilse ``ModeDisabled``."""
+    def explain(self, addr: str, *, depth: int = DEFAULT_CLOSURE_DEPTH,
+                deadline_sec: Optional[float] = None) -> ExplainRun:
+        """"Açıkla" (KL-1, belirlenimci hat; tasarım §3.2, §3.6): seçili fonksiyonun çağrılan kapanışı
+        (derinlik ``depth``) aşağıdan yukarı özetlenir — her iç düğüm bir ``ozet_alt`` görevi, kök en sonda
+        ``acikla``. Her görevin paketine yalnız alt katmanlarda BU zincirde hesaplanmış, denetimden geçmiş
+        çağrılan özetleri girer (``[model-özet]`` / ``[olgu]``). Sıra ``order.bottom_up_layers``'tan; kök kendi
+        katmanının sonundadır. Model araç çağıramaz (K0). Zincir iptal (``cancel_current``), bellek durması
+        ya da ölmüş arka uçta durur; öbür görev hataları yalnız o düğümün özetini düşürür."""
         if MODE_K0 not in self.enabled_modes:
             raise ModeDisabled("K0 bu ajanda etkin değil")
-        return self._run(MODE_K0, addr, True, deadline_sec, task_type=TASK_EXPLAIN)
+        with self._exclusive():
+            a = self.workspace.resolve(addr)
+            if a is None:
+                return ExplainRun(None, [], [self._run_unlocked(MODE_K0, addr, True, deadline_sec,
+                                                                task_type=TASK_EXPLAIN)])
+            layered = bottom_up_layers(self.workspace.call_edges, a, depth)
+            plan = [[x for x in layer if x != a] + ([a] if a in layer else []) for layer in layered]
+            run = ExplainRun(f"FUN_{a}", [[f"FUN_{x}" for x in layer] for layer in plan], [])
+            chain = _Chain(root=a, layer=layer_of(layered))
+            self._chain_stop.clear()
+            self._chain_active = True
+            try:
+                for f in (x for layer in plan for x in layer):
+                    if self._chain_stop.is_set():
+                        run.stopped = STATUS_CANCELLED
+                        break
+                    r = self._run_unlocked(MODE_K0, f"FUN_{f}", True, deadline_sec,
+                                           task_type=TASK_EXPLAIN if f == a else TASK_SUMMARY, chain=chain)
+                    run.results.append(r)
+                    if r.status == STATUS_DONE and r.summary is not None:
+                        chain.fresh[f] = r.summary
+                    if r.status in (STATUS_CANCELLED, STATUS_MEMORY):
+                        run.stopped = r.status
+                        break
+                    if self.backend.state in (STATE_ERROR, STATE_MEMORY_STOPPED):
+                        run.stopped = self.backend.state
+                        break
+            finally:
+                self._chain_active = False
+            return run
 
     def _run(self, mode: str, addr: str, abstain_allowed: bool, deadline_sec: Optional[float], *,
              task_type: str = TASK_NAME, **extra: Any) -> TaskResult:
@@ -810,18 +888,90 @@ class Agent:
 
     # --- açıkla / özet alt görevi (KL-1; KaradulLM v2 §3.2, §3.6) ---------------------------------
 
-    def _execute_explain(self, task: _Task, addr: str) -> None:
-        """Belirlenimci hattın tek görevi: paket (kanıt + kod) → KL-1 sorusu → tek model çağrısı (L2'de bir
-        onarım) → özet. Model araç çağıramaz. Bağlama sığmayan görev başlamadan reddedilir."""
+    def _summary_entry(self, task: _Task, a: str, chain: _Chain) -> Optional[ToolResult]:
+        """Paketin ``callee_summaries`` girişi (tasarım §3.6 madde 3): hedefin çağrı grafiğindeki
+        çağrılanlarından, zincirde ALT katmanda (döngü ortağı değil) hesaplanmış ve denetimden geçmiş
+        (``pakete_girer``) özetler. Hiç satır yoksa giriş yok. Sunucu "aracı" olarak kaydedilir: bir
+        ``arac_basladi`` / ``arac_bitti`` çifti ve bir ``arac_cagrisi`` kaydı (E-1); içerik deposuna yazılır."""
+        callees = self.workspace.callees(a) or []
+        mine = chain.layer.get(a)
+        entries: list[tuple[str, str, str, bool]] = []
+        for c in callees:
+            s = chain.fresh.get(c)
+            if s is None or mine is None or chain.layer.get(c, mine) >= mine or not s["pakete_girer"]:
+                continue
+            source = SUMMARY_SOURCE_FACT if s["kaynak"] == SOURCE_FACT else SUMMARY_SOURCE_MODEL
+            entries.append((c, source, s["metin"], bool(s["belirsiz"])))
+        if not entries:
+            return None
+        rows, truncated = summary_items(entries)
+        rid = self._new_result_id()
+        args = {"addr": f"FUN_{a}"}
+        self._emit("arac_basladi", task, sonuc=rid, arac=SUMMARY_TOOL, cagiran=CALLER_SERVER,
+                   hedef=self._target(a), arguman=args)
+        t = self._clock()
+        result = ToolResult(id=rid, tool=SUMMARY_TOOL, ok=True, data={"addr": f"FUN_{a}", "items": rows},
+                            kind=SUMMARY_KIND, source=SUMMARY_SOURCE, limits=SUMMARY_LIMITS, truncated=truncated,
+                            executed=True)
+        duration = self._clock() - t
+        task.tool_ms[rid] = int(round(duration * 1000))
+        if self.audit is not None:
+            self.audit.write("arac_cagrisi", gorev=task.result.task_id, cagiran=CALLER_SERVER, argumanlar=args,
+                             gecerli=True, sure_sn=round(duration, 4), **result.audit_fields())
+        self._tool_done(task, result)
+        task.result.counters.package_calls += 1
+        return result
+
+    def _summary_key(self, a: str, package: list[ToolResult]) -> Optional[SummaryKey]:
+        """Özet deposunun anahtarı (``summaries`` modül belgesi); depo yoksa ``None``."""
+        if self.summary_store is None:
+            return None
+        tag = self.workspace.name_tag(a)
+        return SummaryKey(binary_sha256=self.summary_store.binary_sha256, addr=a, prompt_version=PROMPT_VERSION_KL1,
+                          toolset_version=self.registry.version(), model=model_key(self.backend.identity()),
+                          package_sha256=package_digest(r.envelope() for r in package),
+                          name=None if tag is None else f"{tag[1]}:{tag[0]}")
+
+    def _store_summary(self, task: _Task, key: Optional[SummaryKey]) -> None:
+        """Görevin özetini depoya ekler (depo varsa). Yazılamazsa görev sürer; kayıt bunu söyler."""
+        s = task.result.summary
+        if key is None or s is None or self.summary_store is None:
+            return
+        try:
+            self.summary_store.put(SummaryRecord(key=key, kaynak=s["kaynak"], metin=s["metin"],
+                                                 belirsiz=s["belirsiz"], kanit=tuple(s["kanit"]), hukum=s["hukum"],
+                                                 pakete_girer=s["pakete_girer"], gorev=task.result.task_id))
+            s["depoya_yazildi"] = True
+        except (OSError, ValueError):
+            s["depoya_yazildi"] = False
+
+    def _execute_explain(self, task: _Task, addr: str, chain: Optional[_Chain] = None) -> None:
+        """Belirlenimci hattın tek görevi: paket (kanıt + kod + zincirde çağrılanların özetleri) → depoda
+        aynı anahtarlı özet varsa o (model çağrılmaz) → KL-1 sorusu → tek model çağrısı (L2'de bir onarım)
+        → özet → depo. Model araç çağıramaz. Bağlama sığmayan görev başlamadan reddedilir."""
         a = self.workspace.resolve(addr)
         if a is None:
             return task.finish(STATUS_UNKNOWN_ADDRESS)
         task.result.addr = f"FUN_{a}"
-        level = self._level(task)
-        if level is None:
-            return None
         package = self._build_package(task, a, single_shot=True)
         if package is None:
+            return None
+        if chain is not None:
+            entry = self._summary_entry(task, a, chain)
+            if entry is not None:
+                package.append(entry)
+                task.results.append(entry)
+        key = self._summary_key(a, package)
+        stored = self.summary_store.get(key) if key is not None else None
+        if stored is not None:
+            # Anahtar birebir aynı: kod, ad, çağrılanların özeti, istem, araç kümesi ve model değişmedi.
+            task.result.summary = {"kaynak": stored.kaynak, "metin": stored.metin, "belirsiz": stored.belirsiz,
+                                   "kanit": list(stored.kanit), "hukum": stored.hukum,
+                                   "pakete_girer": stored.pakete_girer, "depodan": True}
+            task.result.verdict = stored.hukum
+            return task.finish(STATUS_DONE)
+        level = self._level(task)
+        if level is None:
             return None
         ids = [r.id for r in package]
         system = self.prefix(MODE_K0, PROMPT_VERSION_KL1)
@@ -843,7 +993,8 @@ class Agent:
             self._reply_done(task, reply, parsed.status, parsed.obj)
             action = protocol.next_action(level, parsed, repairs)
             if action == protocol.ACTION_ACCEPT:
-                return self._accept_summary(task, parsed.obj)
+                self._accept_summary(task, parsed.obj)
+                return self._store_summary(task, key)
             if action != protocol.ACTION_REPAIR:
                 return task.finish(parsed.status)
             repairs += 1
