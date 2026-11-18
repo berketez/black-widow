@@ -83,6 +83,10 @@
   "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/debian/coreutils/cat/ws/workspaces/cat/20261118_085909/reconstructed/algorithm_compositions.json",
   "sha256": "9654a58cf82fd37a2dd5866f4e34f70e7eaab6300d57bbb825aee0a9dfd199c8"
  },
+ "urun_htop_mac/reports/pipeline_result.json": {
+  "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P07/urun-397ca3b/mac/htop/ws/workspaces/htop/20261118_085400/reports/pipeline_result.json",
+  "sha256": "5fcfb718815dd07ae0eee1013d8d289da7f1935f38392727fa3443a833066fb6"
+ },
  "p08_cat/reports/pipeline_result.json": {
   "kaynak": "/Users/apple/karadul_olcum/runs/onarim-2026-11-18/P08/urun-2beaa02/debian/coreutils/cat/ws/workspaces/cat/20261118_082058/reports/pipeline_result.json",
   "sha256": "437f7d0ad7c1f316a1ecb811ee73f8dafba060efc156b060df8bf9e07fa8bf6f"

@@ -251,3 +251,15 @@ def test_bilesim_eski_kayitta_ithal_fonksiyonlar_gorunur(tmp_path):
     assert "Allocate: realloc, malloc -> Factor: fflush -> Free: free" in bolum
 
 
+
+
+def test_ad_guvenilirligi_yerel_ad_dogrulanmamis(tmp_path):
+    """mac/htop: etiketli genel ad yok (naming_by_label {}), 155 yerel ad değişikliği. Yerel
+    adlar etiket taşımaz; bölüm 'bütün adlar doğrulanmış' (CLEAN) demez."""
+    sonuc, ws = _kur("urun_htop_mac", tmp_path)
+    st = sonuc.stages["reconstruct"].stats
+    assert st["naming_by_label"] == {} and st["variables_renamed"] == 155
+    sec = build_report_data(sonuc, ws).sections["naming"]
+    assert sec.status == "findings"
+    assert "no labelled function name recorded" in sec.summary
+    assert "155 identifier renames" in sec.summary and "unverified" in sec.summary

@@ -1,0 +1,181 @@
+{
+  "_comment": "P07 (raporlar: veriyle sözleşme) mutasyon koruması. Her mutant bir sözleşme kuralını bozar; ilgili test (gerçek koşu yapıtlarıyla) KIRMIZI olmalı. Mutant metni özgününden farklı uzunlukta (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p07.json",
+  "mutants": [
+    {
+      "id": "p07_kripto_kategori_ters",
+      "desc": "kripto bölümü kripto olmayan kategorileri sayar (KRDL001 algorithms.json'dan yanlış küme)",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_sarif.py::test_sarif_openssl_kripto_bulgusu_algorithms_jsondan",
+      "find": "crypto = [a for a in algos if a.get(\"category\") in CRYPTO_CATEGORIES]",
+      "replace": "crypto = [a for a in algos if a.get(\"category\") not in CRYPTO_CATEGORIES]"
+    },
+    {
+      "id": "p07_sarif_kripto_kaynak_yok",
+      "desc": "SARIF KRDL001 kripto bölümünü okumaz (eski davranış: openssl'de 0)",
+      "module": "karadul/reporting/sarif_report.py",
+      "test": "tests/test_p07_sarif.py::test_sarif_openssl_kripto_bulgusu_algorithms_jsondan",
+      "find": "        sec = data.sections[\"crypto\"]\n        results: list[dict[str, Any]] = []\n        if not sec.has_items:",
+      "replace": "        sec = data.sections[\"compositions\"]\n        results: list[dict[str, Any]] = []\n        if not sec.has_items:"
+    },
+    {
+      "id": "p07_eski_yara_etiket_yok",
+      "desc": "eski 'Kural (etiket)' dizgisinin etiketleri atılır (paketleyici KRDL003'e düşer)",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_sarif.py::test_sarif_eski_yara_dizgisi_dogru_kurala",
+      "find": "tags = [t.strip() for t in m.group(\"tags\").split(\",\") if t.strip() and t.strip() != \"unknown\"]",
+      "replace": "tags = []"
+    },
+    {
+      "id": "p07_derleyici_izi_supheli",
+      "desc": "derleyici etiketi KRDL007 yerine varsayılan KRDL003 (SuspiciousPattern) olur",
+      "module": "karadul/reporting/sarif_report.py",
+      "test": "tests/test_p07_sarif.py::test_sarif_ps1_yara_kaydi_kanitla",
+      "find": "    \"compiler\": \"KRDL007\",\n",
+      "replace": ""
+    },
+    {
+      "id": "p07_ad_uyarisi_yok",
+      "desc": "KRDL002 hiç üretilmez (eski davranış)",
+      "module": "karadul/reporting/sarif_report.py",
+      "test": "tests/test_p07_sarif.py::test_sarif_ad_guvenilirligi_uyarisi",
+      "find": "        if warn:\n            props: dict[str, Any] = {\"section_status\": sec.status}",
+      "replace": "        if False:\n            props: dict[str, Any] = {\"section_status\": sec.status}"
+    },
+    {
+      "id": "p07_sarif_anti_debug_yok",
+      "desc": "SARIF anti-debug bulgularını yazmaz",
+      "module": "karadul/reporting/sarif_report.py",
+      "test": "tests/test_p07_sarif.py::test_sarif_anti_debug_bulgulari",
+      "find": "        results.extend(self._extract_anti_debug_results(data, target_name))\n",
+      "replace": ""
+    },
+    {
+      "id": "p07_sarif_bolum_bildirimi_yok",
+      "desc": "taranamayan / verisi olmayan bölüm SARIF bildirimine yazılmaz",
+      "module": "karadul/reporting/sarif_report.py",
+      "test": "tests/test_p07_sarif.py::test_sarif_taranamayan_bolum_bildirimi",
+      "find": "            if sec is None or sec.status in (SECTION_FINDINGS, SECTION_CLEAN):\n                continue",
+      "replace": "            if True:\n                continue"
+    },
+    {
+      "id": "p07_json_kapsama_sifir",
+      "desc": "JSON özetinde kaynağı olmayan coverage_percent yine 0 (ARAYUZ-07)",
+      "module": "karadul/reporting/json_report.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_kaynaksiz_sayac_yok",
+      "find": "summary[\"coverage_percent\"] = recon_stats.get(\"coverage_percent\")",
+      "replace": "summary[\"coverage_percent\"] = recon_stats.get(\"coverage_percent\", 0)"
+    },
+    {
+      "id": "p07_html_kapsama_na",
+      "desc": "HTML pano kaynağı olmayan sayaç kutusunu yine basar (Coverage N/A%)",
+      "module": "karadul/reporting/html_report.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_kaynaksiz_sayac_yok",
+      "find": "                if st.get(key) is not None:\n                    stats.append((label, f\"{st[key]}{unit}\"))",
+      "replace": "                if True:\n                    stats.append((label, f\"{st.get(key, 'N/A')}{unit}\"))"
+    },
+    {
+      "id": "p07_md_adim_sifir",
+      "desc": "Markdown 'Steps completed: 0' kaynağı yokken de yazılır",
+      "module": "karadul/reporting/markdown_report.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_kaynaksiz_sayac_yok",
+      "find": "        if stats.get(\"steps_completed\") is not None:\n            lines.append(f\"- **Steps completed:** {stats['steps_completed']}\")",
+      "replace": "        if True:\n            lines.append(f\"- **Steps completed:** {stats.get('steps_completed', 0)}\")"
+    },
+    {
+      "id": "p07_temiz_rapor_guvenlik_yok",
+      "desc": "temiz çıktının raporu güvenlik bölümlerini içermez (ARAYUZ-08 eski hâli)",
+      "module": "karadul/core/report_generator.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_temiz_rapor_guvenlik_bolumleri_durumuyla",
+      "find": "        parts.append(self._security_sections())",
+      "replace": "        parts.append(\"\")"
+    },
+    {
+      "id": "p07_ioc_eski_yol",
+      "desc": "IOC yalnız eski static/ yolundan okunur (B-B6 / ARAYUZ-02)",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_ioc_sema2_temiz_sema1_veri_yok",
+      "find": "    data = _load(workspace, \"reconstructed\", \"signature_matches\")",
+      "replace": "    data = _load(workspace, \"static\", \"signature_matches\")"
+    },
+    {
+      "id": "p07_ioc_sema1_temiz_sayilir",
+      "desc": "family / tier alanı olmayan şema 1 kaydı 'IOC yok' sayılır (veri yok yerine)",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_ioc_sema2_temiz_sema1_veri_yok",
+      "find": "    if not (isinstance(schema, int) and schema >= 2) and not has_fields:",
+      "replace": "    if False:"
+    },
+    {
+      "id": "p07_eski_ok_temiz_sayilir",
+      "desc": "eski adım durumu 'ok' + 0 bulgu 'temiz' sayılır (üç katman düşse de 'ok' yazılıyordu)",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_kismi_ve_hatali_tarama",
+      "find": "        return mapped, reason, mapped is not None",
+      "replace": "        return mapped, reason, True"
+    },
+    {
+      "id": "p07_kismi_tam_sayilir",
+      "desc": "kısmi tarama (kismi) tam tarama gibi gösterilir",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_kismi_ve_hatali_tarama",
+      "find": "    \"kismi\": SECTION_PARTIAL,",
+      "replace": "    \"kismi\": None,"
+    },
+    {
+      "id": "p07_bilesim_fonksiyon_alani",
+      "desc": "bileşim aşaması function_name okur (JSON'da functions listesi): fonksiyon görünmez",
+      "module": "karadul/reporting/sections_render.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_bilesim_alanlari_ve_bekleyen",
+      "find": "funcs = [str(f) for f in (s.get(\"functions\") or [])]",
+      "replace": "funcs = [str(f) for f in (s.get(\"function_name\") or [])]"
+    },
+    {
+      "id": "p07_bekleyen_iddia_olur",
+      "desc": "kanıt kapısında bekleyen şablonlar (K-1) iddia gibi listelenir",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_bilesim_alanlari_ve_bekleyen",
+      "find": "    comps = [c for c in (data.get(\"compositions\") or []) if isinstance(c, dict)]",
+      "replace": "    comps = [c for c in (data.get(\"compositions\") or []) + (data.get(\"pending_compositions\") or []) if isinstance(c, dict)]"
+    },
+    {
+      "id": "p07_capa_k1_etiketi_yok",
+      "desc": "capa (K-1) sonucu 'doğrulanmamış aday' etiketi olmadan, doğrulanmış bulgu gibi yazılır",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_capa_k1_yetenek_adi_iddia_gibi_gosterilmez",
+      "find": "\"function(s). Unverified candidates (decision K-1): capa capabilities are not verified \"",
+      "replace": "\"function(s). capa capabilities \""
+    },
+    {
+      "id": "p07_yerel_ad_temiz",
+      "desc": "etiketli genel ad yokken yerel ad değişikliği 'temiz' (doğrulanmış) sayılır",
+      "module": "karadul/reporting/report_data.py",
+      "test": "tests/test_p07_rapor_sozlesme.py::test_ad_guvenilirligi_yerel_ad_dogrulanmamis",
+      "find": "    if unverified or renamed:",
+      "replace": "    if unverified:"
+    },
+    {
+      "id": "p07_bb7_tanitim_geri",
+      "desc": "B-B7: doğrulanmamış 'NSA-grade' tanıtım cümlesi geri gelir",
+      "module": "karadul/core/report_generator.py",
+      "test": "tests/test_p07_bb7.py::test_dogrulanmamis_tanitim_cumlesi_yok",
+      "find": "                \"name\": \"Identifier Renaming\",",
+      "replace": "                \"name\": \"Context-Aware Renaming (NSA-grade)\","
+    },
+    {
+      "id": "p07_imza_bos_parantez",
+      "desc": "çok kitaplıklı adda yine 'signature_db ()' basılır",
+      "module": "karadul/core/report_generator.py",
+      "test": "tests/test_p07_bb7.py::test_cok_kitaplikli_ad_bos_parantez_basmaz",
+      "find": "            return f\"signature_db (one of: {shown})\"",
+      "replace": "            return \"signature_db ()\""
+    },
+    {
+      "id": "p07_bolum_ozeti_uretecide_farkli",
+      "desc": "Markdown bölüm etiketi JSON'daki durumdan farklı (dört üretici aynı şeyi söylemez)",
+      "module": "karadul/reporting/sections_render.py",
+      "test": "tests/test_p07_sarif.py::test_dort_uretici_ayni_durum",
+      "find": "    lines = [heading, \"\", f\"- **Status:** {status_label(sec.status)} — {sec.summary}\"]",
+      "replace": "    lines = [heading, \"\", f\"- **Status:** {sec.summary}\"]"
+    }
+  ]
+}
