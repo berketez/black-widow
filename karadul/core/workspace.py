@@ -54,6 +54,9 @@ class Workspace:
         self._base_dir = Path(base_dir).resolve()
         self._target_name = self._sanitize_name(target_name)
         self._timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
+        # Açıkça verilen dizin olduğu gibi kullanılır (alt workspace, ölçüm araçları);
+        # zaman damgalı dizin ``create()``'te atomik olarak sahiplenilir (BORU-09).
+        self._explicit_dir = workspace_dir is not None
         if workspace_dir is not None:
             self._workspace_dir = Path(workspace_dir).resolve()
         else:
@@ -75,13 +78,28 @@ class Workspace:
     def create(self) -> Path:
         """Workspace dizinini ve tum alt dizinleri olustur.
 
+        P14 / BORU-09: zaman damgası saniye çözünürlüklü ve hedef adı yalnız dosya
+        kökü (``a/main.js`` ile ``b/main.js`` ikisi ``main``). Eskiden dizin
+        ``mkdir(exist_ok=True)`` ile kuruluyordu: aynı adlı iki hedef aynı saniyede
+        başlarsa (``batch``'in üç işçisi, arayüzden ardışık iki analiz) ikisi TEK
+        dizini paylaşıyor, birbirinin ``static/`` / ``reconstructed/`` / ``reports/``
+        dosyalarını sessizce eziyordu. Artık dizin ``mkdir`` (exist_ok yok) ile
+        atomik sahiplenilir; doluysa ``<zaman>_2``, ``_3`` … Her ``create()``
+        çağrısı (yeni nesnede) başka hiçbir koşunun kullanmadığı bir dizin verir.
+        ``path`` bu yüzden ancak ``create()``'ten sonra kesindir.
+
         Returns:
             Olusturulan workspace dizin yolu.
         """
         if self._created:
             return self._workspace_dir
 
-        self._workspace_dir.mkdir(parents=True, exist_ok=True)
+        if self._explicit_dir:
+            self._workspace_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            self._workspace_dir = self._claim_unique_dir(
+                self._base_dir / self._target_name, self._timestamp,
+            )
 
         for stage_dir in _STAGE_DIRS:
             (self._workspace_dir / stage_dir).mkdir(exist_ok=True)
@@ -89,6 +107,20 @@ class Workspace:
         self._created = True
         logger.info("Workspace olusturuldu: %s", self._workspace_dir)
         return self._workspace_dir
+
+    @staticmethod
+    def _claim_unique_dir(parent: Path, stem: str) -> Path:
+        """``parent/stem`` dizinini atomik oluştur; varsa ``stem_2``, ``stem_3`` …"""
+        parent.mkdir(parents=True, exist_ok=True)
+        candidate = stem
+        suffix = 1
+        while True:
+            try:
+                (parent / candidate).mkdir()
+                return parent / candidate
+            except FileExistsError:
+                suffix += 1
+                candidate = f"{stem}_{suffix}"
 
     def create_sub_workspace(self, name: str) -> Workspace:
         """Bu workspace'in altında izole bir alt-workspace oluştur.
@@ -109,17 +141,9 @@ class Workspace:
         parent.mkdir(parents=True, exist_ok=True)
         # "." / ".." gibi adlar üst dizine taşmasın.
         safe = self._sanitize_name(name).strip(".") or "unnamed"
-        candidate = safe
-        suffix = 1
-        while True:
-            try:
-                (parent / candidate).mkdir()
-                break
-            except FileExistsError:
-                suffix += 1
-                candidate = f"{safe}_{suffix}"
+        sub_dir = self._claim_unique_dir(parent, safe)
         sub = Workspace(
-            self._base_dir, candidate, workspace_dir=parent / candidate,
+            self._base_dir, sub_dir.name, workspace_dir=sub_dir,
         )
         sub.create()
         return sub

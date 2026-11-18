@@ -40,6 +40,22 @@
       "test": "tests/test_p14_tekrar.py::TestRunnerUniformError::test_parallel_level_error_same_type",
       "find": "            raise StepFailedError(\n                first_name, first_exc,\n",
       "replace": "            raise RuntimeError(\n"
+    },
+    {
+      "id": "p14_09_exist_ok_geri",
+      "desc": "BORU-09: zaman damgalı dizin yine exist_ok ile kurulur (aynı saniyede aynı dizin)",
+      "module": "karadul/core/workspace.py",
+      "test": "tests/test_p14_workspace.py::TestUniqueWorkspace::test_same_name_same_second_distinct_dirs",
+      "find": "                (parent / candidate).mkdir()\n                return parent / candidate",
+      "replace": "                (parent / candidate).mkdir(exist_ok=True)\n                return parent / candidate"
+    },
+    {
+      "id": "p14_09_ek_artmiyor",
+      "desc": "BORU-09: çakışmada ek artmıyor (ikinci adayda exist_ok); üçüncü koşu ikinciyle aynı dizin",
+      "module": "karadul/core/workspace.py",
+      "test": "tests/test_p14_workspace.py::TestUniqueWorkspace::test_third_gets_suffix_3",
+      "find": "                suffix += 1\n                candidate = f\"{stem}_{suffix}\"",
+      "replace": "                (parent / f\"{stem}_2\").mkdir(exist_ok=True)\n                return parent / f\"{stem}_2\""
     }
   ]
 }
