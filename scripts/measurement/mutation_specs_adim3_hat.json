@@ -366,8 +366,8 @@
    "desc": "kesin_anchors Faz 1 adım listesine eklenmez",
    "module": "karadul/stages.py",
    "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_step_list_has_kesin_anchors_after_ghidra_metadata",
-   "find": "                    \"kesin_anchors\",\n",
-   "replace": "                    # mutant: adım yok\n"
+   "find": "                \"kesin_anchors\",\n",
+   "replace": "                # mutant: adım yok\n"
   },
   {
    "id": "stages_kunye_tohuma_eklenmez",
@@ -382,24 +382,24 @@
    "desc": "Faz 2 öncesi tohum çağrısına bağlama verilmez (KS-1 adları c_namer'dan önce yazılmaz)",
    "module": "karadul/stages.py",
    "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_meta_reaches_phase2_seed",
-   "find": "                    kesin=_ks1_binding, meta=_pre_name_meta,\n",
-   "replace": "                    kesin=None, meta=_pre_name_meta,\n"
+   "find": "                kesin=_ks1_binding, meta=_pre_name_meta,\n",
+   "replace": "                kesin=None, meta=_pre_name_meta,\n"
   },
   {
    "id": "stages_kunye_tohum_cagrisina_verilmez",
    "desc": "Faz 2 öncesi tohum çağrısına künye verilmez (boş künye tohuma girer, KS-1 uygulanmaz)",
    "module": "karadul/stages.py",
    "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_meta_reaches_phase2_seed",
-   "find": "                    kesin=_ks1_binding, meta=_pre_name_meta,\n",
-   "replace": "                    kesin=_ks1_binding, meta=None,\n"
+   "find": "                kesin=_ks1_binding, meta=_pre_name_meta,\n",
+   "replace": "                kesin=_ks1_binding, meta=None,\n"
   },
   {
    "id": "stages_kapaliyken_kunye_uretilir",
    "desc": "adım kapalıyken de künye sözlüğü kurulur ve tohuma girer (bayrak kapalıyken ön ad sırası değişirdi)",
    "module": "karadul/stages.py",
    "test": "tests/test_main_gnulib_seed_ordering.py::TestExecuteBinaryKs1Wiring::test_without_ks1_today_behaviour",
-   "find": "            _ks1_binding, _pre_name_meta = _ks1_seed_inputs(_a.get(\"kesin_anchors\"))\n",
-   "replace": "            _ks1_binding, _pre_name_meta = _ks1_seed_inputs(_a.get(\"kesin_anchors\"))[0], {}\n"
+   "find": "        _ks1_binding, _pre_name_meta = _ks1_seed_inputs(_a.get(\"kesin_anchors\"))\n",
+   "replace": "        _ks1_binding, _pre_name_meta = _ks1_seed_inputs(_a.get(\"kesin_anchors\"))[0], {}\n"
   }
  ]
 }

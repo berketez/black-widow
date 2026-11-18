@@ -222,8 +222,8 @@
       "desc": "BORU-05: stages.py başarıyı yine 'en az bir yapıt var mı'dan hesaplar",
       "module": "karadul/stages.py",
       "test": "tests/test_ps1_basari.py::TestExecuteBinary::test_failed_project_build_is_stage_failure",
-      "find": "            _finalize_binary_outcome(_stage_result, naming_result, context.config)",
-      "replace": "            _stage_result.success = len(_stage_result.artifacts) > 0  # eski"
+      "find": "        _finalize_binary_outcome(_stage_result, naming_result, context.config)",
+      "replace": "        _stage_result.success = len(_stage_result.artifacts) > 0  # eski"
     },
     {
       "id": "basari_yapit_sayisi_finalize",
