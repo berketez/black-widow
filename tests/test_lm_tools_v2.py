@@ -286,3 +286,105 @@ def test_yol_tavani_kirpmayi_soyler(gws):
     assert d["length"] == 2 and d["paths_total"] == 5 and len(d["paths"]) == T.PATH_MAX_PATHS == 3
     assert [p[1] for p in d["paths"]] == [fun(X(40)), fun(X(41)), fun(X(42))]
     assert r.truncated == {"omitted": 2, "total": 5}
+
+
+# --------------------------------------------------------------------------------------------
+# (d) R1 find_refs + ters dizin
+
+def refs(ws, target, value, **kw) -> T.ToolResult:
+    return call(ws, "find_refs", {"target": target, "value": value, **kw})
+
+
+def test_refs_ithal_ve_evidence_ile_ayni(ws):
+    r = refs(ws, "import", "malloc")
+    assert r.ok and r.kind == "olgu" and r.data["value"] == "malloc" and r.data["total"] == 1
+    assert r.data["items"] == [{"addr": fun(A), "name_tag": "[unverified: run_main]", "calls": 1}]
+    # Mach-O yazımı (baştaki alt çizgiler) aynı ada iner; get_evidence.apis ile aynı kural.
+    assert refs(ws, "import", "__malloc").data["items"] == r.data["items"]
+    assert set(touched_refs(r.envelope())) == {fun(A)}
+    for name in ("malloc", "signal"):
+        beklenen = {fun(a) for a, p in ws.packs.items() if name in p.apis}
+        assert {i["addr"] for i in refs(ws, "import", name).data["items"]} == beklenen
+    # İkilinin ithal etmediği ad: uydurma liste değil, geçersiz çağrı.
+    for yok in ("free", "mallo", "MALLOC", "FUN_00001000", "_"):
+        assert refs(ws, "import", yok).error == "bilinmeyen_ad"
+    assert "bilinmeyen_ad" in T.INVALID_CALL_ERRORS
+
+
+def test_refs_ithal_cagri_sayisi(tmp_path):
+    """Ghidra'nın çağrı listesinde aynı ithal iki kez; ayrıca adı farklı ama adresi thunk olan bir çağrı
+    (get_evidence bunu ``PTR_write`` adıyla ``apis``'e yazar: find_refs aynı adı tanımalı)."""
+    root = build_ws(tmp_path / "w", {X(1): {"calls": []}, X(2): {"calls": []}}, imports={X(9): "_write"})
+    xp = root / "static" / "ghidra_xrefs.json"
+    x = json.loads(xp.read_text())
+    x["function_xrefs"][X(1)]["functions_called"] = [{"name": "_write", "address": X(9)}] * 2
+    x["function_xrefs"][X(2)]["functions_called"] = [{"name": "PTR_write", "address": X(9)}]
+    xp.write_text(json.dumps(x), encoding="utf-8")
+    ws = T.Workspace(root)
+    assert refs(ws, "import", "write").data["items"] == [{"addr": fun(X(1)), "name_tag": None, "calls": 2}]
+    assert ws.packs[X(1)].api_counts == {"write": 2}
+    assert ws.packs[X(2)].apis == ["PTR_write"]
+    assert refs(ws, "import", "PTR_write").data["items"] == [{"addr": fun(X(2)), "name_tag": None, "calls": 1}]
+
+
+def test_refs_ithal_cagirani_yoksa_bos_liste(tmp_path):
+    root = build_ws(tmp_path / "w", {X(1): {"calls": []}}, imports={X(9): "_unused_import"})
+    r = refs(T.Workspace(root), "import", "unused_import")
+    assert r.ok and r.data["items"] == [] and r.data["total"] == 0 and r.truncated is None
+
+
+def test_refs_dizgi_duz_alt_dizgi_harf_duyarli(ws):
+    r = refs(ws, "string", "usage")
+    assert r.ok and [i["addr"] for i in r.data["items"]] == [fun(A)]
+    assert r.data["items"][0]["matches"] == ["usage: %s <file>"] and r.data["items"][0]["matches_total"] == 1
+    assert refs(ws, "string", "USAGE").data["total"] == 0
+    assert [i["addr"] for i in refs(ws, "string", 'd "q').data["items"]] == [fun(A)]
+    # Düzenli ifade değil: özel karakterler harfiyen aranır; felaket geri izleme deseni anında 0 döner.
+    assert refs(ws, "string", "(a+)+$").data["total"] == 0
+    assert refs(ws, "string", "%s <").data["total"] == 1
+    hub = refs(ws, "string", "dizgi").data["items"]
+    assert [i["addr"] for i in hub] == [fun(HUB)] and hub[0]["matches_total"] == 50
+    assert len(hub[0]["matches"]) == T.FIND_REFS_MATCHES_PER_ROW
+    assert hub[0]["matches"][0] == "dizgi 0 " + "x" * 112 + "…[+18]"   # 138 karakter → 120 + kırpma eki
+    for kisa in ("us", "", "x" * 65):
+        assert refs(ws, "string", kisa).error == "gecersiz_arguman"
+    assert refs(ws, "string", "x" * 129).error == "gecersiz_arguman"   # şema tavanı
+
+
+def test_refs_sayfalama(tmp_path):
+    funcs = {X(i): {"calls": [], "strings": [f"ortak dizgi {i}"]} for i in range(40)}
+    ws = T.Workspace(build_ws(tmp_path / "s", funcs))
+    r = refs(ws, "string", "ortak dizgi")
+    assert r.data["total"] == 40 and len(r.data["items"]) == T.FIND_REFS_MAX_ROWS == 30
+    assert r.truncated == {"omitted": 10, "total": 40}
+    r2 = refs(ws, "string", "ortak dizgi", offset=30)
+    assert [i["addr"] for i in r2.data["items"]] == [fun(X(i)) for i in range(30, 40)] and r2.data["offset"] == 30
+    assert r.size_bytes() <= T.FIND_REFS_RESULT_MAX_BYTES
+
+
+def test_refs_ters_dizin_bir_kez_kurulur_bayatligi_denetlenir(root):
+    ws = T.Workspace(root)
+    for _ in range(3):
+        assert refs(ws, "import", "malloc").data["total"] == 1
+        assert refs(ws, "string", "usage").data["total"] == 1
+    assert ws._cache["reverse_index_builds"] == 1
+    # ghidra_xrefs.json değişti (yeni bir malloc çağıranı): dizin yeniden kurulur, yeni veri görünür.
+    xp = root / "static" / "ghidra_xrefs.json"
+    x = json.loads(xp.read_text())
+    x["function_xrefs"][B]["functions_called"].append({"name": "malloc", "address": MALLOC})
+    xp.write_text(json.dumps(x), encoding="utf-8")
+    assert [i["addr"] for i in refs(ws, "import", "malloc").data["items"]] == [fun(A), fun(B)]
+    assert ws._cache["reverse_index_builds"] == 2
+    # ghidra_functions.json değişti: çalışma alanının adres tablosu bayat; dizin kurulmaz.
+    fp = root / "static" / "ghidra_functions.json"
+    fp.write_text(fp.read_text() + " ", encoding="utf-8")
+    assert refs(ws, "import", "malloc").error == "veri_bayat"
+    assert T.Workspace(root).reverse_index() is not None   # yeni oturum yeniden açar
+    xp.unlink()
+    assert refs(T.Workspace(root), "import", "malloc").error == "veri_yok"
+
+
+def test_refs_korluk(ws):
+    r = refs(ws, "import", "malloc", )
+    kor = call(ws, "find_refs", {"target": "import", "value": "malloc"}, blind_target=A)
+    assert r.data["items"][0]["name_tag"] == "[unverified: run_main]" and kor.data["items"][0]["name_tag"] is None

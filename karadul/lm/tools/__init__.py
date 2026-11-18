@@ -302,6 +302,11 @@ class Workspace:
             self._cache[key] = build()
         return self._cache[key]
 
+    def reverse_index(self) -> Any:
+        """R1'in ters dizini (``index.reverse_index``: bir kez kurulur, her sorguda bayatlığı denetlenir)."""
+        from karadul.lm.tools.index import reverse_index
+        return reverse_index(self)
+
     # --- decompile metni ----------------------------------------------------------------------
 
     @property
