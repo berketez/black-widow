@@ -156,7 +156,7 @@ def _suppress_console():
     """Pipeline'in global console'unu sessiz Console ile degistir.
 
     Pipeline modulleri modul seviyesinde `console = Console()` olusturuyor.
-    Hacker CLI kendi formatini kullanacagi icin pipeline ciktisini bastiririz.
+    Hacker CLI kendi formatini kullanacagi için pipeline ciktisini bastiririz.
     """
     quiet = Console(file=io.StringIO(), quiet=True)
     # Pipeline modulu
@@ -164,7 +164,7 @@ def _suppress_console():
         import karadul.core.pipeline as pipeline_mod
         pipeline_mod.console = quiet
     except Exception:
-        logger.debug("Pipeline console susturma basarisiz, atlaniyor", exc_info=True)
+        logger.debug("Pipeline console susturma basarisiz, atlanıyor", exc_info=True)
 
 
 def _restore_console():
@@ -173,19 +173,19 @@ def _restore_console():
         import karadul.core.pipeline as pipeline_mod
         pipeline_mod.console = Console()
     except Exception:
-        logger.debug("Pipeline console geri yukleme basarisiz, atlaniyor", exc_info=True)
+        logger.debug("Pipeline console geri yükleme basarisiz, atlanıyor", exc_info=True)
     # Terminal cooked mode'a geri dondur (Rich.Live raw mode'da birakabiliyor)
     try:
         import termios, tty
         fd = sys.stdin.fileno()
         termios.tcsetattr(fd, termios.TCSANOW, termios.tcgetattr(fd))
     except Exception:
-        logger.debug("Terminal mode restore basarisiz, atlaniyor", exc_info=True)
+        logger.debug("Terminal mode restore basarisiz, atlanıyor", exc_info=True)
     # stty sane fallback
     try:
         os.system("stty sane 2>/dev/null")
     except Exception:
-        logger.debug("stty sane fallback basarisiz, atlaniyor", exc_info=True)
+        logger.debug("stty sane fallback basarisiz, atlanıyor", exc_info=True)
 
 
 # ---------------------------------------------------------------
@@ -207,7 +207,7 @@ def show_banner() -> None:
 # Target Info Box
 # ---------------------------------------------------------------
 def _show_target_box(info) -> None:
-    """Target bilgilerini hacker-style panel icinde goster."""
+    """Target bilgilerini hacker-style panel icinde göster."""
     # Arch bilgisi varsa goster
     arch = info.metadata.get("arch", "")
     arch_line = f"\n[stat.key]Arch:[/]     {arch}" if arch else ""
@@ -233,7 +233,7 @@ def _show_target_box(info) -> None:
 # Stage ciktisi -- her stage icin hacker-style log satirlari
 # ---------------------------------------------------------------
 def _show_stage_result(stage_name: str, stage_result, ts: str) -> None:
-    """Tek bir stage sonucunu hacker-style log satirlari olarak goster."""
+    """Tek bir stage sonucunu hacker-style log satırları olarak göster."""
     status = "[bright_green]OK[/]" if stage_result.success else "[bright_red]FAIL[/]"
     duration = f"({stage_result.duration_seconds:.1f}s)"
 
@@ -351,9 +351,9 @@ def _show_stage_result(stage_name: str, stage_result, ts: str) -> None:
 # Intelligence ALERT'leri
 # ---------------------------------------------------------------
 def _show_intelligence_alerts(result, ts: str) -> None:
-    """Intelligence raporundaki guvenlik ve algoritma uyarilarini goster.
+    """Intelligence raporundaki güvenlik ve algoritma uyarilarini göster.
 
-    workspace/static/intelligence_report.json dosyasini okur.
+    workspace/static/intelligence_report.json dosyasını okur.
     """
     ws_path = result.workspace_path
     intel_candidates = [
@@ -368,7 +368,7 @@ def _show_intelligence_alerts(result, ts: str) -> None:
                 intel_data = json.loads(candidate.read_text())
                 break
             except Exception:
-                logger.debug("JSON parse basarisiz, atlaniyor", exc_info=True)
+                logger.debug("JSON parse basarisiz, atlanıyor", exc_info=True)
                 continue
 
     if not isinstance(intel_data, dict) or not intel_data:
@@ -435,7 +435,7 @@ def _show_intelligence_alerts(result, ts: str) -> None:
 # Final summary box
 # ---------------------------------------------------------------
 def _show_summary(result) -> None:
-    """Analiz tamamlandiktan sonra ozet kutusu goster."""
+    """Analiz tamamlandiktan sonra ozet kutusu göster."""
     total_funcs = 0
     total_strings = 0
     total_modules = 0
@@ -772,7 +772,7 @@ def _build_live_panel(state: LiveAnalysisState) -> Panel:
 
 
 def _format_duration(seconds: float) -> str:
-    """Sureyi okunabilir formatta goster."""
+    """Süreyi okunabilir formatta göster."""
     if seconds < 60:
         return f"{seconds:.0f}s"
     minutes = int(seconds // 60)
@@ -781,7 +781,7 @@ def _format_duration(seconds: float) -> str:
 
 
 def _stage_one_liner(stage_name: str, stats: dict[str, Any]) -> str:
-    """Tamamlanan stage icin tek satirlik ozet."""
+    """Tamamlanan stage için tek satırlık ozet."""
     if stage_name == "identify":
         t = stats.get("target_type", "")
         l = stats.get("language", "")
@@ -821,7 +821,7 @@ _ALL_STAGES_ORDERED = ["identify", "static", "dynamic", "deobfuscate", "reconstr
 def _build_dashboard(state: LiveAnalysisState) -> Panel:
     """3-panelli canli dashboard olustur.
 
-    Panel 1 (ust): Header + pipeline ilerleme + stage listesi
+    Panel 1 (üst): Header + pipeline ilerleme + stage listesi
     Panel 2 (orta): Aktif stage detaylari + sub-progress
     Panel 3 (alt): Akan log stream
     """
@@ -986,7 +986,7 @@ def _build_dashboard(state: LiveAnalysisState) -> Panel:
 
 
 def _format_stage_stats(stage_name: str, stats: dict[str, Any]) -> list[str]:
-    """Tamamlanan stage icin istatistik satirlari uret."""
+    """Tamamlanan stage için istatistik satırları üret."""
     lines: list[str] = []
 
     if stage_name == "identify":
@@ -1072,7 +1072,7 @@ class _LiveDashboard:
 # Ana analiz fonksiyonu -- pipeline'i calıstir, hacker cikti goster
 # ---------------------------------------------------------------
 def analyze_with_live_output(target_path: str) -> None:
-    """Gercek zamanli hacker-style cikti ile analiz.
+    """Gercek zamanli hacker-style çıktı ile analiz.
 
     Rich Live display kullanarak pipeline calisirken canli progress gosterir.
     Pipeline callback mekanizmasi ile her stage basinda/sonunda UI guncellenir.
@@ -1193,7 +1193,7 @@ def analyze_with_live_output(target_path: str) -> None:
             except KeyboardInterrupt:
                 state.is_running = False
                 console.print(
-                    "\n  [yellow]!! Pipeline kullanici tarafindan durduruldu (Ctrl+C)[/]\n"
+                    "\n  [yellow]!! Pipeline kullanıcı tarafından durduruldu (Ctrl+C)[/]\n"
                 )
                 _restore_console()
                 return
@@ -1232,7 +1232,7 @@ def analyze_with_live_output(target_path: str) -> None:
 def run_interactive() -> None:
     """Interaktif hacker CLI dongusu.
 
-    Logo goster, hedef sor, analiz et, tekrarla.
+    Logo göster, hedef sor, analiz et, tekrarla.
     """
     show_banner()
 

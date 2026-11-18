@@ -474,7 +474,7 @@ class TestCliDiffCommand:
         runner = CliRunner()
         result = runner.invoke(main, ["diff", "--help"])
         assert result.exit_code == 0
-        assert "Iki binary arasindaki farklari goster" in result.output
+        assert "İki binary arasındaki farkları göster" in result.output
 
     def test_diff_json_mode_flag(self) -> None:
         """--json-mode flag'i help'te gorunmeli."""

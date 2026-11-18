@@ -736,7 +736,7 @@ class TestBSimCLI:
         # P16b (GHIDRA-12 a): JVM'siz süreçte lite dizinde "oluşturuldu" denmez;
         # analizin kullandığı native deponun yeri söylenir, çıkış kodu 2.
         assert result.exit_code == 2
-        assert "olusturuldu" not in result.output
+        assert "oluşturuldu" not in result.output
         assert "kurulamaz" in result.output
         assert str(tmp_path / "bsim") in result.output.replace("\n", "")
         assert not (tmp_path / "bsim" / "bsim_lite_index.json").exists()

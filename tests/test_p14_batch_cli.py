@@ -63,8 +63,8 @@ def test_failed_target_not_shown_as_success(tmp_path, monkeypatch) -> None:
                _r("poe", "kismi", partial_reasons={"reconstruct": ["Semantic naming hatasi"]})]
     res, report = _invoke(tmp_path, monkeypatch, results)
     out = res.output
-    assert "discord: BASARISIZ" in out
-    assert "poe: KISMI" in out
+    assert "discord: BAŞARISIZ" in out
+    assert "poe: KISMİ" in out
     assert "BASARILI" not in out
     assert "Ghidra dustu" in out          # neden stderr'de (CliRunner birleştirir)
     assert (report["complete"], report["partial"], report["failed"]) == (0, 1, 1)

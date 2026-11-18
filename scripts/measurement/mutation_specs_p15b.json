@@ -160,6 +160,22 @@
       "test": "tests/test_p15b_kismi_cikis.py::test_multi_binary_runner_kismi_ayri",
       "find": "result.success = proc.returncode in (EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL)",
       "replace": "result.success = proc.returncode == EXIT_ANALYSIS_OK"
+    },
+    {
+      "id": "k6_yardim_metni",
+      "desc": "batch yardım metni yeniden ASCII'ye kaçıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15b_cli_metin.py",
+      "find": "\"\"\"Toplu analiz komutları.\"\"\"",
+      "replace": "\"\"\"Toplu analiz komutlari (eski metin).\"\"\""
+    },
+    {
+      "id": "k6_durum_etiketi",
+      "desc": "batch durum etiketi yeniden BASARISIZ",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p14_batch_cli.py::test_failed_target_not_shown_as_success",
+      "find": "OUTCOME_FAILED: (\"red\", \"BAŞARISIZ\", \"FAIL\"),",
+      "replace": "OUTCOME_FAILED: (\"red\", \"BASARISIZ!\", \"FAIL\"),"
     }
   ]
 }

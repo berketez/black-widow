@@ -2,11 +2,11 @@
 Black Widow (Karadul) CLI -- Click-based komut satiri arayuzu.
 
 Komutlar:
-    karadul info <target>       Hedef dosya/dizin bilgilerini goster
-    karadul analyze <target>    Tam analiz pipeline calistir
-    karadul list                Analiz edilmis hedefleri listele
+    karadul info <target>       Hedef dosya/dizin bilgilerini göster
+    karadul analyze <target>    Tam analiz pipeline çalıştır
+    karadul list                Analiz edilmiş hedefleri listele
     karadul clean <target>      Workspace temizle
-    karadul run <target>        Reconstructed projeyi calistir
+    karadul run <target>        Reconstructed projeyi çalıştır
     karadul version             Versiyon bilgisi
 """
 
@@ -71,7 +71,7 @@ STAGE_LABELS: dict[str, str] = {
 def _stage_status(result: Any) -> str:
     """Asama sonucunu uc durumdan birine indir: ``OK`` / ``SKIP`` / ``FAIL``.
 
-    Oncelik `StageResult.summary()` ile ayni: skipped once gelir. Atlanan
+    Öncelik `StageResult.summary()` ile aynı: skipped once gelir. Atlanan
     asama `success=False` tasir (sozlesme: stages.py `_skipped`), ama bir HATA
     degildir; yalniz `success`'e bakmak onu FAIL diye gosteriyordu.
     """
@@ -104,7 +104,7 @@ def _log_stage_complete(inner: Callable[[str, Any, int, int], None]) -> Callable
     Neden: `rich.progress` yalnizca TTY'ye cizer ve `transient=True` ile iz
     birakmaz. Analiz bir alt-surec olarak kosarken (Black Widow .app ->
     ui/server.py -> `karadul analyze ... --verbose > analyze.log`) ilerleme
-    log dosyasina hic dusmuyordu; UI de asamalari log'dan okudugu icin canli
+    log dosyasina hic dusmuyordu; UI de asamalari log'dan okudugu için canli
     ilerleme hep ilk asamada takili gorunuyordu. Bu satir makine-okunur ve
     sabit (ui/server.py `_STAGE_LINE_RE` bunu ayristirir):
 
@@ -129,11 +129,11 @@ def _log_stage_complete(inner: Callable[[str, Any, int, int], None]) -> Callable
 
 def _is_noninteractive() -> bool:
     """
-    CI / non-TTY ortaminda interaktif prompt gostermemek icin guard.
+    CI / non-TTY ortaminda interaktif prompt gostermemek için guard.
 
     v1.10.0 Batch 3D HIGH fix: click.prompt() / click.confirm() CI'da
     (stdin TTY degil) EOFError veya hang yaratiyordu. Bu helper ile
-    tum interaktif sorular "safe default"a dusuruluyor.
+    tüm interaktif sorular "safe default"a dusuruluyor.
     """
     try:
         if not sys.stdin.isatty():
@@ -149,7 +149,7 @@ def _is_noninteractive() -> bool:
 
 
 def _load_config(config_path: Optional[str]) -> Config:
-    """Config dosyasini yukle. Basarisizsa varsayilan don.
+    """Config dosyasını yukle. Basarisizsa varsayılan don.
 
     P-GÜV / GHIDRA-07: bool alanda anlaşılmayan değer (ör. ``"kapalı"``)
     ``ConfigValueError`` verir; yığın izi yerine düzgün hata ve çıkış 2.
@@ -186,11 +186,11 @@ def _print_config_problems(exc: Exception) -> None:
 def _graceful_interrupt(func):
     """Click komutlarini KeyboardInterrupt'a karsi sarmalayan dekorator.
 
-    - Yarim yazilan workspace (pipeline tamamlanmadan olusmus) temizlenir.
-    - Kullaniciya sade bir mesaj gosterilir, traceback basilmaz.
+    - Yarım yazilan workspace (pipeline tamamlanmadan olusmus) temizlenir.
+    - Kullaniciya sade bir mesaj gösterilir, traceback basilmaz.
     - Exit kodu: @pass_context'li komutlar ctx.abort() ile Click'in standart
       "Aborted!" cikisini (kod 1) verir; ctx'siz komutlar dogrudan sys.exit(130)
-      (SIGINT konvansiyonu) ile cikar. (Iki yol da temiz, non-zero cikis.)
+      (SIGINT konvansiyonu) ile çıkar. (İki yol da temiz, non-zero cikis.)
 
     Kullanim::
 
@@ -214,8 +214,8 @@ def _graceful_interrupt(func):
             return func(*args, **kwargs)
         except KeyboardInterrupt:
             err_console.print(
-                "\n[yellow]Kullanici tarafindan iptal edildi (Ctrl+C). "
-                "Yarim kalan workspace temizleniyor...[/yellow]"
+                "\n[yellow]Kullanıcı tarafından iptal edildi (Ctrl+C). "
+                "Yarım kalan workspace temizleniyor...[/yellow]"
             )
             # Yarim workspace temizligi: ctx.obj icinde 'pending_workspace'
             # varsa sil. Pipeline/komutlar bunu set edebilir.
@@ -230,7 +230,7 @@ def _graceful_interrupt(func):
                                 f"[dim]  Silindi: {pending_path}[/dim]"
                             )
             except Exception as exc:  # pragma: no cover - best-effort temizlik
-                logger.debug("Ctrl+C temizligi basarisiz: %s", exc)
+                logger.debug("Ctrl+C temizliği basarisiz: %s", exc)
 
             if ctx is not None:
                 ctx.abort()
@@ -247,13 +247,13 @@ _format_size = format_size
 
 
 def _print_target_info(info: TargetInfo) -> None:
-    """TargetInfo'yu Rich Table olarak yazdir."""
+    """TargetInfo'yu Rich Table olarak yazdır."""
     table = Table(title="Hedef Bilgileri", show_header=False, border_style="cyan")
     table.add_column("Alan", style="bold")
-    table.add_column("Deger")
+    table.add_column("Değer")
 
     table.add_row("Dosya", str(info.path))
-    table.add_row("Tur", info.target_type.value if isinstance(info.target_type, TargetType) else str(info.target_type))
+    table.add_row("Tür", info.target_type.value if isinstance(info.target_type, TargetType) else str(info.target_type))
     table.add_row("Dil", info.language.value if isinstance(info.language, Language) else str(info.language))
     table.add_row("Boyut", format_size(info.file_size))
     table.add_row("SHA-256", info.file_hash or "N/A")
@@ -266,7 +266,7 @@ def _print_target_info(info: TargetInfo) -> None:
 
 
 def _print_banner() -> None:
-    """Black Widow banner'ini yazdir."""
+    """Black Widow banner'ini yazdır."""
     banner = Text()
     banner.append("BLACK WIDOW", style="bold red")
     banner.append(f" v{__version__}", style="bold white")
@@ -358,11 +358,11 @@ def _print_analysis_outcome(outcome: dict) -> None:
 
 
 def _emit_analyze_json(target_info: TargetInfo, result, cfg: Config) -> None:
-    """P3: `analyze --json` icin makine-okunur sonuc payload'ini stdout'a yaz.
+    """P3: `analyze --json` için makine-okunur sonuç payload'ini stdout'a yaz.
 
     F1 gibi *olcum* metrikleri BURADA URETILMEZ (dogruluk skoru `score` /
     `benchmark` komutlarinin isi; analyze onlari hesaplamaz). Payload yalnizca
-    pipeline'in gercekten urettigi sayilari (fonksiyon/string sayilari, naming/
+    pipeline'in gercekten urettigi sayıları (fonksiyon/string sayıları, naming/
     reconstruct istatistikleri, stage sureleri) tasir -- uydurma yok.
     """
     import json as _json
@@ -485,7 +485,7 @@ def _write_clean_output(
     if fmt_result.success:
         if not quiet:
             out.print(
-                f"  [green]OK[/green] {fmt_result.files_written} dosya yazildi"
+                f"  [green]OK[/green] {fmt_result.files_written} dosya yazıldı"
                 f" ({fmt_result.src_files} kaynak, {fmt_result.reports_generated} rapor)"
             )
     else:
@@ -505,7 +505,7 @@ def _write_clean_output(
 def _get_active_stages(
     stop_after: Optional[str], skip_dynamic: bool,
 ) -> list[str]:
-    """Calistirilacak stage listesini dondur.
+    """Çalıştırılacak stage listesini dondur.
 
     DEPRECATED (B17): `karadul.cli_common.filter_stages` kullanin.
     """
@@ -515,8 +515,8 @@ def _get_active_stages(
 def _get_available_stages(requested: list[str]) -> list:
     """Istenen stage'lerin somut sinif instance'larini dondur.
 
-    DEPRECATED (B17): Pipeline kurmak icin `cli_common.build_pipeline`
-    tercih edin. Sadece geriye uyum icin korundu.
+    DEPRECATED (B17): Pipeline kurmak için `cli_common.build_pipeline`
+    tercih edin. Sadece geriye uyum için korundu.
     """
     from karadul.cli_common import _resolve_stage_classes
     return _resolve_stage_classes(requested)
@@ -533,9 +533,9 @@ def _get_available_stages(requested: list[str]) -> list:
     context_settings=dict(auto_envvar_prefix="KARADUL"),
 )
 @click.version_option(version=__version__, prog_name="karadul")
-@click.option("--verbose", is_flag=True, help="Debug log seviyesini ac.")
+@click.option("--verbose", is_flag=True, help="Debug log seviyesini aç.")
 @click.option("--quiet", "-q", is_flag=True,
-              help="Sessiz mod: banner/ara ciktilar bastirilir, sadece final sonuc gosterilir.")
+              help="Sessiz mod: banner/ara çıktılar bastırılır, sadece final sonuç gösterilir.")
 @click.pass_context
 def main(ctx: click.Context, verbose: bool, quiet: bool) -> None:
     """Black Widow (Karadul) -- Reverse Engineering Suite"""
@@ -594,7 +594,7 @@ def main(ctx: click.Context, verbose: bool, quiet: bool) -> None:
 # ---------------------------------------------------------------
 @main.command()
 def version() -> None:
-    """Versiyon bilgisini goster."""
+    """Versiyon bilgisini göster."""
     _print_banner()
 
 
@@ -604,10 +604,10 @@ def version() -> None:
 @main.command()
 @click.argument("target", type=str)
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Config YAML dosyasi.")
+              help="Config YAML dosyası.")
 @click.pass_context
 def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
-    """Hedef dosya/dizin hakkinda bilgi goster."""
+    """Hedef dosya/dizin hakkında bilgi göster."""
     _load_config(config_path)
 
     # v1.9.1: Smart target resolver
@@ -645,60 +645,60 @@ def info(ctx: click.Context, target: str, config_path: Optional[str]) -> None:
                    "workspaces/). Yalnız çıktı yerini değiştirir; imza / n-gram verisi "
                    "veri kökünden okunur (paket kökü ya da KARADUL_SIG_DATA_DIR).")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Config YAML dosyasi.")
+              help="Config YAML dosyası.")
 @click.option("--verbose", is_flag=True, help="Debug log.")
 # `--online`, `--enable-network`'ün eş adıdır: ikisi de ağı AÇAR. Eskiden
 # "--enable-network/--online" biçiminde yazılmıştı; click eğik çizgiden sonrasını
 # "kapalı" taraf sayar, yani `--online` ağı kapalı bırakıyordu.
 @click.option("--enable-network", "--online", "enable_network", is_flag=True, default=False,
-              help="B12 (2026-05-13): Network erisimi ac (default offline, deterministic). "
+              help="B12 (2026-05-13): Network erişimi aç (default offline, deterministic). "
                    "--online aynı bayrağın eş adıdır.")
 # NOT (2026-05-13): --use-llm/--no-llm/--llm-model/--use-ml flag'leri kaldirildi
 # (B11, feedback_no_llm.md). LLM kullanilmiyor, deterministic CPU-only.
 @click.option("--compute-recovery/--no-compute-recovery", default=None,
-              help="Hesaplama bazli kurtarma (yavas ama daha dogru tip cikarimi).")
+              help="Hesaplama bazlı kurtarma (yavaş ama daha doğru tip çıkarımı).")
 @click.option("--compute", "compute_mode", type=click.Choice(["full", "standard", "off"],  # v1.6.5
               case_sensitive=False), default=None,
-              help="Hesaplama kurtarma modu: full (tum katmanlar), standard (varsayilan), off.")
+              help="Hesaplama kurtarma modu: full (tüm katmanlar), standard (varsayılan), off.")
 @click.option("--deep/--no-deep", default=None,  # v1.6.5
               help="Hesaplama kurtarmayı bütün katmanlarıyla aç (--no-deep: kapat). "
                    "Derin çağrı izlemeyi değiştirmez: o, "
                    "binary_reconstruction.enable_engineering_analysis ile açılır.")
 @click.option("--output", "clean_output_dir", type=click.Path(), default=None,
-              help="Temiz cikti dizini (src/, report.html, naming_map.json vb.).")
+              help="Temiz çıktı dizini (src/, report.html, naming_map.json vb.).")
 @click.option("--format", "output_format", type=click.Choice(["clean", "raw"]),
-              default="clean", help="Cikti formati: clean (duzenlenmis) veya raw (ham).")
+              default="clean", help="Çıktı formatı: clean (düzenlenmiş) veya raw (ham).")
 # v1.10.0 M4 flag'leri (Berke karari: ship-it default TRUE; --no-* ile kapat)
 @click.option("--experimental-step-registry", is_flag=True, default=False,
               help="Etkisiz (geriye uyum): adım kayıt defteri yolu zaten öntanımlı ve tek "
                    "yol; eski monolit yolu kaldırıldı.")
 @click.option("--lmdb-sigdb", is_flag=True, default=False,
-              help="[v1.10.0] LMDB-backed signature DB'yi ZORLA AC (default: zaten aktif; "
-                   "LMDB dosyasi varsa ~250MB RAM, yoksa dict fallback). Config'de kapatilmissa override eder.")
+              help="[v1.10.0] LMDB-backed signature DB'yi ZORLA AÇ (default: zaten aktif; "
+                   "LMDB dosyası varsa ~250MB RAM, yoksa dict fallback). Config'de kapatılmışsa override eder.")
 @click.option("--no-lmdb-sigdb", "no_lmdb_sigdb", is_flag=True, default=False,
               help="[v1.10.0] LMDB signature DB'yi KAPAT -> eski dict-based DB (~3GB RAM). "
-                   "Default LMDB aktif oldugundan asil anlamli bayrak budur; --lmdb-sigdb ile birlikte verilirse bu kazanir.")
+                   "Default LMDB aktif olduğundan asıl anlamlı bayrak budur; --lmdb-sigdb ile birlikte verilirse bu kazanır.")
 @click.option("--parallel-naming", is_flag=True, default=False,
-              help="[v1.10.0] ThreadPool tabanli paralel naming (3-5x hiz).")
+              help="[v1.10.0] ThreadPool tabanlı paralel naming (3-5x hız).")
 @click.option("--no-cfg-iso", is_flag=True, default=False,
               help="[v1.10.0] Default-aktif CFG isomorphism template matching'i KAPAT.")
 @click.option("--no-computation-fusion", is_flag=True, default=False,
               help="[v1.10.0] Default-aktif log-odds fusion ensemble'i KAPAT.")
 @click.option("--no-maxsmt-struct", is_flag=True, default=False,
-              help="[v1.10.0] MaxSMT struct layout recovery'i zorla KAPAT (default zaten kapali; geriye uyum flag'i).")
+              help="[v1.10.0] MaxSMT struct layout recovery'i zorla KAPAT (default zaten kapalı; geriye uyum flag'i).")
 @click.option("--maxsmt-struct", is_flag=True, default=False,
-              help="[v1.10.0 Batch 6C] Deneysel MaxSMT struct layout recovery'i AC (default: kapali, opt-in).")
+              help="[v1.10.0 Batch 6C] Deneysel MaxSMT struct layout recovery'i AÇ (default: kapalı, opt-in).")
 @click.option("--decompiler-backend",
               type=click.Choice(["ghidra", "angr"], case_sensitive=False),
               default=None,
-              help="[v1.10.0] Decompiler backend secimi (varsayilan: ghidra).")
+              help="[v1.10.0] Decompiler backend seçimi (varsayılan: ghidra).")
 @click.option("--bsim-shadow-dump", is_flag=True, default=False,
-              help="[v1.12] BSim shadow dump JSON uret (shadow_mode opt-out, dump-only mod).")
+              help="[v1.12] BSim shadow dump JSON üret (shadow_mode opt-out, dump-only mod).")
 @click.option("--overrides", "overrides_path", type=click.Path(exists=True), default=None,
-              help="Manuel override JSON dosyasi (varsayilan: ~/.karadul/overrides/<hash>.json "
-                   "otomatik kesfedilir; bu flag SADECE default-olmayan yol icin).")
+              help="Manuel override JSON dosyası (varsayılan: ~/.karadul/overrides/<hash>.json "
+                   "otomatik keşfedilir; bu flag SADECE default-olmayan yol için).")
 @click.option("--json", "json_output", is_flag=True, default=False,
-              help="Sonucu (fonksiyon/string/naming sayilari + stage istatistikleri) "
+              help="Sonucu (fonksiyon/string/naming sayıları + stage istatistikleri) "
                    "makine-okunur JSON olarak stdout'a yaz (tablo yerine).")
 @click.pass_context
 @_graceful_interrupt
@@ -864,9 +864,9 @@ def analyze(
             # DEPRECATED v1.10.0: D-S fusion. --deep bunu hala aciyor backward
             # compat icin; v1.11.0'da --deep log-odds fusion'a gecirilecek.
             warnings.warn(
-                "--deep, DEPRECATED D-S signature fusion'i etkinlestirdi. "
+                "--deep, DEPRECATED D-S signature fusion'i etkinleştirdi. "
                 "v1.11.0'da yerine ComputationConfig.enable_computation_fusion "
-                "(log-odds ensemble) kullanilacak.",
+                "(log-odds ensemble) kullanılacak.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -886,8 +886,8 @@ def analyze(
             # DEPRECATED v1.10.0 -> kaldirilacak v1.11.0. Bkz. engine.py L163.
             warnings.warn(
                 "--compute full, DEPRECATED D-S signature fusion'i "
-                "etkinlestirdi. v1.11.0'da log-odds ensemble (ComputationConfig."
-                "enable_computation_fusion) varsayilan olacak.",
+                "etkinleştirdi. v1.11.0'da log-odds ensemble (ComputationConfig."
+                "enable_computation_fusion) varsayılan olacak.",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -934,7 +934,7 @@ def analyze(
         detector = TargetDetector()
         target_info = detector.detect(target_path)
     except Exception as exc:
-        err_console.print(f"[bold red]HATA:[/bold red] Hedef taninamadi: {exc}")
+        err_console.print(f"[bold red]HATA:[/bold red] Hedef tanınamadı: {exc}")
         sys.exit(1)
 
     # Target bilgileri (quiet/json'da bastirilir)
@@ -956,7 +956,7 @@ def analyze(
     pipeline = build_pipeline(cfg, stop_after=stage, skip_dynamic=skip_dynamic)
 
     if not pipeline.registered_stages:
-        err_console.print("[bold red]HATA:[/bold red] Calistirilacak stage yok.")
+        err_console.print("[bold red]HATA:[/bold red] Çalıştırılacak stage yok.")
         sys.exit(1)
 
     if verbose:
@@ -990,7 +990,7 @@ def analyze(
             transient=True,
         ) as progress:
             task_id = progress.add_task(
-                "[cyan]Pipeline baslatiliyor...[/cyan]",
+                "[cyan]Pipeline başlatılıyor...[/cyan]",
                 total=len(pipeline.registered_stages),
             )
             _on_start, _on_complete, _on_progress = make_progress_callbacks(
@@ -1126,14 +1126,14 @@ def analyze(
 @main.command()
 @click.argument("target")
 @click.option("--workspace-dir", type=click.Path(), default="./workspaces/",
-              help="Workspace ust dizini.")
+              help="Workspace üst dizini.")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Config YAML dosyasi (security.allow_target_execution, network.enabled).")
+              help="Config YAML dosyası (security.allow_target_execution, network.enabled).")
 @click.option("--yes", "-y", is_flag=True,
-              help="Onay sorusunu atla (calistirma kapisi yine acik olmali).")
+              help="Onay sorusunu atla (çalıştırma kapısı yine açık olmalı).")
 @_graceful_interrupt
 def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) -> None:
-    """Analiz edilen hedeften yeniden kurulan projeyi YEREL olarak calistir.
+    """Analiz edilen hedeften yeniden kurulan projeyi YEREL olarak çalıştır.
 
     DIKKAT: calistirilan kod, analiz edilen kodun kendisidir (sandbox yok).
     Yalniz ``security.allow_target_execution: true`` ise calisir.
@@ -1182,12 +1182,12 @@ def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) 
         target_dir = ws_path
     if target_dir == ws_path:
         err_console.print(
-            f"[bold red]HATA:[/bold red] Gecersiz hedef adi (path traversal engellendi): {target}"
+            f"[bold red]HATA:[/bold red] Geçersiz hedef adı (path traversal engellendi): {target}"
         )
         sys.exit(1)
 
     if not target_dir.is_dir():
-        err_console.print(f"[bold red]HATA:[/bold red] Workspace bulunamadi: {target}")
+        err_console.print(f"[bold red]HATA:[/bold red] Workspace bulunamadı: {target}")
         err_console.print(f"[dim]Aranan dizin: {ws_path}[/dim]")
         sys.exit(1)
 
@@ -1212,8 +1212,8 @@ def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) 
 
     if reconstructed is None or not reconstructed.exists():
         err_console.print(
-            f"[bold red]HATA:[/bold red] Reconstructed dizin bulunamadi.\n"
-            f"Once 'karadul analyze' ile reconstruct stage'ini calistirin."
+            f"[bold red]HATA:[/bold red] Reconstructed dizin bulunamadı.\n"
+            f"Önce 'karadul analyze' ile reconstruct stage'ini çalıştırın."
         )
         sys.exit(1)
 
@@ -1231,17 +1231,17 @@ def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) 
         if _is_noninteractive():
             err_console.print(
                 "[bold red]HATA:[/bold red] Non-interactive ortam (CI/non-TTY); "
-                "guvenlik onayi icin --yes / -y flag'i gerekli."
+                "güvenlik onayı için --yes / -y flag'i gerekli."
             )
             sys.exit(2)
-        if not click.confirm("Kodu calistirmak istediginizden emin misiniz?"):
-            console.print("[dim]Iptal edildi.[/dim]")
+        if not click.confirm("Kodu çalıştırmak istediğinizden emin misiniz?"):
+            console.print("[dim]İptal edildi.[/dim]")
             return
 
     console.print(Panel(
         f"[bold]{target}[/bold]\n"
         f"Dizin: [cyan]{reconstructed}[/cyan]",
-        title="Proje Calistiriliyor",
+        title="Proje Çalıştırılıyor",
         border_style="green",
     ))
 
@@ -1258,7 +1258,7 @@ def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) 
     package_json = reconstructed / "package.json"
     if package_json.exists():
         if npm_path is None:
-            err_console.print("[bold red]HATA:[/bold red] npm bulunamadi (whitelist path)")
+            err_console.print("[bold red]HATA:[/bold red] npm bulunamadı (whitelist path)")
             sys.exit(1)
         # GHIDRA-13: bağımlılık adları analiz edilen koddan çıkarıldı (saldırganın
         # seçtiği adlar). Ağ kapalıyken kayıt deposuna gidilmez: --offline
@@ -1278,7 +1278,7 @@ def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) 
             text=True,
         )
         if proc_install.returncode != 0:
-            err_console.print(f"[yellow]npm install uyarisi:[/yellow] {proc_install.stderr[:200]}")
+            err_console.print(f"[yellow]npm install uyarısı:[/yellow] {proc_install.stderr[:200]}")
 
         console.print("[dim]npm start...[/dim]")
         proc_start = _safe_run(
@@ -1297,7 +1297,7 @@ def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) 
                     main_file = f
                     break
             if node_path is None:
-                err_console.print("[bold red]HATA:[/bold red] node bulunamadi (whitelist path)")
+                err_console.print("[bold red]HATA:[/bold red] node bulunamadı (whitelist path)")
                 sys.exit(1)
             console.print(f"[dim]node {main_file.name}...[/dim]")
             proc = _safe_run(
@@ -1307,7 +1307,7 @@ def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) 
             )
             sys.exit(proc.returncode)
         else:
-            err_console.print("[bold red]HATA:[/bold red] Calistirilacak dosya bulunamadi.")
+            err_console.print("[bold red]HATA:[/bold red] Çalıştırılacak dosya bulunamadı.")
             sys.exit(1)
 
 
@@ -1318,11 +1318,11 @@ def run(target: str, workspace_dir: str, config_path: Optional[str], yes: bool) 
 @click.option("--output-dir", type=click.Path(), default="./workspaces/",
               help="Workspace dizini.")
 def list_targets(output_dir: str) -> None:
-    """Analiz edilmis hedefleri listele."""
+    """Analiz edilmiş hedefleri listele."""
     output_path = Path(output_dir).resolve()
 
     if not output_path.exists():
-        console.print("[yellow]Henuz analiz edilmis hedef yok.[/yellow]")
+        console.print("[yellow]Henüz analiz edilmiş hedef yok.[/yellow]")
         return
 
     dirs = sorted(
@@ -1332,14 +1332,14 @@ def list_targets(output_dir: str) -> None:
     )
 
     if not dirs:
-        console.print("[yellow]Henuz analiz edilmis hedef yok.[/yellow]")
+        console.print("[yellow]Henüz analiz edilmiş hedef yok.[/yellow]")
         return
 
-    table = Table(title="Analiz Edilmis Hedefler", border_style="cyan")
+    table = Table(title="Analiz Edilmiş Hedefler", border_style="cyan")
     table.add_column("#", style="dim", width=4)
     table.add_column("Hedef", style="bold")
     table.add_column("Boyut", justify="right")
-    table.add_column("Son Degisiklik")
+    table.add_column("Son Değişiklik")
 
     for i, d in enumerate(dirs, 1):
         # Dizin boyutu hesapla
@@ -1374,13 +1374,13 @@ def clean(target: str, output_dir: str, yes: bool) -> None:
     except ValueError:
         workspace_path = None  # type: ignore[assignment]
     if workspace_path is None or workspace_path == base_dir:
-        err_console.print(f"[bold red]HATA:[/bold red] Gecersiz hedef adi (path traversal engellendi): {target}")
+        err_console.print(f"[bold red]HATA:[/bold red] Geçersiz hedef adı (path traversal engellendi): {target}")
         sys.exit(1)
 
     # MEK-09 (a): varlık onaydan ÖNCE denetlenir (eskiden olmayan hedef için önce
     # silme onayı soruluyordu).
     if not workspace_path.exists():
-        err_console.print(f"[bold red]HATA:[/bold red] Workspace bulunamadi: {workspace_path}")
+        err_console.print(f"[bold red]HATA:[/bold red] Workspace bulunamadı: {workspace_path}")
         sys.exit(1)
 
     if not yes:
@@ -1406,13 +1406,13 @@ def clean(target: str, output_dir: str, yes: bool) -> None:
 @main.command()
 @click.argument("binary_path", type=click.Path(exists=True))
 @click.option("--ground-truth", "-g", type=click.Path(exists=True), default=None,
-              help="Ground truth JSON dosyasi. Yoksa nm ile uretilir.")
+              help="Ground truth JSON dosyası. Yoksa nm ile üretilir.")
 @click.option("--output", "-o", type=click.Path(), default="benchmark_report.json",
-              help="Cikti rapor dosyasi (varsayilan: benchmark_report.json).")
+              help="Çıktı rapor dosyası (varsayılan: benchmark_report.json).")
 @click.option("--naming-map", "-n", type=click.Path(exists=True), default=None,
-              help="Karadul naming_map.json dosyasi. Yoksa workspace'ten aranir.")
+              help="Karadul naming_map.json dosyası. Yoksa workspace'ten aranır.")
 @click.option("--generate-gt-only", is_flag=True, default=False,
-              help="Sadece ground truth uret, benchmark calistirma.")
+              help="Sadece ground truth üret, benchmark çalıştırma.")
 @_graceful_interrupt
 def benchmark(
     binary_path: str,
@@ -1421,7 +1421,7 @@ def benchmark(
     naming_map: Optional[str],
     generate_gt_only: bool,
 ) -> None:
-    """Binary analiz edip accuracy raporu uret.
+    """Binary analiz edip accuracy raporu üret.
 
     Ground truth yoksa nm ile binary'den sembol tablosu cikarir.
     naming_map yoksa en son workspace'ten arar.
@@ -1471,13 +1471,13 @@ def benchmark(
 
             if gt_obj.symbol_count == 0:
                 err_console.print(
-                    "[bold red]HATA:[/bold red] nm'den sembol cikarilamadi. "
+                    "[bold red]HATA:[/bold red] nm'den sembol çıkarılamadı. "
                     "Binary'nin export sembolleri var mi?"
                 )
                 sys.exit(1)
 
             console.print(
-                f"  [green]{gt_obj.symbol_count}[/green] sembol cikarildi "
+                f"  [green]{gt_obj.symbol_count}[/green] sembol çıkarıldı "
                 f"({gt_obj.function_count} fonksiyon)"
             )
 
@@ -1488,7 +1488,7 @@ def benchmark(
                 gt_map[f"FUN_{hex_part.zfill(8)}"] = s.name
 
         except Exception as exc:
-            err_console.print(f"[bold red]HATA:[/bold red] Ground truth uretimi basarisiz: {exc}")
+            err_console.print(f"[bold red]HATA:[/bold red] Ground truth üretimi basarisiz: {exc}")
             sys.exit(1)
 
     # Generate-only mode
@@ -1517,8 +1517,8 @@ def benchmark(
 
         if nm_path is None:
             err_console.print(
-                "[bold red]HATA:[/bold red] naming_map.json bulunamadi. "
-                "-n ile belirtin veya once 'karadul analyze' calistirin."
+                "[bold red]HATA:[/bold red] naming_map.json bulunamadı. "
+                "-n ile belirtin veya once 'karadul analyze' çalıştırın."
             )
             sys.exit(1)
 
@@ -1569,7 +1569,7 @@ def benchmark(
     metrics = result.metrics
     results_table = Table(title="Accuracy Report", border_style="green")
     results_table.add_column("Metrik", style="bold")
-    results_table.add_column("Deger", justify="right")
+    results_table.add_column("Değer", justify="right")
 
     results_table.add_row("Total Symbols", str(metrics.total_symbols))
     results_table.add_row("Exact Matches", f"[green]{metrics.exact_matches}[/green]")
@@ -1596,18 +1596,18 @@ def benchmark(
 # ---------------------------------------------------------------
 @main.group()
 def batch() -> None:
-    """Toplu analiz komutlari."""
+    """Toplu analiz komutları."""
     pass
 
 
 @batch.command("analyze")
 @click.option("--targets", "-t", required=True,
-              help="Hedef grubu: electron, binary, js, cursor, all veya virgule ayrilmis isimler.")
+              help="Hedef grubu: electron, binary, js, cursor, all veya virgule ayrılmış isimler.")
 @click.option("--output-dir", type=click.Path(), default=None,
               help="Çalışma alanlarının yazılacağı kök (varsayılan: çalışma dizini; altına "
                    "workspaces/). İmza verisi veri kökünden okunur.")
 @click.option("--skip-dynamic", is_flag=True, default=False,
-              help="Dinamik analizi atla (varsayilan: False).")
+              help="Dinamik analizi atla (varsayılan: False).")
 @click.option("--config", "config_path", type=click.Path(), default=None,
               help="Ayar dosyası (karadul.yaml). `analyze` gibi katı yüklenir; "
                    "verilmezse çalışma dizinindeki karadul.yaml (varsa).")
@@ -1646,7 +1646,7 @@ def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], s
     resolved = resolve_targets(targets)
 
     if not resolved:
-        err_console.print("[bold red]HATA:[/bold red] Gecerli hedef bulunamadi.")
+        err_console.print("[bold red]HATA:[/bold red] Geçerli hedef bulunamadı.")
         sys.exit(1)
 
     workers = min(3, len(resolved))
@@ -1658,8 +1658,8 @@ def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], s
     # P14 / BORU-07: hedef durumu `analyze` ile aynı kuraldan (tam / kısmi / başarısız).
     _labels = {
         OUTCOME_COMPLETE: ("green", "TAM", "OK"),
-        OUTCOME_PARTIAL: ("yellow", "KISMI", "PARTIAL"),
-        OUTCOME_FAILED: ("red", "BASARISIZ", "FAIL"),
+        OUTCOME_PARTIAL: ("yellow", "KISMİ", "PARTIAL"),
+        OUTCOME_FAILED: ("red", "BAŞARISIZ", "FAIL"),
         STATUS_SKIPPED: ("yellow", "ATLANDI", "SKIP"),
     }
 
@@ -1736,12 +1736,12 @@ def batch_analyze(ctx: click.Context, targets: str, output_dir: Optional[str], s
 @main.command()
 @click.argument("binary1", type=click.Path(exists=True))
 @click.argument("binary2", type=click.Path(exists=True))
-@click.option("--output", "-o", type=click.Path(), help="Cikti dizini.")
+@click.option("--output", "-o", type=click.Path(), help="Çıktı dizini.")
 @click.option("--json-mode", is_flag=True,
-              help="GIRDI modu (cikti formati DEGIL): onceden uretilmis iki JSON "
-                   "dosyasini karsilastir (Ghidra gerektirmez).")
+              help="GİRDİ modu (çıktı formatı DEĞİL): önceden üretilmiş iki JSON "
+                   "dosyasını karşılaştır (Ghidra gerektirmez).")
 @click.option("--config", "config_path", type=click.Path(exists=True),
-              help="Config dosyasi.")
+              help="Config dosyası.")
 @_graceful_interrupt
 def diff(
     binary1: str,
@@ -1750,9 +1750,9 @@ def diff(
     json_mode: bool,
     config_path: Optional[str],
 ) -> None:
-    """Iki binary arasindaki farklari goster.
+    """İki binary arasındaki farkları göster.
 
-    Iki binary versiyonunu karsilastirarak eklenen, silinen ve
+    İki binary versiyonunu karsilastirarak eklenen, silinen ve
     degistirilen fonksiyonlari listeler.
 
     Ornekler:
@@ -1798,7 +1798,7 @@ def diff(
     summary = report.summary
     summary_table = Table(show_header=False, border_style="cyan", padding=(0, 2))
     summary_table.add_column("Metrik", style="bold")
-    summary_table.add_column("Deger", justify="right")
+    summary_table.add_column("Değer", justify="right")
 
     summary_table.add_row("Functions (binary 1)", str(summary.total_functions_1))
     summary_table.add_row("Functions (binary 2)", str(summary.total_functions_2))
@@ -1822,7 +1822,7 @@ def diff(
         console.print()
 
         func_table = Table(
-            title=f"{len(changed)} degisiklik",
+            title=f"{len(changed)} değişiklik",
             border_style="cyan",
         )
         func_table.add_column("Status", width=10)
@@ -1875,11 +1875,11 @@ def diff(
         console.print(func_table)
 
         if len(changed) > 100:
-            console.print(f"[dim]... ve {len(changed) - 100} degisiklik daha[/dim]")
+            console.print(f"[dim]... ve {len(changed) - 100} değişiklik daha[/dim]")
 
         console.print()
     else:
-        console.print("[green]Iki binary arasinda fonksiyon farki bulunamadi.[/green]")
+        console.print("[green]İki binary arasında fonksiyon farkı bulunamadı.[/green]")
         console.print()
 
     if output:
@@ -1892,16 +1892,16 @@ def diff(
 # ---------------------------------------------------------------
 @main.group()
 def bsim() -> None:
-    """BSim fonksiyon benzerlik veritabani yonetimi."""
+    """BSim fonksiyon benzerlik veritabanı yönetimi."""
     pass
 
 
 @bsim.command("create")
 @click.argument("name")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Config YAML dosyasi.")
+              help="Config YAML dosyası.")
 def bsim_create(name: str, config_path: Optional[str]) -> None:
-    """Yeni BSim veritabani olustur."""
+    """Yeni BSim veritabanı olustur."""
     from karadul.ghidra.bsim import BSimDatabase
 
     cfg = _load_config(config_path)
@@ -1921,7 +1921,7 @@ def bsim_create(name: str, config_path: Optional[str]) -> None:
         db.close()
         sys.exit(2)
     db.create_database(name)
-    console.print(f"[green]BSim veritabani olusturuldu:[/green] {name}")
+    console.print(f"[green]BSim veritabanı oluşturuldu:[/green] {name}")
     console.print(f"[dim]Mod: {db.mode} | Konum: {db.db_path}[/dim]")
     db.close()
 
@@ -1929,9 +1929,9 @@ def bsim_create(name: str, config_path: Optional[str]) -> None:
 @bsim.command("ingest")
 @click.argument("binary", type=click.Path(exists=True))
 @click.option("--db", "db_name", default="karadul_bsim",
-              help="Hedef veritabani adi (varsayilan: karadul_bsim).")
+              help="Hedef veritabanı adı (varsayılan: karadul_bsim).")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Config YAML dosyasi.")
+              help="Config YAML dosyası.")
 @_graceful_interrupt
 def bsim_ingest(binary: str, db_name: str, config_path: Optional[str]) -> None:
     """Binary'yi BSim veritabanina ekle.
@@ -1965,17 +1965,17 @@ def bsim_ingest(binary: str, db_name: str, config_path: Optional[str]) -> None:
             db.close()
             if durum not in ("ok", "fallback_lite"):
                 err_console.print(
-                    f"[bold red]BSim ingest yapilmadi:[/bold red] {durum} — {db.status.get('reason')}"
+                    f"[bold red]BSim ingest yapılmadı:[/bold red] {durum} — {db.status.get('reason')}"
                 )
                 sys.exit(1)
             console.print(
-                f"[green]Basarili:[/green] {count} fonksiyon hash'lendi "
+                f"[green]Başarılı:[/green] {count} fonksiyon hash'lendi "
                 f"(mod: {db.mode}, durum: {durum})"
             )
     except ImportError:
         err_console.print(
-            "[bold red]HATA:[/bold red] PyGhidra bulunamadi. "
-            "Ghidra + PyGhidra kurulu olmali."
+            "[bold red]HATA:[/bold red] PyGhidra bulunamadı. "
+            "Ghidra + PyGhidra kurulu olmalı."
         )
         sys.exit(1)
     except Exception as exc:
@@ -1986,17 +1986,17 @@ def bsim_ingest(binary: str, db_name: str, config_path: Optional[str]) -> None:
 @bsim.command("query")
 @click.argument("binary", type=click.Path(exists=True))
 @click.option("--db", "db_name", default="karadul_bsim",
-              help="Sorgulanacak veritabani adi (varsayilan: karadul_bsim).")
+              help="Sorgulanacak veritabanı adı (varsayılan: karadul_bsim).")
 @click.option("--min-similarity", default=0.7, type=float,
-              help="Minimum benzerlik esigi (varsayilan: 0.7).")
+              help="Minimum benzerlik eşiği (varsayılan: 0.7).")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Config YAML dosyasi.")
+              help="Config YAML dosyası.")
 def bsim_query(
     binary: str, db_name: str, min_similarity: float, config_path: Optional[str],
 ) -> None:
     """BSim veritabaninda benzer fonksiyonlari ara.
 
-    Binary'deki fonksiyonlar icin veritabaninda eslesmeler aranir.
+    Binary'deki fonksiyonlar için veritabaninda eslesmeler aranır.
     """
     from karadul.ghidra.bsim import BSimDatabase
 
@@ -2032,12 +2032,12 @@ def bsim_query(
             # Sonuc tablosu
             if result.total_matches > 0:
                 match_table = Table(
-                    title=f"BSim Eslesmeleri ({result.total_matches} toplam)",
+                    title=f"BSim Eşleşmeleri ({result.total_matches} toplam)",
                     border_style="cyan",
                 )
                 match_table.add_column("Fonksiyon", style="bold")
                 match_table.add_column("Adres", style="dim")
-                match_table.add_column("Eslesen", style="green")
+                match_table.add_column("Eşleşen", style="green")
                 match_table.add_column("Program", style="cyan")
                 match_table.add_column("Benzerlik", justify="right")
 
@@ -2052,19 +2052,19 @@ def bsim_query(
                     )
                 console.print(match_table)
             else:
-                console.print("[yellow]Esleme bulunamadi.[/yellow]")
+                console.print("[yellow]Eşleme bulunamadı.[/yellow]")
 
             ex = result.status.get("excluded") or {}
             console.print(
                 f"\n[dim]Sorgulanan: {result.total_queries} | "
-                f"Eslesen: {result.total_matches} | "
-                f"Dislanan (kendisi / ayni yapi): {ex.get('self', 0)} / {ex.get('same_build', 0)} | "
-                f"Sure: {result.query_duration:.2f}s[/dim]"
+                f"Eşleşen: {result.total_matches} | "
+                f"Dışlanan (kendisi / aynı yapı): {ex.get('self', 0)} / {ex.get('same_build', 0)} | "
+                f"Süre: {result.query_duration:.2f}s[/dim]"
             )
             db.close()
     except ImportError:
         err_console.print(
-            "[bold red]HATA:[/bold red] PyGhidra bulunamadi."
+            "[bold red]HATA:[/bold red] PyGhidra bulunamadı."
         )
         sys.exit(1)
     except Exception as exc:
@@ -2074,7 +2074,7 @@ def bsim_query(
 
 @bsim.command("list")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Config YAML dosyasi.")
+              help="Config YAML dosyası.")
 def bsim_list(config_path: Optional[str]) -> None:
     """Mevcut BSim veritabanlarini listele."""
     from karadul.ghidra.bsim import BSimDatabase
@@ -2084,12 +2084,12 @@ def bsim_list(config_path: Optional[str]) -> None:
     databases = db.list_databases()
 
     if not databases:
-        console.print("[yellow]Henuz BSim veritabani yok.[/yellow]")
+        console.print("[yellow]Henüz BSim veritabanı yok.[/yellow]")
         console.print(f"[dim]Konum: {db.db_path}[/dim]")
         db.close()
         return
 
-    table = Table(title="BSim Veritabanlari", border_style="cyan")
+    table = Table(title="BSim Veritabanları", border_style="cyan")
     table.add_column("#", style="dim", width=4)
     table.add_column("Ad", style="bold")
     table.add_column("Mod", style="cyan")
@@ -2136,13 +2136,13 @@ def bsim_probe(json_output: bool) -> None:
     console.print(f"[{color}]{result.summary()}[/{color}]")
     console.print()
 
-    flag_table = Table(title="Kontrol Sonuclari", border_style="cyan")
-    flag_table.add_column("Adim", style="bold")
+    flag_table = Table(title="Kontrol Sonuçları", border_style="cyan")
+    flag_table.add_column("Adım", style="bold")
     flag_table.add_column("Durum", justify="center")
 
     flags = [
         ("JVM/PyGhidra aktif", result.pyghidra_active),
-        ("BSim modulu (BSimServerInfo)", result.bsim_module_found),
+        ("BSim modülü (BSimServerInfo)", result.bsim_module_found),
         ("FunctionDatabase", result.function_database_found),
         ("GenSignatures", result.gen_signatures_found),
         ("BSimServerInfo new()", result.test_db_creation),
@@ -2172,7 +2172,7 @@ def bsim_probe(json_output: bool) -> None:
 @click.option(
     "--baseline", "-b", type=click.Path(exists=True),
     default=None,
-    help="Debug binary yolu (ground truth karsilastirmasi).",
+    help="Debug binary yolu (ground truth karşılaştırması).",
 )
 @click.option(
     "--json", "json_output", is_flag=True,
@@ -2180,7 +2180,7 @@ def bsim_probe(json_output: bool) -> None:
 )
 @click.option(
     "--details", is_flag=True,
-    help="Her boyut icin detayli ham sayilari goster.",
+    help="Her boyut için detaylı ham sayıları göster.",
 )
 @click.pass_context
 @_graceful_interrupt
@@ -2191,7 +2191,7 @@ def score(
     json_output: bool,
     details: bool,
 ) -> None:
-    """Reconstructed C dizininin okunabilirlik skorunu olc.
+    """Reconstructed C dizininin okunabilirlik skorunu ölç.
 
     6 boyutta 0-100 arasi skor uretir:
     fonksiyon isimleri, parametre isimleri, lokal degiskenler,
@@ -2249,10 +2249,10 @@ def score(
         border_style="cyan",
     ))
 
-    table = Table(title="Boyut Skorlari", border_style="cyan")
+    table = Table(title="Boyut Skorları", border_style="cyan")
     table.add_column("Boyut", style="bold")
     table.add_column("Skor", justify="right")
-    table.add_column("Agirlik", justify="right", style="dim")
+    table.add_column("Ağırlık", justify="right", style="dim")
     weights = {
         "function_names": scorer.config.weight_function_names,
         "param_names": scorer.config.weight_param_names,
@@ -2328,7 +2328,7 @@ _SCORE_NOTE = (
 @_graceful_interrupt
 def rtti(ctx: click.Context, binary: str, json_output: bool, abi: Optional[str],
          config_path: Optional[str]) -> None:
-    """C++ RTTI/vtable bilgisini cikar ve yazdir (v1.10.0 M3 T9).
+    """C++ RTTI/vtable bilgisini çıkar ve yazdır (v1.10.0 M3 T9).
 
     Itanium ABI (Linux/macOS g++/clang) destegi. Single inheritance only.
     Binary sembollerinden _ZTI*, _ZTV* pattern'lerini bulur; vtable
@@ -2351,7 +2351,7 @@ def rtti(ctx: click.Context, binary: str, json_output: bool, abi: Optional[str],
         )
         sys.exit(2)
     if abi == "msvc":
-        err_console.print("[yellow]MSVC ABI henuz desteklenmiyor (v1.10.1 planinda).[/yellow]")
+        err_console.print("[yellow]MSVC ABI henüz desteklenmiyor (v1.10.1 planında).[/yellow]")
         sys.exit(2)
 
     parser = RTTIParser(config=br)
@@ -2381,14 +2381,14 @@ def rtti(ctx: click.Context, binary: str, json_output: bool, abi: Optional[str],
         f"[bold]C++ RTTI Analizi[/bold]\n"
         f"Binary: [cyan]{binary}[/cyan]\n"
         f"ABI: [cyan]{abi}[/cyan]\n"
-        f"Sinif sayisi: [bold]{len(hierarchy.classes)}[/bold]",
+        f"Sınıf sayısı: [bold]{len(hierarchy.classes)}[/bold]",
         border_style="cyan",
     ))
     if not hierarchy.classes:
-        console.print("[yellow]RTTI sembolu bulunamadi.[/yellow]")
+        console.print("[yellow]RTTI sembolü bulunamadı.[/yellow]")
         return
-    table = Table(title="C++ Siniflari", border_style="cyan")
-    table.add_column("Sinif", style="bold")
+    table = Table(title="C++ Sınıfları", border_style="cyan")
+    table.add_column("Sınıf", style="bold")
     table.add_column("typeinfo", style="dim")
     table.add_column("vtable", style="dim")
     table.add_column("metod", justify="right")
@@ -2411,7 +2411,7 @@ def _discover_config_path(config_path: Optional[str]) -> tuple[Path, bool]:
     `Config.load` (config.py:796) davranisiyla AYNI kesif kurali: explicit
     `--config` verilirse o; yoksa `Path.cwd() / "karadul.yaml"`. UI ayar paneli
     de (ui/server.py) PROJECT_ROOT/karadul.yaml kullanir -- repo kokunden
-    calistirildiginda cwd == PROJECT_ROOT oldugu icin ayni dosyaya isaret eder.
+    calistirildiginda cwd == PROJECT_ROOT oldugu için aynı dosyaya isaret eder.
 
     Returns:
         (path, exists) ciftini dondur.
@@ -2425,28 +2425,28 @@ def _discover_config_path(config_path: Optional[str]) -> tuple[Path, bool]:
 
 @main.group()
 def config() -> None:
-    """karadul.yaml konfigurasyon yonetimi (UI ayar paneliyle ayni dosya)."""
+    """karadul.yaml konfigürasyon yönetimi (UI ayar paneliyle aynı dosya)."""
     pass
 
 
 @config.command("path")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Belirli bir YAML yolu (varsayilan: cwd/karadul.yaml).")
+              help="Belirli bir YAML yolu (varsayılan: cwd/karadul.yaml).")
 def config_path_cmd(config_path: Optional[str]) -> None:
-    """Aktif karadul.yaml yolunu ve durumunu goster."""
+    """Aktif karadul.yaml yolunu ve durumunu göster."""
     p, exists = _discover_config_path(config_path)
     console.print(f"[bold]karadul.yaml:[/bold] {p}")
     console.print(
         "[bold]Durum:[/bold]      "
         + ("[green]var[/green]" if exists
-           else "[yellow]yok (varsayilan konfigurasyon kullanilir)[/yellow]")
+           else "[yellow]yok (varsayılan konfigürasyon kullanılır)[/yellow]")
     )
 
 
 def _active_config_knobs(cfg: Config) -> dict:
-    """UI ayar paneliyle AYNI 7 knob'u cfg'den cikar (tutarlilik).
+    """UI ayar paneliyle AYNI 7 knob'u cfg'den çıkar (tutarlılık).
 
-    Bkz. ui/server.py `_read_settings` -- ayni alanlar, ayni anlam.
+    Bkz. ui/server.py `_read_settings` -- aynı alanlar, aynı anlam.
     """
     br = cfg.binary_reconstruction
     cr = cfg.computation_recovery
@@ -2466,13 +2466,13 @@ def _active_config_knobs(cfg: Config) -> dict:
 
 @config.command("show")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Belirli bir YAML yolu (varsayilan: cwd/karadul.yaml).")
+              help="Belirli bir YAML yolu (varsayılan: cwd/karadul.yaml).")
 @click.option("--json", "json_output", is_flag=True,
               help="Knob'lari JSON olarak stdout'a yaz.")
 def config_show(config_path: Optional[str], json_output: bool) -> None:
-    """Aktif konfigurasyonu (UI paneliyle ayni knob'lar) goster.
+    """Aktif konfigurasyonu (UI paneliyle aynı knob'lar) göster.
 
-    karadul.yaml varsa yuklenir; yoksa dahili varsayilanlar gosterilir.
+    karadul.yaml varsa yuklenir; yoksa dahili varsayilanlar gösterilir.
     """
     p, exists = _discover_config_path(config_path)
     cfg = _load_config(str(p) if exists else None)
@@ -2486,16 +2486,16 @@ def config_show(config_path: Optional[str], json_output: bool) -> None:
         ))
         return
 
-    src = "karadul.yaml" if exists else "varsayilan (dosya yok)"
+    src = "karadul.yaml" if exists else "varsayılan (dosya yok)"
     console.print(Panel(
-        f"[bold]Aktif Konfigurasyon[/bold]\n"
+        f"[bold]Aktif Konfigürasyon[/bold]\n"
         f"Kaynak: [cyan]{src}[/cyan]\n"
         f"Yol: [dim]{p}[/dim]",
         border_style="cyan",
     ))
     table = Table(title="Ayarlar", border_style="cyan")
     table.add_column("Knob", style="bold")
-    table.add_column("Deger")
+    table.add_column("Değer")
     for key in (
         "min_naming_confidence", "unk_threshold", "pipeline_iterations",
         "max_functions_to_process", "computation_recovery_enabled",
@@ -2514,21 +2514,21 @@ def config_show(config_path: Optional[str], json_output: bool) -> None:
 
 @config.command("validate")
 @click.option("--config", "config_path", type=click.Path(), default=None,
-              help="Belirli bir YAML yolu (varsayilan: cwd/karadul.yaml).")
+              help="Belirli bir YAML yolu (varsayılan: cwd/karadul.yaml).")
 def config_validate(config_path: Optional[str]) -> None:
-    """karadul.yaml'i yukle + dogrula (arac varligi + tutarlilik uyarilari)."""
+    """karadul.yaml'i yukle + dogrula (arac varligi + tutarlılık uyarilari)."""
     p, exists = _discover_config_path(config_path)
 
     # 1) Explicit --config verilmis ama dosya yoksa: net hata.
     if config_path and not exists:
-        err_console.print(f"[bold red]HATA:[/bold red] Config dosyasi yok: {p}")
+        err_console.print(f"[bold red]HATA:[/bold red] Config dosyası yok: {p}")
         sys.exit(1)
 
     # 2) Yukleme. P15a / GHIDRA-04: bilinmeyen bolum / anahtar, tipe uymayan deger,
     # bos olmayan ama sozluk olmayan bolum ve YAML ayristirma hatasi -> her sorun
     # ayri satir, cikis 1. Eskiden bunlarin hepsine "OK" deniyordu.
     console.print(f"[bold]Yol:[/bold]   {p}"
-                  + ("" if exists else "  [yellow](dosya yok -> varsayilan)[/yellow]"))
+                  + ("" if exists else "  [yellow](dosya yok -> varsayılan)[/yellow]"))
     try:
         cfg = Config.load(p if exists else None)
     except Exception as exc:
@@ -2541,12 +2541,12 @@ def config_validate(config_path: Optional[str]) -> None:
     # MEK-05: YAML'da yazilmis ama hicbir kodun okumadigi ayarlar.
     warns = cfg.validate() + cfg.inert_setting_warnings()
     if warns:
-        console.print(Rule("Uyarilar", style="yellow"))
+        console.print(Rule("Uyarılar", style="yellow"))
         for w in warns:
             console.print(f"  [yellow]-[/yellow] {w}")
         console.print(
-            f"\n[yellow]{len(warns)} uyari[/yellow] "
-            "(bunlar bir kismi araclarin kurulu olmamasindan kaynaklanabilir)."
+            f"\n[yellow]{len(warns)} uyarı[/yellow] "
+            "(bunlar bir kismi araçların kurulu olmamasından kaynaklanabilir)."
         )
     else:
-        console.print("[green]OK[/green] Dogrulama uyarisi yok.")
+        console.print("[green]OK[/green] Doğrulama uyarısı yok.")

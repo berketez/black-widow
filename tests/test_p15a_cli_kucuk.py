@@ -27,7 +27,7 @@ def test_clean_missing_target_fails_before_asking(tmp_path: Path) -> None:
     root = _ws(tmp_path)
     res = CliRunner().invoke(karadul_main, ["clean", "yok", "--output-dir", str(root)])
     assert res.exit_code == 1
-    assert "Workspace bulunamadi" in res.stderr
+    assert "Workspace bulunamadı" in res.stderr
     assert "silinsin mi" not in res.output
 
 

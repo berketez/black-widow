@@ -450,7 +450,7 @@ class TestCLIRunYesFlag:
         result = runner.invoke(main, ["run", "nonexistent_target", "--yes"])
         # Workspace bulunamadi hatasi bekleniyor, confirmation sorulmadan
         assert result.exit_code != 0
-        assert "HATA" in result.output or "bulunamadi" in result.output.lower() or result.exit_code != 0
+        assert "HATA" in result.output or "bulunamadı" in result.output.lower() or result.exit_code != 0
 
     def test_run_with_y_short_flag(self) -> None:
         """-y kisa flag ile run komutu confirmation atlar."""

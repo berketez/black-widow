@@ -1,8 +1,8 @@
 """
 karadul.cli_common -- CLI ortak yardimcilar (B17 refactor).
 
-Bu modul `karadul/cli.py` (Click tabanli klasik CLI) ve
-`karadul/hacker_cli.py` (Rich Live tabanli hacker dashboard) arasinda
+Bu modul `karadul/cli.py` (Click tabanlı klasik CLI) ve
+`karadul/hacker_cli.py` (Rich Live tabanlı hacker dashboard) arasında
 *tekrar eden* iki parcayi merkezilestirir:
 
 1. `format_size(size)` -- byte -> insanca okunabilir string. Onceden
@@ -14,8 +14,8 @@ Bu modul `karadul/cli.py` (Click tabanli klasik CLI) ve
 
 Tasarim notlari:
 - `build_pipeline` esnek kullanilabilir: cli.py karmasik filtreleme
-  (--stage stop_after + --skip-dynamic) icin `stages=` parametresi ile
-  cagirir; hacker_cli.py default davranis (tum stage'ler) icin
+  (--stage stop_after + --skip-dynamic) için `stages=` parametresi ile
+  cagirir; hacker_cli.py default davranis (tüm stage'ler) için
   parametresiz cagirir.
 - ReconstructionStage opsiyonel (ImportError tolere edilir).
 - `format_size` public (underscore yok) -- iki tarafdan da
@@ -91,7 +91,7 @@ def _resolve_stage_classes(requested: Iterable[str]) -> list:
                    "deobfuscate", "reconstruct", "report").
 
     Returns:
-        Instantiate edilmis stage objeleri listesi (`requested` sirasinda).
+        Instantiate edilmiş stage objeleri listesi (`requested` sirasinda).
         Bilinmeyen veya ImportError olan stage'ler atlanir.
     """
     from karadul.stages import (
@@ -115,7 +115,7 @@ def _resolve_stage_classes(requested: Iterable[str]) -> list:
         from karadul.stages import ReconstructionStage
         stage_map["reconstruct"] = ReconstructionStage
     except ImportError as exc:
-        logger.warning("ReconstructionStage yuklenemedi, atlaniyor: %s", exc)
+        logger.warning("ReconstructionStage yüklenemedi, atlanıyor: %s", exc)
 
     instances = []
     for name in requested:
@@ -132,12 +132,12 @@ def filter_stages(
     stop_after: Optional[str] = None,
     skip_dynamic: bool = False,
 ) -> list[str]:
-    """Default sira uzerinde filtre uygulayarak aktif stage isim listesini dondur.
+    """Default sira üzerinde filtre uygulayarak aktif stage isim listesini dondur.
 
     Args:
         stop_after: Bu stage'den sonrasini at (dahil bu stage). None ise
                     tumu.
-        skip_dynamic: True ise "dynamic" stage'i listeden cikar.
+        skip_dynamic: True ise "dynamic" stage'i listeden çıkar.
 
     Returns:
         Filtre uygulanmis stage isim listesi (DEFAULT_STAGE_ORDER sirasinda).
@@ -167,7 +167,7 @@ def build_pipeline(
 ) -> "Pipeline":
     """Pipeline olustur, istenen stage'leri register et ve geri dondur.
 
-    Iki kullanim sekli vardir:
+    İki kullanim sekli vardir:
 
     1. Filtre uygulama (cli.py klasik mod):
         ``build_pipeline(cfg, stop_after="static", skip_dynamic=True)``
@@ -177,19 +177,19 @@ def build_pipeline(
         ``build_pipeline(cfg, stages=["identify", "static", "report"])``
         -> Tam o sira ile register edilir.
 
-    Eger her ikisi de None ise tum default stage'ler register edilir.
+    Eger her ikisi de None ise tüm default stage'ler register edilir.
 
     Args:
         config: `karadul.config.Config` instance.
         stages: Explicit stage isim listesi. Verilirse `stop_after` ve
                 `skip_dynamic` parametreleri yok sayilir.
         stop_after: Bu stage'de dur (dahil). Sadece `stages` None ise
-                    kullanilir.
+                    kullanılır.
         skip_dynamic: "dynamic" stage'i atla. Sadece `stages` None ise
-                      kullanilir.
+                      kullanılır.
 
     Returns:
-        Stage'leri register edilmis `Pipeline` instance.
+        Stage'leri register edilmiş `Pipeline` instance.
 
     Raises:
         Caglir tarafa hicbir exception yumuselendir-MIYOR. Pipeline'in
@@ -221,12 +221,12 @@ def make_progress_callbacks(
     Callable[[str, Any, int, int], None],
     Callable[[str, str, float], None],
 ]:
-    """Tek satirlik `rich.progress.Progress` bar icin pipeline callback'leri uret.
+    """Tek satırlık `rich.progress.Progress` bar için pipeline callback'leri üret.
 
     `karadul.core.pipeline.Pipeline.run` uc opsiyonel callback kabul eder
     (`on_stage_start`, `on_stage_complete`, `on_progress`). Bu helper onlari
     verilen `progress` bar / `task_id` uzerine baglar. `hacker_cli.py`'nin tam
-    Live dashboard'i DEGIL -- sade tek satir ilerleme cubugu (cli.py analyze).
+    Live dashboard'i DEĞİL -- sade tek satir ilerleme cubugu (cli.py analyze).
 
     Bar'in `total`'i pipeline stage sayisina esit olmalidir; her stage bitince
     `advance=1` ile ilerler. Alt-ilerleme (`on_progress`) sadece aciklama
@@ -236,8 +236,8 @@ def make_progress_callbacks(
     Args:
         progress: Aktif (context icinde acilmis) Rich Progress instance'i.
         task_id: `progress.add_task(...)` ile olusturulmus task kimligi.
-        stage_labels: Stage adi -> insanca etiket eslemesi (opsiyonel). Yoksa
-                      stage adi Title Case yapilir.
+        stage_labels: Stage adı -> insanca etiket eslemesi (opsiyonel). Yoksa
+                      stage adı Title Case yapilir.
 
     Returns:
         `(on_stage_start, on_stage_complete, on_progress)` uclusu. Dogrudan
