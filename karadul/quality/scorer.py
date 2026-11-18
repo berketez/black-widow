@@ -27,9 +27,9 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
-from karadul.quality.config import GROUND_TRUTH_SCORE, ScorerConfig
+from karadul.quality.config import ScorerConfig
 from karadul.quality.dwarf_baseline import DwarfBaseline, DwarfBaselineResult
 from karadul.quality.metrics import (
     CodeStructureMetric,
@@ -74,19 +74,31 @@ class ScoreResult:
 class CompareResult:
     """Baseline (debug) vs reconstructed skor karsilastirmasi.
 
+    TIP-10 (P15b): debug baseline puanı ÖLÇÜLMÜYOR. Eskiden tanım gereği sabit 100
+    alınıyor, ``normalized`` yeniden kurulan puanın kendisi oluyor ve "debug'a göre
+    %X" diye okunuyordu: rastgele İngilizce adlı ağaç gerçek adlı ağaçla aynı
+    iddiayı alıyordu. Artık baseline / delta / normalized / accuracy ``None``
+    ("ölçülmedi"); DWARF'tan gelen yalnız gerçek sayımlar (``baseline_statistics``).
+
     Attributes:
-        baseline_score: Ground truth (debug) skoru -- tanim geregi 100.
-        reconstructed_score: Olculen skor.
-        delta: baseline - reconstructed.
-        normalized: reconstructed / baseline * 100 (yani dogrudan yuzde).
-        dimension_deltas: Her boyut icin (baseline, reconstructed, delta).
+        baseline_score: Ölçülmedi → None (sabit 100 kaldırıldı).
+        reconstructed_score: Olculen (yüzey) skor.
+        delta: Baseline ölçülmediği için None.
+        normalized: Baseline ölçülmediği için None.
+        dimension_deltas: Her boyut: {"baseline": None, "reconstructed": s, "delta": None}.
+        accuracy: Ad doğruluğu (DWARF adlarıyla) ölçülmedi → None.
+        baseline_available: Debug bilgisi bulundu mu.
+        baseline_statistics: DWARF sayımları (fonksiyon / parametre / lokal; gerçek veri).
     """
 
-    baseline_score: float
+    baseline_score: Optional[float]
     reconstructed_score: float
-    delta: float
-    normalized: float
-    dimension_deltas: dict[str, dict[str, float]]
+    delta: Optional[float]
+    normalized: Optional[float]
+    dimension_deltas: dict[str, dict[str, Optional[float]]]
+    accuracy: Optional[float] = None
+    baseline_available: bool = False
+    baseline_statistics: dict[str, Any] = field(default_factory=dict)
 
 
 class ReadabilityScorer:
@@ -176,9 +188,10 @@ class ReadabilityScorer:
         )
 
     def score_ground_truth(self, binary_path: Path) -> DwarfBaselineResult:
-        """Debug binary'sinden ground truth baseline dondur.
+        """Debug binary'sinden baseline (DWARF sayımları) döndür.
 
-        Debug bilgisi varsa score=100 (tanim geregi). Yoksa available=False.
+        Puan ÖLÇÜLMEZ (TIP-10): ``score`` None; yalnız debug bilgisinin varlığı
+        ve sayımları. Yoksa available=False.
         """
         baseline = DwarfBaseline(Path(binary_path))
         return baseline.result()
@@ -188,30 +201,26 @@ class ReadabilityScorer:
         baseline: DwarfBaselineResult,
         reconstructed: ScoreResult,
     ) -> CompareResult:
-        """Baseline (debug) vs reconstructed karsilastirma.
+        """Baseline (debug) vs reconstructed karşılaştırma (TIP-10).
 
-        Baseline skoru tanim geregi 100'dur. Normalized skor zaten
-        reconstructed'in kendisi (0-100 oldugu icin).
+        Baseline puanı ölçülmez: eskiden sabit 100 alınıyor ve ``normalized``
+        yeniden kurulan puanın kendisi oluyordu (yanlış ad da "debug'a yakın"
+        görünüyordu). Artık baseline / delta / normalized / accuracy None;
+        DWARF sayımları (gerçek veri) ``baseline_statistics``'te.
         """
-        baseline_score = GROUND_TRUTH_SCORE if baseline.available else 0.0
-        recon_score = reconstructed.total_score
-
-        dimension_deltas: dict[str, dict[str, float]] = {}
-        for name, score in reconstructed.dimensions.items():
-            # Baseline her boyutta 100 varsayilir
-            bl = GROUND_TRUTH_SCORE if baseline.available else 0.0
-            dimension_deltas[name] = {
-                "baseline": bl,
-                "reconstructed": score,
-                "delta": bl - score,
-            }
-
+        dimension_deltas: dict[str, dict[str, Optional[float]]] = {
+            name: {"baseline": None, "reconstructed": score, "delta": None}
+            for name, score in reconstructed.dimensions.items()
+        }
         return CompareResult(
-            baseline_score=baseline_score,
-            reconstructed_score=recon_score,
-            delta=baseline_score - recon_score,
-            normalized=recon_score if baseline_score > 0 else 0.0,
+            baseline_score=None,
+            reconstructed_score=reconstructed.total_score,
+            delta=None,
+            normalized=None,
             dimension_deltas=dimension_deltas,
+            accuracy=None,
+            baseline_available=bool(baseline.available),
+            baseline_statistics=dict(baseline.statistics or {}),
         )
 
     # ------------------------------------------------------------------

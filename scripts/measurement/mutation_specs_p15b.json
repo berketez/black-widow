@@ -184,6 +184,22 @@
       "test": "tests/test_p15b_etkisiz_bayraklar.py",
       "find": "    \"analysis.use_deep_deobfuscation\": (\n",
       "replace": "    \"analysis.use_deep_deobfuscation_eski\": (\n"
+    },
+    {
+      "id": "k5s_sabit_100",
+      "desc": "debug baseline puanı yeniden sabit 100",
+      "module": "karadul/quality/scorer.py",
+      "test": "tests/test_p15b_score.py",
+      "find": "baseline_score=None,",
+      "replace": "baseline_score=100.0,"
+    },
+    {
+      "id": "k5s_normalized",
+      "desc": "normalized yeniden yeniden kurulan puanın kendisi (\"debug'a göre %\")",
+      "module": "karadul/quality/scorer.py",
+      "test": "tests/test_p15b_score.py::test_rastgele_ve_gercek_ad_ayni_dogruluk_iddiasini_almaz",
+      "find": "            normalized=None,",
+      "replace": "            normalized=reconstructed.total_score,"
     }
   ]
 }

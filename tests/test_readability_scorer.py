@@ -477,7 +477,7 @@ def test_dwarf_baseline_missing(tmp_path: Path):
     baseline = DwarfBaseline(f)
     result = baseline.result()
     assert result.available is False
-    assert result.score == 0.0
+    assert result.score is None  # TIP-10 (P15b): puan uydurulmaz
 
 
 def test_dwarf_baseline_nonexistent_file(tmp_path: Path):
@@ -492,36 +492,40 @@ def test_dwarf_baseline_nonexistent_file(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 def test_compare_debug_vs_stripped(clean_src, tmp_path: Path):
-    """Baseline available ise karsilastirmada baseline_score=100."""
+    """TIP-10 (P15b): baseline puanı ölçülmez — sabit 100 yok; DWARF sayımları taşınır."""
     scorer = ReadabilityScorer()
     recon = scorer.score_directory(clean_src[0].parent)
 
     # Mock baseline -- direk DwarfBaselineResult olustur
     baseline = DwarfBaselineResult(
-        score=100.0,
+        score=None,
         available=True,
         statistics={"function_count": 2, "param_count": 3, "local_count": 3},
     )
     cmp = scorer.compare(baseline, recon)
     assert isinstance(cmp, CompareResult)
-    assert cmp.baseline_score == 100.0
+    assert cmp.baseline_score is None
     assert cmp.reconstructed_score == recon.total_score
-    assert cmp.delta == pytest.approx(100.0 - recon.total_score, abs=1e-3)
-    # Her boyut icin delta olmali
+    assert cmp.delta is None and cmp.normalized is None and cmp.accuracy is None
+    assert cmp.baseline_available is True
+    assert cmp.baseline_statistics["function_count"] == 2
+    # Her boyut icin kayit olmali (baseline / delta ölçülmedi)
     assert len(cmp.dimension_deltas) == 6
+    assert all(v["baseline"] is None and v["delta"] is None for v in cmp.dimension_deltas.values())
 
 
 def test_compare_no_baseline(clean_src):
-    """Baseline yoksa baseline_score 0, delta negatif olabilir."""
+    """Baseline yoksa da puan uydurulmaz: None."""
     scorer = ReadabilityScorer()
     recon = scorer.score_directory(clean_src[0].parent)
     baseline = DwarfBaselineResult(
-        score=0.0,
+        score=None,
         available=False,
         statistics={"note": "yok"},
     )
     cmp = scorer.compare(baseline, recon)
-    assert cmp.baseline_score == 0.0
+    assert cmp.baseline_score is None
+    assert cmp.baseline_available is False
 
 
 # ---------------------------------------------------------------------------

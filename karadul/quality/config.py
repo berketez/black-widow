@@ -29,8 +29,8 @@ WEIGHT_CODE_STRUCTURE: float = 0.15
 
 SCORE_MIN: float = 0.0
 SCORE_MAX: float = 100.0
-# Debug binary ground truth'un varsayilan skoru (baseline)
-GROUND_TRUTH_SCORE: float = 100.0
+# TIP-10 (P15b): debug baseline için sabit puan (GROUND_TRUTH_SCORE = 100) kaldırıldı;
+# baseline puanı ölçülmüyor, karşılaştırma None ("ölçülmedi") döndürür.
 
 
 # ---------------------------------------------------------------------------

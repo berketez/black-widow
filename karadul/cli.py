@@ -2172,7 +2172,7 @@ def bsim_probe(json_output: bool) -> None:
 @click.option(
     "--baseline", "-b", type=click.Path(exists=True),
     default=None,
-    help="Debug binary yolu (ground truth karşılaştırması).",
+    help="Debug ikilisi: yalnız DWARF sayımlarını gösterir (puanı ölçülmez, doğruluk karşılaştırması yapılmaz).",
 )
 @click.option(
     "--json", "json_output", is_flag=True,
@@ -2231,11 +2231,15 @@ def score(
         if details:
             payload["details"] = result.details
         if compare_result is not None:
+            # TIP-10 (P15b): baseline / delta / normalized / accuracy ölçülmedi → null.
             payload["compare"] = {
                 "baseline_score": compare_result.baseline_score,
                 "reconstructed_score": compare_result.reconstructed_score,
                 "delta": compare_result.delta,
                 "normalized": compare_result.normalized,
+                "accuracy": compare_result.accuracy,
+                "baseline_available": compare_result.baseline_available,
+                "baseline_statistics": compare_result.baseline_statistics,
                 "dimension_deltas": compare_result.dimension_deltas,
             }
         click.echo(_json.dumps(payload, indent=2, ensure_ascii=False))
@@ -2280,34 +2284,30 @@ def score(
             console.print(val)
 
     if compare_result is not None:
-        console.print(Rule("Baseline Karşılaştırma (Debug = 100: sabit, ölçülmedi)"))
-        cmp_table = Table(border_style="cyan")
-        cmp_table.add_column("Boyut", style="bold")
-        cmp_table.add_column("Baseline", justify="right")
-        cmp_table.add_column("Reconstructed", justify="right")
-        cmp_table.add_column("Delta", justify="right")
-        for name, vals in compare_result.dimension_deltas.items():
-            cmp_table.add_row(
-                name,
-                f"{vals['baseline']:.2f}",
-                f"{vals['reconstructed']:.2f}",
-                f"{vals['delta']:.2f}",
-            )
-        console.print(cmp_table)
+        # TIP-10 (P15b): baseline puanı ölçülmüyor; sabit 100 ve "reconstructed/baseline %"
+        # kaldırıldı. Yalnız DWARF'ın gerçek sayımları gösterilir.
+        console.print(Rule("Baseline (Debug / DWARF)"))
+        if compare_result.baseline_available:
+            console.print("Debug bilgisi: [green]var[/green]")
+            for name, val in compare_result.baseline_statistics.items():
+                console.print(f"  {name}: {val}")
+        else:
+            note = compare_result.baseline_statistics.get("note", "debug bilgisi yok")
+            console.print(f"Debug bilgisi: [yellow]yok[/yellow] ({note})")
         console.print(
-            f"\n[bold]Toplam delta:[/bold] {compare_result.delta:.2f}  "
-            f"[dim](reconstructed/baseline: {compare_result.normalized:.2f}%)[/dim]"
+            "[yellow]Doğruluk ölçülmedi:[/yellow] debug puanı hesaplanmıyor; adların "
+            "DWARF adlarıyla karşılaştırması yapılmadığı için 'debug'a göre %' verilmez."
         )
 
 
-# TIP-10 (P15a): `score` puanı adların / yorumların DOĞRULUĞUNU ölçmez. Ad boyutu
+# TIP-10 (P15a, P15b): `score` puanı adların / yorumların DOĞRULUĞUNU ölçmez. Ad boyutu
 # FUN_ olmayan ve İngilizce kökü olan her adı anlamlı sayar (yanlış ad da puanı
-# yükseltir); yorum boyutu yorum yoğunluğudur; baseline puanı sabit 100'dür.
+# yükseltir); yorum boyutu yorum yoğunluğudur. P15b: baseline için sabit 100 kaldırıldı.
 _SCORE_NOTE = (
     "Bu puan bir YÜZEY ölçütüdür, doğruluk ölçmez: FUN_ olmayan ve İngilizce kökü "
     "olan her ad 'anlamlı', her yorum satırı 'yorum' sayılır; yanlış ad ve uydurma "
-    "yorum da puanı yükseltir. Baseline (Debug) puanı ölçülmez, sabit 100 alınır. "
-    "Doğruluk için DWARF adlarıyla ölçüm gerekir."
+    "yorum da puanı yükseltir. Baseline (Debug) puanı ölçülmez; --baseline yalnız "
+    "DWARF sayımlarını gösterir. Doğruluk için DWARF adlarıyla ölçüm gerekir."
 )
 
 

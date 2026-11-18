@@ -1,8 +1,8 @@
 """Debug binary -> ground truth baseline skor saglayici.
 
 DwarfExtractor'i kullanarak debug bilgisine sahip bir binary'den
-fonksiyon/parametre/lokal/tip istatistigi cikarir. Debug binary
-her zaman 100 baseline puan alir (tanim geregi -- gercek isimler var).
+fonksiyon/parametre/lokal/tip istatistigi cikarir. Debug ikilisinin puanı
+ÖLÇÜLMEZ (TIP-10, P15b): eskiden "tanım gereği 100" yazılıyordu; artık None.
 
 Kullanim:
     from karadul.quality.dwarf_baseline import DwarfBaseline
@@ -18,19 +18,22 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from karadul.analyzers.dwarf_extractor import DwarfExtractor
-from karadul.quality.config import GROUND_TRUTH_SCORE
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class DwarfBaselineResult:
-    """Debug binary baseline istatistikleri."""
+    """Debug binary baseline istatistikleri.
 
-    score: float
+    ``score`` ölçülmez (TIP-10, P15b): None. Eskiden "tanım gereği 100" yazılıyordu;
+    debug ikilisinin okunabilirlik puanı hiç hesaplanmıyordu.
+    """
+
+    score: Optional[float]
     available: bool
     statistics: dict[str, Any]
 
@@ -38,8 +41,8 @@ class DwarfBaselineResult:
 class DwarfBaseline:
     """Debug binary uzerinden baseline saglayici.
 
-    DWARF debug info varsa 100 puanlik referans skor ve fonksiyon/parametre/
-    lokal sayim istatistikleri verir. Yoksa graceful skip.
+    DWARF debug info varsa fonksiyon/parametre/lokal sayım istatistiklerini
+    verir (puan ölçülmez, ``score`` None). Yoksa graceful skip.
     """
 
     def __init__(self, binary_path: Path) -> None:
@@ -72,12 +75,12 @@ class DwarfBaseline:
             logger.warning("DWARF extractor hata: %s", exc)
 
     def result(self) -> DwarfBaselineResult:
-        """Baseline sonucu: skor 100 + istatistikler, yoksa available=False."""
+        """Baseline sonucu: DWARF istatistikleri (puan ölçülmez), yoksa available=False."""
         self._ensure_checked()
 
         if not self._available or self._extractor is None:
             return DwarfBaselineResult(
-                score=0.0,
+                score=None,
                 available=False,
                 statistics={"note": "DWARF debug info bulunamadi"},
             )
@@ -87,14 +90,14 @@ class DwarfBaseline:
         except Exception as exc:  # pragma: no cover
             logger.warning("DWARF parse hata: %s", exc)
             return DwarfBaselineResult(
-                score=0.0,
+                score=None,
                 available=False,
                 statistics={"note": f"DWARF parse hata: {exc}"},
             )
 
         stats = self._compute_stats(functions)
         return DwarfBaselineResult(
-            score=GROUND_TRUTH_SCORE,
+            score=None,
             available=True,
             statistics=stats,
         )
