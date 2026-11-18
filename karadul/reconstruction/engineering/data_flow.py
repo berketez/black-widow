@@ -774,37 +774,52 @@ class InterProceduralDataFlow:
             len(c_files), len(cg_nodes),
         )
 
-        # Faz 1: Her dosyadan lokal veri akisi bilgisi cikar (paralel)
+        # Faz 1: Her dosyadan lokal veri akisi bilgisi cikar (paralel).
+        # P-S3 (2026-11-18): sonuçlar bitiş sırasıyla değil GİRDİ sırasıyla (sıralı dosya
+        # listesi) birleşir. Eskiden as_completed sırası kenar listesini ve all_func_code'u
+        # koşudan koşuya değiştiriyordu: aynı fonksiyon adını birden çok dosya tanımladığında
+        # (Ghidra'nın aynı adlı thunk / dış kayıt fonksiyonları: ``ad.c``, ``ad_<adres>.c``)
+        # hangi gövdenin kaldığı bitiş sırasına bağlıydı ve çapraz fonksiyon kenarları
+        # (struct_field, allocation_chain) buna göre değişiyordu (aynı girdiyle htop
+        # 4 286 ↔ 4 273, tree 123 ↔ 131). Şimdi aynı ad için İLK dosyanın gövdesi tutulur:
+        # sıralı listede eksiz ``ad.c`` önce gelir ve P16a'dan beri eksiz ad, adres sırasında
+        # ilk fonksiyonundur. Hata iletileri de girdi sırasıyla.
         file_edges: list[DataFlowEdge] = []
         all_func_code: dict[str, str] = {}  # func_name -> code body
-        edges_lock = threading.Lock()
-        code_lock = threading.Lock()
+        results: list[tuple[list[DataFlowEdge], dict[str, str]] | None] = [None] * len(c_files)
+        failures: dict[int, str] = {}
 
         with ThreadPoolExecutor(max_workers=CPU_PERF_CORES) as pool:
             futures = {
                 pool.submit(
                     self._analyze_file, f, func_info, cg_nodes,
-                ): f
-                for f in c_files
+                ): i
+                for i, f in enumerate(c_files)
             }
             processed = 0
             for future in as_completed(futures):
                 processed += 1
+                i = futures[future]
                 try:
-                    edges, func_codes = future.result()
-                    with edges_lock:
-                        file_edges.extend(edges)
-                    with code_lock:
-                        all_func_code.update(func_codes)
+                    results[i] = future.result()
                 except Exception as exc:
-                    cf = futures[future]
-                    errors.append(f"Data flow analysis failed for {cf.name}: {exc}")
+                    failures[i] = f"Data flow analysis failed for {c_files[i].name}: {exc}"
                 if processed % 500 == 0:
                     logger.info(
                         "  Data flow scan: %d/%d (%.0f%%)",
                         processed, len(c_files),
                         100.0 * processed / len(c_files),
                     )
+
+        for i, res in enumerate(results):
+            if res is None:
+                if i in failures:
+                    errors.append(failures[i])
+                continue
+            edges, func_codes = res
+            file_edges.extend(edges)
+            for func_name, body in func_codes.items():
+                all_func_code.setdefault(func_name, body)
 
         # Faz 2: Cross-function struct field akisi
         struct_edges = self._extract_cross_func_struct_flows(

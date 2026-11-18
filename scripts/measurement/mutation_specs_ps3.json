@@ -1,0 +1,141 @@
+{
+ "_comment": "P-S3 (2026-11-18): gnulib ön ad kanalı varlık kanıtına ve LTO yerleşimine bağlı (AD-03, B-A3); veri akışı sonuçları girdi sırasıyla birleşir. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ps3.json",
+ "mutants": [
+  {
+   "id": "ps3_varlik_kapisi_yok",
+   "desc": "varlık kanıtı yetersizken de ad yazılır (AD-03 eski davranış)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestVarlikKaniti::test_gnulibsiz_ikilide_write_error_close_stdout_olmaz",
+   "find": "                if not presence.sufficient:\n",
+   "replace": "                if False and not presence.sufficient:\n"
+  },
+  {
+   "id": "ps3_esik_bir_modul",
+   "desc": "tek modül yeter (eşik 2 -> 1)",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestVarlikKaniti::test_tek_modul_yetmez",
+   "find": "MIN_PRESENCE_MODULES = 2\n",
+   "replace": "MIN_PRESENCE_MODULES = 1  # mutant\n"
+  },
+  {
+   "id": "ps3_her_isaret_bulunur",
+   "desc": "işaret araması her modülü bulunmuş sayar (genel dizgiler kanıt olur)",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestVarlikKaniti::test_genel_dizgiler_kanit_sayilmaz",
+   "find": "            hit = (anchor in blob) if marker.kind == PRESENCE_KIND_STRING else (anchor in callees)\n",
+   "replace": "            hit = True\n"
+  },
+  {
+   "id": "ps3_cagri_isareti_sayilmaz",
+   "desc": "çağrı işaretleri (__fpending, __freading) kanıt sayılmaz",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestVarlikKaniti::test_cagri_isaretleri_kanit_sayilir",
+   "find": "            hit = (anchor in blob) if marker.kind == PRESENCE_KIND_STRING else (anchor in callees)\n",
+   "replace": "            hit = (anchor in blob) if marker.kind == PRESENCE_KIND_STRING else False\n"
+  },
+  {
+   "id": "ps3_isaret_kaynakta_yok",
+   "desc": "version-etc işareti upstream kaynakta geçmeyen bir metne döner",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::test_varlik_isaretleri_upstream_kaynakta",
+   "find": "        (\"General help using GNU software\",\n",
+   "replace": "        (\"General help using GNU softwares\",\n"
+  },
+  {
+   "id": "ps3_yerlesim_kurali_yok",
+   "desc": "LTO yerleşim kuralı uygulanmaz (B-A3 eski davranış)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestLtoYerlesimi::test_ince_cagiranlarda_ad_yazilmaz",
+   "find": "                    if lto_less_layout(counts):\n",
+   "replace": "                    if False and lto_less_layout(counts):\n"
+  },
+  {
+   "id": "ps3_ince_esigi_genis",
+   "desc": "ince sarmalayıcı eşiği 2 -> 99 (geniş çağıran da ince sayılır)",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestLtoYerlesimi::test_genis_cagiranda_ad_yazilir",
+   "find": "THIN_CALLER_MAX_CALLEES = 2\n",
+   "replace": "THIN_CALLER_MAX_CALLEES = 99\n"
+  },
+  {
+   "id": "ps3_yerlesim_herhangi",
+   "desc": "bütün çağıranlar yerine herhangi biri ince yeter",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestLtoYerlesimi::test_bir_genis_cagiran_yeter",
+   "find": "and all(c <= THIN_CALLER_MAX_CALLEES for c in counts)",
+   "replace": "and any(c <= THIN_CALLER_MAX_CALLEES for c in list(counts))"
+  },
+  {
+   "id": "ps3_cagiransiz_tutulur",
+   "desc": "çağıranı olmayan ateşleme de LTO'suz sayılır",
+   "module": "karadul/analyzers/gnulib_fingerprints.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestLtoYerlesimi::test_cagirani_yoksa_eski_davranis",
+   "find": "    return bool(counts) and all(",
+   "replace": "    return not counts or all("
+  },
+  {
+   "id": "ps3_kural_her_girdiye",
+   "desc": "yerleşim kuralı üç girdiyle sınırlı değil",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestLtoYerlesimi::test_kural_yalniz_uc_girdiye",
+   "find": "                if nm in LAYOUT_DEPENDENT_NAMES:\n",
+   "replace": "                if nm or nm in LAYOUT_DEPENDENT_NAMES:\n"
+  },
+  {
+   "id": "ps3_onerilen_yeniden_aday",
+   "desc": "tutulan dizgi adayı çağrı şekli katmanına yeniden aday olur",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestLtoYerlesimi::test_tutulan_aday_baska_gnulib_adi_almaz",
+   "find": "                    if fun_key in proposed:\n                        continue\n",
+   "replace": "                    if fun_key in proposed and False:\n                        continue\n"
+  },
+  {
+   "id": "ps3_on_ad_ezilir",
+   "desc": "başka adla dolu anahtar (main / Faz 1) gnulib adıyla ezilir",
+   "module": "karadul/stages.py",
+   "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedRecoveryGnulib::test_does_not_overwrite_existing_prename",
+   "find": "                if current is not None and current != nm:\n                    rec.update(decision=\"skipped\"",
+   "replace": "                if current is not None and not current != nm:\n                    rec.update(decision=\"skipped\""
+  },
+  {
+   "id": "ps3_tutulan_uygulandi_der",
+   "desc": "tutulan aday kayda 'applied' diye yazılır (sahte karar)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestVarlikKaniti::test_gnulibsiz_ikilide_write_error_close_stdout_olmaz",
+   "find": "rec.update(decision=\"withheld\", reason=\"gnulib_kaniti_yetersiz\",",
+   "replace": "rec.update(decision=\"applied\", reason=\"gnulib_kaniti_yetersiz\","
+  },
+  {
+   "id": "ps3_aday_kaydi_yazilmaz",
+   "desc": "aday kaydı (static/gnulib_candidates.json) yazılmaz: tutulan adayın kanıtı kaybolur",
+   "module": "karadul/stages.py",
+   "test": "tests/test_ps3_gnulib_kanit.py::TestVarlikKaniti::test_gnulibsiz_ikilide_write_cagrisi_full_write_olmaz",
+   "find": "            self._write_gnulib_candidates(static_dir, presence, presence_line, decisions,\n",
+   "replace": "            (lambda *_a: None)(static_dir, presence, presence_line, decisions,\n"
+  },
+  {
+   "id": "ps3_df_son_govde_kazanir",
+   "desc": "aynı adda son dosyanın gövdesi tutulur (dış kayıt yer tutucusu gerçek gövdeyi ezer)",
+   "module": "karadul/reconstruction/engineering/data_flow.py",
+   "test": "tests/test_ps3_veri_akisi.py::test_ayni_adda_eksiz_dosyanin_govdesi",
+   "find": "                all_func_code.setdefault(func_name, body)\n",
+   "replace": "                all_func_code[func_name] = body\n"
+  },
+  {
+   "id": "ps3_df_ters_sira",
+   "desc": "sonuçlar ters girdi sırasıyla birleşir",
+   "module": "karadul/reconstruction/engineering/data_flow.py",
+   "test": "tests/test_ps3_veri_akisi.py::test_hata_iletileri_girdi_sirasiyla",
+   "find": "        for i, res in enumerate(results):\n",
+   "replace": "        for i, res in reversed(list(enumerate(results))):\n"
+  },
+  {
+   "id": "ps3_df_bitis_sirasi",
+   "desc": "eski davranış: kenarlar ve gövdeler bitiş sırasıyla birleşir",
+   "module": "karadul/reconstruction/engineering/data_flow.py",
+   "test": "tests/test_ps3_veri_akisi.py::test_bitis_sirasi_sonucu_degistirmez",
+   "find": "                try:\n                    results[i] = future.result()\n",
+   "replace": "                try:\n                    results.append(future.result()); results[i] = None\n"
+  }
+ ]
+}
