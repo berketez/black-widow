@@ -12,6 +12,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+from karadul.pipeline.steps._feedback_naming_bindiff import (
+    pre_name_meta_of,
+    update_unprotected,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +77,11 @@ def run_reference_differ(
         )
 
         if refdiff_naming:
-            extracted_names.update(refdiff_naming)
+            # P13a / AD-11: elle, main ve KS-1 künyeli ön ad ezilmez.
+            protected = update_unprotected(
+                extracted_names, refdiff_naming, pre_name_meta_of(ctx))
+            if protected:
+                stats["refdiff_protected_pre_names"] = len(protected)
             logger.info(
                 "ReferenceDiffer: %d fonksiyon eslesti", len(refdiff_naming),
             )

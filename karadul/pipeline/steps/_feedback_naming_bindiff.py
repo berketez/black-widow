@@ -12,7 +12,45 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from karadul.reconstruction.tarif import baglama as _baglama
+
 logger = logging.getLogger(__name__)
+
+# P13a / AD-11 + B-C6: BinDiff / ReferenceDiffer'ın ezemediği ön ad türleri: elle (analist),
+# ``main`` girişi (yükleyicinin bulduğu), KS-1 kesin çapası. Öncelik ``tarif.baglama``'da
+# (elle > main > KS-1 > Faz 1 > gnulib > ELF önyükü); eşleşme adları bu sırada yok, ölçülmemiş.
+DIFF_PROTECTED_KINDS = frozenset(_baglama.PROTECTED_KINDS | {_baglama.KIND_KS1})
+
+
+def pre_name_meta_of(ctx: Any) -> dict[str, Any] | None:
+    """Faz 2 tohumundaki ön ad künyesi (``pre_name_meta``); yoksa None."""
+    artifacts = getattr(ctx, "artifacts", None)
+    try:
+        meta = artifacts.get("pre_name_meta") if artifacts is not None else None
+    except Exception:
+        return None
+    return meta if isinstance(meta, dict) else None
+
+
+def update_unprotected(
+    extracted_names: dict[str, str],
+    new_names: dict[str, str],
+    meta: dict[str, Any] | None,
+) -> list[str]:
+    """``new_names``'i ön ad sözlüğüne yaz; korunan türdeki (elle, main, KS-1) künyeli adı EZME.
+
+    Künye ancak sözlükteki adı anlatıyorsa geçerlidir (``baglama.meta_for``). Dönen: yazılmayan
+    (korunan) anahtarlar, sıralı.
+    """
+    kept: list[str] = []
+    for key, name in new_names.items():
+        entry = _baglama.meta_for(meta, key, extracted_names.get(key, ""))
+        if entry is not None and entry.get("kind") in DIFF_PROTECTED_KINDS:
+            if extracted_names.get(key) != name:
+                kept.append(key)
+            continue
+        extracted_names[key] = name
+    return sorted(kept)
 
 
 def run_bindiff(
@@ -66,7 +104,10 @@ def run_bindiff(
 
         if bindiff_names:
             stats["bindiff_matches"] = len(bindiff_names)
-            extracted_names.update(bindiff_names)
+            protected = update_unprotected(
+                extracted_names, bindiff_names, pre_name_meta_of(ctx))
+            if protected:
+                stats["bindiff_protected_pre_names"] = len(protected)
             logger.info(
                 "BinDiff toplam: %d fonksiyon eslesti", len(bindiff_names),
             )

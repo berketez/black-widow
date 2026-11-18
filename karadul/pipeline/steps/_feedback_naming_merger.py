@@ -21,7 +21,9 @@ from karadul.config import CPU_PERF_CORES
 from karadul.pipeline.steps._feedback_naming_candidates import (
     collect_candidates,
 )
+from karadul.pipeline.steps._feedback_naming_bindiff import pre_name_meta_of
 from karadul.reconstruction import name_validity as _name_validity
+from karadul.reconstruction.tarif import baglama as _baglama
 
 try:
     from karadul.reconstruction.name_merger import NameMerger
@@ -166,6 +168,46 @@ def validate_merged_names(
             taken.add(name)
         kept[key] = name
     return kept, rejected
+
+
+def manual_names(meta: dict[str, Any] | None) -> dict[str, str]:
+    """Künyede elle (analist) türündeki ön adlar: anahtar → ad (sıralı)."""
+    out: dict[str, str] = {}
+    for key in sorted(meta or {}):
+        entry = (meta or {})[key]
+        if (isinstance(entry, dict) and entry.get("kind") == _baglama.KIND_MANUAL
+                and isinstance(entry.get("name"), str) and entry["name"]):
+            out[key] = entry["name"]
+    return out
+
+
+def force_manual_names(
+    final_map: dict[str, str], manual: dict[str, str], functions_json: Path | None,
+) -> tuple[int, dict[str, str]]:
+    """Elle adları ``final_map``'e zorla (yerinde). Ad geçerliliğinden geçmeyen zorlanmaz.
+
+    Dönen: (haritayı değiştiren zorlama sayısı, {zorlanmayan anahtar: ret nedeni}).
+    """
+    if not manual:
+        return 0, {}
+    existing, by_addr = _function_index(functions_json)
+    forced = 0
+    refused: dict[str, str] = {}
+    for key, name in manual.items():
+        own = key
+        if key.startswith("FUN_"):
+            try:
+                own = by_addr.get(int(key[4:], 16), key)
+            except ValueError:
+                own = key
+        reason = _name_validity.reject_reason(name, existing_functions=existing, own_name=own)
+        if reason is not None:
+            refused[key] = reason
+            continue
+        if final_map.get(key) != name:
+            final_map[key] = name
+            forced += 1
+    return forced, refused
 
 
 def write_merger_provenance(
@@ -362,6 +404,15 @@ def run_name_merger(
             k: v for k, v in final_naming_map.items()
             if k and len(k) >= 2 and v
         }
+        # B-C6 (AD-11): analistin elle verdiği ad birleştirmeden SONRA koda giden haritaya
+        # zorlanır (eskiden yalnız silinen monolitte vardı). Ad geçerliliğinden geçmeyen elle ad
+        # zorlanmaz; nedeniyle sayılır.
+        forced, refused = force_manual_names(
+            final_naming_map, manual_names(pre_name_meta_of(ctx)), functions_json)
+        if forced:
+            stats["name_merger_manual_forced"] = forced
+        if refused:
+            stats["name_merger_manual_refused"] = dict(sorted(Counter(refused.values()).items()))
         write_merger_provenance(
             decompiled_dir=decompiled_dir, reconstructed_dir=reconstructed_dir,
             iter_index=iter_index, merge_result=merge_result, final_map=merged_map,
