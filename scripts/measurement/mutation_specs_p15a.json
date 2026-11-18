@@ -88,6 +88,278 @@
       "test": "tests/test_p15a_cikis.py::test_many_errors_are_capped_on_screen",
       "find": "for reason in reasons[:_MAX_ERRORS_PER_STAGE]:",
       "replace": "for reason in reasons:"
+    },
+    {
+      "id": "g04_bilinmeyen_bolum_yutulur",
+      "desc": "bilinmeyen bölüm denetlenmiyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestUnknownNames::test_unknown_section_is_error_with_suggestion",
+      "find": "            if section not in sections:\n                problems.append(",
+      "replace": "            if False:\n                problems.append("
+    },
+    {
+      "id": "g04_bilinmeyen_anahtar_yutulur",
+      "desc": "bilinmeyen anahtar denetlenmiyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestUnknownNames::test_unknown_key_is_error_with_suggestion",
+      "find": "                if key not in hints:\n                    problems.append(",
+      "replace": "                if False:\n                    problems.append("
+    },
+    {
+      "id": "g04_int_dizgi_kabul",
+      "desc": "tamsayı alana dizgi kabul ediliyor (eski: \"abc\")",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestTypes::test_int_field_rejects",
+      "find": "        raise ConfigValueError(f\"{where}: {value!r} bir tamsayı değil\")",
+      "replace": "        return value"
+    },
+    {
+      "id": "g04_bool_int_kabul",
+      "desc": "tamsayı alana doğruluk değeri kabul ediliyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestTypes::test_int_field_rejects",
+      "find": "        if isinstance(value, bool):\n            raise ConfigValueError(f\"{where}: {value!r} bir tamsayı değil (doğruluk",
+      "replace": "        if False:\n            raise ConfigValueError(f\"{where}: {value!r} bir tamsayı değil (doğruluk"
+    },
+    {
+      "id": "g04_bos_bolum_hata",
+      "desc": "boş bölüm hata sayılıyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::test_empty_section_is_empty",
+      "find": "            if body is None:\n                continue",
+      "replace": "            if body is None:\n                body = body"
+    },
+    {
+      "id": "g04_sozluk_birlesmez",
+      "desc": "sözlük alan öntanımın yerine geçiyor (eski: 37 -> 1)",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::test_dict_field_merges_over_defaults",
+      "find": "merged = dict(default) if isinstance(default, dict) else {}",
+      "replace": "merged = {}"
+    },
+    {
+      "id": "g04_post_init_yok",
+      "desc": "bölüm aralık denetimi yüklenen değerle koşmuyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::test_min_confidence_range_is_checked",
+      "find": "            if callable(post_init) and dataclasses.is_dataclass(obj):",
+      "replace": "            if False:"
+    },
+    {
+      "id": "g04_liste_dizgi_kabul",
+      "desc": "liste alana tek dizgi kabul ediliyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestTypes::test_list_field_rejects_bare_string",
+      "find": "        if not isinstance(value, list):\n",
+      "replace": "        if False:\n"
+    },
+    {
+      "id": "g04_ilk_hatada_dur",
+      "desc": "sorunlar toplanmıyor, ilk tip hatasında duruluyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestUnknownNames::test_all_problems_reported_together",
+      "find": "                    problems.extend(exc.problems)\n                    continue",
+      "replace": "                    raise"
+    },
+    {
+      "id": "g04_kok_sozluk_degil",
+      "desc": "kökü sözlük olmayan YAML denetlenmiyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestUnknownNames::test_root_must_be_mapping",
+      "find": "        if not isinstance(data, dict):\n            raise ConfigValueError(",
+      "replace": "        if False:\n            raise ConfigValueError("
+    },
+    {
+      "id": "g04_yaml_hatasi_sarilmaz",
+      "desc": "YAML ayrıştırma hatası ConfigValueError'a çevrilmiyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestUnknownNames::test_yaml_syntax_error_is_config_error",
+      "find": "        except yaml.YAMLError as exc:",
+      "replace": "        except KeyError as exc:"
+    },
+    {
+      "id": "g04_validate_cikis_0",
+      "desc": "config validate yüklenemeyen dosyada devam ediyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_ayar.py::test_validate_reports_each_problem_and_exits_1",
+      "find": "        _print_config_problems(exc)\n        sys.exit(1)",
+      "replace": "        _print_config_problems(exc)\n        cfg = Config()"
+    },
+    {
+      "id": "n_acik_false_ezilir",
+      "desc": "YAML'da açıkça false yazılan alt izin ana anahtarla açılıyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestNetworkSubPermissions::test_explicit_false_wins",
+      "find": "            if name not in explicit_keys:\n                setattr(self, name, True)",
+      "replace": "            if True:\n                setattr(self, name, True)"
+    },
+    {
+      "id": "n_yukleyici_ana_anahtar_yok",
+      "desc": "YAML'da network.enabled alt izinleri açmıyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestNetworkSubPermissions::test_yaml_master_on_opens_data_permissions",
+      "find": "        cfg.network.apply_master_switch(explicit_keys={",
+      "replace": "        (lambda **kw: None)(explicit_keys={"
+    },
+    {
+      "id": "n_referans_indirme_izler",
+      "desc": "indirip derleyen izin de ana anahtarı izliyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_ayar.py::TestNetworkSubPermissions::test_yaml_master_on_opens_data_permissions",
+      "find": "MASTER_FOLLOWING_PERMISSIONS = (\"allow_dts_fetch\", \"allow_source_match\")",
+      "replace": "MASTER_FOLLOWING_PERMISSIONS = (\"allow_dts_fetch\", \"allow_source_match\", \"allow_reference_download\")"
+    },
+    {
+      "id": "n_cli_eski_bayrak",
+      "desc": "--enable-network yalnız ana anahtarı açıyor (eski davranış)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_ayar.py::TestNetworkSubPermissions::test_cli_enable_network_opens_dts",
+      "find": "        cfg.network.enable(explicit_keys={\n            k.split(\".\", 1)[1] for k in cfg.yaml_keys if k.startswith(\"network.\")\n        })",
+      "replace": "        cfg.network.enabled = True"
+    },
+    {
+      "id": "e05_analyze_uyarmaz",
+      "desc": "analyze etkisiz ayarı uyarmıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_etkisiz.py::test_analyze_warns_inert_setting_on_stderr",
+      "find": "    for warning in cfg.inert_setting_warnings():",
+      "replace": "    for warning in []:"
+    },
+    {
+      "id": "e05_validate_uyarmaz",
+      "desc": "config validate etkisiz ayarı uyarmıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_etkisiz.py::test_validate_warns_inert_settings",
+      "find": "    warns = cfg.validate() + cfg.inert_setting_warnings()",
+      "replace": "    warns = cfg.validate()"
+    },
+    {
+      "id": "e05_kayit_eksik",
+      "desc": "okunmayan bir alan kayıttan düşmüş",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_etkisiz.py::test_every_unread_field_is_registered",
+      "find": "    \"tools.radare2\": \"radare2 hiçbir yerde çağrılmıyor\",\n",
+      "replace": ""
+    },
+    {
+      "id": "e05_neden_yok",
+      "desc": "kayıttaki alan için uyarı üretilmiyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_etkisiz.py::test_validate_warns_inert_settings",
+      "find": "            reason = INERT_SETTINGS.get(key)",
+      "replace": "            reason = None"
+    },
+    {
+      "id": "e05_alt_izin_uyarmaz",
+      "desc": "ana anahtarsız alt izin uyarılmıyor",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_etkisiz.py::test_sub_permission_without_master_warns",
+      "find": "        if self.network.enabled is not True:\n            for name in",
+      "replace": "        if False:\n            for name in"
+    },
+    {
+      "id": "e05_rtti_abi_okunmaz",
+      "desc": "rtti komutu ayardaki ABI'yi okumuyor (eski)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_etkisiz.py::test_rtti_command_reads_abi_from_config",
+      "find": "    if abi is None:\n        abi = br.rtti_abi",
+      "replace": "    if abi is None:\n        abi = \"itanium\""
+    },
+    {
+      "id": "e05_rtti_config_yok",
+      "desc": "rtti komutu ayarı ayrıştırıcıya geçirmiyor (eski config=None)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_etkisiz.py::test_rtti_command_passes_vtable_limit",
+      "find": "    parser = RTTIParser(config=br)",
+      "replace": "    parser = RTTIParser(config=None)"
+    },
+    {
+      "id": "e05_capa_ontanim_acik",
+      "desc": "capa bayrağının öntanımı açık",
+      "module": "karadul/config.py",
+      "test": "tests/test_p15a_etkisiz.py::test_capa_code_feed_field_reaches_reader",
+      "find": "    enable_capa_code_feed: bool = False",
+      "replace": "    enable_capa_code_feed: bool = True"
+    },
+    {
+      "id": "e05_show_isaretlemez",
+      "desc": "config show etkisiz ayarı işaretlemiyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_etkisiz.py::test_config_show_marks_inert_knob",
+      "find": "        if inert:\n            value += ",
+      "replace": "        if 0 and inert:\n            value += "
+    },
+    {
+      "id": "k_clean_kok_silinir",
+      "desc": "clean . bütün çalışma alanlarını siliyor (eski)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cli_kucuk.py::test_clean_dot_does_not_delete_all_workspaces",
+      "find": "    if workspace_path is None or workspace_path == base_dir:",
+      "replace": "    if workspace_path is None:"
+    },
+    {
+      "id": "k_clean_varlik_sonra",
+      "desc": "olmayan hedefte varlık denetlenmiyor (önce onay)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cli_kucuk.py::test_clean_missing_target_fails_before_asking",
+      "find": "    if not workspace_path.exists():\n        err_console.print(f\"[bold red]HATA:[/bold red] Workspace bulunamadi",
+      "replace": "    if False and not workspace_path.exists():\n        err_console.print(f\"[bold red]HATA:[/bold red] Workspace bulunamadi"
+    },
+    {
+      "id": "k_clean_onaysiz_siler",
+      "desc": "--yes olmadan etkileşimsiz ortamda siliyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cli_kucuk.py::test_clean_without_yes_noninteractive_keeps_dir",
+      "find": "    if not yes:\n        if _is_noninteractive():",
+      "replace": "    if False:\n        if _is_noninteractive():"
+    },
+    {
+      "id": "k_score_bos_dizin",
+      "desc": "boş dizinde puan basılıyor (eski 0.00/100, çıkış 0)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cli_kucuk.py::test_score_empty_dir_is_error",
+      "find": "    if not result.details.get(\"file_count\"):",
+      "replace": "    if False:"
+    },
+    {
+      "id": "k_score_not_yok",
+      "desc": "score yüzey ölçütü notunu basmıyor",
+      "module": "karadul/cli.py",
+      "test": "tests/test_p15a_cli_kucuk.py::test_score_says_surface_metric",
+      "find": "    console.print(f\"[yellow]Not:[/yellow] {_SCORE_NOTE}\")",
+      "replace": "    pass"
+    },
+    {
+      "id": "h_mimari_okunmaz",
+      "desc": "rapor kökünde aranıyor (eski ölü kod)",
+      "module": "karadul/hacker_cli.py",
+      "test": "tests/test_p15a_hacker_cli.py::test_alerts_read_architecture_section",
+      "find": "    arch = intel_data.get(\"architecture\")",
+      "replace": "    arch = intel_data.get(\"architecture_yok\")"
+    },
+    {
+      "id": "h_guvenlik_anahtari_eski",
+      "desc": "güvenlik anahtarı eski adla aranıyor",
+      "module": "karadul/hacker_cli.py",
+      "test": "tests/test_p15a_hacker_cli.py::test_standard_protection_is_not_an_alert",
+      "find": "    security = arch.get(\"security\", arch.get(\"security_mechanisms\")) or []",
+      "replace": "    security = arch.get(\"security_mechanisms\") or []"
+    },
+    {
+      "id": "h_standart_alarm",
+      "desc": "olağan koruma da vurgulanıyor",
+      "module": "karadul/hacker_cli.py",
+      "test": "tests/test_p15a_hacker_cli.py::test_standard_protection_is_not_an_alert",
+      "find": "        if risk in (\"elevated\", \"kernel\"):",
+      "replace": "        if risk in (\"elevated\", \"kernel\", \"standard\"):"
+    },
+    {
+      "id": "h_bos_rapor_satir",
+      "desc": "boş raporda boş satır basılıyor",
+      "module": "karadul/hacker_cli.py",
+      "test": "tests/test_p15a_hacker_cli.py::test_empty_report_prints_nothing",
+      "find": "    if not (security or algorithms or subsystems):\n        return",
+      "replace": "    if False:\n        return"
     }
   ]
 }

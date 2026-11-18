@@ -1,0 +1,15 @@
+--- a/karadul/pipeline/steps/capa_annotation.py	2026-11-18 12:23:58
++++ b/karadul/pipeline/steps/capa_annotation.py	2026-11-18 12:24:12
+@@ -18,9 +18,9 @@
+   adimin tek girdisi) yalniz bayrak acikken yazar.
+ - Bu adim bayrak kapaliyken ``capa_capabilities`` dolu gelse bile yorum yazmaz.
+ 
+-Bayrak: ``binary_reconstruction.enable_capa_code_feed`` (config.py'de alan yok;
+-eklenene kadar ``CAPA_CODE_FEED_DEFAULT`` gecerli). Acilis kosulu:
+-``docs/arge/2026-11-18_onarim/P-S1.md`` kalem 4.
++Bayrak: ``binary_reconstruction.enable_capa_code_feed`` (config.py alani P15a'da
++eklendi, ontanim False; ``CAPA_CODE_FEED_DEFAULT`` yalniz alan tanimsiz nesneler
++icin geri dusus). Acilis kosulu: ``docs/arge/2026-11-18_onarim/P-S1.md`` kalem 4.
+ """
+ 
+ from __future__ import annotations
