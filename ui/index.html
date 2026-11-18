@@ -509,6 +509,7 @@
     <div id="anStages"></div>
     <div class="antail" id="anTail"></div>
     <div class="anfail" id="anFail" style="display:none"></div>
+    <div class="anback" id="anCancel" style="display:none">✕ analizi iptal et</div>
     <div class="anback" id="anBack" style="display:none">← geri dön</div>
   </div>
 </section>
@@ -743,8 +744,35 @@ let FILTER='all'; const MANUAL=new Set(); let EVSEQ=0;
 
 function showView(n){ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id===n)); }
 
-/* ---------- init: aktif workspace var mı? ---------- */
+/* P17-YOKLAMA-BASLA: analiz yoklaması (ARAYUZ-10). Yoklama hatası sessizce yutulmaz:
+   iş bilinmiyorsa ya da sunucu reddederse hemen, ağ hatası üst üste POLL_MAX_ERR kez olursa
+   yoklama durur ve neden ekranda yazar. */
+const POLL_MAX_ERR=5;
+function pollStep(errCount,res){
+  if(!res||!res.ok){
+    const n=errCount+1;
+    return n>=POLL_MAX_ERR
+      ? {err:n,stop:true,msg:'sunucuya ulaşılamıyor ('+n+' deneme üst üste) — sunucu kapanmış olabilir; analizin durumu bilinmiyor'}
+      : {err:n,stop:false};
+  }
+  const p=res.body||{};
+  if(p.error){
+    return {err:errCount,stop:true,msg:p.error==='job yok'
+      ? 'iş bulunamadı — sunucu yeniden başlamış olabilir; analizin durumu bilinmiyor'
+      : 'sunucu yoklamayı reddetti: '+p.error};
+  }
+  return {err:0,stop:false,render:true};
+}
+/* P17-YOKLAMA-BITIS */
+let JOB=null, POLL_ERR=0;
+
+/* ---------- init: süren iş ya da aktif workspace var mı? ---------- */
 async function init(){
+  // ARAYUZ-10: sayfa yenilendiyse süren analize yeniden bağlan (eskiden kimlik kayboluyordu)
+  try{
+    const r=await fetch('/api/jobs/current');
+    if(r.ok){ const c=await r.json(); if(c&&c.job){ attachJob(c.job,c.binary); return; } }
+  }catch(e){}
   try{
     const r=await fetch('/api/model');
     if(r.ok){ const j=await r.json(); if(!j.error){ enterResult(j); return; } }
@@ -782,22 +810,54 @@ async function startAnalyze(){
   try{ j=await (await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({binary:SELBIN})})).json(); }
   catch(e){ $('entryWarn').textContent='sunucuya ulaşılamadı'; return; }
-  if(j.error){ $('entryWarn').textContent='⚠ '+j.error; return; }
-  $('anBin').textContent=j.binary;
+  if(j.error){
+    $('entryWarn').textContent='⚠ '+j.error;
+    if(j.running_job){
+      const a=document.createElement('span'); a.className='chip-s'; a.id='reattach';
+      a.textContent='süren analize dön ▸'; a.onclick=()=>attachJob(j.running_job,'');
+      $('entryWarn').appendChild(document.createTextNode(' ')); $('entryWarn').appendChild(a);
+    }
+    return;
+  }
+  attachJob(j.job,j.binary);
+}
+function attachJob(job,binary){
+  JOB=job; POLL_ERR=0;
+  $('anBin').textContent=binary||'—';
   $('anFail').style.display='none'; $('anBack').style.display='none'; $('anTail').textContent='';
+  $('anCancel').textContent='✕ analizi iptal et'; $('anCancel').style.display='block';
   showView('analyze');
-  const job=j.job;
   if(POLL) clearInterval(POLL);
   POLL=setInterval(()=>pollProgress(job), 1200);
   pollProgress(job);
 }
+function stopPolling(){ if(POLL){clearInterval(POLL);POLL=null;} $('anCancel').style.display='none'; }
+async function cancelAnalysis(){
+  const job=JOB; if(!job) return;
+  $('anCancel').textContent='… iptal ediliyor';
+  try{
+    const r=await fetch('/api/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({job})});
+    let j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||(j&&j.error)){ stopPolling(); analyzeFail('iptal edilemedi: '+((j&&j.error)||r.status)); }
+  }catch(e){ stopPolling(); analyzeFail('iptal isteği sunucuya ulaşmadı'); }
+  // iptal sonucu bir sonraki yoklamada gelir (finished + cancelled)
+}
+$('anCancel').onclick=cancelAnalysis;
 async function pollProgress(job){
-  let p;
-  try{ p=await (await fetch('/api/progress?job='+job)).json(); }catch(e){ return; }
-  if(p.error){ return; }
+  if(job!==JOB) return;
+  let res;
+  try{ const r=await fetch('/api/progress?job='+encodeURIComponent(job)); res={ok:true,body:await r.json()}; }
+  catch(e){ res={ok:false}; }
+  if(job!==JOB) return;                     // bu arada başka işe / ekrana geçildi
+  const st=pollStep(POLL_ERR,res); POLL_ERR=st.err;
+  if(st.stop){ stopPolling(); analyzeFail(st.msg); return; }
+  if(!st.render) return;
+  const p=res.body;
+  if(binaryUnknown()) $('anBin').textContent=p.binary||'—';
   renderStages(p);
   if(p.finished){
-    clearInterval(POLL); POLL=null;
+    stopPolling();
+    if(p.cancelled){ analyzeFail('analiz iptal edildi — çıktı yarım kaldı, sonuç gösterilmiyor'); return; }
     if(p.workspace){
       // substage'ler (kaç fonksiyon kurtarıldı) görünsün diye kısa bekleme
       const delay=(p.substages&&p.substages.length)?2400:600;
@@ -844,8 +904,10 @@ function renderStages(p){
   });
   if(p.tail) $('anTail').textContent=p.tail;
 }
+function binaryUnknown(){ return $('anBin').textContent==='—'||!$('anBin').textContent; }
 function analyzeFail(msg){
   $('anFail').textContent='⚠ '+msg; $('anFail').style.display='block';
+  $('anCancel').style.display='none';
   $('anBack').style.display='block';
 }
 $('anBack').onclick=()=>{ loadSuggestions(); showView('entry'); };
@@ -906,7 +968,7 @@ function renderSecurityBanner(j){
   el.classList.add('on');
   const cx=$('secBannerCx'); if(cx) cx.onclick=()=>el.classList.remove('on');
 }
-function newAnalysis(){ if(POLL){clearInterval(POLL);POLL=null;} SELBIN=null; $('pathIn').value=''; $('goBtn').disabled=true; loadSuggestions(); showView('entry'); setTimeout(()=>$('pathIn').focus(),50); }
+function newAnalysis(){ if(POLL){clearInterval(POLL);POLL=null;} JOB=null; SELBIN=null; $('pathIn').value=''; $('goBtn').disabled=true; loadSuggestions(); showView('entry'); setTimeout(()=>$('pathIn').focus(),50); }
 $('newBtn').onclick=newAnalysis; $('brandHome').onclick=newAnalysis;
 
 function buildList(list){

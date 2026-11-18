@@ -12,7 +12,9 @@ Endpoint'ler:
     GET  /                      -> index.html
     GET  /api/binaries          -> analiz edilebilir binary listesi (chip onerisi)
     POST /api/analyze           -> {binary} ile pipeline baslat, {job} dondur
-    GET  /api/progress?job=ID   -> {stages, substages, finished, workspace, ...}
+    GET  /api/progress?job=ID   -> {stages, substages, finished, workspace, outcome, ...}
+    GET  /api/jobs/current      -> süren iş {job, binary, elapsed} ya da {job: null}
+    POST /api/cancel            -> {job} süren analizi iptal et (süreç grubu)
     GET  /api/model             -> aktif workspace'in fonksiyon+callgraph modeli
     GET  /api/decompiled/FUN_x  -> {addr, code}
     GET  /api/about             -> surum/Ghidra/JDK/imza DB/yollar (Hakkinda modali)
@@ -2110,7 +2112,17 @@ def _running_job() -> str | None:
     return None
 
 
+# Denetim (süren iş var mı?) ile işin _JOBS'a eklenmesi arasında yarış olmasın: eşzamanlı iki
+# POST /api/analyze iki analizi birden başlatıyordu (ARAYUZ Küçükler). Başlatma tek kilitte.
+_START_LOCK = threading.Lock()
+
+
 def start_analysis(binary: str) -> dict:
+    with _START_LOCK:
+        return _start_analysis_locked(binary)
+
+
+def _start_analysis_locked(binary: str) -> dict:
     rp_str = resolve_binary(binary)
     if not rp_str:
         return {"error": f"bulunamadı: {binary[:50]}  (yol veya uygulama adı gir)"}
@@ -2119,8 +2131,29 @@ def start_analysis(binary: str) -> dict:
                      Path("/opt"), Path("/sbin")]
     if not any(_under(rp, r) for r in allowed_roots):
         return {"error": "izin verilmeyen konum"}
-    if _running_job():
-        return {"error": "zaten bir analiz sürüyor — bitmesini bekle"}
+    running = _running_job()
+    if running:
+        # ARAYUZ-10: süren işe yeniden bağlanılabilsin diye kimliği döner
+        return {"error": "zaten bir analiz sürüyor — bitmesini bekle ya da iptal et",
+                "running_job": running}
+    cmd_cfg: list[str] = []
+    # Ayar paneli (Faz 3): karadul.yaml varsa yukle. computation_recovery ve
+    # network CLI flag'iyle deterministik gecilir (bkz. _read_settings notu).
+    if _SETTINGS_YAML.is_file():
+        cmd_cfg += ["--config", str(_SETTINGS_YAML)]
+        try:
+            _s = _read_settings()
+        except SettingsFileError as e:
+            return {"error": f"ayar dosyası okunamadı: {e}"}
+        if _s.get("errors"):
+            # analiz bu dosyayla çıkış 2 verir; başlatmadan söyle (sessiz başarısızlık yok)
+            return {"error": "ayar dosyası yükleyiciden geçmiyor: "
+                             + "; ".join(_s["errors"][:3])}
+        _k = _s["knobs"]
+        cmd_cfg += (["--compute-recovery"] if _k["computation_recovery_enabled"]
+                    else ["--no-compute-recovery"])
+        if _k["network_enabled"]:
+            cmd_cfg += ["--enable-network"]
     _cleanup_runs()
 
     job = uuid.uuid4().hex[:10]
@@ -2131,24 +2164,7 @@ def start_analysis(binary: str) -> dict:
     clean_out = run_dir / "clean"
     cmd = [sys.executable, "-m", "karadul", "analyze", str(rp),
            "--skip-dynamic", "--lmdb-sigdb", "--verbose",
-           "--output-dir", str(ws_out), "--output", str(clean_out)]
-    # Ayar paneli (Faz 3): karadul.yaml varsa yukle. computation_recovery ve
-    # network CLI flag'iyle deterministik gecilir (bkz. _read_settings notu).
-    if _SETTINGS_YAML.is_file():
-        cmd += ["--config", str(_SETTINGS_YAML)]
-        try:
-            _s = _read_settings()
-        except SettingsFileError as e:
-            return {"error": f"ayar dosyası okunamadı: {e}"}
-        if _s.get("errors"):
-            # analiz bu dosyayla çıkış 2 verir; başlatmadan söyle (sessiz başarısızlık yok)
-            return {"error": "ayar dosyası yükleyiciden geçmiyor: "
-                             + "; ".join(_s["errors"][:3])}
-        _k = _s["knobs"]
-        cmd += (["--compute-recovery"] if _k["computation_recovery_enabled"]
-                else ["--no-compute-recovery"])
-        if _k["network_enabled"]:
-            cmd += ["--enable-network"]
+           "--output-dir", str(ws_out), "--output", str(clean_out)] + cmd_cfg
     lf = None
     try:
         lf = open(log_path, "w")
@@ -2169,8 +2185,52 @@ def start_analysis(binary: str) -> dict:
     with _JOBS_LOCK:
         _JOBS[job] = {"proc": proc, "log": str(log_path), "ws_out": str(ws_out),
                       "run_dir": str(run_dir), "binary": rp.stem,
-                      "started": time.time(), "lf": lf, "closed": False}
+                      "started": time.time(), "lf": lf, "closed": False,
+                      "cancelled": False, "activated": False}
     return {"job": job, "binary": rp.stem}
+
+
+def _kill_proc(proc) -> None:
+    """Analiz sürecini ve süreç grubunu (Ghidra JVM dahil) SIGTERM ile sonlandır.
+
+    Süreç grubu sunucunun kendi grubuysa (çocuk ayrı gruba alınamamışsa) killpg sunucuyu da
+    vururdu: o durumda yalnız süreç sonlandırılır.
+    """
+    try:
+        pgid = os.getpgid(proc.pid)
+        if proc.pid <= 0 or pgid == os.getpgrp():
+            raise ProcessLookupError("ortak süreç grubu")
+        os.killpg(pgid, signal.SIGTERM)
+    except Exception:
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+
+
+def cancel_job(job: str) -> dict:
+    """ARAYUZ-10: süren analizi iptal et (süreç grubu: Ghidra JVM de gider)."""
+    with _JOBS_LOCK:
+        j = _JOBS.get(job)
+    if not j:
+        return {"__code": 404, "error": "job yok"}
+    proc = j["proc"]
+    if proc.poll() is not None:
+        return {"__code": 409, "error": "iş zaten bitti", "rc": proc.returncode}
+    j["cancelled"] = True
+    _kill_proc(proc)
+    return {"ok": True, "job": job}
+
+
+def current_job() -> dict:
+    """ARAYUZ-10: süren iş (sayfa yenilenince / "+ YENİ" sonrası yeniden bağlanmak için)."""
+    jid = _running_job()
+    if not jid:
+        return {"job": None}
+    with _JOBS_LOCK:
+        j = _JOBS.get(jid) or {}
+    return {"job": jid, "binary": j.get("binary"),
+            "elapsed": round(time.time() - j.get("started", time.time()), 1)}
 
 
 def _report_substages(run_dir: str) -> list[dict]:
@@ -2314,9 +2374,27 @@ def _job_progress(job: str) -> dict:
     return {
         "stages": stages, "substages": substages, "finished": finished,
         "workspace": workspace, "elapsed": round(time.time() - j["started"], 1),
-        "binary": j["binary"], "rc": rc,
+        "binary": j["binary"], "rc": rc, "cancelled": bool(j.get("cancelled")),
         "tail": "\n".join(log.splitlines()[-6:]),
     }
+
+
+def _progress_and_activate(job: str) -> dict:
+    """``/api/progress``: ilerleme + bitmiş işin çalışma alanını BİR KEZ etkinleştir.
+
+    Eskiden biten bir işin kimliğiyle her yoklama o işin çalışma alanını yeniden etkin
+    yapıyordu: başka sekmede açık sonuç sessizce değişiyordu. İptal edilen işin çalışma alanı
+    (yarım) hiç etkinleştirilmez.
+    """
+    prog = _job_progress(job)
+    if prog.get("finished") and prog.get("workspace") and not prog.get("cancelled"):
+        with _JOBS_LOCK:
+            j = _JOBS.get(job) or {}
+            first = not j.get("activated")
+            j["activated"] = True
+        if first:
+            activate_workspace(prog["workspace"])
+    return prog
 
 
 # ---------------------------------------------------------------------------
@@ -2411,10 +2489,9 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/api/progress":
             qs = self.path.split("?", 1)[1] if "?" in self.path else ""
             q = dict(x.split("=", 1) for x in qs.split("&") if "=" in x)
-            prog = _job_progress(q.get("job", ""))
-            if prog.get("finished") and prog.get("workspace"):
-                activate_workspace(prog["workspace"])
-            self._json(prog)
+            self._json(_progress_and_activate(q.get("job", "")))
+        elif path == "/api/jobs/current":
+            self._json(current_job())
         elif path in ("/api/model", "/api/functions"):
             d = build_model()
             self._json(d) if d else self._json({"error": "workspace yok"}, 404)
@@ -2488,6 +2565,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": "binary belirtilmedi"}, 400)
                 return
             self._json(start_analysis(binary))
+        elif path == "/api/cancel":
+            body = _json_object(raw)
+            result = cancel_job(str(body.get("job", "")))
+            self._json(result, result.pop("__code", 200))
         elif path == "/api/rename":
             body = _json_object(raw)
             addr = str(body.get("addr", ""))
@@ -2526,13 +2607,7 @@ def _kill_jobs():
             proc = j.get("proc")
             if proc is None or proc.poll() is not None:
                 continue
-            try:
-                os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-            except Exception:
-                try:
-                    proc.terminate()
-                except Exception:
-                    pass
+            _kill_proc(proc)
 
 
 def _terminate_jobs(signum=None, frame=None):  # noqa: ANN001, ARG001

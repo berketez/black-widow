@@ -296,6 +296,70 @@
       "test": "tests/test_p17_temiz_cikti.py",
       "find": "    root = nm.parents[2] if nm is not None else p",
       "replace": "    root = p"
+    },
+    {
+      "id": "i10_baslatma_kilidi_yok",
+      "desc": "eşzamanlı iki başlatma iki analiz açar",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_iptal.py",
+      "find": "    with _START_LOCK:\n        return _start_analysis_locked(binary)",
+      "replace": "    return _start_analysis_locked(binary)"
+    },
+    {
+      "id": "i10_iptal_isaretlenmez",
+      "desc": "iptal edilen iş iptal olarak işaretlenmez",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_iptal.py",
+      "find": "    j[\"cancelled\"] = True\n    _kill_proc(proc)",
+      "replace": "    _kill_proc(proc)"
+    },
+    {
+      "id": "i10_iptal_oldurmez",
+      "desc": "iptal süreci sonlandırmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_iptal.py",
+      "find": "    _kill_proc(proc)\n    return {\"ok\": True, \"job\": job}",
+      "replace": "    return {\"ok\": True, \"job\": job}"
+    },
+    {
+      "id": "i10_iptal_edilen_etkinlesir",
+      "desc": "iptal edilen işin yarım çalışma alanı etkinleşir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_iptal.py",
+      "find": "    if prog.get(\"finished\") and prog.get(\"workspace\") and not prog.get(\"cancelled\"):",
+      "replace": "    if prog.get(\"finished\") and prog.get(\"workspace\"):"
+    },
+    {
+      "id": "i10_her_yoklamada_etkinlesir",
+      "desc": "biten işin her yoklaması çalışma alanını yeniden etkinleştirir",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_iptal.py",
+      "find": "        if first:\n            activate_workspace(prog[\"workspace\"])",
+      "replace": "        if True:\n            activate_workspace(prog[\"workspace\"])"
+    },
+    {
+      "id": "i10_ortak_grup_vurulur",
+      "desc": "çocuk sunucunun grubundaysa killpg sunucuyu da vurur",
+      "module": "ui/server.py",
+      "test": "tests/test_p17_iptal.py",
+      "find": "        if proc.pid <= 0 or pgid == os.getpgrp():",
+      "replace": "        if proc.pid <= 0:"
+    },
+    {
+      "id": "i10_js_sunucu_hatasi_yutulur",
+      "desc": "yoklamada sunucu hatası (job yok / 403) yutulur",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_iptal.py",
+      "find": "  if(p.error){\n    return {err:errCount,stop:true",
+      "replace": "  if(p.error&&false){\n    return {err:errCount,stop:true"
+    },
+    {
+      "id": "i10_js_ag_hatasi_sonsuz",
+      "desc": "ağ hatasında yoklama hiç durmaz",
+      "module": "ui/index.html",
+      "test": "tests/test_p17_iptal.py",
+      "find": "    return n>=POLL_MAX_ERR\n",
+      "replace": "    return n>=POLL_MAX_ERR*99\n"
     }
   ]
 }
