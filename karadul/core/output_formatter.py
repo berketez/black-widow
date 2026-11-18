@@ -627,15 +627,27 @@ class OutputFormatter:
         # 2. Signature matches
         sig_matches = self._workspace.load_json("reconstructed", "signature_matches")
         if sig_matches:
+            # P15c (K-2): dizgi / çağrı deseni kaydı kimlik değil davranış tahminidir; kaynak
+            # etiketi bunu taşır (``signature_db:kimlik`` / ``signature_db:davranis``) ve
+            # tahminin kanıt satırları kayda girer.
+            from karadul.analyzers.signature_db import (
+                CLAIM_BEHAVIOR, claim_for_method, signature_source_label,
+            )
             for match in sig_matches.get("matches", []):
                 orig = match.get("original", "")
                 if orig:
-                    naming_map["mappings"][orig] = {
+                    method = str(match.get("method") or "")
+                    record = {
                         "new_name": match.get("matched", orig),
-                        "source": "signature_db",
+                        "source": signature_source_label(method),
                         "confidence": match.get("confidence", 0.0),
                         "library": match.get("library", ""),
                     }
+                    if claim_for_method(method) == CLAIM_BEHAVIOR:
+                        record["claim"] = CLAIM_BEHAVIOR
+                        if match.get("evidence"):
+                            record["evidence"] = match["evidence"]
+                    naming_map["mappings"][orig] = record
             naming_map["sources"].append("signature_db")
 
         # 3. Byte pattern matches

@@ -220,7 +220,11 @@ class GhidraMetadataStep(Step):
                 call_graph_json,
                 decompiled_dir,
                 target_platform=platform,
+                # P15c kalem 6: kitaplık iddiası ikilinin bağlanma kanıtına (ELF sürüm
+                # gereksinimi / DT_NEEDED) bağlanır.
+                binary_path=getattr(target, "path", None),
             )
+            ctx.stats["sigdb_import_binding"] = getattr(sig_db, "import_binding_info", None)
             ctx.stats["signature_matches"] = len(sig_matches)
             ctx.stats["sigdb_status"] = "matched" if sig_matches else "no_match"
             # ARAYUZ-02: IOC bölümü "veri yok" (sigdb_status error/unavailable)
@@ -257,6 +261,12 @@ class GhidraMetadataStep(Step):
                                 # Eşleşmenin yolu (symbol: fonksiyonun var olan adı aranır;
                                 # string_ref / call_pattern). Rapor bu dökümü yazar.
                                 "method": m.match_method,
+                                # P15c (K-2): iddia türü (kimlik ↔ davranis), davranış
+                                # tahmininin kanıtı ve ham eşleşme puanı (davranış kaydında
+                                # ``confidence`` ölçülmüş kesinliğin alt sınırıdır).
+                                "claim": getattr(m, "claim", None),
+                                "evidence": getattr(m, "evidence", None),
+                                "match_score": getattr(m, "match_score", None),
                             }
                             for m in sig_matches
                         ],
