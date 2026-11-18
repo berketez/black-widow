@@ -1403,6 +1403,143 @@ def _has_float_access(code: str, param_name: str, param_type: str) -> bool:
     return bool(_float_access_pattern(param_name).search(masked))
 
 
+# ---------------------------------------------------------------------------
+# P05b K2: işaretçi şablonuna kanıt
+# ---------------------------------------------------------------------------
+# ``char *`` şablonları (``str`` / ``text`` / ``name``) Ghidra'nın işaretçi istisnasıyla tamsayı
+# parametrelere (cat ``rpl_fcntl``'in ``ulong param_3``'ü) ve ``void *`` parametrelere kanıtsız
+# düşüyordu. Dizgi kanıtı: bildirilen ``char *`` tipi (Ghidra'nın tip çıkarımı dizgi işlevinin
+# prototipinden yayılır) ya da koddaki kanıt (aşağıda).
+
+# Dizgi işlevi → dizgi argümanının konumları (C / POSIX prototipleri). ``_`` önekli Mach-O biçimi
+# aynı konumları kullanır; ``__X_chk`` sürümlerinde biçim dizgisi bayrak / uzunluk argümanları
+# yüzünden kayar.
+_STRING_ARG_FUNCS: dict[str, tuple[int, ...]] = {
+    "strlen": (0,), "strnlen": (0,), "strcmp": (0, 1), "strncmp": (0, 1),
+    "strcasecmp": (0, 1), "strncasecmp": (0, 1), "strcoll": (0, 1), "strverscmp": (0, 1),
+    "strcpy": (0, 1), "strncpy": (0, 1), "stpcpy": (0, 1), "stpncpy": (0, 1),
+    "strcat": (0, 1), "strncat": (0, 1), "strlcpy": (0, 1), "strlcat": (0, 1),
+    "strchr": (0,), "strrchr": (0,), "strchrnul": (0,), "strstr": (0, 1),
+    "strcasestr": (0, 1), "strspn": (0, 1), "strcspn": (0, 1), "strpbrk": (0, 1),
+    "strtok": (0, 1), "strtok_r": (0, 1), "strsep": (1,), "strdup": (0,), "strndup": (0,),
+    "strtol": (0,), "strtoul": (0,), "strtoll": (0,), "strtoull": (0,), "strtoimax": (0,),
+    "strtoumax": (0,), "strtod": (0,), "strtof": (0,), "strtold": (0,),
+    "atoi": (0,), "atol": (0,), "atoll": (0,), "atof": (0,),
+    "puts": (0,), "fputs": (0,), "fputs_unlocked": (0,), "perror": (0,),
+    "getenv": (0,), "secure_getenv": (0,), "setenv": (0, 1), "unsetenv": (0,), "putenv": (0,),
+    "fopen": (0, 1), "freopen": (0, 1), "fdopen": (1,), "popen": (0, 1), "open": (0,),
+    "openat": (1,), "creat": (0,), "access": (0,), "faccessat": (1,), "stat": (0,),
+    "lstat": (0,), "unlink": (0,), "unlinkat": (1,), "remove": (0,), "rename": (0, 1),
+    "mkdir": (0,), "rmdir": (0,), "chdir": (0,), "opendir": (0,), "realpath": (0,),
+    "dlopen": (0,), "dlsym": (1,), "system": (0,), "execv": (0,), "execvp": (0,),
+    "printf": (0,), "fprintf": (1,), "dprintf": (1,), "sprintf": (1,), "snprintf": (2,),
+    "vprintf": (0,), "vfprintf": (1,), "vsprintf": (1,), "vsnprintf": (2,), "asprintf": (1,),
+    "sscanf": (0, 1), "fscanf": (1,), "scanf": (0,),
+    "__printf_chk": (1,), "__fprintf_chk": (2,), "__dprintf_chk": (2,),
+    "__sprintf_chk": (3,), "__snprintf_chk": (4,), "__vfprintf_chk": (2,),
+    "__vsnprintf_chk": (4,), "__asprintf_chk": (2,), "__strcpy_chk": (0, 1),
+    "__stpcpy_chk": (0, 1), "__strcat_chk": (0, 1), "__strncpy_chk": (0, 1),
+    "__strncat_chk": (0, 1), "__isoc99_sscanf": (0, 1),
+    "gettext": (0,), "dgettext": (1,), "dcgettext": (1,), "ngettext": (0, 1),
+}
+_CALL_NAME_RE = re.compile(r"\b(\w+)\s*\(")
+_LEADING_POINTER_CAST_RE = re.compile(
+    r"^\(\s*(?:const\s+)?(?:(?:unsigned|signed)\s+)?\w+\s*\*+\s*\)\s*",
+)
+# İşaretçi istisnasıyla gelen şablonun öğe erişimi kanıtı: cast tipleri (``None`` = herhangi)
+_ELEMENT_CAST_TYPES: dict[str, tuple[str, ...] | None] = {
+    "unsigned char *": ("byte", "uchar", "uint8_t", "unsigned char", "undefined1"),
+    "int *": ("int", "uint", "int32_t", "uint32_t", "undefined4"),
+    "void *": None,
+}
+
+
+def _mask_for_string_evidence(code: str) -> str:
+    """Yorum örtülür; dizgi sabiti boş dizgiye iner (içindeki metin çağrı sayılmaz); karakter
+    sabiti kalır (karşılaştırma kanıtı)."""
+    def _sub(m: re.Match[str]) -> str:
+        text = m.group(0)
+        if text[0] == "'":
+            return text
+        if text[0] == '"':
+            return '""'
+        return " "
+    return _NON_CODE_RE.sub(_sub, code)
+
+
+@functools.lru_cache(maxsize=4096)
+def _has_string_evidence(code: str, param_name: str) -> bool:
+    """Parametre dizgi gösteriyor mu (P05b K2; koddaki kanıt).
+
+    (E1) çıplak ya da tek cast'li olarak bir dizgi işlevinin dizgi konumunda argüman
+    (``_STRING_ARG_FUNCS``); (E2) ``*(char *)`` ile erişim; (E3) ``*p`` / ``p[i]`` bir karakter
+    sabitiyle (``'x'``) karşılaştırılıyor. Dizgi sabitinin ve yorumun içindeki metin sayılmaz.
+    """
+    if param_name not in code:
+        return False
+    masked = _mask_for_string_evidence(code)
+    for m in _CALL_NAME_RE.finditer(masked):
+        fname = m.group(1)
+        positions = _STRING_ARG_FUNCS.get(fname)
+        if positions is None and fname.startswith("_"):
+            positions = _STRING_ARG_FUNCS.get(fname[1:])
+        if not positions:
+            continue
+        args = _split_call_args(masked, m.end() - 1)
+        if not args:
+            continue
+        for k in positions:
+            if k < len(args) and _LEADING_POINTER_CAST_RE.sub("", args[k]).strip() == param_name:
+                return True
+    p = re.escape(param_name)
+    if re.search(rf"\*\s*\(\s*(?:const\s+)?char\s*\*\s*\)\s*\(?\s*{p}\b", masked):
+        return True
+    if re.search(rf"(?:\*\s*{p}\b|\b{p}\s*\[[^\]]*\])\s*[!=]=\s*'", masked):
+        return True
+    return False
+
+
+@functools.lru_cache(maxsize=4096)
+def _cast_access_pattern(param_name: str, elem_types: tuple[str, ...] | None) -> re.Pattern[str]:
+    p = re.escape(param_name)
+    if elem_types is None:
+        t = r"[A-Za-z_]\w*(?:\s+[A-Za-z_]\w*)*"
+    else:
+        t = "(?:" + "|".join(r"\s+".join(map(re.escape, e.split())) for e in elem_types) + ")"
+    return re.compile(
+        rf"\*\s*\(\s*(?:const\s+)?{t}\s*\*\s*\)\s*\(*\s*(?:\(\s*\w+\s*\**\s*\)\s*)?{p}\b"
+    )
+
+
+def _pointer_template_evidence(
+    template_type: str, param_type: str, code: str, param_name: str, float_ok: bool,
+) -> bool:
+    """İşaretçi şablonu bu parametreye kanıtla uygulanabilir mi (P05b K2).
+
+    - Skaler şablon: bu kurala girmez (``True``).
+    - ``double *`` / ``float *``: kayan noktalı erişim kanıtı (P05, ``float_ok``).
+    - ``char *`` (``str`` / ``text`` / ``name``): bildirilen ``char *`` ya da koddaki dizgi kanıtı
+      (``_has_string_evidence``); ``void *`` / ``unsigned char *`` bildirimi yetmez.
+    - Öbür işaretçi şablonları bildirilen işaretçi tipine uyumluysa kanıt sayılır; Ghidra'nın
+      işaretçi istisnasıyla tamsayı parametreye geliyorsa öğe erişimi kanıtı gerekir
+      (``_ELEMENT_CAST_TYPES``: ``*(int *)(p + …)``, ``*(byte *)p`` …).
+    """
+    t = _normalize_type(template_type)
+    if "*" not in t:
+        return True
+    if t in _FLOAT_POINTER_TYPES:
+        return float_ok
+    a = _normalize_type(param_type)
+    if t == "char *":
+        return a == "char *" or _has_string_evidence(code, param_name)
+    if "*" in a:
+        return True
+    if t not in _ELEMENT_CAST_TYPES:
+        return False
+    masked = _loop_depth_profile(code)[0]
+    return bool(_cast_access_pattern(param_name, _ELEMENT_CAST_TYPES[t]).search(masked))
+
+
 # v1.8.0: _MAX_USAGE_BODY esigi KALDIRILDI.  Tum regex pattern'leri
 # satir-bazli calistiriliyor.  Hicbir fonksiyon atlanmaz.
 
@@ -1950,8 +2087,11 @@ def _worker_infer_from_type_and_usage(
         for tup in TYPE_USAGE_PATTERNS:
             if not _types_compatible(tup.c_type, param_type):
                 continue
-            # MUH-02: matris / vektör / skaler başvuru adı yalnız kayan noktalı erişim kanıtıyla
-            if tup.c_type == "double *" and not float_ok:
+            # MUH-02 + P05b K2: işaretçi şablonu yalnız öğe kanıtıyla (kayan noktalı erişim,
+            # dizgi kanıtı, istisna yolunda cast'li erişim)
+            if not _pointer_template_evidence(
+                tup.c_type, param_type, func_code, param_name, float_ok,
+            ):
                 continue
             if tup.loop_depth is not None:
                 if tup.loop_depth == 3 and loop_depth < 3:
@@ -3140,8 +3280,11 @@ class SemanticParameterNamer:
                 # Tip eslesmesi
                 if not _types_compatible(tup.c_type, param_type):
                     continue
-                # MUH-02: matris / vektör / skaler başvuru adı yalnız kayan noktalı erişim kanıtıyla
-                if tup.c_type == "double *" and not float_ok:
+                # MUH-02 + P05b K2: işaretçi şablonu yalnız öğe kanıtıyla (kayan noktalı erişim,
+                # dizgi kanıtı, istisna yolunda cast'li erişim)
+                if not _pointer_template_evidence(
+                    tup.c_type, param_type, func_code, param_name, float_ok,
+                ):
                     continue
 
                 # Dongü derinligi eslesmesi

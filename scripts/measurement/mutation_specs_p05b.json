@@ -56,6 +56,78 @@
       "test": "tests/test_p05b_tip.py::test_paralel_yol_ayni_ayristirici",
       "find": "    # P05b K1: dizisel yolla aynı ayrıştırıcı (işaretçi derinliği korunur)\n    return _params_from_signature(sig_match)",
       "replace": "    return [dict(p, type=p[\"type\"].rstrip(\" *\")) for p in _params_from_signature(sig_match)]"
+    },
+    {
+      "id": "p05b_k2_char_kanit_yok",
+      "desc": "K2: char * şablonu kanıtsız uygulanır (eski davranış)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_kanitsiz_tamsayi_parametre_str_almaz",
+      "find": "        return a == \"char *\" or _has_string_evidence(code, param_name)",
+      "replace": "        return True"
+    },
+    {
+      "id": "p05b_k2_void_char_sayilir",
+      "desc": "K2: bildirilen void * dizgi kanıtı sayılır",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_void_isaretci_kanitsiz_str_almaz",
+      "find": "        return a == \"char *\" or _has_string_evidence(code, param_name)",
+      "replace": "        return a in (\"char *\", \"void *\") or _has_string_evidence(code, param_name)"
+    },
+    {
+      "id": "p05b_k2_dizgi_konum_yok",
+      "desc": "K2: dizgi işlevinde konuma bakılmaz (strncpy uzunluğu kanıt sayılır)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_dizgi_kaniti_bicimleri",
+      "find": "            if k < len(args) and _LEADING_POINTER_CAST_RE.sub(\"\", args[k]).strip() == param_name:",
+      "replace": "            if any(_LEADING_POINTER_CAST_RE.sub(\"\", x).strip() == param_name for x in args):"
+    },
+    {
+      "id": "p05b_k2_dizgi_ortme_yok",
+      "desc": "K2: dizgi sabitinin içindeki metin çağrı sayılır",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_dizgi_kaniti_bicimleri",
+      "find": "        if text[0] == '\"':\n            return '\"\"'",
+      "replace": "        if text[0] == '\"':\n            return text[1:-1]"
+    },
+    {
+      "id": "p05b_k2_macho_onek_yok",
+      "desc": "K2: Mach-O _ önekli dizgi işlevi tanınmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_dizgi_kaniti_bicimleri",
+      "find": "        if positions is None and fname.startswith(\"_\"):",
+      "replace": "        if positions is None and fname.startswith(\"_\") and 0:"
+    },
+    {
+      "id": "p05b_k2_karakter_karsilastirma_yok",
+      "desc": "K2: karakter sabitiyle karşılaştırma kanıt sayılmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_dizgi_kaniti_bicimleri",
+      "find": "    if re.search(rf\"(?:\\*\\s*{p}\\b|\\b{p}\\s*\\[[^\\]]*\\])\\s*[!=]=\\s*'\", masked):\n        return True\n    return False",
+      "replace": "    return False"
+    },
+    {
+      "id": "p05b_k2_istisna_kanitsiz",
+      "desc": "K2: istisna yolunda öğe erişimi kanıtı aranmaz (int * / void * / bayt)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_istisna_yolu_int_dizi_adi_kanit_ister",
+      "find": "    if t not in _ELEMENT_CAST_TYPES:\n        return False\n    masked = _loop_depth_profile(code)[0]",
+      "replace": "    if t in _ELEMENT_CAST_TYPES:\n        return True\n    masked = _loop_depth_profile(code)[0]"
+    },
+    {
+      "id": "p05b_k2_int_cast_genis",
+      "desc": "K2: int * kanıtı her cast'i kabul eder",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_isaretci_sablonu_kanit_kurali",
+      "find": "    \"int *\": (\"int\", \"uint\", \"int32_t\", \"uint32_t\", \"undefined4\"),",
+      "replace": "    \"int *\": None,"
+    },
+    {
+      "id": "p05b_k2_paralel_kanitsiz",
+      "desc": "K2: paralel yolda kanıt şartı yok (yalnız double * kuralı)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_kanit.py::test_kanitsiz_tamsayi_parametre_str_almaz",
+      "find": "            # MUH-02 + P05b K2: işaretçi şablonu yalnız öğe kanıtıyla (kayan noktalı erişim,\n            # dizgi kanıtı, istisna yolunda cast'li erişim)\n            if not _pointer_template_evidence(",
+      "replace": "            if tup.c_type == \"double *\" and not float_ok:\n                continue\n            if False and not _pointer_template_evidence("
     }
   ]
 }
