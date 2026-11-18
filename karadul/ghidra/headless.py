@@ -136,6 +136,15 @@ def _release_jvm_creator_thread() -> None:
         )
 
 
+def _address_sort_key(addr: str) -> tuple[str, int, str]:
+    """Ghidra adres dizgisi için sıralama anahtarı (``ram:0010`` ya da ``00100010``)."""
+    space, _, offset = addr.rpartition(":")
+    try:
+        return (space, int(offset, 16), "")
+    except ValueError:
+        return (space, -1, addr)
+
+
 class GhidraHeadless:
     """Ghidra headless analiz wrapper.
 
@@ -658,6 +667,8 @@ class GhidraHeadless:
         string tipindekiler filtrelenir.
         """
         listing = program.getListing()
+        fm = program.getFunctionManager()
+        ref_mgr = program.getReferenceManager()
         strings = []
         seen_addrs = set()
 
@@ -688,10 +699,26 @@ class GhidraHeadless:
                 "type": str(data.getDataType().getName()),
             }
 
-            func = program.getFunctionManager().getFunctionContaining(
-                data.getAddress()
-            )
-            entry["function"] = func.getName() if func else None
+            # GHIDRA-16: dizgi veri bölümünde durur; "onu içeren fonksiyon" hiç yoktur
+            # (eski kod getFunctionContaining(dizgi adresi) yüzünden 80 545 kaydın 0'ında
+            # dolu). Bağ dizgiye başvuran komutlardan kurulur (string_extractor.py ile
+            # aynı şema): xrefs = başvuranlar (adres sırasında), function = ilk başvuranın
+            # fonksiyonu. Başvuran yoksa alanlar boş kalır ve xref_count 0 bunu söyler.
+            xrefs = []
+            for ref in ref_mgr.getReferencesTo(data.getAddress()):
+                from_addr = ref.getFromAddress()
+                from_func = fm.getFunctionContaining(from_addr)
+                xrefs.append({
+                    "from_address": str(from_addr),
+                    "from_function": str(from_func.getName()) if from_func else None,
+                    "from_func_addr": str(from_func.getEntryPoint()) if from_func else None,
+                })
+            xrefs.sort(key=lambda x: _address_sort_key(x["from_address"]))
+            entry["xrefs"] = xrefs
+            entry["xref_count"] = len(xrefs)
+            first = next((x for x in xrefs if x["from_function"]), None)
+            entry["function"] = first["from_function"] if first else None
+            entry["function_addr"] = first["from_func_addr"] if first else None
 
             strings.append(entry)
 
