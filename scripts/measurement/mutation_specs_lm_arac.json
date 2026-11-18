@@ -568,6 +568,46 @@
       "test": "tests/test_lm_tools_v2.py::test_araclar_calisma_alanini_degistirmez",
       "find": "    return ToolOutput(data=data, kind=KIND_PROXY, source=SOURCE_SEARCH, limits=LIMITS_SEARCH, truncated=truncated)",
       "replace": "    (ws.root / \"son_arama.txt\").write_text(text)\n    return ToolOutput(data=data, kind=KIND_PROXY, source=SOURCE_SEARCH, limits=LIMITS_SEARCH, truncated=truncated)"
+    },
+    {
+      "id": "do_refs_anahtar",
+      "desc": "find_refs adresi items[].addr dışında bir anahtarda taşır (örümcek hedefi boş)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_olay_akisi_hedef_ve_dokunulan",
+      "find": "            return {\"addr\": f\"FUN_{x}\", \"name_tag\": format_tag(lookup(x)), \"calls\": rows[x]}",
+      "replace": "            return {\"function\": f\"FUN_{x}\", \"name_tag\": format_tag(lookup(x)), \"calls\": rows[x]}"
+    },
+    {
+      "id": "do_arama_anahtar",
+      "desc": "search_code satırının fonksiyonu items[].addr'de değil",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_olay_akisi_hedef_ve_dokunulan",
+      "find": "                    row: dict[str, Any] = {\"addr\": f\"FUN_{a}\", \"line_no\": no, \"line\": shown}",
+      "replace": "                    row: dict[str, Any] = {\"at\": f\"FUN_{a}\", \"line_no\": no, \"line\": shown}"
+    },
+    {
+      "id": "do_yol_hedefi",
+      "desc": "yolun hedef düğümü items'a girmez",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_olay_akisi_hedef_ve_dokunulan",
+      "find": "        for v in p[1:]:\n            if v not in nodes:",
+      "replace": "        for v in p[1:-1]:\n            if v not in nodes:"
+    },
+    {
+      "id": "do_graf_anahtar",
+      "desc": "graf düğümleri items yerine nodes anahtarında (dokunulan boş)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_olay_akisi_hedef_ve_dokunulan",
+      "find": "    data = {\"addr\": f\"FUN_{a}\", \"direction\": direction, \"depth\": depth, \"items\": items, \"edges\": edges,",
+      "replace": "    data = {\"addr\": f\"FUN_{a}\", \"direction\": direction, \"depth\": depth, \"graph_nodes\": items, \"edges\": edges,"
+    },
+    {
+      "id": "do_dizgi_metni",
+      "desc": "dizgi araması eşleşen metni items[].addr'e koyar (ikili metni örümceği oynatır)",
+      "module": "karadul/lm/tools/read_more.py",
+      "test": "tests/test_lm_tools_v2.py::test_dokunulan_ikili_metninden_dogmaz",
+      "find": "            return {\"addr\": f\"FUN_{x}\", \"name_tag\": format_tag(lookup(x)),\n",
+      "replace": "            return {\"addr\": hits[x][0].split()[0], \"name_tag\": format_tag(lookup(x)),\n"
     }
   ]
 }
