@@ -223,18 +223,34 @@ class GhidraMetadataStep(Step):
             )
             ctx.stats["signature_matches"] = len(sig_matches)
             ctx.stats["sigdb_status"] = "matched" if sig_matches else "no_match"
+            # ARAYUZ-02: IOC bölümü "veri yok" (sigdb_status error/unavailable)
+            # ile "IOC yok" (bu sayı 0) ayrımını buradan yapabilir.
+            ctx.stats["sigdb_ioc_matches"] = sum(
+                1 for m in sig_matches if getattr(m, "family", "") or getattr(m, "tier", "")
+            )
             if sig_matches:
                 sig_path = pc.workspace.save_json(
                     "reconstructed", "signature_matches",
                     {
+                        "schema": 2,
                         "total": len(sig_matches),
+                        # Hangi veritabanıyla eşlendiği (IMZA-11 künyesi).
+                        "database": sig_db.backend_info(),
                         "matches": [
                             {
                                 "original": m.original_name,
                                 "matched": m.matched_name,
+                                # Tek kitaplık ailesi varsa o; birden çok aile varsa ""
+                                # (tek kitaplık uydurulmaz, adaylar "libraries"de).
                                 "library": m.library,
+                                "libraries": m.libraries,
                                 "confidence": m.confidence,
                                 "purpose": m.purpose,
+                                "category": m.category,
+                                # Zararlı yazılım içerik paketi (Sliver / Cobalt Strike)
+                                # aile ve kademesi; yoksa "".
+                                "family": getattr(m, "family", ""),
+                                "tier": getattr(m, "tier", ""),
                                 # Aynı adlı iki fonksiyon (PLT ve dış blok thunk'ı) ayrı
                                 # kayıttır; adres olmadan kayıtlar özdeş çıkıyordu.
                                 "address": m.address,

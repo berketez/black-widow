@@ -202,6 +202,10 @@ class SignatureMatch:
     # boş kalır (tek kitaplık uydurulmaz) ve adaylar burada listelenir.
     # None = bu eşleşme yolu kitaplık listesi üretmiyor.
     libraries: list[str] | None = None
+    # ARAYUZ-02: zararlı yazılım içerik paketinin (sigdb_builtin/malware_tier1)
+    # aile ve kademe bilgisi; rapordaki IOC bölümü bunlarla süzer. Boş = yok.
+    family: str = ""
+    tier: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -216,6 +220,8 @@ class SignatureMatch:
             "params": self.params,
             "address": self.address,
             "libraries": self.libraries,
+            "family": self.family,
+            "tier": self.tier,
         }
 
 
@@ -2170,6 +2176,8 @@ class SignatureDB:
                     category=_attr[1],
                     params=_src.get("params"),  # v1.10.0 M2 T4
                     libraries=_attr[2] if len(_attr[2]) > 1 else None,
+                    family=str(_src.get("family", "")) if _attr[0] else "",
+                    tier=str(_src.get("tier", "")) if _attr[0] else "",
                 )
             # Platform mismatch -> builtin return etme, LMDB fallback'e dus.
             # Ayni sembol LMDB'de farkli platform ile tanimlanmis olabilir.
@@ -2192,6 +2200,8 @@ class SignatureDB:
                         category=_attr[1],
                         params=_src.get("params"),  # v1.10.0 M2 T4
                         libraries=_attr[2] if len(_attr[2]) > 1 else None,
+                        family=str(_src.get("family", "")) if _attr[0] else "",
+                        tier=str(_src.get("tier", "")) if _attr[0] else "",
                     )
 
         # Builtin miss -> LMDB backend (varsa). LMDB'nin amaci external

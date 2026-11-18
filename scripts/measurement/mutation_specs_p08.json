@@ -152,6 +152,30 @@
       "test": "tests/test_p08_imza12.py::test_msvc_record_still_wins_on_pe",
       "find": "    if target_platform is not None and any(_is_platform_specific(*c) for c in compat):",
       "replace": "    if False and any(_is_platform_specific(*c) for c in compat):"
+    },
+    {
+      "id": "arayuz02_family_yazilmiyor",
+      "desc": "yazıcı family alanını boş yazıyor",
+      "module": "karadul/pipeline/steps/ghidra_metadata.py",
+      "test": "tests/test_p08_arayuz02.py::test_ioc_fields_written_for_tier1_symbol",
+      "find": "\"family\": getattr(m, \"family\", \"\"),",
+      "replace": "\"family\": \"\","
+    },
+    {
+      "id": "arayuz02_eslesme_family_tasimiyor",
+      "desc": "sembol eşleşmesi içerik paketinin family alanını taşımıyor",
+      "module": "karadul/analyzers/signature_db.py",
+      "test": "tests/test_p08_arayuz02.py::test_ioc_fields_written_for_tier1_symbol",
+      "find": "\n                    family=str(_src.get(\"family\", \"\")) if _attr[0] else \"\",",
+      "replace": "\n                    family=\"\","
+    },
+    {
+      "id": "arayuz02_ioc_sayaci",
+      "desc": "IOC sayacı tier1 kaydı saymıyor",
+      "module": "karadul/pipeline/steps/ghidra_metadata.py",
+      "test": "tests/test_p08_arayuz02.py::test_ioc_fields_written_for_tier1_symbol",
+      "find": "1 for m in sig_matches if getattr(m, \"family\", \"\") or getattr(m, \"tier\", \"\")",
+      "replace": "1 for m in sig_matches if getattr(m, \"tier\", \"\") == \"x\""
     }
   ]
 }
