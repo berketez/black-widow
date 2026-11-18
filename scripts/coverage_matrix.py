@@ -31,7 +31,11 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-OUT = Path(os.environ.get("KARADUL_COVERAGE_DIR", str(Path.home() / "karadul_coverage")))
+sys.path.insert(0, str(REPO))
+# P15b kalem 4: `analyze` çıkış kodu 3 = kısmi (çıktı var, en az bir alt adım düştü).
+from karadul.core.pipeline import EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL  # noqa: E402
+
+OUT =Path(os.environ.get("KARADUL_COVERAGE_DIR", str(Path.home() / "karadul_coverage")))
 MANIFEST = OUT / "corpus_manifest.jsonl"
 RUNS = OUT / "runs"
 RESULT = OUT / "coverage_matrix.json"
@@ -161,7 +165,11 @@ def robustness(row: dict, timeout: int) -> dict:
             p = subprocess.run(cmd, stdout=lf, stderr=subprocess.STDOUT,
                                timeout=timeout, cwd=str(REPO))
         rc = p.returncode
-        if rc != 0:
+        if rc == EXIT_ANALYSIS_PARTIAL:
+            # P15b kalem 4: kısmi koşu çökme değil; ayrı sayılır (son hata satırı yine yazılır).
+            status = "PARTIAL"
+            errsig = _last_error(log)
+        elif rc != EXIT_ANALYSIS_OK:
             status = "CRASH"
             errsig = _last_error(log)
     except subprocess.TimeoutExpired:
@@ -170,7 +178,7 @@ def robustness(row: dict, timeout: int) -> dict:
         status, rc, errsig = "CRASH", None, f"{type(e).__name__}: {e}"[:160]
     dt = round(time.time() - t0, 1)
     total, named = _count_functions(ws)
-    if status == "OK" and total == 0:
+    if status in ("OK", "PARTIAL") and total == 0:
         status = "EMPTY"  # çalıştı ama çıktı yok -> sessiz başarısızlık
     return {"label": lb, "status": status, "rc": rc, "elapsed_sec": dt,
             "func_total": total, "func_named": named,
@@ -270,10 +278,12 @@ def main() -> int:
               f"{rb.get('func_total',0):<7}{str(rb.get('func_named',0))+'/'+str(rb.get('named_pct',0))+'%':<8}"
               f"{rb.get('elapsed_sec',0)}s")
     n_ok = sum(1 for r in results.values() if r["status"] == "OK")
+    n_partial = sum(1 for r in results.values() if r["status"] == "PARTIAL")
     n_empty = sum(1 for r in results.values() if r["status"] == "EMPTY")
     n_crash = sum(1 for r in results.values() if r["status"] == "CRASH")
     n_to = sum(1 for r in results.values() if r["status"] == "TIMEOUT")
-    print(f"\nOK={n_ok}  EMPTY={n_empty}  CRASH={n_crash}  TIMEOUT={n_to}  / {len(corpus)}")
+    print(f"\nOK={n_ok}  PARTIAL={n_partial}  EMPTY={n_empty}  CRASH={n_crash}  "
+          f"TIMEOUT={n_to}  / {len(corpus)}")
     print(f"-> {RESULT}")
     return 0
 

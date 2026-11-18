@@ -47,6 +47,26 @@ import function_f1 as f1  # noqa: E402
 
 sys.path.insert(0, str(REPO_ROOT))
 from karadul.config import GHIDRA_PINNED_DIR, GHIDRA_PINNED_VERSION, ghidra_install_info  # noqa: E402
+# P15b kalem 4: `analyze` çıkış kodları tek kaynaktan (0 tam, 3 kısmi, öbürü başarısız).
+from karadul.core.pipeline import EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL  # noqa: E402
+
+#: Kısmi koşu (çıktı var, en az bir alt adım düştü): puanlanır ama ayrı sayılır.
+RUN_STATUS_PARTIAL = "partial"
+#: Çıktısı puanlanabilen koşu durumları.
+SCORABLE_RUN_STATUSES = ("ok", RUN_STATUS_PARTIAL)
+
+
+def run_status_for_exit(rc: Optional[int]) -> str:
+    """`karadul analyze` çıkış kodundan koşu durumu (P15b kalem 4).
+
+    Eskiden 0 dışı her kod "failed" sayılıyordu: P15a'dan beri kısmi koşu (3)
+    çıktısıyla birlikte ölçümden düşüyordu.
+    """
+    if rc == EXIT_ANALYSIS_OK:
+        return "ok"
+    if rc == EXIT_ANALYSIS_PARTIAL:
+        return RUN_STATUS_PARTIAL
+    return "failed"
 
 MANIFEST_PATH = HERE / "corpus.json"
 DEFAULT_DATA_DIR = Path(os.environ.get("KARADUL_OLCUM_DIR", "~/karadul_olcum")).expanduser()
@@ -235,8 +255,8 @@ def _run_one(tree: Path, ghidra: Path, data_dir: Path, label: str, corpus: str,
     meta_path = run_dir / "run.json"
     if meta_path.is_file() and not force:
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        if meta.get("status") == "ok":
-            print(f"  [atla] {corpus}/{binary} (önceden ok)")
+        if meta.get("status") in SCORABLE_RUN_STATUSES:
+            print(f"  [atla] {corpus}/{binary} (önceden {meta.get('status')})")
             return meta
     for sub in ("ws", "out"):
         if (run_dir / sub).exists():
@@ -262,7 +282,7 @@ def _run_one(tree: Path, ghidra: Path, data_dir: Path, label: str, corpus: str,
                                 start_new_session=True)
         try:
             rc = proc.wait(timeout=timeout)
-            status = "ok" if rc == 0 else "failed"
+            status = run_status_for_exit(rc)
         except subprocess.TimeoutExpired:
             # Tüm süreç grubu (karadul + JVM + alt süreçler) öldürülür.
             for sig, grace in ((signal.SIGTERM, 30), (signal.SIGKILL, None)):
@@ -278,7 +298,7 @@ def _run_one(tree: Path, ghidra: Path, data_dir: Path, label: str, corpus: str,
             rc, status = None, "timeout"
     meta.update({"exit_code": rc, "status": status, "finished_at": _now(),
                  "duration_s": round(time.monotonic() - t0, 1)})
-    if status == "ok" and f1.find_run_artifacts(run_dir)["ghidra_functions"] is None:
+    if status in SCORABLE_RUN_STATUSES and f1.find_run_artifacts(run_dir)["ghidra_functions"] is None:
         meta["status"] = "failed"
         meta["error"] = "ghidra_functions.json üretilmedi"
     meta_path.write_text(json.dumps(meta, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -354,10 +374,11 @@ def score_label(label: str, data_dir: Path, only: Optional[list[str]] = None) ->
                                  "run": {k: meta.get(k) for k in (
                                      "status", "exit_code", "duration_s", "command", "cwd",
                                      "started_at", "target_sha256")}}
-        if meta.get("status") != "ok":
+        if meta.get("status") not in SCORABLE_RUN_STATUSES:
             entry["error"] = meta.get("error") or f"koşu durumu: {meta.get('status', 'yok')}"
             per_binary.append(entry)
             continue
+        entry["partial"] = meta.get("status") == RUN_STATUS_PARTIAL
         gt_path = data_dir / "corpus" / corpus / "gt" / f"{b}.gt.json"
         res = f1.score_run(gt_path, run_dir)
         res["inputs"] = {k: _tilde(v) for k, v in res["inputs"].items()}
@@ -383,6 +404,9 @@ def score_label(label: str, data_dir: Path, only: Optional[list[str]] = None) ->
     for r in per_binary:
         if "error" in r:
             warnings.append(f"{r['corpus']}/{r['binary']}: ÖLÇÜLEMEDİ — {r['error']}")
+        elif r.get("partial"):
+            warnings.append(f"{r['corpus']}/{r['binary']}: KISMİ koşu (çıkış "
+                            f"{EXIT_ANALYSIS_PARTIAL}): puanlandı, en az bir alt adım düştü")
     if session["ghidra"].get("version") != GHIDRA_PINNED_VERSION:
         warnings.append(f"koşular Ghidra {session['ghidra'].get('version')} ile alındı; "
                         f"sabitlenen sürüm {GHIDRA_PINNED_VERSION}")
@@ -406,6 +430,12 @@ def score_label(label: str, data_dir: Path, only: Optional[list[str]] = None) ->
             f"python scripts/measurement/measure.py score --label {label} --out <json>",
         ],
         "aggregate": agg,
+        # P15b kalem 4: koşu durumları ayrı sayılır (kısmi başarısız sayılmaz, tam da değildir).
+        "run_counts": {
+            "ok": sum(1 for r in per_binary if "error" not in r and not r.get("partial")),
+            "partial": sum(1 for r in per_binary if r.get("partial")),
+            "not_scored": sum(1 for r in per_binary if "error" in r),
+        },
         "warnings": warnings,
         "per_binary": per_binary,
     }

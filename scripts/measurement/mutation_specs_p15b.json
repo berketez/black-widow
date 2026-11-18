@@ -128,6 +128,38 @@
       "test": "tests/test_p15b_batch_ayar.py::test_cli_gecerli_ayar_iscilere_mutlak_yolla_gider",
       "find": "        callback=on_complete,\n        config_path=config_path,\n",
       "replace": "        callback=on_complete,\n"
+    },
+    {
+      "id": "k4_measure",
+      "desc": "measure.py kısmi koşuyu yine başarısız sayıyor",
+      "module": "scripts/measurement/measure.py",
+      "test": "tests/test_p15b_kismi_cikis.py::test_measure_kismi_kosu_puanlanabilir_kalir",
+      "find": "        return RUN_STATUS_PARTIAL\n",
+      "replace": "        return \"failed\"\n"
+    },
+    {
+      "id": "k4_coverage",
+      "desc": "coverage_matrix.py kısmi koşuyu çökme sayıyor",
+      "module": "scripts/coverage_matrix.py",
+      "test": "tests/test_p15b_kismi_cikis.py::test_coverage_matrix_kismi_cokme_degil",
+      "find": "        if rc == EXIT_ANALYSIS_PARTIAL:\n",
+      "replace": "        if rc == -12345:\n"
+    },
+    {
+      "id": "k4_adim3",
+      "desc": "adim3_kapilar.py kısmi koşuya BITTI yazmıyor, hata sayıyor",
+      "module": "scripts/measurement/adim3_kapilar.py",
+      "test": "tests/test_p15b_kismi_cikis.py::test_adim3_kismi_kosu_bitti_yazilir",
+      "find": "TAMAMLANAN_CIKISLAR = (EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL)",
+      "replace": "TAMAMLANAN_CIKISLAR = (EXIT_ANALYSIS_OK,)"
+    },
+    {
+      "id": "k4_mbr",
+      "desc": "multi_binary_runner kısmi koşuyu başarısız sayıyor",
+      "module": "karadul/scripts/multi_binary_runner.py",
+      "test": "tests/test_p15b_kismi_cikis.py::test_multi_binary_runner_kismi_ayri",
+      "find": "result.success = proc.returncode in (EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL)",
+      "replace": "result.success = proc.returncode == EXIT_ANALYSIS_OK"
     }
   ]
 }

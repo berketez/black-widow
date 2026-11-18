@@ -40,6 +40,12 @@ from pathlib import Path
 
 DEPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(DEPO / "scripts" / "measurement"))
+sys.path.insert(0, str(DEPO))
+# P15b kalem 4: `analyze` çıkış kodları tek kaynaktan (0 tam, 3 kısmi).
+from karadul.core.pipeline import EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL  # noqa: E402
+
+#: Kapı ölçümünde çıktısı kullanılabilen çıkış kodları; kısmi ayrıca sayılır.
+TAMAMLANAN_CIKISLAR = (EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL)
 
 GHIDRA = Path.home() / "Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC"
 DEBIAN = Path.home() / "karadul_olcum/n1_debian13"
@@ -111,15 +117,19 @@ def kos(kok: Path, paralel: int) -> int:
                  "--config", str(yaml), "--output-dir", str(hedef / "ws"),
                  "--output", str(hedef / "out")],
                 cwd=DEPO, env=ortam, stdout=gunluk, stderr=subprocess.STDOUT)
-        if r.returncode == 0:
-            (hedef / "BITTI").write_text("0\n", encoding="utf-8")
+        # P15b kalem 4: kısmi (3) koşu da tamamlanmıştır (çıktı var); BITTI çıkış kodunu taşır.
+        if r.returncode in TAMAMLANAN_CIKISLAR:
+            (hedef / "BITTI").write_text(f"{r.returncode}\n", encoding="utf-8")
         return ad, kol, r.returncode
 
-    hata = 0
+    hata = kismi = 0
     with cf.ThreadPoolExecutor(max_workers=paralel) as havuz:
         for ad, kol, kod in havuz.map(calistir, isler):
-            print(f"{ad:12} {kol:4} çıkış={kod}", flush=True)
-            hata += kod != 0
+            etiket = " (kısmi)" if kod == EXIT_ANALYSIS_PARTIAL else ""
+            print(f"{ad:12} {kol:4} çıkış={kod}{etiket}", flush=True)
+            hata += kod not in TAMAMLANAN_CIKISLAR
+            kismi += kod == EXIT_ANALYSIS_PARTIAL
+    print(f"koşu: {len(isler) - hata - kismi} tam, {kismi} kısmi, {hata} başarısız", flush=True)
     return 1 if hata else 0
 
 

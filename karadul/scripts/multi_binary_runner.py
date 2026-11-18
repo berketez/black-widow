@@ -28,11 +28,22 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
+# P15b kalem 4: `analyze` çıkış kodları tek kaynaktan (0 tam, 3 kısmi).
+from karadul.core.pipeline import EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL
+
+
+def _status_label(result: "BinaryResult") -> str:
+    """Tam / kısmi / başarısız ayrımı (kısmi ne başarısız ne tam sayılır)."""
+    if not result.success:
+        return "FAIL"
+    return "PARTIAL" if result.partial else "OK"
+
 
 @dataclass
 class BinaryResult:
     binary_name: str
     binary_size_bytes: int
+    #: Çıktı üretildi (çıkış 0 ya da 3); kısmi olanlar ``partial`` ile ayrılır.
     success: bool
     duration_seconds: float
     peak_rss_mb: float
@@ -45,6 +56,8 @@ class BinaryResult:
     workspace: Optional[str] = None
     error: Optional[str] = None
     artifacts_count: int = 0
+    #: Çıkış 3: çıktı var ama en az bir alt adım düştü (P15b kalem 4).
+    partial: bool = False
 
 
 @dataclass
@@ -65,6 +78,11 @@ class SuiteResult:
         if not self.binaries:
             return 0.0
         return sum(1 for b in self.binaries if b.success) / len(self.binaries)
+
+    @property
+    def partial_count(self) -> int:
+        """Kısmi koşu sayısı (``success_rate``'in içinde; ayrıca gösterilir)."""
+        return sum(1 for b in self.binaries if b.success and b.partial)
 
     @property
     def avg_f1(self) -> Optional[float]:
@@ -108,7 +126,9 @@ def run_one(binary: Path, workspace_dir: Path, timeout: int = 600) -> BinaryResu
         )
         result.duration_seconds = time.monotonic() - start
         result.peak_rss_mb = max(0.0, _peak_rss_mb() - rss_before)
-        result.success = proc.returncode == 0
+        # P15b kalem 4: kısmi (3) koşunun çıktısı var → ölçülür ama ayrı işaretlenir.
+        result.success = proc.returncode in (EXIT_ANALYSIS_OK, EXIT_ANALYSIS_PARTIAL)
+        result.partial = proc.returncode == EXIT_ANALYSIS_PARTIAL
 
         # F1 ölçümü için benchmark_runner kullan (B4 fix)
         if result.success:
@@ -233,7 +253,9 @@ def run_suite(
         )
         result = run_one(binary, ws, timeout=timeout)
         suite.binaries.append(result)
-        status = "OK" if result.success else f"FAIL ({result.error or 'unknown'})"
+        status = _status_label(result)
+        if status == "FAIL":
+            status = f"FAIL ({result.error or 'unknown'})"
         print(
             f"    {result.duration_seconds:.1f}s · "
             f"{result.peak_rss_mb:.0f}MB · "
@@ -255,7 +277,7 @@ def print_summary(suite: SuiteResult) -> None:
     print(f"Binary count: {suite.binary_count}")
     print(f"Total duration: {suite.total_duration_seconds:.1f}s")
     print(f"Avg duration: {suite.avg_duration:.1f}s/binary")
-    print(f"Success rate: {suite.success_rate * 100:.0f}%")
+    print(f"Success rate: {suite.success_rate * 100:.0f}% (kısmi dahil; kısmi: {suite.partial_count})")
     if suite.avg_f1 is not None:
         print(f"Avg F1: {suite.avg_f1:.3f}")
     print()
@@ -266,7 +288,7 @@ def print_summary(suite: SuiteResult) -> None:
             f"{b.binary_name:<25} {b.binary_size_bytes:>10,} "
             f"{b.duration_seconds:>7.1f}s {b.peak_rss_mb:>7.0f}M "
             f"{b.functions_recovered:>6} {b.variables_renamed:>8} "
-            f"{'OK' if b.success else 'FAIL':<10}"
+            f"{_status_label(b):<10}"
         )
     print("=" * 70)
 
