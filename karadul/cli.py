@@ -1374,27 +1374,44 @@ def list_targets(output_dir: str) -> None:
 @click.argument("target")
 @click.option("--output-dir", type=click.Path(), default="./workspaces/",
               help="Workspace dizini.")
-@click.confirmation_option(
-    prompt="Bu hedefin workspace'ini silmek istediginizden emin misiniz?"
-)
-def clean(target: str, output_dir: str) -> None:
-    """Hedefin workspace dizinini temizle."""
+@click.option("--yes", "-y", "yes", is_flag=True, default=False,
+              help="Silme onayını sorma.")
+def clean(target: str, output_dir: str, yes: bool) -> None:
+    """Hedefin çalışma alanı dizinini sil."""
     base_dir = Path(output_dir).resolve()
     workspace_path = (base_dir / target).resolve()
 
-    # Path traversal korumasi: workspace_path, base_dir altinda olmali.
+    # Path traversal korumasi: workspace_path, base_dir ALTINDA olmali.
     # v1.10.0 Fix Sprint HIGH-1: startswith prefix confusion (base "/tmp/ws"
     # vs "/tmp/ws-evil/...") yerine Path.relative_to kullan.
-    if workspace_path != base_dir:
-        try:
-            workspace_path.relative_to(base_dir)
-        except ValueError:
-            err_console.print(f"[bold red]HATA:[/bold red] Gecersiz hedef adi (path traversal engellendi): {target}")
-            sys.exit(1)
+    # P15a / MEK-09: hedef "." (ya da çalışma alanı kökünün kendisi) eskiden kabul
+    # ediliyordu ve BÜTÜN çalışma alanları silinirdi; artık reddedilir (`run` ile aynı).
+    try:
+        workspace_path.relative_to(base_dir)
+    except ValueError:
+        workspace_path = None  # type: ignore[assignment]
+    if workspace_path is None or workspace_path == base_dir:
+        err_console.print(f"[bold red]HATA:[/bold red] Gecersiz hedef adi (path traversal engellendi): {target}")
+        sys.exit(1)
 
+    # MEK-09 (a): varlık onaydan ÖNCE denetlenir (eskiden olmayan hedef için önce
+    # silme onayı soruluyordu).
     if not workspace_path.exists():
         err_console.print(f"[bold red]HATA:[/bold red] Workspace bulunamadi: {workspace_path}")
         sys.exit(1)
+
+    if not yes:
+        if _is_noninteractive():
+            err_console.print(
+                "[bold red]HATA:[/bold red] etkileşimsiz ortamda onay alınamadı; "
+                f"silmek için --yes ver: {workspace_path}"
+            )
+            sys.exit(1)
+        if not click.confirm(
+            f"{workspace_path} silinsin mi?", default=False, err=True,
+        ):
+            err_console.print("[dim]Silinmedi.[/dim]")
+            sys.exit(1)
 
     shutil.rmtree(workspace_path)
     console.print(f"[green]Temizlendi:[/green] {workspace_path}")
@@ -2136,6 +2153,14 @@ def score(
 
     result = scorer.score_directory(target_dir)
 
+    # MEK-09 (b): C dosyası yokken puan anlamsız; eskiden uyarısız "0.00/100", çıkış 0.
+    if not result.details.get("file_count"):
+        err_console.print(
+            f"[bold red]HATA:[/bold red] {target_dir} altında C dosyası yok; "
+            "okunabilirlik puanı hesaplanamaz."
+        )
+        sys.exit(1)
+
     compare_result = None
     if baseline:
         baseline_result = scorer.score_ground_truth(Path(baseline))
@@ -2144,6 +2169,9 @@ def score(
     if json_output:
         payload = {
             "source": result.source,
+            # TIP-10: puan yüzey ölçütüdür, doğruluk değil (aşağıdaki not).
+            "measure": "yuzey_olcutu",
+            "note": _SCORE_NOTE,
             "total_score": result.total_score,
             "dimensions": result.dimensions,
         }
@@ -2188,6 +2216,7 @@ def score(
         f"\n[bold green]Toplam:[/bold green] "
         f"[bold]{result.total_score:.2f}/100[/bold]"
     )
+    console.print(f"[yellow]Not:[/yellow] {_SCORE_NOTE}")
 
     if details:
         console.print(Rule("Detaylar"))
@@ -2198,7 +2227,7 @@ def score(
             console.print(val)
 
     if compare_result is not None:
-        console.print(Rule("Baseline Karsilastirma (Debug = 100)"))
+        console.print(Rule("Baseline Karşılaştırma (Debug = 100: sabit, ölçülmedi)"))
         cmp_table = Table(border_style="cyan")
         cmp_table.add_column("Boyut", style="bold")
         cmp_table.add_column("Baseline", justify="right")
@@ -2216,6 +2245,17 @@ def score(
             f"\n[bold]Toplam delta:[/bold] {compare_result.delta:.2f}  "
             f"[dim](reconstructed/baseline: {compare_result.normalized:.2f}%)[/dim]"
         )
+
+
+# TIP-10 (P15a): `score` puanı adların / yorumların DOĞRULUĞUNU ölçmez. Ad boyutu
+# FUN_ olmayan ve İngilizce kökü olan her adı anlamlı sayar (yanlış ad da puanı
+# yükseltir); yorum boyutu yorum yoğunluğudur; baseline puanı sabit 100'dür.
+_SCORE_NOTE = (
+    "Bu puan bir YÜZEY ölçütüdür, doğruluk ölçmez: FUN_ olmayan ve İngilizce kökü "
+    "olan her ad 'anlamlı', her yorum satırı 'yorum' sayılır; yanlış ad ve uydurma "
+    "yorum da puanı yükseltir. Baseline (Debug) puanı ölçülmez, sabit 100 alınır. "
+    "Doğruluk için DWARF adlarıyla ölçüm gerekir."
+)
 
 
 @main.command("rtti")
