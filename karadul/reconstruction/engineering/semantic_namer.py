@@ -300,6 +300,28 @@ def _split_call_args(code: str, open_idx: int) -> list[str] | None:
     return None
 
 
+@functools.lru_cache(maxsize=256)
+def _masked_code(code: str) -> str:
+    """Dizgi, karakter sabiti ve yorumlar aynı uzunlukta boşlukla örtülü kod (önbellekli)."""
+    return _NON_CODE_RE.sub(
+        lambda m: "".join("\n" if c == "\n" else " " for c in m.group(0)), code,
+    )
+
+
+# Dizgideki çağrı metninin (P05b K3a) argümanı: makro / sabit ad vermez
+_ALL_CAPS_RE = re.compile(r"^[A-Z][A-Z0-9_]+$")          # NULL, OBJ_STRING
+_NON_VARIABLE_WORDS = frozenset({"NULL", "nullptr", "true", "false", "TRUE", "FALSE"})
+
+
+def _source_text_variable(arg: str) -> bool:
+    """Dizgideki çağrı metninin argümanı kaynak koddaki bir değişken adı mı (P05b K3a)."""
+    return bool(
+        _PLAIN_IDENTIFIER_RE.fullmatch(arg)
+        and arg not in _NON_VARIABLE_WORDS
+        and not _ALL_CAPS_RE.match(arg)
+    )
+
+
 _LOCAL_DECL_RE = re.compile(
     r"^[ \t]+(?P<type>(?:(?:const|unsigned|signed|struct|union|enum)\s+)*[A-Za-z_]\w*)"
     r"(?:\s*\*+\s*|\s+)(?P<var>[A-Za-z_]\w*)\s*(?:\[[^\]\n]*\]\s*)*;[ \t]*$",
@@ -2299,13 +2321,43 @@ class SemanticParameterNamer:
         return self._declared_cache[func_name]
 
     def _call_args(self, caller: str, callee: str) -> list[list[str]]:
-        """``caller`` kodundaki her ``callee(...)`` çağrısının argüman listesi."""
+        """``caller`` kodundaki her ``callee(...)`` çağrısının argüman listesi.
+
+        Dizgi ve yorumlar örtülür (P05b K3): dizginin içindeki çağrı metni gerçek çağrı
+        değildir; o metin ``_string_call_args`` ile ayrı kanıt türü olarak okunur.
+        """
         code = self._func_codes.get(caller, "")
+        if callee not in code:
+            return []
+        masked = _masked_code(code)
         out: list[list[str]] = []
-        for m in re.finditer(rf"\b{re.escape(callee)}\s*\(", code):
-            args = _split_call_args(code, m.end() - 1)
+        for m in re.finditer(rf"\b{re.escape(callee)}\s*\(", masked):
+            args = _split_call_args(masked, m.end() - 1)
             if args is not None:
                 out.append(args)
+        return out
+
+    def _string_call_args(self, caller: str, callee: str) -> list[list[str]]:
+        """``caller``'ın dizgi sabitlerinin İÇİNDEKİ ``callee(...)`` çağrı metinlerinin argümanları.
+
+        ``_serverAssert("lpRandomPairsUnique(lp, count, keys, vals, tuple_len) == count", …)``:
+        derleyicinin yazdığı kaynak metin (``assert`` / hata iletisi); argümanlar kaynak koddaki
+        adlardır (P05b K3a). Yorumların içi sayılmaz.
+        """
+        code = self._func_codes.get(caller, "")
+        if callee not in code:
+            return []
+        pattern = re.compile(rf"\b{re.escape(callee)}\s*\(")
+        out: list[list[str]] = []
+        for lit in _NON_CODE_RE.finditer(code):
+            text = lit.group(0)
+            if not text.startswith('"') or callee not in text:
+                continue
+            body = text[1:-1]
+            for m in pattern.finditer(body):
+                args = _split_call_args(body, m.end() - 1)
+                if args is not None:
+                    out.append(args)
         return out
 
     def provenance_section(self) -> dict[str, Any]:
@@ -2990,19 +3042,43 @@ class SemanticParameterNamer:
         params: list[dict],
         known_names: dict[str, dict[str, str]],
     ) -> list[SemanticName]:
-        """Caller'daki isimli degiskenleri callee parametrelerine yay.
+        """Çağıranlardaki kanıtı callee parametrelerine yay (Strateji 2; MUH-01, P05b K3).
 
-        Yaklasim:
-        1. func_name'in caller'larini bul (reverse graph)
-        2. Her caller'in kodunda func_name cagrisini ara
-        3. Cagri argumanlari ile parametreleri esle
-        4. Caller'daki arguman zaten isimli ise, callee parametresine yay
+        Kanıt türleri, katman sırasıyla (bir parametreye en üst katmanın adı önerilir):
 
-        Ek olarak CALLER_NAME_HINTS tablosundan da isim ipucu alinir.
+        1. **Dizgideki çağrı metni** (``string_call``, güven 0,75; P05b K3a): çağıranın bir dizgi
+           sabitinde ``callee(...)`` geçiyor (``assert`` / hata iletisi: derleyicinin yazdığı
+           kaynak metin); argüman sayısı callee'nin parametre sayısına eşit, argüman düz
+           tanımlayıcı, makro / sabit (tamamı büyük harf, ``NULL``, ``true``) değil. İlk görülen.
+        2. **CALLER_NAME_HINTS** (0,75).
+        3. **Çağıranın değişkeni** (0,675; MUH-01): argüman çağıranda bildirilmiş (parametre ya da
+           yerel) düz tanımlayıcı. İlk görülen (çağıran sırası, sonra kod sırası).
+        4. **İki adımlı** (0,6075): argüman çağıranın bu koşuda ad verilen parametresi.
+
+        Gerçek çağrılar dizgi ve yorumlar örtülerek aranır (``_call_args``). Sabit, ifade, cast,
+        adres alma, dereferans (``*x``) ve çağıranda bildirilmemiş ad (küresel, fonksiyon) ad
+        vermez. P05b ön kaydındaki dereferans, adlı küresel / fonksiyon argümanı ve çağrı yeri
+        oylaması kuralları ölçülüp kalma ölçütünü geçemedi (DWARF'a göre yanlış adı artırdılar;
+        ``docs/arge/2026-11-18_onarim/P05b.md`` §3); ürüne alınmadı.
         """
         results: list[SemanticName] = []
         callers = self._reverse_graph.get(func_name, [])
         domain = self._func_domains.get(func_name, "generic")
+        base = self._BASE_CONFIDENCE["call_graph_propagation"]
+        decay = self._PROPAGATION_DECAY
+        n_params = len(params)
+
+        # Çağıran başına bir kez: gerçek çağrıların ve dizgideki çağrı metinlerinin argümanları
+        caller_calls: list[tuple[str, list[list[str]], list[list[str]]]] = []
+        for caller in callers:
+            caller_code = self._func_codes.get(caller, "")
+            if not caller_code or func_name not in caller_code:
+                continue
+            caller_calls.append((
+                caller,
+                self._call_args(caller, func_name),
+                self._string_call_args(caller, func_name),
+            ))
 
         for param in params:
             param_name = param.get("name", "")
@@ -3012,73 +3088,76 @@ class SemanticParameterNamer:
             if not _is_auto_or_generic_name(param_name):
                 continue
 
-            best_name: str | None = None
-            best_conf: float = 0.0
-            best_reason: str = ""
+            # (conf, ad, gerekçe) — katman sırasıyla; en yüksek güven, eşitlikte ilk katman
+            options: list[tuple[float, str, str]] = []
 
-            # a) CALLER_NAME_HINTS tablosundan dogrudan ipucu
+            # 1) Dizgideki çağrı metni (kaynak koddaki ad)
+            for caller, _calls, string_calls in caller_calls:
+                found = next(
+                    (args[param_pos] for args in string_calls
+                     if len(args) == n_params and param_pos < len(args)
+                     and _source_text_variable(args[param_pos])),
+                    None,
+                )
+                if found:
+                    options.append((
+                        base, found,
+                        f"Source text call in caller '{caller}' string: "
+                        f"{func_name}(...) arg {param_pos} '{found}'",
+                    ))
+                    break
+
+            # 2) CALLER_NAME_HINTS tablosundan dogrudan ipucu
             for hint_name, hint_map in CALLER_NAME_HINTS.items():
-                # func_name, hint_name olarak cagriliyorsa
-                # (bu nadirdir -- genellikle func_name bir FUN_xxx'tir)
-                # Ama caller'in ismi hint'lerden biriyse, arguman pozisyonu eslesir
+                if param_pos not in hint_map:
+                    continue
                 for caller in callers:
                     caller_lower = caller.lower().replace("fun_", "").replace("_", "")
                     hint_lower = hint_name.lower().replace("_", "")
                     if hint_lower in caller_lower or caller_lower in hint_lower:
-                        if param_pos in hint_map:
-                            name = hint_map[param_pos]
-                            conf = self._BASE_CONFIDENCE["call_graph_propagation"]
-                            if conf > best_conf:
-                                best_conf = conf
-                                best_name = name
-                                best_reason = f"Caller hint: {caller} matches pattern '{hint_name}', arg {param_pos}"
+                        options.append((
+                            base, hint_map[param_pos],
+                            f"Caller hint: {caller} matches pattern '{hint_name}', arg {param_pos}",
+                        ))
+                        break
 
-            # b) Caller kodundaki isimli argumani propagate et
-            for caller in callers:
-                caller_code = self._func_codes.get(caller, "")
-                if not caller_code:
-                    continue
-                if func_name not in caller_code:
-                    continue
-
-                # Çağrıların argümanları ayraç dengeli ayrıştırılır (MUH-01). Ad yalnız
-                # çağıranın KENDİ değişkeni olan düz bir tanımlayıcıdan yayılır: sabit
-                # (0xffffffffffffffff), dizgi, cast ((uint64_t)x), adres alma (&local_100),
-                # ifade (x != 0) ve çağıranda bildirilmemiş ad (küresel, fonksiyon) ad vermez.
-                call_args = self._call_args(caller, func_name)
+            # 3-4) Gerçek çağrıların argümanları (dizgi ve yorum örtülü)
+            var: tuple[str, str, str] | None = None
+            hop2: tuple[str, str, str] | None = None
+            for caller, calls, _strings in caller_calls:
                 declared = self._declared_in(caller)
-                for args in call_args:
-                    if param_pos < len(args):
-                        arg_name = args[param_pos]
-                        if (
-                            _PLAIN_IDENTIFIER_RE.fullmatch(arg_name)
-                            and arg_name in declared
-                            and not _is_auto_or_generic_name(arg_name)
-                            and not _GHIDRA_GENERATED_NAME.match(arg_name)
-                        ):
-                            clean = _sanitize_c_name(arg_name)
-                            if clean and len(clean) > 1:
-                                conf = self._BASE_CONFIDENCE["call_graph_propagation"] * self._PROPAGATION_DECAY
-                                if conf > best_conf:
-                                    best_conf = conf
-                                    best_name = clean
-                                    best_reason = f"Propagated from caller '{caller}', arg '{arg_name}' at position {param_pos}"
-
-                # c) Caller'da zaten bilinen isimler varsa, onlari da kontrol et
                 caller_known = known_names.get(caller, {})
-                if caller_known:
-                    for args in call_args:
-                        if param_pos < len(args):
-                            arg_name = args[param_pos]
-                            if arg_name in caller_known:
-                                propagated = caller_known[arg_name]
-                                conf = self._BASE_CONFIDENCE["call_graph_propagation"] * (self._PROPAGATION_DECAY ** 2)
-                                if conf > best_conf:
-                                    best_conf = conf
-                                    best_name = propagated
-                                    best_reason = f"Propagated (2-hop) from caller '{caller}': {arg_name} -> {propagated}"
+                for args in calls:
+                    if param_pos >= len(args):
+                        continue
+                    arg = args[param_pos]
+                    if (
+                        var is None
+                        and _PLAIN_IDENTIFIER_RE.fullmatch(arg)
+                        and arg in declared
+                        and not _is_auto_or_generic_name(arg)
+                        and not _GHIDRA_GENERATED_NAME.match(arg)
+                    ):
+                        clean = _sanitize_c_name(arg)
+                        if clean and len(clean) > 1:
+                            var = (clean, caller, arg)
+                    if hop2 is None and arg in caller_known:
+                        hop2 = (caller_known[arg], caller, arg)
 
-            if best_name:
+            if var is not None:
+                options.append((
+                    base * decay, var[0],
+                    f"Propagated from caller '{var[1]}', arg '{var[2]}' at position {param_pos}",
+                ))
+            if hop2 is not None:
+                options.append((
+                    base * decay ** 2, hop2[0],
+                    f"Propagated (2-hop) from caller '{hop2[1]}': {hop2[2]} -> {hop2[0]}",
+                ))
+
+            if options:
+                best_conf = max(o[0] for o in options)
+                _c, best_name, best_reason = next(o for o in options if o[0] == best_conf)
                 results.append(SemanticName(
                     original_name=param_name,
                     semantic_name=_sanitize_c_name(best_name),

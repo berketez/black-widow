@@ -128,6 +128,46 @@
       "test": "tests/test_p05b_kanit.py::test_kanitsiz_tamsayi_parametre_str_almaz",
       "find": "            # MUH-02 + P05b K2: işaretçi şablonu yalnız öğe kanıtıyla (kayan noktalı erişim,\n            # dizgi kanıtı, istisna yolunda cast'li erişim)\n            if not _pointer_template_evidence(",
       "replace": "            if tup.c_type == \"double *\" and not float_ok:\n                continue\n            if False and not _pointer_template_evidence("
+    },
+    {
+      "id": "p05b_k3_arguman_sayisi_yok",
+      "desc": "K3a: dizgideki çağrının argüman sayısı callee'ninkiyle karşılaştırılmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_yayilim.py::test_dizgideki_cagri_arguman_sayisi_tutmazsa_ad_yok",
+      "find": "                     if len(args) == n_params and param_pos < len(args)",
+      "replace": "                     if param_pos < len(args)"
+    },
+    {
+      "id": "p05b_k3_sabit_ad_olur",
+      "desc": "K3a: dizgideki makro / sabit (OBJ_KEYS, NULL) ad olur",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_yayilim.py::test_dizgideki_cagri_sabit_ve_ifade_ad_vermez",
+      "find": "        and arg not in _NON_VARIABLE_WORDS\n        and not _ALL_CAPS_RE.match(arg)\n",
+      "replace": "\n"
+    },
+    {
+      "id": "p05b_k3_ortme_yok",
+      "desc": "K3: gerçek çağrılar örtülmemiş kodda aranır (dizgi içi çağrı metni değişken yayılımı verir)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_yayilim.py::test_dizgi_ici_cagri_gercek_cagri_sayilmaz",
+      "find": "        masked = _masked_code(code)\n        out: list[list[str]] = []",
+      "replace": "        masked = code\n        out: list[list[str]] = []"
+    },
+    {
+      "id": "p05b_k3_dizgi_guveni_dusuk",
+      "desc": "K3a: dizgideki çağrı metni değişken yayılımının güveninde (kaynak metin önce gelmez)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_yayilim.py::test_dizgideki_cagri_metni_ad_verir",
+      "find": "                    options.append((\n                        base, found,",
+      "replace": "                    options.append((\n                        base * decay * decay, found,"
+    },
+    {
+      "id": "p05b_k3_yorum_sayilir",
+      "desc": "K3a: yorumun içindeki çağrı metni de kaynak metin sayılır",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05b_yayilim.py::test_yorumdaki_cagri_metni_ad_vermez",
+      "find": "            if not text.startswith('\"') or callee not in text:\n                continue\n            body = text[1:-1]",
+      "replace": "            if callee not in text:\n                continue\n            body = text[2:-2]"
     }
   ]
 }

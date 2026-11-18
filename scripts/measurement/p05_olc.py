@@ -82,6 +82,8 @@ Alt komutlar
     kos          --kosu <kayıtlı koşu kökü> --kok <çıktı kökü> --etiket <ad> [--yalniz a,b]
                  [--hizalama <t0b hizalama dizini>] [--taban-debian <dizin>] [--taban-mac <dizin>]
     karsilastir  --kok <çıktı kökü> --once <etiket> --sonra <etiket> [--json <yol>]
+    kural_payi   --kok <çıktı kökü> --once <etiket> --sonra <etiket>
+                 --p05-kayip <P05 fark_once_k2.json> [--json <yol>]   (P05b Kalem 3)
 """
 from __future__ import annotations
 
@@ -689,6 +691,91 @@ def cmd_karsilastir(args: argparse.Namespace) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+# kural_payi (P05b Kalem 3): yeni yayılım kurallarının DWARF payı
+# ---------------------------------------------------------------------------
+
+# P05.md §1: 29 kaybın 12'si tesadüf (önceki ad çöptü; belirteç ortaklığıyla doğru sayılmıştı)
+P05_TESADUF = frozenset({
+    "len_57_0xffffffff", "pos_13_field_ptr_165", "buf_41_accumulator_24", "param_1_0x54",
+    "param_1_0x3d", "param_1_0x1d0", "FUN_002e28e0", "FUN_001bcd00", "FUN_001edfe0",
+    "ppuVar8_PTR_s_set_window_option_0020f830", "AOF",
+})
+
+
+def _kural(o: dict, onceki: dict | None) -> str | None:
+    """Sonraki kolun adının gerekçesinden kural (ön kayıt P05b §2 'kural payı')."""
+    g = o.get("gerekce") or ""
+    if g.startswith("Source text call"):
+        return "string_call"
+    if g.startswith("Propagated (deref)"):
+        return "deref"
+    if g.startswith("Named symbol"):
+        return "named_symbol"
+    if (g.startswith("Propagated from caller") and onceki is not None
+            and onceki["ad"] != o["ad"]
+            and (onceki.get("gerekce") or "").startswith("Propagated from caller")):
+        return "vote"
+    return None
+
+
+def cmd_kural_payi(args: argparse.Namespace) -> int:
+    """Kural başına D payı: kuralın adını verdiği hükümlü parametrelerde önceki kolun hükmüyle
+    karşılaştırma. Kalma ölçütü (ön kayıt K3): Δdoğru ≥ 1 VE Δyanlış ≤ 0. Ayrıca P05'in 17
+    gerçek kaybının bu koldaki hükmü."""
+    once = _ogeler(args.kok / args.once)
+    sonra = _ogeler(args.kok / args.sonra)
+    dogru = {"tam", "yakin"}
+    hukumlu = dogru | {"yanlis"}
+    pay: dict[str, Counter] = defaultdict(Counter)
+    ornek: dict[str, list] = defaultdict(list)
+    for k, o in sonra.items():
+        b = once.get(k)
+        r = _kural(o, b)
+        if r is None:
+            continue
+        pay[r]["ad_y"] += 1
+        if o.get("hukum") not in hukumlu:
+            continue
+        hb = b.get("hukum") if b else None
+        pay[r]["D_hukumlu"] += 1
+        pay[r]["sonra_dogru"] += o["hukum"] in dogru
+        pay[r]["sonra_yanlis"] += o["hukum"] == "yanlis"
+        pay[r]["once_dogru"] += hb in dogru
+        pay[r]["once_yanlis"] += hb == "yanlis"
+        ornek[r].append({"k": list(k), "once": b["ad"] if b else None, "once_h": hb,
+                         "sonra": o["ad"], "sonra_h": o["hukum"], "gt": o.get("gt")})
+    karar = {}
+    for r, c in pay.items():
+        c["delta_dogru"] = c["sonra_dogru"] - c["once_dogru"]
+        c["delta_yanlis"] = c["sonra_yanlis"] - c["once_yanlis"]
+        karar[r] = "kalir" if c["delta_dogru"] >= 1 and c["delta_yanlis"] <= 0 else "tutmadi"
+    p05 = json.loads(args.p05_kayip.read_text(encoding="utf-8"))
+    geri = []
+    for k in p05["kayiplar"]:
+        if k["once"] in P05_TESADUF:
+            continue
+        key = (k["anahtar"], k["f"], k["eski"])
+        o = sonra.get(key)
+        geri.append({"anahtar": k["anahtar"], "f": k["f"], "eski": k["eski"],
+                     "p05_oncesi": k["once"], "sonra": o["ad"] if o else None,
+                     "hukum": o.get("hukum") if o else None, "gt": o.get("gt") if o else None,
+                     "kural": _kural(o, once.get(key)) if o else None})
+    sonuc = {"arac": ARAC, "once": args.once, "sonra": args.sonra,
+             "pay": {r: dict(c) for r, c in sorted(pay.items())}, "karar": karar,
+             "p05_gercek_kayip": len(geri),
+             "p05_geri_dogru": sum(1 for g in geri if g["hukum"] in dogru),
+             "p05_geri": geri, "ornek": ornek}
+    if args.json:
+        Path(args.json).write_text(json.dumps(sonuc, ensure_ascii=False, indent=1),
+                                   encoding="utf-8")
+    print(json.dumps({k: v for k, v in sonuc.items() if k not in ("ornek", "p05_geri")},
+                     ensure_ascii=False, indent=1))
+    for g in geri:
+        print(g)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     alt = ap.add_subparsers(dest="komut", required=True)
@@ -711,8 +798,15 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--once", required=True)
     c.add_argument("--sonra", required=True)
     c.add_argument("--json")
+    r = alt.add_parser("kural_payi")
+    r.add_argument("--kok", type=Path, required=True)
+    r.add_argument("--once", required=True)
+    r.add_argument("--sonra", required=True)
+    r.add_argument("--p05-kayip", type=Path, required=True)
+    r.add_argument("--json")
     args = ap.parse_args(argv)
-    return {"say": cmd_say, "kos": cmd_kos, "karsilastir": cmd_karsilastir}[args.komut](args)
+    return {"say": cmd_say, "kos": cmd_kos, "karsilastir": cmd_karsilastir,
+            "kural_payi": cmd_kural_payi}[args.komut](args)
 
 
 if __name__ == "__main__":
