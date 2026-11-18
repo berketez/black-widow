@@ -149,9 +149,19 @@ def _is_noninteractive() -> bool:
 
 
 def _load_config(config_path: Optional[str]) -> Config:
-    """Config dosyasini yukle. Basarisizsa varsayilan don."""
+    """Config dosyasini yukle. Basarisizsa varsayilan don.
+
+    P-GÜV / GHIDRA-07: bool alanda anlaşılmayan değer (ör. ``"kapalı"``)
+    ``ConfigValueError`` verir; yığın izi yerine düzgün hata ve çıkış 2.
+    """
+    from karadul.config import ConfigValueError
+
     path = Path(config_path) if config_path else None
-    return Config.load(path)
+    try:
+        return Config.load(path)
+    except ConfigValueError as exc:
+        err_console.print(f"[bold red]HATA:[/bold red] ayar dosyası: {exc}")
+        sys.exit(2)
 
 
 # v1.10.0 E8: Ctrl+C sirasinda olusan yarim workspace'leri temizlemek ve
