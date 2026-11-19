@@ -59,6 +59,9 @@ class _SahteNamer:
 def test_ad_yalniz_kodda_suzgecli_ve_cakismasiz(tmp_path: Path, monkeypatch) -> None:
     (tmp_path / "sigs" / "ngram_name_db").mkdir(parents=True)
     monkeypatch.setattr(nn, "NgramNamer", _SahteNamer)
+    # P05c: öntanımda n-gram adı koda yazılmaz (ölçülen kesinlik eşiğin altında; aday kaydı).
+    # Yazma yolu yeniden açılırsa süzgeç ve çakışma kuralları geçerli kalmalı.
+    monkeypatch.setattr(fte, "NGRAM_APPLY_NAMES", True)
     d = tmp_path / "typed"
     d.mkdir()
     kaynak = (

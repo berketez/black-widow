@@ -260,6 +260,10 @@ def run_ngram_naming(
         ngram_files = _target_files(
             decompiled_dir, incremental_files, iter_index,
         )
+        # P05c: koda yazılan her n-gram adı köken kaydına (eskiden yalnız sayaç vardı)
+        prov_applied: list[dict[str, Any]] = []
+        prov_candidates: list[dict[str, Any]] = []
+        ngram_below_threshold = 0
         for nf in ngram_files:
             try:
                 ncode = nf.read_text(encoding="utf-8", errors="replace")
@@ -272,22 +276,70 @@ def run_ngram_naming(
                     for nvar, npred in nresult.predictions.items()
                     if npred.confidence >= ngram_threshold
                 }
-                ncode, applied, bad, clash = apply_local_renames(ncode, accepted)
-                ngram_applied += applied
+                ngram_below_threshold += len(nresult.predictions) - len(accepted)
+                plan: dict[str, str] = {}
+                new_code, applied, bad, clash = apply_local_renames(
+                    ncode, accepted, applied_out=plan,
+                )
                 ngram_rejected_invalid += bad
                 ngram_rejected_collision += clash
-                if applied:
-                    nf.write_text(ncode, encoding="utf-8")
+                for nvar, nname in sorted(plan.items()):
+                    npred = nresult.predictions[nvar]
+                    record = {
+                        "file": nf.name,
+                        "var": nvar,
+                        "name": nname,
+                        "source": NGRAM_PROVENANCE_SOURCE,
+                        "confidence": round(float(npred.confidence), 4),
+                        "evidence": npred.evidence,
+                    }
+                    if NGRAM_APPLY_NAMES:
+                        prov_applied.append(record)
+                    else:
+                        record["rejected"] = NGRAM_REJECT_PRECISION
+                        prov_candidates.append(record)
+                if applied and NGRAM_APPLY_NAMES:
+                    ngram_applied += applied
+                    nf.write_text(new_code, encoding="utf-8")
             except Exception:
                 logger.debug(
                     "N-gram prediction dosya islemi basarisiz, atlaniyor",
                     exc_info=True,
                 )
 
-        stats["ngram_total_predictions"] = ngram_total
-        stats["ngram_names_applied"] = ngram_applied
-        stats["ngram_rejected_invalid"] = ngram_rejected_invalid
-        stats["ngram_rejected_collision"] = ngram_rejected_collision
+        # P05c: sayaçlar yinelemeler boyunca toplanır. Eskiden her yineleme üstüne yazıyordu:
+        # ikinci yineleme (yalnız değişen dosyalar) ilk yinelemenin yüzlerce adını rapordan
+        # siliyordu (birleşik koşu dir: rapor 0, ilk yinelemede koda yazılan 138).
+        for key, value in (
+            ("ngram_total_predictions", ngram_total),
+            ("ngram_names_applied", ngram_applied),
+            ("ngram_rejected_invalid", ngram_rejected_invalid),
+            ("ngram_rejected_collision", ngram_rejected_collision),
+            ("ngram_candidates", len(prov_candidates)),
+        ):
+            stats[key] = stats.get(key, 0) + value
+            stats[f"{key}_iter{iter_index}"] = value
+        prov_state = write_ngram_provenance(
+            decompiled_dir=decompiled_dir, iter_index=iter_index, section={
+                "version": NGRAM_PROVENANCE_VERSION,
+                "iteration": iter_index,
+                "source": NGRAM_PROVENANCE_SOURCE,
+                "db_dir": str(ngram_db_dir),
+                "min_confidence": ngram_threshold,
+                "apply_names": NGRAM_APPLY_NAMES,
+                "measured_precision": NGRAM_MEASURED_PRECISION,
+                "predictions": ngram_total,
+                "applied": prov_applied,
+                "candidates": prov_candidates,
+                "rejected": {
+                    "below_min_confidence": ngram_below_threshold,
+                    "invalid_name": ngram_rejected_invalid,
+                    "collision": ngram_rejected_collision,
+                },
+            },
+        )
+        stats["ngram_provenance"] = prov_state
+        stats[f"ngram_provenance_iter{iter_index}"] = prov_state
         logger.info(
             "  N-gram naming (iter %d): %d predictions, %d applied, %d geçersiz, "
             "%d çakışma (%d files)",
@@ -300,6 +352,63 @@ def run_ngram_naming(
     stats[f"timing_ngram_naming_iter{iter_index}"] = round(
         time.monotonic() - step_start, 1,
     )
+
+
+NGRAM_PROVENANCE_SECTION = "ngram_locals"
+NGRAM_PROVENANCE_SOURCE = "ngram"
+NGRAM_PROVENANCE_VERSION = 1
+# P05c Kalem 5 (ön kayıt P05c_on_kayit.md §4): n-gram adlarının DWARF'lı 22 ikilide ölçülen
+# kesinliği kanal eşiğinin (%6) çok altında (gevşek ölçüt, katının üst sınırı; ayrıntı
+# docs/arge/2026-11-18_onarim/P05c.md). Daraltılmış kapı (güven ≥ 0,80 ve en az 2 kullanım) da
+# eşiği geçmedi. K-2: ad koda yazılmaz; kapıdan geçen her tahmin köken kaydına ADAY olarak girer
+# (``candidates``; Ghidra'nın adı kalır). Yeni ölçümle eşik geçilirse True yapılır.
+NGRAM_APPLY_NAMES = False
+NGRAM_REJECT_PRECISION = "measured_precision_below_threshold"
+NGRAM_MEASURED_PRECISION: dict[str, Any] = {
+    "metric": "loose_dwarf_name_match",
+    "set": "P05c D (22 DWARF ELF, G 9 / K 13)",
+    "threshold": 0.06,
+    "G": {"dogru": 18, "hukumlu": 3477, "kesinlik": 0.0052},
+    "G_dar": {"dogru": 6, "hukumlu": 1599, "kesinlik": 0.0038},
+    "K": {"dogru": 42, "hukumlu": 2803, "kesinlik": 0.0150},
+    "D": {"dogru": 60, "hukumlu": 6280, "kesinlik": 0.0096, "tam": 11},
+}
+
+
+def write_ngram_provenance(
+    *, decompiled_dir: Path, iter_index: int, section: dict[str, Any],
+) -> str:
+    """N-gram kararını köken kaydına yaz (P05c; ``naming_provenance.json`` → ``ngram_locals``).
+
+    Hedef bu yinelemenin c_namer köken kaydıdır: ``<reconstructed>/src`` (ilk yineleme) ya da
+    ``src_iterN``; ``<reconstructed>`` tip kurtarmanın çıktı dizininin (``typed[_iterN]``) üstü.
+    Kayıt yoksa (c_namer koşmadı) ``<reconstructed>/ngram_provenance[_iterN].json`` yazılır.
+    Dönen değer ``stats["ngram_provenance"]``'a girer: ``yazildi:<dosya yolu (reconstructed'a
+    göre)>`` ya da ``yazilamadi:<hata>``.
+    """
+    import json
+
+    from karadul.core.naming_labels import NAMING_PROVENANCE_FILE
+
+    reconstructed = Path(decompiled_dir).parent
+    suffix = f"_iter{iter_index}" if iter_index > 0 else ""
+    target = reconstructed / f"src{suffix}" / NAMING_PROVENANCE_FILE
+    try:
+        if target.is_file():
+            data = json.loads(target.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("köken kaydı sözlük değil")
+        else:
+            target = reconstructed / f"ngram_provenance{suffix}.json"
+            data = {}
+        data[NGRAM_PROVENANCE_SECTION] = section
+        # c_namer'ın yazım biçimiyle aynı (indent=1, ensure_ascii, sort_keys)
+        target.write_text(json.dumps(data, indent=1, ensure_ascii=True, sort_keys=True),
+                          encoding="utf-8")
+    except (OSError, ValueError, TypeError) as exc:
+        logger.warning("N-gram köken kaydı yazılamadı (%s): %s", target, exc)
+        return f"yazilamadi:{type(exc).__name__}"
+    return f"yazildi:{target.relative_to(reconstructed).as_posix()}"
 
 
 def ngram_db_dirs(config: Any) -> list[Path]:
@@ -318,7 +427,9 @@ def ngram_db_dirs(config: Any) -> list[Path]:
 _IDENT = re.compile(r"[A-Za-z_]\w*")
 
 
-def apply_local_renames(code: str, renames: dict[str, str]) -> tuple[str, int, int, int]:
+def apply_local_renames(
+    code: str, renames: dict[str, str], *, applied_out: dict[str, str] | None = None,
+) -> tuple[str, int, int, int]:
     """Yerel değişken adlarını yalnız KODDA değiştir (AD-10).
 
     Eski uygulama ``re.subn(r"\bvar\b", ad, kod)`` ile bütün dosyaya yazıyordu:
@@ -327,6 +438,8 @@ def apply_local_renames(code: str, renames: dict[str, str]) -> tuple[str, int, i
     - ad ``name_validity.lexical_reject_reason(local=True)``'dan geçer;
     - ad dosyanın kodunda zaten geçmez ve aynı dosyada iki değişkene verilmez;
     - değişim dizgi sabiti ve yorum içinde yapılmaz.
+
+    ``applied_out`` verilirse uygulanan değişken → ad eşlemesi ona yazılır (köken kaydı, P05c).
 
     Returns:
         (yeni kod, uygulanan, geçersiz ad, çakışma)
@@ -352,6 +465,8 @@ def apply_local_renames(code: str, renames: dict[str, str]) -> tuple[str, int, i
         plan[var] = name
     if not plan:
         return code, 0, bad, clash
+    if applied_out is not None:
+        applied_out.update(plan)
     pattern = re.compile(r"\b(" + "|".join(re.escape(v) for v in plan) + r")\b")
     parts: list[str] = []
     last = 0
