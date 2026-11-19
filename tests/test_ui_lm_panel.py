@@ -208,6 +208,31 @@ def test_imlec_yalniz_olay_isleyicisinden_cagrilir():
 # (d) öneri kartı
 
 
+@nodeli
+def test_oneri_karti_dugmeler_ve_denetim_satirlari(tmp_path):
+    out = _run(tmp_path, r"""
+const den={hukum:'celiski',bulgular:[{kural:'D7',kod:'kutuphane_adi',etki:'celiski'}],bayraklar:['D12'],
+  toplu_kabul:false,sinanan:['D1'],sinanmayan:['D5','D4']};
+const p=(o)=>Object.assign({oneri_kimligi:'p1',adres:'1000',oneri_turu:'ad',deger:'open_conn',gerekce:'g',
+  hukum:'celiski',durum:'bekleyen',fn:'FUN_00001000',denetim:den},o);
+console.log(JSON.stringify([lmCard(p({})), lmCard(p({hukum:'ret'})), lmCard(p({hukum:null,denetim:null})),
+  lmCard(p({oneri_turu:'yorum',hukum:null,denetim:null})), lmCard(p({durum:'kabul'})),
+  lmCard(p({durum:'ret',neden:'yanlış'})), lmCard(p({fn:null,hukum:'sinandi_celiski_yok',denetim:null}))]));
+""")
+    c, ret, yok, yorum, kabul, red, fnsiz = out
+    assert (c["canAccept"], c["canReject"], c["conflict"]) == (True, True, True)
+    assert c["rows"] == ["denetim: ÇELİŞKİ", "  D7 kutuphane_adi (celiski)", "  bayrak: D12",
+                         "  bu kurallar koşmadı: D4, D5", "  toplu kabule girmez"]
+    assert (c["kind"], c["target"], c["value"]) == ("ad önerisi", "FUN_00001000", "open_conn")
+    assert ret["canAccept"] is False and ret["canReject"] is True               # RET: kabul düğmesi yok
+    assert yok["canAccept"] is False and yok["rows"][0] == "denetim: hüküm yok"   # hükümsüz ad önerisi
+    assert yok["rows"][1].startswith("  denetim ayrıntısı bu oturumun akışında yok")
+    assert yorum["canAccept"] is True and yorum["kind"] == "yorum önerisi"
+    assert kabul["canAccept"] is False and kabul["canReject"] is False
+    assert red["status"] == "ret" and red["why"] == "yanlış" and not red["canReject"]
+    assert fnsiz["target"] == "adres 1000"
+
+
 # --------------------------------------------------------------------------------------------
 # (e) U-2 / U-3
 
@@ -232,6 +257,19 @@ console.log(JSON.stringify([lmStatusText(b), lmStatusText(Object.assign({},b,{hi
     assert "beklenen görev ≈ 35.6 sn" in olculmus and "önek 210.4 · üretim 10.9" in olculmus
     assert "hız: ölçülmedi" in olculemedi and "beklenen" not in olculemedi
     assert yok.startswith("oturum yok") and "model yapılandırılmamış" in yok and "q4.gguf" in ayarli
+
+
+@nodeli
+def test_model_adi_ayri_katman_gosterimi(tmp_path):
+    out = _run(tmp_path, r"""
+const f={addr:'FUN_1',name:'FUN_1',cls:'unnamed'}, g={addr:'FUN_2',name:'parse_x',cls:'named'};
+const mn={FUN_1:{name:'open_connection',oneri_kimligi:'p1',hukum:'celiski'}};
+console.log(JSON.stringify([lmShownName(f,mn),lmShownName(g,mn),lmShownName(f,null),lmShownName(f,{})]));
+""")
+    assert out == ["open_connection", "parse_x", "FUN_1", "FUN_1"]
+    s = _script()
+    # listede model adı "model" rozetiyle; elle ad rozeti öncelikli; sayaçlar (recount / nameCounts) model adını görmez
+    assert "iv-mtag lm-model" in s and "model_names" not in s[s.index("function recount"):s.index("async function loadOverrides")]
 
 
 # --------------------------------------------------------------------------------------------

@@ -486,7 +486,7 @@
   .lmhide{display:none}
   .lmbody{display:none; height:34vh; min-height:150px; min-width:0}
   .lmdrawer.open .lmbody{display:flex}
-  .lmterm{flex:1; display:flex; flex-direction:column; min-width:0}
+  .lmterm{flex:1; display:flex; flex-direction:column; min-width:0; border-right:1px solid var(--border)}
   .lmlines{flex:1; overflow-y:auto; padding:8px 12px; font-size:11.5px; line-height:1.55; white-space:pre-wrap;
     word-break:break-word; background:var(--bg); scrollbar-width:thin; scrollbar-color:var(--faint) transparent}
   .lml.lm-in{color:var(--cyan)} .lml.lm-hd{color:var(--text)} .lml.lm-dim{color:var(--dim)}
@@ -498,6 +498,19 @@
   .lmin{display:flex; align-items:center; gap:8px; padding:6px 12px; border-top:1px solid var(--border); background:var(--bg2)}
   .lmin .lmps{color:var(--widow); font-size:12px; white-space:nowrap}
   .lmin input{flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:inherit; font-size:12px}
+  .lmcards{width:36%; min-width:300px; overflow-y:auto; padding:8px 10px; font-size:11px}
+  .lmcards .lmch{color:var(--dim); font-size:10px; letter-spacing:1.5px; margin-bottom:6px}
+  .lmcard{border:1px solid var(--border); border-radius:3px; padding:7px 9px; margin-bottom:8px; background:var(--panel2)}
+  .lmcard.celiski{border-color:rgba(230,58,84,.45)}
+  .lmcard .lmct{color:var(--dim); font-size:10px; letter-spacing:1px; margin-bottom:4px}
+  .lmcard .lmct .lmcbad{color:var(--unnamed); margin-left:6px}
+  .lmcard .lmold{color:var(--unnamed)} .lmcard .lmnew{color:var(--named)}
+  .lmcard .lmrs{color:var(--dim); margin-top:3px; white-space:pre-wrap; word-break:break-word}
+  .lmcard .lmrow{color:var(--faint); white-space:pre-wrap}
+  .lmcard .lmact{display:flex; gap:6px; margin-top:6px; align-items:center}
+  .lmcard .lmact input{flex:1; min-width:60px; background:var(--bg); border:1px solid var(--border); color:var(--text);
+    font-family:inherit; font-size:11px; padding:2px 6px; outline:none}
+  .lmcard .lmmsg{margin-top:4px; color:var(--weak); white-space:pre-wrap}
   .lmspider{position:absolute; left:0; top:0; width:30px; height:30px; margin:-15px 0 0 -15px; z-index:3; pointer-events:none;
     display:none; transition:transform .18s ease-out}
   .lmspider.on{display:block} .lmspider.idle{opacity:.45}
@@ -508,6 +521,7 @@
   @media (prefers-reduced-motion: reduce){ .lmspider{transition:none} }
   .ray.lm-touch{stroke-width:2.4; opacity:1}
   .fn.lm-agent{box-shadow:inset -3px 0 0 var(--widow)}
+  .iv-mtag.lm-model{color:#c9a8ff; border-color:rgba(201,168,255,.4)}
 </style>
 </head>
 <body>
@@ -642,6 +656,7 @@
         <div class="lmin"><span class="lmps" id="lmPs">$</span>
           <input id="lmIn" spellcheck="false" autocomplete="off" maxlength="2000" placeholder="karadullm yazın (kabuk değildir)"></div>
       </div>
+      <div class="lmcards" id="lmCards"><div class="lmch">ÖNERİLER · kabul / ret yalnız burada</div><div id="lmCardList"></div></div>
     </div>
   </div>
   <footer>
@@ -1094,9 +1109,10 @@ function buildList(list){
   for(const f of rows){
     const d=document.createElement('div');
     d.className='fn '+f.cls+(f.addr===CENTER?' active':''); d.dataset.addr=f.addr;
-    const mtag=MANUAL.has(f.addr)?'<span class="iv-mtag">manuel</span>':'';
+    const mtag=MANUAL.has(f.addr)?'<span class="iv-mtag">manuel</span>':
+      ((MODEL.model_names&&MODEL.model_names[f.addr])?'<span class="iv-mtag lm-model" title="KaradulLM önerisi · analist kabul etti · motor okumaz">model</span>':'');
     const ltag=labelBadge(f.label,true);   // etiket yoksa '' (işaret çizilmez)
-    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(shownName(f))}</span>${ltag}${mtag}<span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
+    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(lmShownName(f,MODEL.model_names))}</span>${ltag}${mtag}<span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
     d.onclick=()=>userFocus(f.addr);
     frag.appendChild(d);
   }
@@ -1167,7 +1183,7 @@ function drawRadial(addr){
       dot.setAttribute('class','ndot '+c.cls); dot.setAttribute('filter','url(#glow)'); dot.style.color=cssvar(c.cls);
       const t=el('text'); t.setAttribute('x',x+(isLeft?-8:8)); t.setAttribute('y',y+3.5);
       t.setAttribute('text-anchor',isLeft?'end':'start'); t.setAttribute('class','nlbl');
-      t.textContent=trunc(shownName(c),18);
+      t.textContent=trunc(lmShownName(c,MODEL.model_names),18);
       g.appendChild(hit); g.appendChild(dot); g.appendChild(t);
       g.style.opacity=0; g.style.animation=`fade .4s ease forwards ${i*0.012+seed+0.2}s`;
       g.onclick=()=>userFocus(c.addr); gNodes.appendChild(g);
@@ -1193,7 +1209,7 @@ function drawRadial(addr){
   ring2.setAttribute('fill',cssvar('widow')); ring2.setAttribute('stroke','#2a0510'); ring2.setAttribute('stroke-width','0.6');
   ring2.setAttribute('filter','url(#glow)'); ring2.style.filter='drop-shadow(0 0 6px var(--widow-glow))';
   const lbl=el('text'); lbl.setAttribute('x',cx); lbl.setAttribute('y',cy-34); lbl.setAttribute('class','corelbl');
-  lbl.textContent=trunc(shownName(f),30);
+  lbl.textContent=trunc(lmShownName(f,MODEL.model_names),30)+(MODEL.model_names&&MODEL.model_names[addr]?' · model':'');
   LM_POS[addr]={x:cx,y:cy};
   const ad=el('text'); ad.setAttribute('x',cx); ad.setAttribute('y',cy+38); ad.setAttribute('class','coreaddr');
   // çağrı grafiği yoksa sunucu metin yöntemine düşer (calls_source==='text'): sayılar çağrı değil
@@ -1950,6 +1966,26 @@ function lmSpiderAct(e,byaddr,drawn,follow){
   if(t==='oturum_bitti') return {act:'remove'};
   return {act:'none'};
 }
+/* Öneri kartının içeriği ve düğmeleri. Denetim ayrıntısı yoksa (başka oturumdan kalan öneri) bu açıkça yazılır;
+   `ret` hükmünde ve hükmü olmayan ad önerisinde KABUL yok; toplu kabul yok. */
+function lmCard(p){
+  const v=p.hukum, pend=p.durum==='bekleyen', d=p.denetim, rows=[];
+  rows.push('denetim: '+(v==null?'hüküm yok':lmV(v)));
+  if(d){
+    for(const f of (d.bulgular||[])) rows.push('  '+f.kural+' '+f.kod+' ('+f.etki+')');
+    const ek=(d.bayraklar||[]).filter(b=>!(d.bulgular||[]).some(f=>f.kod===b));   // bulgularda yazılı olan yinelenmez
+    if(ek.length) rows.push('  bayrak: '+ek.join(', '));
+    if(d.sinanmayan&&d.sinanmayan.length) rows.push('  bu kurallar koşmadı: '+d.sinanmayan.slice().sort().join(', '));
+    if(d.toplu_kabul===false) rows.push('  toplu kabule girmez');
+  } else rows.push('  denetim ayrıntısı bu oturumun akışında yok (yalnız defterdeki hüküm)');
+  return {id:String(p.oneri_kimligi), kind:p.oneri_turu==='ad'?'ad önerisi':'yorum önerisi',
+    target:p.fn?String(p.fn):('adres '+p.adres), value:String(p.deger), reason:p.gerekce==null?null:String(p.gerekce),
+    rows:rows, status:String(p.durum), why:p.neden?String(p.neden):null,
+    canAccept:pend&&v!=='ret'&&!(p.oneri_turu==='ad'&&v==null), canReject:pend, conflict:v==='celiski'};
+}
+/* Gösterilen ad: elle / motor adı; analistin kabul ettiği model adı varsa o (katman sırası motor < model < elle;
+   sunucu elle adlı düğümde model adını hiç vermez). Model adı Karadul'un adı sayılmaz: sayaçlar değişmez. */
+function lmShownName(f,mn){ return (mn&&f&&lmHas(mn,f.addr)&&mn[f.addr]&&mn[f.addr].name)?String(mn[f.addr].name):shownName(f); }
 /* Durum satırı. Hız ölçülmeden boş ("ölçülmedi"); beklenen süre yalnız ölçülen hızdan ve "beklenen" diye (U-3). */
 function lmStatusText(st){
   if(!st||!st.oturum) return 'oturum yok · kabuk değildir: yalnız `karadullm`'+(st&&st.model_ayari?(' · model: '+st.model_ayari):' · model yapılandırılmamış');
@@ -2002,7 +2038,7 @@ async function lmSubmit(){
     const r=await lmJson('/api/lm/terminal/komut',{komut:text}).catch(()=>null);
     if(!r){ lmAdd('✗ sunucuya ulaşılamadı','err'); return; }
     if(!r.ok){ lmAdd('✗ '+(r.j.hata||r.j.error||('sunucu reddetti ('+r.status+')')),'err'); if(r.j.satir) lmAdd(r.j.satir,'warn'); return; }
-    lmSetSession(r.j.oturum); lmPoll(); return;
+    lmSetSession(r.j.oturum); lmPoll(); lmLoadCards(); return;
   }
   lmAdd('karadullm> '+text,'in');
   const r=await lmJson('/api/lm/terminal/girdi',{oturum:LM.oturum,metin:text}).catch(()=>null);
@@ -2035,6 +2071,7 @@ function lmHandle(e){
   if(e.tur==='jeton') $('lmTok').textContent='akış: '+lmCnt(e.parca)+' parça · '+lmCnt(e.karakter)+' karakter (jeton sayısı değil; gerçek sayı model satırında)';
   else if(e.tur==='gorev_basladi') $('lmTok').textContent='';
   if(e.tur==='satir'&&(e.metin==='takip açık'||e.metin==='takip kapalı')) LM.follow=e.metin==='takip açık';
+  if(e.tur==='oneri'||e.tur==='oturum_basladi') lmLoadCards();
   lmSpider(e);
 }
 function lmPlace(fn,instant){
@@ -2074,6 +2111,47 @@ function lmReanchor(){ if(!LM.spFn) return; if(LM_POS[LM.spFn]) lmPlace(LM.spFn,
 function userFocus(addr){
   if(LM.oturum&&LM.follow){ LM.follow=false; lmJson('/api/lm/terminal/girdi',{oturum:LM.oturum,metin:'/takip kapat'}).catch(()=>{}); }
   focus(addr);
+}
+async function lmLoadCards(){
+  const box=$('lmCardList'); if(!LM.oturum&&!LM.lastOturum) return;
+  const oid=LM.oturum||LM.lastOturum; LM.lastOturum=oid;
+  const r=await lmJson('/api/lm/oneriler?oturum='+encodeURIComponent(oid)).catch(()=>null);
+  if(!r||!r.ok){ return; }
+  box.textContent='';
+  const list=r.j.oneriler||[];
+  if(!list.length){ const d=document.createElement('div'); d.className='lmrow'; d.textContent='öneri yok'; box.appendChild(d); return; }
+  for(const p of list.slice().reverse()) box.appendChild(lmCardEl(lmCard(p)));
+}
+function lmCardEl(c){
+  const d=document.createElement('div'); d.className='lmcard'+(c.conflict?' celiski':''); d.dataset.id=c.id;
+  const add=(cls,txt,tag)=>{ const x=document.createElement(tag||'div'); x.className=cls; x.textContent=txt; d.appendChild(x); return x; };
+  const h=add('lmct',c.id+' · '+c.kind+' · model önerisi · '+c.status+(c.why?(' · neden: '+c.why):''));
+  if(c.conflict){ const b=document.createElement('span'); b.className='lmcbad'; b.textContent='⚠ ÇELİŞKİ'; h.appendChild(b); }
+  add('lmold','− '+c.target); add('lmnew','+ '+c.value);
+  if(c.reason!=null) add('lmrs','gerekçe (model metni): '+c.reason);
+  for(const row of c.rows) add('lmrow',row);
+  const msg=document.createElement('div'); msg.className='lmmsg';
+  if(c.canAccept||c.canReject){
+    const act=document.createElement('div'); act.className='lmact';
+    if(c.canAccept){ const ok=document.createElement('button'); ok.className='lmbtn ok'; ok.textContent='KABUL';
+      ok.onclick=()=>lmDecide(c.id,'kabul',null,msg); act.appendChild(ok); }
+    const why=document.createElement('input'); why.placeholder='ret nedeni (zorunlu)'; why.maxLength=2000;
+    const no=document.createElement('button'); no.className='lmbtn no'; no.textContent='RET';
+    no.onclick=()=>lmDecide(c.id,'ret',why.value,msg);
+    act.appendChild(why); act.appendChild(no); d.appendChild(act);
+  }
+  d.appendChild(msg);
+  return d;
+}
+async function lmDecide(id,kind,why,msgEl){
+  const r=await lmJson(kind==='kabul'?'/api/lm/oneri/kabul':'/api/lm/oneri/ret',
+    kind==='kabul'?{oneri_kimligi:id}:{oneri_kimligi:id,neden:why}).catch(()=>null);
+  if(!r){ msgEl.textContent='✗ sunucuya ulaşılamadı'; return; }
+  if(!r.ok){ msgEl.textContent='✗ '+(r.j.hata||r.j.error||('sunucu reddetti ('+r.status+')')); if(r.status!==500) return; }
+  // "kabul edildi / reddedildi" satırını oturum akışa yazar; burada yalnız deponun yazıldığı eklenir
+  if(kind==='kabul'&&r.j.yazildi==='model') lmAdd('✓ '+id+': ad deponun model bölümüne yazıldı (motor okumaz, ad haritasına girmez)','prop');
+  await lmLoadCards();
+  if(kind==='kabul'){ try{ const m=await fetch('/api/model'); if(m.ok){ const j=await m.json(); if(MODEL&&!j.error){ MODEL.model_names=j.model_names; buildList(MODEL.functions); if(CENTER) drawRadial(CENTER); } } }catch(e){} }
 }
 $('lmBar').onclick=(ev)=>{ if(ev.target&&ev.target.tagName==='BUTTON') return; lmToggle(); };
 $('lmIn').addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); lmSubmit(); } });
