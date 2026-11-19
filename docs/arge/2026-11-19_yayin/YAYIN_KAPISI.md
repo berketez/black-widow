@@ -73,6 +73,25 @@ Ollama.app 0.40.3 ana ikilisi (51,8 MB evrensel; analiz edilen arm64 dilimi 26,6
 | G8 | "Pipeline iteration 1 took 1311s (> 600s timeout), skipping remaining 2 iteration(s)": yeniden kurma döngüsünün sabit 600 sn sınırı büyük ikilide ilk turda aşılıyor; kalan turlar sessizce atlanıyor | `kosu.log`; `karadul/config.py` `pipeline_iteration_timeout` |
 | G9 | Ollama.app'te asıl sunucu ikilisi paketin başka yerinde; ana ikili yalnız kabuk (ÖLÇEK envanteri). Paket verildiğinde hangi ikililerin analiz edileceği kuralı yanlış | `docs/arge/2026-11-19_mythos/olcek/BULGULAR.md` |
 
+### 5.2 KaradulLM gerçek modelle ilk koşu (2026-11-19 13:21:39 → 13:22:55; Y7)
+
+`python -m karadul.lm --calisma-alani <Mac htop çalışma alanının kopyası> --llama-server <LM Studio llama.cpp 2.65.1> --model Qwen3.8-27B-Q4_K_M.gguf --depo <gösteri dizini>`; komutlar standart girdiden. Kayıt: `~/karadul_olcum/runs/gosteri-2026-11-19/lm/oturum1.log`. Duman listesi `docs/arge/2026-11-18_onarim/P22e.md` "Gerçek model duman testi".
+
+| Duman kalemi | Sonuç |
+|---|---|
+| 1. CLI açılışı | **geçti:** `check_server_binary` gerçek ikiliyi kabul etti; başlıkta model adı, bağlam 10 240, "ağ kapalı" |
+| 2. `/hiz` | **geçti:** önek 171,2 jeton/sn, üretim 16,1 jeton/sn; beklenen görev süresi ≈ 19,6 sn. Gerçek görev 40,3 sn sürdü: sapma hedefi (≤ %25) **tutmadı** (tek ölçüm) |
+| 3. `/kip acikla` + `/acikla FUN_100001784 0` | **geçti:** olay sırası beklenen gibi (görev → `get_evidence`, `get_decompiled` → model: istem 4 953, üretilen 87 jeton → denetim "ÇELİŞKİ BULUNMADI (sınandı)", sınanmayan D4, D5 → özet → yorum önerisi `p1`) |
+| 4. İptal (`/durdur`) | denenmedi |
+| 5. Keşif öneki, gerçek jetonlayıcı | denenmedi |
+| 6. Plan kipi | denenmedi |
+| 7. Kapanış | **geçti:** `/cik` sonrası `llama-server` süreci kalmadı |
+
+- Toplam oturum 76 sn (model yükleme dahil).
+- İçerik (tek örnek, hüküm verilmedi): model fonksiyonu "bir ekran nesnesinde satır / sütun konumu sorgular; eşleşirse nesneyi döndürür, yoksa bip sesiyle 0 döndürür" diye özetledi; GT adı `Action_pickFromVector`. Dönüş davranışı tutuyor, "listeden seçim" amacı özette yok.
+- Küçük kusurlar: bütçe satırında yuvarlanmamış sayı (`78.2887672906404 sn`); beklenen süre gerçek sürenin yarısı.
+- Açık: kalem 4–6; keşif kipinde serbest soru; araç döngüsü (K1 / K2); büyük çalışma alanında (Ollama, 13 160 fonksiyon) davranış; birden çok fonksiyonda çekimserlik ve yanlış oranı (F1, F2).
+
 ## 3. Açık sorular (Berke'ye)
 
 - Yayın biçimi: yalnız kaynak (GitHub) mı, DMG de mi?
