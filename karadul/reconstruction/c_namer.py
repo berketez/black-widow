@@ -617,8 +617,13 @@ def _count_braces(line: str) -> int:
 # tipini ayrı satıra yazabilir. Eski desen ``ad\s*\([^)]*\)\s*\{?\s*$`` bunları tanımıyordu.
 # Gövde çıkarıcı: kapanıştan sonra satırda yalnız ``{`` ya da boşluk (eski desenin kuyruğu).
 _SIG_TAIL_DEF = re.compile(r"\s*\{?\s*$")
+# İmza ayrıştırıcıları: kapanıştan sonra ``{`` ya da satır sonu (tek satırlık gövde dahil);
+# ``;`` ile biten çağrı satırı tanım değildir.
+_SIG_TAIL_PARAMS = re.compile(r"\s*(?:\{|$)")
 # Parametre listesi en çok bu kadar satıra yayılır (Ghidra çıktısında 2-4 satır).
 _SIG_MAX_LINES = 64
+# Yorum / önişlemci satırı imza değildir (eski imza deseninin ``(?!\s*[/*#])`` koşulu).
+_SIG_COMMENT_LINE = re.compile(r"\s*[/*#]")
 
 
 def _balanced_signature(
@@ -658,6 +663,29 @@ def _balanced_signature(
         j += 1
         if j < limit:
             text = lines[j]
+    return None
+
+
+def _signature_params_blob(body: str, fname: str) -> str | None:
+    """Gövdedeki ``fname`` tanımının parametre listesi (parantez içi), yoksa None.
+
+    İmza satırı yorum / önişlemci satırı olmayan, ``fname`` adını sözcük sınırıyla taşıyan
+    ve dengeli parantezle kapanıp ``{`` ya da satır sonuyla biten ilk satırdır. Dönüş tipi
+    önceki satırda olabilir (gövde ad satırından başlar), ``undefined1  [16]`` gibi köşeli
+    parantezli ya da ``std::sinif::`` nitelemeli olabilir, parametre listesi satırlara
+    bölünmüş olabilir (P12c).
+    """
+    if not body or fname not in body:
+        return None
+    lines = body.split("\n")
+    pat = re.compile(r"(?<![\w])" + re.escape(fname) + r"\s*\(")
+    for i, line in enumerate(lines):
+        if fname not in line or _SIG_COMMENT_LINE.match(line):
+            continue
+        for m in pat.finditer(line):
+            res = _balanced_signature(lines, i, m.start() + len(fname), _SIG_TAIL_PARAMS)
+            if res is not None:
+                return res[1]
     return None
 
 
@@ -1738,18 +1766,14 @@ def _extract_sig_params(body: str, fname: str) -> list[tuple[str, bool]] | None:
     çıkar. Variadic (`...`) veya ayrıştırılamaz imza → None (pozisyon güvensiz).
 
     `_strategy_body_param_naming`'in imza-çıkarma mantığıyla aynı çıpayı kullanır
-    (fonksiyon adına bağlı, docstring/@param yorumlarını atlar).
+    (fonksiyon adına bağlı, docstring/@param yorumlarını atlar). P12c: imza dengeli
+    parantezle okunur (`_signature_params_blob`); dönüş tipi önceki satırda, köşeli parantezli
+    (`undefined1  [16]`) ya da `ns::` nitelemeli imzalar da ayrıştırılır.
     """
-    if not body or fname not in body:
+    raw = _signature_params_blob(body, fname)
+    if raw is None:
         return None
-    esc_fn = re.escape(fname)
-    sig_re = re.compile(
-        r"(?m)^(?!\s*[/*#])\s*[A-Za-z_][\w\s\*]*?\b" + esc_fn + r"\s*\(([^;{]*)\)"
-    )
-    sm = sig_re.search(body)
-    if not sm:
-        return None
-    blob = sm.group(1).strip()
+    blob = raw.strip()
     if not blob or blob == "void":
         return []
     if "..." in blob:
@@ -4157,15 +4181,12 @@ class CVariableNamer:
             return
 
         # İmzadaki parametre bloğunu fonksiyon adıyla çıpala:
-        #   "<ret> <fname>(<params>)"  (docstring/@param yorumlarını atla)
-        esc_fn = re.escape(func_info.name)
-        sig_re = re.compile(
-            r"(?m)^(?!\s*[/*#])\s*[A-Za-z_][\w\s\*]*?\b" + esc_fn + r"\s*\(([^;{]*)\)"
-        )
-        sm = sig_re.search(body)
-        if not sm:
+        #   "<ret> <fname>(<params>)"  (docstring/@param yorumlarını atla).
+        # P12c: dengeli parantez; dönüş tipi önceki satırda / köşeli / ns:: olabilir.
+        raw = _signature_params_blob(body, func_info.name)
+        if raw is None:
             return
-        params_blob = sm.group(1).strip()
+        params_blob = raw.strip()
         if not params_blob or params_blob == "void":
             return
 

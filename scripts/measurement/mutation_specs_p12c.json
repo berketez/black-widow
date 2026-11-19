@@ -15,7 +15,7 @@
       "module": "karadul/reconstruction/c_namer.py",
       "test": "tests/test_p12c_govde_cikarici.py::test_ic_parantezli_imza_govdesi_alinir",
       "find": "                if depth == 0:\n                    if tail_re.match(text, k + 1) is None:",
-      "replace": "                if depth <= 1:\n                    if tail_re.match(text, k + 1) is None:"
+      "replace": "                if depth in (0, 1):\n                    if tail_re.match(text, k + 1) is None:"
     },
     {
       "id": "p12c_tek_satir_siniri",
@@ -48,6 +48,46 @@
       "test": "tests/test_p12c_govde_cikarici.py::test_kesik_metinde_acik_parantez_tanim_uydurmaz",
       "find": "            elif ch in \";{}\":\n                return None\n        inner.append(text + \"\\n\")",
       "replace": "            elif ch in \"\":\n                return None\n        inner.append(text + \"\\n\")"
+    },
+    {
+      "id": "p12c_param_kuyruk_gevsek",
+      "desc": "3B: imza kapanışından sonra ; da kabul (özyineli çağrı imza sayılır)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_imza_param.py::test_ozyineli_cagri_imza_sayilmaz",
+      "find": "_SIG_TAIL_PARAMS = re.compile(r\"\\s*(?:\\{|$)\")",
+      "replace": "_SIG_TAIL_PARAMS = re.compile(r\".*\")"
+    },
+    {
+      "id": "p12c_yorum_satiri_imza",
+      "desc": "3B: ` * ad(...)` belge yorumu satırı imza sayılır",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_imza_param.py::test_yorum_satiri_imza_sayilmaz",
+      "find": "_SIG_COMMENT_LINE = re.compile(r\"\\s*[/*#]\")",
+      "replace": "_SIG_COMMENT_LINE = re.compile(r\"\\s*[/#]\")"
+    },
+    {
+      "id": "p12c_sozcuk_siniri_yok",
+      "desc": "3B: ad sözcük sınırı olmadan aranır (başka adın son eki imza olur)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_imza_param.py::test_ad_sozcuk_siniriyla_aranir",
+      "find": "    pat = re.compile(r\"(?<![\\w])\" + re.escape(fname) + r\"\\s*\\(\")",
+      "replace": "    pat = re.compile(re.escape(fname) + r\"\\s*\\(\")"
+    },
+    {
+      "id": "p12c_sig_params_eski_desen",
+      "desc": "3B: _extract_sig_params eski desene döner (dönüş tipi önceki satırda / [16] / ns:: → None)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_imza_param.py::test_donus_tipi_onceki_satirda",
+      "find": "    raw = _signature_params_blob(body, fname)\n    if raw is None:\n        return None\n    blob = raw.strip()",
+      "replace": "    sm = re.search(r\"(?m)^(?!\\s*[/*#])\\s*[A-Za-z_][\\w\\s\\*]*?\\b\" + re.escape(fname)\n                   + r\"\\s*\\(([^;{]*)\\)\", body)\n    if not sm:\n        return None\n    blob = sm.group(1).strip()"
+    },
+    {
+      "id": "p12c_govde_param_eski_desen",
+      "desc": "3B: _strategy_body_param_naming eski desene döner ([16] dönüşlü fonksiyonda aday yok)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_imza_param.py::test_govde_param_stratejisi_koseli_donus_tipinde_calisir",
+      "find": "        raw = _signature_params_blob(body, func_info.name)\n        if raw is None:\n            return\n        params_blob = raw.strip()",
+      "replace": "        sm = re.search(r\"(?m)^(?!\\s*[/*#])\\s*[A-Za-z_][\\w\\s\\*]*?\\b\"\n                       + re.escape(func_info.name) + r\"\\s*\\(([^;{]*)\\)\", body)\n        if not sm:\n            return\n        params_blob = sm.group(1).strip()"
     }
   ]
 }
