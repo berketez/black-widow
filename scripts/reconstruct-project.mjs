@@ -13,7 +13,10 @@
  *   3. Generate meaningful filenames from export names
  *   4. Rewrite import/require paths to match new structure
  *   5. Create index.js files for each folder
- *   6. Split large files (>500 lines), merge tiny files (<10 lines)
+ *   6. Every module stays in its own file (P-S4 / BICIM-13: the old line-count
+ *      split cut modules mid-expression and the tiny-module merge put several
+ *      `module.exports` side by side, so outputs did not parse); every written
+ *      file is checked with @babel/parser and failures are reported by name.
  *
  * Stdout: JSON with stats
  */
@@ -21,6 +24,7 @@
 import { readdir, readFile, writeFile, mkdir, stat } from "fs/promises";
 import { join, basename, dirname, relative, extname } from "path";
 import { existsSync } from "fs";
+import { parse } from "@babel/parser";
 
 const args = process.argv.slice(2);
 const modulesDir = args[0];
@@ -294,82 +298,30 @@ function generateFilename(exportName, moduleId, content) {
 // -----------------------------------------------------------------------
 
 /**
- * Split a file that's over maxLines into multiple files.
- * Splits at function boundaries.
+ * Does the written file parse? Same settings as smart-webpack-unpack.mjs
+ * (checkModuleParses): null when it parses, otherwise the parser message.
  */
-function splitLargeContent(content, maxLines = 500) {
-  const lines = content.split("\n");
-  if (lines.length <= maxLines) return [content];
-
-  const chunks = [];
-  let currentChunk = [];
-  let depth = 0;
-
-  for (const line of lines) {
-    const braceOpen = (line.match(/{/g) || []).length;
-    const braceClose = (line.match(/}/g) || []).length;
-    depth += braceOpen - braceClose;
-
-    currentChunk.push(line);
-
-    // Split at top-level boundaries when chunk is big enough
-    if (depth <= 0 && currentChunk.length >= maxLines * 0.7) {
-      chunks.push(currentChunk.join("\n"));
-      currentChunk = [];
-      depth = 0;
-    }
+function checkParses(code) {
+  const PLUGINS = [
+    "jsx", "typescript", "decorators-legacy", "classProperties",
+    "classPrivateProperties", "classPrivateMethods", "dynamicImport",
+    "optionalChaining", "nullishCoalescingOperator", "exportDefaultFrom",
+    "exportNamespaceFrom", "topLevelAwait", "importMeta",
+  ];
+  try {
+    parse(code, {
+      sourceType: "unambiguous",
+      allowImportExportEverywhere: true,
+      allowReturnOutsideFunction: true,
+      allowSuperOutsideMethod: true,
+      allowUndeclaredExports: true,
+      errorRecovery: false,
+      plugins: PLUGINS,
+    });
+    return null;
+  } catch (err) {
+    return String(err && err.message ? err.message : err).slice(0, 200);
   }
-
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk.join("\n"));
-  }
-
-  return chunks;
-}
-
-/**
- * Merge tiny modules (< minLines) in the same category.
- */
-function mergeTinyModules(modules, minLines = 10) {
-  const merged = [];
-  const tinyByCategory = {};
-
-  for (const mod of modules) {
-    const lineCount = mod.content.split("\n").length;
-    if (lineCount < minLines) {
-      if (!tinyByCategory[mod.category]) {
-        tinyByCategory[mod.category] = [];
-      }
-      tinyByCategory[mod.category].push(mod);
-    } else {
-      merged.push(mod);
-    }
-  }
-
-  // Merge tiny modules per category
-  for (const [category, tinyMods] of Object.entries(tinyByCategory)) {
-    if (tinyMods.length <= 1) {
-      merged.push(...tinyMods);
-      continue;
-    }
-
-    // Group into chunks of ~20 tiny modules
-    for (let i = 0; i < tinyMods.length; i += 20) {
-      const group = tinyMods.slice(i, i + 20);
-      const combinedContent = group.map(m => {
-        return `// --- Originally: ${m.originalFile} (${m.exportName || m.moduleId}) ---\n${m.content}`;
-      }).join("\n\n");
-
-      merged.push({
-        ...group[0],
-        content: combinedContent,
-        filename: `${basename(category)}-utils-${Math.floor(i / 20) + 1}`,
-        mergedFrom: group.map(m => m.moduleId),
-      });
-    }
-  }
-
-  return merged;
 }
 
 // -----------------------------------------------------------------------
@@ -517,28 +469,10 @@ async function main() {
     }
   }
 
-  // Phase 2: Merge tiny modules, split large ones
-  let processedModules = mergeTinyModules(modules);
-  const splitModules = [];
-
-  for (const mod of processedModules) {
-    const chunks = splitLargeContent(mod.content, 500);
-    if (chunks.length === 1) {
-      splitModules.push(mod);
-    } else {
-      for (let i = 0; i < chunks.length; i++) {
-        splitModules.push({
-          ...mod,
-          content: chunks[i],
-          filename: `${mod.filename}-part${i + 1}`,
-          splitFrom: mod.filename,
-          lineCount: chunks[i].split("\n").length,
-        });
-      }
-    }
-  }
-
-  processedModules = splitModules;
+  // Phase 2: every module keeps its own file. The old merge/split produced
+  // files that did not parse (line-count cuts; several module.exports in one
+  // file with all merged ids mapped to it) -- P-S4 / BICIM-13.
+  const processedModules = modules;
 
   // Phase 3: Write files and build module map
   const moduleMap = {}; // moduleId -> output file path
@@ -566,11 +500,6 @@ async function main() {
     if (mod.moduleId) {
       moduleMap[mod.moduleId] = outPath;
     }
-    if (mod.mergedFrom) {
-      for (const id of mod.mergedFrom) {
-        moduleMap[id] = outPath;
-      }
-    }
 
     // Track files per directory
     if (!dirFiles[mod.category]) dirFiles[mod.category] = [];
@@ -579,6 +508,8 @@ async function main() {
 
   // Phase 4: Rewrite imports and write files
   let filesWritten = 0;
+  let parseOk = 0;
+  const parseFailed = [];
   for (const mod of processedModules) {
     // Add header comment
     const header = [
@@ -586,8 +517,6 @@ async function main() {
       ` * ${mod.exportName || mod.filename}`,
       ` * Category: ${mod.category}`,
       ` * Reconstructed by Karadul v1.0`,
-      mod.splitFrom ? ` * Split from: ${mod.splitFrom}` : null,
-      mod.mergedFrom ? ` * Merged from: ${mod.mergedFrom.length} modules` : null,
       ` * Original: ${mod.originalFile}`,
       " */",
       "",
@@ -597,8 +526,19 @@ async function main() {
     const rewritten = rewriteImports(mod.content, moduleMap, mod.filePath);
 
     try {
-      await writeFile(mod.filePath, header + rewritten, "utf-8");
+      const code = header + rewritten;
+      await writeFile(mod.filePath, code, "utf-8");
       filesWritten++;
+      const parseError = checkParses(code);
+      if (parseError === null) {
+        parseOk++;
+      } else {
+        parseFailed.push({
+          file: relative(outputDir, mod.filePath),
+          original: mod.originalFile,
+          error: parseError,
+        });
+      }
     } catch (e) {
       errors.push(`Failed to write ${mod.filePath}: ${e.message}`);
     }
@@ -646,8 +586,10 @@ async function main() {
     files_written: filesWritten,
     categories: categoryStats,
     module_map_size: Object.keys(moduleMap).length,
-    merged_count: processedModules.filter(m => m.mergedFrom).length,
-    split_count: processedModules.filter(m => m.splitFrom).length,
+    // Written module files that parse / do not parse (index.js files excluded).
+    modules_parse_ok: parseOk,
+    modules_parse_failed: parseFailed.length,
+    parse_failed_files: parseFailed.slice(0, 50),
     errors,
     stats: {
       avg_lines: Math.round(

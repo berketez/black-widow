@@ -40,6 +40,30 @@
       "test": "tests/test_ps4_js_kaynak.py::test_electron_js_yoksa_asar_derin_hatta_girmez",
       "find": "            if target.path.suffix.lower() not in (\".js\", \".mjs\", \".cjs\"):",
       "replace": "            if target.path.suffix.lower() in (\".never\",):"
+    },
+    {
+      "id": "ps4_k2_eski_dizin",
+      "desc": "modül ayırıcı yine webpack_modules/ (bir üst dizin) okur",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_modul_dizini.py::test_modul_ayirici_dogru_dizini_okur",
+      "find": "        webpack_dir = deob_dir / \"webpack_modules\" / \"modules\"",
+      "replace": "        webpack_dir = deob_dir / \"webpack_modules\""
+    },
+    {
+      "id": "ps4_k2_sayac_gecmez",
+      "desc": "betiğin ayrıştırma sayaçları aşamaya geçmez",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_modul_dizini.py::test_proje_kurucu_ayrismayan_modulu_bildirir",
+      "find": "                    if \"modules_parse_ok\" in script:",
+      "replace": "                    if \"modules_parse_ok_x\" in script:"
+    },
+    {
+      "id": "ps4_k2_mjs_satirla_kes",
+      "desc": "reconstruct-project.mjs ilk modülü yine satır sayısıyla keser (ayrışmaz parça)",
+      "module": "scripts/reconstruct-project.mjs",
+      "test": "tests/test_ps4_modul_dizini.py::test_reconstruct_project_ciktisi_ayrisir",
+      "find": "  const processedModules = modules;",
+      "replace": "  const processedModules = modules.map((m, i) => (i === 0 ? { ...m, content: m.content.split(\"\\n\").slice(0, 100).join(\"\\n\") } : m));"
     }
   ]
 }

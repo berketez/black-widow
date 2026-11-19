@@ -2774,10 +2774,13 @@ class ReconstructionStage(Stage):
         context.report_progress("Step 4/7: Module Splitting", 0.40)
         # 2. Module Splitting (webpack modulleri varsa)
         splitter = ModuleSplitter(context.config)
-        webpack_dir = deob_dir / "webpack_modules"
+        # BICIM-13: derin hat (smart-webpack-unpack.mjs) modülleri
+        # webpack_modules/modules/ altına yazar; eskiden bir üst dizine bakılıyor,
+        # ModuleSplitter ve ProjectReconstructor hiçbir koşuda çalışmıyordu.
+        webpack_dir = deob_dir / "webpack_modules" / "modules"
         split_result = None
 
-        if webpack_dir.exists() and any(webpack_dir.glob("module_*.js")):
+        if webpack_dir.is_dir() and any(webpack_dir.glob("*.js")):
             modules_output = reconstructed_dir / "modules"
             try:
                 split_result = splitter.split(webpack_dir, modules_output)
@@ -2916,6 +2919,22 @@ class ReconstructionStage(Stage):
                         artifacts["entry_point"] = recon_result.entry_point
                     if recon_result.stats.get("validation"):
                         stats["validation"] = recon_result.stats["validation"]
+                    # BICIM-13: reconstruct-project.mjs her yazdığı modülü
+                    # ayrıştırıcıyla sınar; ayrıştırılamayan adıyla bildirilir.
+                    script = recon_result.stats.get("reconstruct_script") or {}
+                    if "modules_parse_ok" in script:
+                        stats["project_modules_parse_ok"] = script["modules_parse_ok"]
+                        stats["project_modules_parse_failed"] = script["modules_parse_failed"]
+                        if script["modules_parse_failed"]:
+                            errors.append(
+                                "ProjectReconstructor: "
+                                f"{script['modules_parse_failed']} modül dosyası "
+                                "ayrıştırılamıyor: "
+                                + ", ".join(
+                                    f.get("file", "?")
+                                    for f in script.get("parse_failed_files", [])[:5]
+                                )
+                            )
                 errors.extend(recon_result.errors)
             except Exception as exc:
                 logger.warning("ProjectReconstructor hatasi, fallback: %s", exc)
