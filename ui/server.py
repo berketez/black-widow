@@ -2650,6 +2650,30 @@ def _lm_find(oturum, *, open_only: bool):
     return None, {"__code": 404, "hata": "böyle bir açık oturum yok"}
 
 
+# Uzun yoklama (tasarım §4.2 (a)): istek en çok bu kadar bekler (§4.6 ``bekle=25``); bir cevaptaki en çok olay
+# [bu iş: halkanın 10 000'i tek cevaba sığmasın; istemci ``son``'dan sürdürür, kayıp olmaz].
+_LM_POLL_MAX_SEC = 25
+_LM_POLL_LIMIT = 500
+_LM_UINT_RE = re.compile(r"[0-9]{1,12}")
+
+
+def _lm_events(q: dict) -> dict:
+    """``GET /api/lm/olaylar?oturum&sonra=N&bekle=S``: ``seq > N`` olaylar (``EventStream.since``). Olay yoksa
+    yeni olay gelene, oturum kapanana ya da ``S`` sn (en çok ``_LM_POLL_MAX_SEC``) dolana kadar bekler; beklerken
+    hiçbir şey üretilmez. İstemci geride kaldıysa ``tasma: true`` + ``kacan: n`` (kayıp gizlenmez). ``kapali``:
+    oturum kapandı ve verilecek olay kalmadı (yoklama durur)."""
+    s, err = _lm_find(q.get("oturum"), open_only=False)
+    if err:
+        return err
+    sonra, bekle = q.get("sonra", "0"), q.get("bekle", "0")
+    if not (_LM_UINT_RE.fullmatch(sonra) and _LM_UINT_RE.fullmatch(bekle)):
+        return {"__code": 400, "hata": "sonra ve bekle eksi olmayan tamsayı olmalı"}
+    try:
+        return s.stream.since(int(sonra), timeout=min(int(bekle), _LM_POLL_MAX_SEC), limit=_LM_POLL_LIMIT)
+    except ValueError as e:
+        return {"__code": 400, "hata": str(e)}
+
+
 def _lm_input(body: dict) -> dict:
     """``POST /api/lm/terminal/girdi``: metin yalnız bu oturumun ``submit``'ine (``repl.parse``'ın kapalı kümesi;
     G4). Reddedilen satırın iletisi akışa ``satir`` olayı olarak da düşer."""
@@ -2735,6 +2759,7 @@ def _lm_close(body: dict) -> dict:
 
 # /api/lm/* yönlendirmesi (hepsi Handler'da _guard'dan SONRA çağrılır: Host + Origin + jeton).
 _LM_GET = {
+    "/api/lm/olaylar": _lm_events,
     "/api/lm/durum": lambda q: _lm_status(),
     "/api/lm/sonuc": _lm_result,
     "/api/lm/oneriler": _lm_proposals,

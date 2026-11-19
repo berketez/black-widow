@@ -305,3 +305,102 @@ def test_durdur_suren_isi_iptal_eder(srv, monkeypatch):
     assert (st, b) == (200, {"tamam": True, "durduruldu": True})
     assert [e["kaynak"] for e in olaylar(o) if e["tur"] == "iptal"] == ["analist"]
     assert req(srv, "POST", "/api/lm/durdur", {"oturum": "yok"})[0] == 404
+
+
+# --------------------------------------------------------------------------------------------
+# (2) uzun yoklama: seq, kaçırılan olay sayısı, bekleme
+
+import random  # noqa: E402
+import time  # noqa: E402
+
+from karadul.lm.events import EventStream  # noqa: E402
+
+
+def yokla(mod, oturum, sonra, bekle=0, timeout=30):
+    return req(mod, "GET", f"/api/lm/olaylar?oturum={oturum}&sonra={sonra}&bekle={bekle}", timeout=timeout)
+
+
+def test_olaylar_sira_bosluksuz_ve_parametre_denetimi(srv, monkeypatch):
+    o = ac(srv, monkeypatch)
+    girdi(srv, o, "/yardim")
+    st, b = yokla(srv, o, 0)
+    assert st == 200 and set(b) == {"olaylar", "son", "tasma", "kacan", "kapali"}
+    seqs = [e["seq"] for e in b["olaylar"]]
+    assert seqs == list(range(1, len(seqs) + 1)) and b["son"] == seqs[-1] and b["tasma"] is False
+    assert b["olaylar"][0]["tur"] == "oturum_basladi" and all(e["oturum"] == o for e in b["olaylar"])
+    st, b2 = yokla(srv, o, 3)                                              # sonradan sürdürme
+    assert [e["seq"] for e in b2["olaylar"]] == seqs[3:]
+    for kotu in ("-1", "1e3", "x", "", "0x10", "1.5", "9" * 13):
+        assert req(srv, "GET", f"/api/lm/olaylar?oturum={o}&sonra={kotu}")[0] == 400, kotu
+        assert req(srv, "GET", f"/api/lm/olaylar?oturum={o}&sonra=0&bekle={kotu}")[0] == 400, kotu
+    st, b = yokla(srv, o, b["son"] + 5)                                    # akışın ilerisi (başka oturumun sırası)
+    assert st == 400 and "ilerisinde" in b["hata"]
+    assert yokla(srv, "yok", 0)[0] == 404 and req(srv, "GET", "/api/lm/olaylar?sonra=0")[0] == 400
+    # bir cevapta en çok _LM_POLL_LIMIT olay; kalanı ``son``'dan sürer, kayıp yok
+    s = S.current_session()
+    for i in range(srv._LM_POLL_LIMIT + 7):
+        s._line(f"satır {i}")
+    toplam, son = [], 0
+    while True:
+        b = yokla(srv, o, son)[1]
+        if not b["olaylar"]:
+            break
+        assert len(b["olaylar"]) <= srv._LM_POLL_LIMIT
+        toplam += [e["seq"] for e in b["olaylar"]]
+        son = b["son"]
+    assert toplam == list(range(1, s.stream.last_seq + 1))
+
+
+def test_olaylar_tasma_kacan_sayisi_yavas_istemci(srv, monkeypatch):
+    """E-2: halka küçültülmüş akışta yavaş istemci: her seq ya bir kez verilir ya kaçan sayısına girer."""
+    o = ac(srv, monkeypatch)
+    s = S.current_session()
+    s.stream = EventStream(o, capacity=5)
+    for i in range(12):
+        s._line(f"olay {i}")
+    st, b = yokla(srv, o, 0)
+    assert (st, b["tasma"], b["kacan"]) == (200, True, 7) and [e["seq"] for e in b["olaylar"]] == [8, 9, 10, 11, 12]
+    assert yokla(srv, o, 7)[1]["kacan"] == 0                               # sınırda kayıp yok
+    rnd = random.Random(20261119)
+    verilen, kacan, son = [], 0, b["son"]
+    for _ in range(60):
+        for _ in range(rnd.randint(0, 9)):
+            s._line("p")
+        b = yokla(srv, o, son)[1]
+        verilen += [e["seq"] for e in b["olaylar"]]
+        kacan += b["kacan"]
+        son = b["son"]
+    b = yokla(srv, o, son)[1]
+    verilen += [e["seq"] for e in b["olaylar"]]
+    kacan += b["kacan"]
+    assert len(verilen) == len(set(verilen)) and verilen == sorted(verilen)
+    assert len(verilen) + kacan == s.stream.last_seq - 12                  # 12'den sonrakiler: verilen + kaçan
+
+
+def test_olaylar_uzun_yoklama_olayla_hemen_doner_olaysiz_bekler(srv, monkeypatch):
+    o = ac(srv, monkeypatch)
+    s = S.current_session()
+    son = s.stream.last_seq
+    # olay yoksa: bekle süresi kadar bekler, boş döner, hiçbir şey üretmez
+    t0 = time.monotonic()
+    st, b = yokla(srv, o, son, bekle=1)
+    gecen = time.monotonic() - t0
+    assert st == 200 and b["olaylar"] == [] and b["son"] == son and 0.9 <= gecen < 5
+    assert s.stream.last_seq == son
+    # bekle tavanı: 999 istense de en çok _LM_POLL_MAX_SEC (burada olay 0,3 sn'de gelir)
+    threading.Timer(0.3, lambda: s._line("geldi")).start()
+    t0 = time.monotonic()
+    st, b = yokla(srv, o, son, bekle=999)
+    gecen = time.monotonic() - t0
+    assert st == 200 and [e["metin"] for e in b["olaylar"]] == ["geldi"] and gecen < 2.5
+    # kapanış bekleyen yoklamayı uyandırır; son olay oturum_bitti, kapali=true
+    son = b["son"]
+    threading.Timer(0.3, lambda: req(srv, "POST", "/api/lm/terminal/kapat", {"oturum": o})).start()
+    t0 = time.monotonic()
+    b = yokla(srv, o, son, bekle=20)[1]
+    assert time.monotonic() - t0 < 5
+    hepsi = list(b["olaylar"])
+    while not b["kapali"]:
+        b = yokla(srv, o, b["son"], bekle=2)[1]
+        hepsi += b["olaylar"]
+    assert hepsi[-1]["tur"] == "oturum_bitti" and hepsi[-1]["neden"] == "cik"
