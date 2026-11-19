@@ -115,8 +115,11 @@ def test_analyze_empty_file_exits_nonzero_and_prints_stage_errors(
     ])
     assert res.exit_code == 1, res.output
     assert "analiz başarısız" in res.stderr
-    assert "static: Analyzer bulunamadi" in res.stderr
-    assert "reconstruct:" in res.stderr
+    # P-S4: tanınmayan türde gerçek neden (eskiden "Analyzer bulunamadi").
+    assert "static: Desteklenmiyor: hedef türü tanınmadı" in res.stderr
+    # P-S4: reconstruct artık JS hattına düşüp yanlış gerekçeyle ("Deobfuscate
+    # edilmis dosya bulunamadi") başarısız olmuyor; tanınmayan türde 'atlandı'.
+    assert "reconstruct:" not in res.stderr
     assert "başarısız" in res.stdout  # tablo satırı "Durum"
 
 
@@ -131,7 +134,8 @@ def test_analyze_empty_file_json_exits_nonzero(empty_file: Path, tmp_path: Path)
     assert payload["success"] is False
     assert payload["outcome"] == "basarisiz" and payload["exit_code"] == 1
     assert "static" in payload["failure_reasons"]
-    assert "static: Analyzer bulunamadi" in res.stderr
+    # P-S4: tanınmayan türde gerçek neden (eskiden "Analyzer bulunamadi").
+    assert "static: Desteklenmiyor: hedef türü tanınmadı" in res.stderr
 
 
 # ---------------------------------------------------------------------------

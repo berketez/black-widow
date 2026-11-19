@@ -61,6 +61,38 @@ def _merge_stage_results(
     )
 
 
+def container_stats(target: Any) -> dict[str, Any]:
+    """Tanınan kapsayıcının künyesi (P19 ``container_classifier``); yoksa boş."""
+    meta = getattr(target, "metadata", None) or {}
+    if not meta.get("container"):
+        return {}
+    return {
+        "container": meta["container"],
+        "container_executables": meta.get("container_executables", []),
+        # Liste ilk 50 ile sınırlı (core/target.py); toplam ayrıca.
+        "container_executables_total": meta.get("container_executables_total"),
+    }
+
+
+def unsupported_target_reason(target: Any) -> str:
+    """Analiz hattı olmayan (UNKNOWN) hedefin gerçek nedeni (P-S4 kalem 4/5, BICIM-10).
+
+    Tanınan kapsayıcı (wheel, nupkg, IPA, AAB, XAPK): kapsayıcı türü + P19'un
+    ``unsupported_reason``'ı. Tanınmayan dosya: ilk dört bayt (sihirli sayı) ve
+    uzantısız JS için yol gösterici not.
+    """
+    meta = getattr(target, "metadata", None) or {}
+    if meta.get("container"):
+        why = meta.get("unsupported_reason") or "bu kapsayıcı için analiz hattı yok"
+        return f"kapsayıcı tanındı ({meta['container']}) ama doğrudan analiz hattı yok: {why}"
+    magic = meta.get("magic")
+    return (
+        "hedef türü tanınmadı"
+        + (f" (sihirli sayı {magic})" if magic else "")
+        + "; kayıtlı analizci yok. Uzantısız bir JS dosyasıysa .js uzantısıyla verin."
+    )
+
+
 # Not (K-10, 2026-11-19): ``_collect_all_algorithms`` buradan silindi. Çağıranı yoktu
 # (AST'de ad / nitelik atfı yalnız testte, dinamik ``getattr`` yok); adımlar
 # (semantic_naming, struct_recovery, deep_tracing) kendi kopyalarını kullanıyor.
@@ -381,6 +413,21 @@ class StaticAnalysisStage(Stage):
         if target.target_type == TargetType.APP_BUNDLE:
             return self._execute_app_bundle(context, start)
 
+        # P-S4 kalem 5 (P-S1 notu, BICIM-10): tanınan kapsayıcıda ya da tanınmayan
+        # türde "Analyzer bulunamadi: No analyzer registered for TargetType.UNKNOWN"
+        # yanıltıcıydı. Durum açık: desteklenmiyor + gerçek neden. Aşama yine
+        # başarısız sayılır (analiz yapılmadı; 'tam' çıkış kodu sahte başarı olurdu).
+        if target.target_type == TargetType.UNKNOWN:
+            reason = unsupported_target_reason(target)
+            return StageResult(
+                stage_name=self.name,
+                success=False,
+                duration_seconds=time.monotonic() - start,
+                stats={"static_status": "desteklenmiyor", "status_reason": reason,
+                       **container_stats(target)},
+                errors=[f"Desteklenmiyor: {reason}"],
+            )
+
         # Uygun analyzer'i bul
         try:
             analyzer_cls = get_analyzer(target.target_type)
@@ -389,6 +436,8 @@ class StaticAnalysisStage(Stage):
                 stage_name=self.name,
                 success=False,
                 duration_seconds=time.monotonic() - start,
+                stats={"static_status": "desteklenmiyor",
+                       "status_reason": f"{target.target_type.value}: kayıtlı analizci yok"},
                 errors=[f"Analyzer bulunamadi: {exc}"],
             )
 
@@ -976,6 +1025,10 @@ class DeobfuscationStage(Stage):
         if target.target_type in self._ANALYZER_DEOB_TYPES:
             return self._execute_analyzer_deobfuscate(context, start)
 
+        # P-S4 kalem 5: tanınan kapsayıcıda "Hedef türü tanınmadı" yanlıştı.
+        if target.target_type == TargetType.UNKNOWN:
+            return self._skipped(start, unsupported_target_reason(target))
+
         # Geri kalan her şey ATLANDI -- asla JS hattına düşmez (yeni türler dahil).
         reason = self._SKIP_REASONS.get(
             target.target_type,
@@ -1281,21 +1334,15 @@ class ReconstructionStage(Stage):
         # P19 / BICIM-10: tanınan ama analiz hattı olmayan kapsayıcı (wheel, IPA,
         # nupkg, AAB, XAPK; target.metadata["container"]) JS hattına düşüp
         # "Deobfuscate edilmis dosya bulunamadi" demesin: açık "atlandı".
-        if target.target_type == TargetType.UNKNOWN and (target.metadata or {}).get("container"):
-            meta = target.metadata
+        # P-S4 (BICIM-10): tanınmayan tür de (kapsayıcı değilse) JS hattına düşüp
+        # "Deobfuscate edilmis dosya bulunamadi" demesin; uzantısız JS UNKNOWN'dır
+        # ve deobfuscation zaten atlanır (JS hattında işlenecek kaynak yok).
+        if target.target_type == TargetType.UNKNOWN:
             return StageResult(
                 stage_name=self.name, success=False, skipped=True,
                 duration_seconds=time.monotonic() - start,
-                stats={
-                    "skip_reason": (
-                        f"Kapsayici tanindi ({meta['container']}) ama dogrudan analiz "
-                        f"hatti yok: {meta.get('unsupported_reason', '')}"
-                    ),
-                    "container": meta["container"],
-                    "container_executables": meta.get("container_executables", []),
-                    # Liste ilk 50 ile sinirli (core/target.py); toplam ayrica.
-                    "container_executables_total": meta.get("container_executables_total"),
-                },
+                stats={"skip_reason": unsupported_target_reason(target),
+                       **container_stats(target)},
             )
 
         return self._execute_js(context, start)
@@ -2260,6 +2307,32 @@ class ReconstructionStage(Stage):
             logger.debug("Manuel override uygulanamadi: %s", exc)
         return manual_map
 
+    def _runner_failure(
+        self, start: float, phase: str, exc: BaseException,
+        errors: list[str], stats: dict, artifacts: dict,
+    ) -> StageResult:
+        """Adım koşucusu düştü: aşama başarısız + dürüst durum (P14 notu, P-S4 kalem 5).
+
+        Eskiden üç ``except RuntimeError`` dalı ``reconstruct_status`` yazmıyordu
+        (rapor ve arayüz durumu ``finalize``'dan bekliyor; düşen koşuda alan hiç
+        yoktu). Sözlük ``core.pipeline`` ile aynı (``basarisiz``).
+        """
+        from karadul.core.pipeline import OUTCOME_FAILED
+
+        reason = f"{phase} adım koşucusu düştü: {exc}"
+        out_stats = dict(stats)
+        out_stats["reconstruct_status"] = OUTCOME_FAILED
+        out_stats["reconstruct_failure_reasons"] = [reason]
+        out_stats["partial"] = False
+        return StageResult(
+            stage_name=self.name,
+            success=False,
+            duration_seconds=time.monotonic() - start,
+            errors=list(errors) + [str(exc)],
+            stats=out_stats,
+            artifacts=dict(artifacts),
+        )
+
     def _execute_binary(self, context: PipelineContext, start: float) -> StageResult:
         """Binary reconstruction — decompile edilmis C'yi okunabilir yap.
 
@@ -2347,12 +2420,7 @@ class ReconstructionStage(Stage):
             ])
             step_ctx = runner.run(context)
         except RuntimeError as exc:
-            return StageResult(
-                stage_name=self.name,
-                success=False,
-                duration_seconds=time.monotonic() - start,
-                errors=[str(exc)],
-            )
+            return self._runner_failure(start, "Faz 1", exc, errors, stats, artifacts)
 
         # Faz 1 yapıtlarından aşağıda okunanlar (yalnız silinen eski yolun okuduğu
         # köprü adları — c_files, file_cache, pcode_json … — 2026-11-18'de kalktı).
@@ -2425,14 +2493,7 @@ class ReconstructionStage(Stage):
                 seed_artifacts=_with_pre_name_meta(step_ctx.artifacts, _pre_name_meta),
             )
         except RuntimeError as exc:
-            return StageResult(
-                stage_name=self.name,
-                success=False,
-                duration_seconds=time.monotonic() - start,
-                errors=errors + [str(exc)],
-                stats=stats,
-                artifacts=artifacts,
-            )
+            return self._runner_failure(start, "Faz 2", exc, errors, stats, artifacts)
 
         _b = step_ctx2.artifacts
         # feedback_loop produces
@@ -2538,14 +2599,7 @@ class ReconstructionStage(Stage):
             ])
             step_ctx3 = runner_phase3.run(context, seed_artifacts=_seed)
         except RuntimeError as exc:
-            return StageResult(
-                stage_name=self.name,
-                success=False,
-                duration_seconds=time.monotonic() - start,
-                errors=errors + [str(exc)],
-                stats=stats,
-                artifacts=artifacts,
-            )
+            return self._runner_failure(start, "Faz 3", exc, errors, stats, artifacts)
 
         # Phase 3 artifact'lari + shim'e yazilanlar birlikte topla.
         _stage_result: StageResult = step_ctx3.artifacts["stage_result"]

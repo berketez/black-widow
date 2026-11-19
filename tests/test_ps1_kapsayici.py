@@ -69,8 +69,13 @@ def test_real_containers_are_skipped(path, monkeypatch) -> None:
     assert res.stats["skip_reason"]
 
 
-def test_unknown_without_container_still_goes_js(tmp_path, monkeypatch) -> None:
-    """Kapsayici kaniti olmayan UNKNOWN hedef eski yolu izler (davranis degismez)."""
+def test_unknown_without_container_is_skipped_not_js(tmp_path, monkeypatch) -> None:
+    """P-S4 (BICIM-10): kapsayıcı kanıtı olmayan UNKNOWN da JS hattına düşmez.
+
+    Eskiden (P-S1) eski yolu izliyordu ve "Deobfuscate edilmis dosya bulunamadi"
+    diyordu; deobfuscation UNKNOWN'da hep atlandığı için JS hattında işlenecek
+    kaynak hiç yoktu. Artık açık "atlandı" + gerçek neden.
+    """
     p = tmp_path / "duz.zip"
     with zipfile.ZipFile(p, "w") as z:
         z.writestr("not.txt", "merhaba\n")
@@ -78,4 +83,7 @@ def test_unknown_without_container_still_goes_js(tmp_path, monkeypatch) -> None:
     assert target.target_type == TargetType.UNKNOWN
     assert not (target.metadata or {}).get("container")
     res, called = _run(target, monkeypatch)
-    assert called == [True] and res == "JS_HATTI"
+    assert called == []
+    assert res.skipped is True and res.success is False
+    assert "hedef türü tanınmadı" in res.stats["skip_reason"]
+    assert "container" not in res.stats

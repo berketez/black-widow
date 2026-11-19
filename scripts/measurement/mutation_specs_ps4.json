@@ -64,6 +64,62 @@
       "test": "tests/test_ps4_modul_dizini.py::test_reconstruct_project_ciktisi_ayrisir",
       "find": "  const processedModules = modules;",
       "replace": "  const processedModules = modules.map((m, i) => (i === 0 ? { ...m, content: m.content.split(\"\\n\").slice(0, 100).join(\"\\n\") } : m));"
+    },
+    {
+      "id": "ps4_k5_static_eski_ileti",
+      "desc": "UNKNOWN'da static yine get_analyzer'a düşer (Analyzer bulunamadi)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_durumlar.py::test_kapsayicida_static_desteklenmiyor_gercek_neden",
+      "find": "        if target.target_type == TargetType.UNKNOWN:\n            reason = unsupported_target_reason(target)",
+      "replace": "        if target.target_type == TargetType.UNKNOWN and False:\n            reason = unsupported_target_reason(target)"
+    },
+    {
+      "id": "ps4_k5_deob_eski_ileti",
+      "desc": "kapsayıcıda deobfuscate yine 'Hedef türü tanınmadı'",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_durumlar.py::test_kapsayicida_deobfuscate_neden_kapsayiciyi_soyler",
+      "find": "            return self._skipped(start, unsupported_target_reason(target))",
+      "replace": "            return self._skipped(start, self._SKIP_REASONS[TargetType.UNKNOWN])"
+    },
+    {
+      "id": "ps4_k5_kapsayici_neden_yok",
+      "desc": "kapsayıcı nedeni yazılmaz (yalnız 'tanınmadı')",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_durumlar.py::test_kapsayicida_static_desteklenmiyor_gercek_neden",
+      "find": "    if meta.get(\"container\"):\n        why = meta.get(\"unsupported_reason\")",
+      "replace": "    if meta.get(\"container_x\"):\n        why = meta.get(\"unsupported_reason\")"
+    },
+    {
+      "id": "ps4_k5_kosucu_durum_yok",
+      "desc": "koşucu düşünce reconstruct_status yazılmaz",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_durumlar.py::test_kosucu_duserse_reconstruct_status_basarisiz",
+      "find": "        out_stats[\"reconstruct_status\"] = OUTCOME_FAILED",
+      "replace": "        out_stats[\"reconstruct_status_x\"] = OUTCOME_FAILED"
+    },
+    {
+      "id": "ps4_k5_faz2_eski_dal",
+      "desc": "Faz 2 dalı eski davranışa döner (durumsuz StageResult)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_durumlar.py::test_kosucu_duserse_reconstruct_status_basarisiz",
+      "find": "            return self._runner_failure(start, \"Faz 2\", exc, errors, stats, artifacts)",
+      "replace": "            return StageResult(stage_name=self.name, success=False, errors=errors + [str(exc)])"
+    },
+    {
+      "id": "ps4_k5_faz3_eski_dal",
+      "desc": "Faz 3 dalı eski davranışa döner (durumsuz StageResult)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_durumlar.py::test_kosucu_duserse_reconstruct_status_basarisiz",
+      "find": "            return self._runner_failure(start, \"Faz 3\", exc, errors, stats, artifacts)",
+      "replace": "            return StageResult(stage_name=self.name, success=False, errors=errors + [str(exc)])"
+    },
+    {
+      "id": "ps4_k5_unknown_js_hatti",
+      "desc": "kapsayıcısız UNKNOWN yine JS hattına düşer",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps1_kapsayici.py::test_unknown_without_container_is_skipped_not_js",
+      "find": "        if target.target_type == TargetType.UNKNOWN:\n            return StageResult(\n                stage_name=self.name, success=False, skipped=True,",
+      "replace": "        if target.target_type == TargetType.UNKNOWN and target.metadata.get(\"container\"):\n            return StageResult(\n                stage_name=self.name, success=False, skipped=True,"
     }
   ]
 }
