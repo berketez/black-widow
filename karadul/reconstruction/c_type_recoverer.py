@@ -677,6 +677,10 @@ def _replace_type_words(content: str, replacements: dict[str, str]) -> str:
     return combined.sub(_sub, content)
 
 
+def _is_ident_char(ch: str) -> bool:
+    return ch.isalnum() or ch == "_"
+
+
 def _replace_first_in_code(text: str, old: str, new: str) -> str:
     """``old`` metninin KOD içindeki ilk geçişini ``new`` ile değiştir.
 
@@ -690,8 +694,18 @@ def _replace_first_in_code(text: str, old: str, new: str) -> str:
         return text
     spans = [(m.start(), m.end()) for m in _C_NONCODE_TOKEN.finditer(text)]
     starts = [s for s, _ in spans]
+    # P16d: tanımlayıcı sınırı. ``undefined8 uVar1`` kalıbı ``undefined8 uVar15`` bildirimine
+    # uymaz; eskiden ilk geçiş oysa tip başka değişkene yazılıyordu (ham Ghidra metninde 2e
+    # katmanının bulduğu 69 kalıbın 69'u böyleydi).
+    sol_sinir = _is_ident_char(old[0])
+    sag_sinir = _is_ident_char(old[-1])
     while pos != -1:
         end = pos + len(old)
+        if (sag_sinir and end < len(text) and _is_ident_char(text[end])) or (
+            sol_sinir and pos > 0 and _is_ident_char(text[pos - 1])
+        ):
+            pos = text.find(old, pos + 1)
+            continue
         # [pos, end) ile kesişebilecek tek aday: end'den önce başlayan son birim
         idx = bisect.bisect_left(starts, end) - 1
         if idx < 0 or spans[idx][1] <= pos:
