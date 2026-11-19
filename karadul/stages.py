@@ -1083,7 +1083,7 @@ class DeobfuscationStage(Stage):
     ) -> StageResult:
         return _merge_stage_results(go_result, binary_result, start)
 
-    def _resolve_deob_input(self, context: PipelineContext) -> Path:
+    def _resolve_deob_input(self, context: PipelineContext) -> Path | None:
         """Deobfuscation icin dogru girdi dosyasini bul.
 
         Electron uygulamalari icin extract edilmis ana JS dosyasini kullanir.
@@ -1125,6 +1125,15 @@ class DeobfuscationStage(Stage):
                             )
                             return js_file
 
+            # BICIM-02 (P-S4): ASAR arşivi / uygulama dizini JS değildir. Eskiden
+            # burada hedefin kendisi (ikili .asar) derin hatta veriliyor, beautify
+            # çöpü "01_beautified.js" olup yeniden kurmaya giriyordu.
+            if target.path.suffix.lower() not in (".js", ".mjs", ".cjs"):
+                logger.warning(
+                    "Electron deob: çıkarılmış JS bulunamadı; %s JS değil, "
+                    "deobfuscation uygulanmaz", target.path.name,
+                )
+                return None
             logger.warning(
                 "Electron deob: extract edilmis JS bulunamadi, orijinal path deneniyor"
             )
@@ -1139,6 +1148,14 @@ class DeobfuscationStage(Stage):
 
         # Electron icin extract edilmis JS'i bul, JS bundle icin dogrudan path
         input_file = self._resolve_deob_input(context)
+        if input_file is None:
+            # BICIM-02 (P-S4): Electron hedefinde deobfuscate edilecek JS yok
+            # (ASAR'da .js yok ya da çıkarma başarısız): ikili arşiv JS hattına girmez.
+            return self._skipped(
+                start,
+                f"{context.target.path.name}: çıkarılmış JS dosyası yok (ASAR / uygulama "
+                "dizininde .js bulunamadı ya da çıkarılamadı); deobfuscation uygulanmadı.",
+            )
 
         try:
             result = pipeline.run(
@@ -2539,6 +2556,87 @@ class ReconstructionStage(Stage):
         _finalize_binary_outcome(_stage_result, naming_result, context.config)
         return _stage_result
 
+    # BICIM-02: deobfuscate aşamasının sonucu yoksa (ör. `--stage reconstruct`)
+    # derin hattın adım dosyaları bu sırayla aday olur. Girdinin kopyaları
+    # (00_original*), parça dizinleri (stream_chunks/, deep_chunks/) ve modül
+    # dizini (webpack_modules/) hiçbir koşulda ana kaynak olmaz.
+    _JS_STEP_OUTPUTS: tuple[str, ...] = (
+        "03_enhanced_renamed.js",
+        "02_deep_deobfuscated.js",
+        "01b_synchrony.js",
+        "01_beautified.js",
+    )
+
+    @classmethod
+    def _select_js_source(
+        cls, context: PipelineContext, deob_dir: Path,
+    ) -> tuple[Path | None, dict[str, Any]]:
+        """JS yeniden kurmanın ana kaynağını seç ve seçimi kayda yaz (BICIM-02).
+
+        Öncelik: deobfuscate aşamasının ``artifacts["output_file"]``'ı (derin hattın
+        "son başarılı adımın dosyası"; girdinin kopyası asla). Aşama koştu ama çıktı
+        üretmediyse kaynak YOK: özgün kod "yeniden kurulmuş" diye sunulmaz. Aşama
+        sonucu hiç yoksa adım dosyaları ``_JS_STEP_OUTPUTS`` sırasıyla; derin adım
+        girdinin dönüştürülmemiş kopyasıysa (``deep_deob_fallback_copy``) atlanır.
+
+        Dönüş: (kaynak ya da None, stats'a yazılacak alanlar). Alanlar:
+        ``source_selection`` (deobfuscate_output / adim_dosyasi / yok),
+        ``deobfuscation_status`` (ok / partial / failed / atlandi / basarisiz /
+        sonuc_yok), gerekçe ve gerekiyorsa uyarı.
+        """
+        info: dict[str, Any] = {}
+        deob = (getattr(context, "results", None) or {}).get("deobfuscate")
+        fallback_copy = False
+        if deob is not None:
+            dstats = deob.stats or {}
+            fallback_copy = bool(dstats.get("deep_deob_fallback_copy"))
+            if deob.skipped:
+                info["deobfuscation_status"] = "atlandi"
+            else:
+                info["deobfuscation_status"] = dstats.get(
+                    "status", "ok" if deob.success else "basarisiz",
+                )
+            out = (deob.artifacts or {}).get("output_file")
+            out_path = Path(out) if out else None
+            if out_path is not None and out_path.is_file():
+                info["source_selection"] = "deobfuscate_output"
+                if info["deobfuscation_status"] != "ok":
+                    info["source_warning"] = (
+                        f"Deobfuscation durumu '{info['deobfuscation_status']}': yeniden "
+                        f"kurma deobfuscation zincirinin son başarılı adımının çıktısı "
+                        f"({out_path.name}) üstünde; derin dönüşüm "
+                        + ("uygulanmadı." if not deob.success else "kısmi.")
+                    )
+                return out_path, info
+            info["source_selection"] = "yok"
+            reason = dstats.get("skip_reason") or "; ".join(
+                str(e) for e in (deob.errors or [])[:2]
+            )
+            info["source_selection_reason"] = (
+                "Deobfuscation aşaması kaynak üretmedi"
+                + (f" ({reason})" if reason else "")
+                + "; özgün girdi yeniden kurulmuş kod diye sunulmaz."
+            )
+            return None, info
+
+        info["deobfuscation_status"] = "sonuc_yok"
+        for name in cls._JS_STEP_OUTPUTS:
+            if name == "02_deep_deobfuscated.js" and fallback_copy:
+                continue
+            cand = deob_dir / name
+            if cand.is_file() and cand.stat().st_size > 0:
+                info["source_selection"] = "adim_dosyasi"
+                info["source_warning"] = (
+                    "Deobfuscate aşamasının sonucu bu koşuda yok; kaynak adım "
+                    f"dosyasından seçildi ({name})."
+                )
+                return cand, info
+        info["source_selection"] = "yok"
+        info["source_selection_reason"] = (
+            "Deobfuscate edilmiş dosya bulunamadı (deobfuscated/ altında adım çıktısı yok)."
+        )
+        return None, info
+
     def _execute_js(self, context: PipelineContext, start: float) -> StageResult:
         """JS reconstruction pipeline (mevcut kod)."""
         errors: list[str] = []
@@ -2555,20 +2653,24 @@ class ReconstructionStage(Stage):
         reconstructed_dir = context.workspace.get_stage_dir("reconstructed")
         deob_dir = context.workspace.get_stage_dir("deobfuscated")
 
-        # Kaynak dosya: deobfuscated cikti
-        source_files = sorted(deob_dir.rglob("*.js"))
-        if not source_files:
+        # BICIM-02: kaynak = deobfuscation zincirinin GERÇEK çıktısı (eskiden
+        # deobfuscated/ altındaki EN BÜYÜK .js; derin dönüşüm kodu küçülttüğünde
+        # özgün ya da yalnız güzelleştirilmiş dosya seçiliyordu).
+        main_source, source_info = self._select_js_source(context, deob_dir)
+        stats.update(source_info)
+        if main_source is None:
+            reason = source_info.get("source_selection_reason", "")
             return StageResult(
                 stage_name=self.name,
                 success=False,
+                skipped=True,
                 duration_seconds=time.monotonic() - start,
-                errors=["Deobfuscate edilmis dosya bulunamadi"],
+                stats={**stats, "skip_reason": reason},
             )
-
-        # En buyuk dosyayi ana kaynak olarak sec
-        main_source = max(source_files, key=lambda f: f.stat().st_size)
         stats["source_file"] = main_source.name
         stats["source_size"] = main_source.stat().st_size
+        if source_info.get("source_warning"):
+            errors.append(source_info["source_warning"])
 
         # 1. Context-Aware Variable Renaming (NSA-grade)
         #    Eski VariableRenamer yerine ContextNamer kullan -- 300+ kural,

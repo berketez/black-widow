@@ -1,0 +1,45 @@
+{
+  "_comment": "P-S4 (stages.py 4. tur) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı); hepsi sözdizimce geçerli; find metni dosyada tekil. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ps4.json",
+  "mutants": [
+    {
+      "id": "ps4_k1_cikti_yerine_en_buyuk",
+      "desc": "deobfuscate çıktısı yok sayılır (output_file okunmaz) -> adım sırasına düşer",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_js_kaynak.py::test_kaynak_deobfuscation_ciktisi_en_buyuk_degil",
+      "find": "            if out_path is not None and out_path.is_file():",
+      "replace": "            if out_path is not None and out_path.is_file() and False:"
+    },
+    {
+      "id": "ps4_k1_uyari_yok",
+      "desc": "deobfuscation 'ok' değilken uyarı yazılmaz",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_js_kaynak.py::test_deobfuscation_basarisizsa_kayitta_soylenir",
+      "find": "                if info[\"deobfuscation_status\"] != \"ok\":",
+      "replace": "                if info[\"deobfuscation_status\"] == \"never-ok\":"
+    },
+    {
+      "id": "ps4_k1_ozgune_dus",
+      "desc": "aşama çıktı üretmediyse eski davranış: 00_original kaynak olur",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_js_kaynak.py::test_deobfuscation_cikti_uretmediyse_ozgun_kod_kurulmaz",
+      "find": "            info[\"source_selection\"] = \"yok\"\n            reason = dstats.get(\"skip_reason\")",
+      "replace": "            return deob_dir / \"00_original.js\", info\n            reason = dstats.get(\"skip_reason\")"
+    },
+    {
+      "id": "ps4_k1_sira_bozuk",
+      "desc": "adım sırasında 01_beautified yerine 00_original aday",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_js_kaynak.py::test_asama_sonucu_yoksa_adim_sirasi_ozgun_asla",
+      "find": "        \"01b_synchrony.js\",\n        \"01_beautified.js\",\n    )",
+      "replace": "        \"01b_synchrony.js\",\n        \"00_original.js\",\n        \"01_beautified.js\",\n    )"
+    },
+    {
+      "id": "ps4_k1_asar_derin_hatta",
+      "desc": "Electron'da JS yoksa .asar yine derin hatta verilir",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_js_kaynak.py::test_electron_js_yoksa_asar_derin_hatta_girmez",
+      "find": "            if target.path.suffix.lower() not in (\".js\", \".mjs\", \".cjs\"):",
+      "replace": "            if target.path.suffix.lower() in (\".never\",):"
+    }
+  ]
+}
