@@ -211,3 +211,18 @@ def test_uctan_uca_aday_kodda_yok(tmp_path: Path) -> None:
     assert {("param_8", "status"), ("param_7", "count")} <= adaylar
     metin = (tmp_path / "out" / "FUN_00101000.c").read_text(encoding="utf-8")
     assert "param_8" in metin
+
+
+def test_dogruluk_sinamasi_karisik_kullanim_kanit_degil() -> None:
+    # Bir kullanım doğruluk sınaması, öbürü aritmetik: doğruluk değeri kanıtı yok
+    kod = "int FUN_1(int param_1)\n{\n  if (param_1) {\n    return 1;\n  }\n" \
+          "  return param_1 + 1;\n}\n"
+    assert sn._generic_name_evidence("enabled", "int", kod, "param_1") is False
+
+
+def test_dongu_basliginda_karsilastirma_sart() -> None:
+    kod = "int FUN_1(int param_1)\n{\n  while (param_1) {\n    FUN_2();\n  }\n  return 0;\n}\n"
+    assert sn._generic_name_evidence("count", "int", kod, "param_1") is False
+    kod2 = "int FUN_1(int param_1)\n{\n  int i = 0;\n  do {\n    i = i + 1;\n" \
+           "  } while (i < param_1);\n  return 0;\n}\n"
+    assert sn._generic_name_evidence("count", "int", kod2, "param_1") is True
