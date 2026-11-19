@@ -360,10 +360,17 @@ def _declared_variables(code: str) -> set[str]:
 
 # Parametre listesi bir düzey iç içe ayraca izin verir: işlev göstericili parametre
 # (``void (*cb)(int)``) fonksiyonu düşürmez (P05b K1).
+#
+# Dönüş tipi (P05c K3): herhangi bir tanımlayıcı (niteleyicilerle: ``const`` / ``volatile`` /
+# ``unsigned`` / ``signed`` / ``struct`` / ``union`` / ``enum``) ve işaretçi. Eski desen sabit
+# bir tip listesi + ``\w+ *`` biçimiydi: ``uint64_t`` / ``int32_t`` / ``__off_t`` / ``uint8_t``
+# dönüşlü fonksiyonlar adlandırıcıya hiç girmiyordu (5 ikilinin girdisinde 4 343 dosyanın 465'i).
+# Fonksiyon adı ve dönüş tipi C deyim sözcüğü olamaz (``else if (x) {`` imza değildir).
 _FUNC_SIG_RE = re.compile(
-    r"^(?:(?:void|int|uint|long|ulong|char|uchar|short|ushort|byte|bool|float|double|"
-    r"size_t|ssize_t|undefined\d?|code\s*\*|undefined\s*\*|"
-    r"\w+\s*\*+)\s+)"
+    r"^(?:(?:const|volatile|unsigned|signed|struct|union|enum)\s+)*"
+    r"(?!(?:return|else|if|while|for|switch|do|case|goto|sizeof|typedef)\b)"
+    r"[A-Za-z_]\w*(?:\s*\*+\s*|\s+)"
+    r"(?!(?:if|while|for|switch|return|sizeof)\b)"
     r"(\w+)\s*\(((?:[^()]|\([^()]*\))*)\)\s*\{",
     re.MULTILINE,
 )
