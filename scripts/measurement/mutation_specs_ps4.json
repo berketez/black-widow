@@ -184,6 +184,46 @@
       "test": "tests/test_ps4_app_bundle.py::test_ana_bilesen_atlanirsa_bundle_nedenini_soyler",
       "find": "            if res.skipped and (res.stats or {}).get(\"skip_reason\"):",
       "replace": "            if res.skipped and (res.stats or {}).get(\"skip_reason_x\"):"
+    },
+    {
+      "id": "ps4_k5_decompiler_notu_yok",
+      "desc": "decompiler yokken iskelet yine hatasız 'başarılı'",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_durumlar.py::test_decompiler_yoksa_arac_yok_yazilir",
+      "find": "        self._note_decompiler_status(context, result)\n        return result",
+      "replace": "        return result"
+    },
+    {
+      "id": "ps4_k5_decompiler_hep",
+      "desc": "decompile başarılıyken de not yazılır",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_durumlar.py::test_decompiler_yoksa_arac_yok_yazilir",
+      "find": "        if sstats.get(\"decompiled\") is not False:\n            return",
+      "replace": "        if sstats.get(\"decompiled\") is None:\n            return"
+    },
+    {
+      "id": "ps4_k5_pyc_hata_yok",
+      "desc": "hiçbir .pyc çözülemese de hata satırı yazılmaz",
+      "module": "karadul/analyzers/python_binary.py",
+      "test": "tests/test_ps4_python_decompile.py::test_hicbiri_cozulemediyse_hata_satiri",
+      "find": "        if failed_count and not recovered:",
+      "replace": "        if failed_count and recovered < 0:"
+    },
+    {
+      "id": "ps4_k5_pyc_kismi_yok_sayilir",
+      "desc": "disasm kurtarma sayılmaz (kısmi kurtarmada da hata)",
+      "module": "karadul/analyzers/python_binary.py",
+      "test": "tests/test_ps4_python_decompile.py::test_hicbiri_cozulemediyse_hata_satiri",
+      "find": "for k in (\"decompiled\", \"partial\", \"disasm\"))",
+      "replace": "for k in (\"decompiled\", \"partial\"))"
+    },
+    {
+      "id": "ps4_k5_pyc_sayac_yok",
+      "desc": "failed_count sayacı yazılmaz",
+      "module": "karadul/analyzers/python_binary.py",
+      "test": "tests/test_ps4_python_decompile.py::test_hicbiri_cozulemediyse_hata_satiri",
+      "find": "                \"failed_count\": failed_count,",
+      "replace": "                \"failed_count_x\": failed_count,"
     }
   ]
 }

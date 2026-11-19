@@ -15,6 +15,8 @@ from types import SimpleNamespace
 
 import pytest
 
+import karadul.stages as stages_mod
+
 from karadul.config import Config
 from karadul.core.pipeline import PipelineContext
 from karadul.core.target import TargetDetector, TargetType
@@ -113,3 +115,37 @@ def test_kosucu_duserse_reconstruct_status_basarisiz(tmp_path, monkeypatch, duse
     faz = {1: "Faz 1", 2: "Faz 2", 3: "Faz 3"}[dusen]
     assert res.stats["reconstruct_failure_reasons"][0].startswith(f"{faz} adım koşucusu düştü")
     assert f"test: koşucu {dusen} düştü" in res.errors
+
+
+# --- Decompiler yok: iskelet 'başarılı' değil, arac_yok + neden ----------------
+
+@pytest.mark.parametrize("decompiled,beklenen", [(False, "arac_yok"), (True, None)])
+def test_decompiler_yoksa_arac_yok_yazilir(tmp_path, monkeypatch, decompiled, beklenen):
+    from karadul.core.result import StageResult
+
+    class _SahteJava:
+        def __init__(self, config=None):
+            pass
+
+        def reconstruct(self, target, workspace):
+            return StageResult(stage_name="x", success=True, duration_seconds=0.0,
+                               stats={"reconstructed": True})
+
+    monkeypatch.setattr(stages_mod, "get_analyzer", lambda _t: _SahteJava)
+    p = tmp_path / "a.jar"
+    with zipfile.ZipFile(p, "w") as z:
+        z.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\n")
+        z.writestr("a/B.class", b"\xca\xfe\xba\xbe\x00\x00\x00\x34")
+    ctx = _ctx(tmp_path, p)
+    ctx.results["static"] = StageResult(
+        stage_name="static", success=True, duration_seconds=0.0,
+        stats={"decompiled": decompiled},
+        errors=[] if decompiled else ["jadx bulunamadi — 'brew install jadx' ile kurun"],
+    )
+    res = ReconstructionStage()._execute_analyzer_reconstruct(ctx, 0.0)
+    assert res.stats.get("decompiler_status") == beklenen
+    if beklenen:
+        assert "jadx bulunamadi" in res.stats["decompiler_reason"]
+        assert any(e.startswith("Kaynak kod kurulmadı (jadx bulunamadi") for e in res.errors)
+    else:
+        assert res.errors == []

@@ -1646,7 +1646,31 @@ class ReconstructionStage(Stage):
                 errors=[f"{target_kind} reconstruction sonuc dondurmedi (analiz JSON'u yok mu?)"],
             )
         result.stage_name = self.name
+        self._note_decompiler_status(context, result)
         return result
+
+    @staticmethod
+    def _note_decompiler_status(context: PipelineContext, result: StageResult) -> None:
+        """Kaynak decompile edilmediyse bunu açıkça yaz (P-S4: arac_yok, sahte başarı değil).
+
+        JVM / .NET analizcileri static'te ``decompiled`` bayrağını yazar; jadx /
+        ilspycmd yoksa reconstruct yine "reconstructed: true" ile yalnız proje iskeleti
+        (build.gradle / .csproj) üretiyordu (gerçek örnekte JAR ×2, APK ×2: 1 dosya,
+        hatasız 'başarılı'). İskelet kalır; durum ve neden kayda, aşama kısmi olur.
+        """
+        static = (getattr(context, "results", None) or {}).get("static")
+        sstats = getattr(static, "stats", None) or {}
+        if sstats.get("decompiled") is not False:
+            return
+        serrors = [str(e) for e in (getattr(static, "errors", None) or [])]
+        missing = [e for e in serrors if "bulunamadi" in e or "bulunamadı" in e]
+        reason = (missing or serrors or ["decompiler kaynak üretmedi"])[0]
+        result.stats["decompiler_status"] = "arac_yok" if missing else "basarisiz"
+        result.stats["decompiler_reason"] = reason
+        result.stats["source_files_recovered"] = 0
+        result.errors.append(
+            f"Kaynak kod kurulmadı ({reason}); yalnız proje iskeleti yazıldı."
+        )
 
     # ------------------------------------------------------------------
     # v1.12.0 Faz 2 split adim 1: Setup + Load alt metotlari.

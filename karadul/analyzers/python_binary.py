@@ -906,6 +906,17 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
             json.dumps(manifest, indent=2, default=str)
         )
 
+        # P-S4: decompile zincirine giren .pyc'lerin HİÇBİRİ çözülemediyse (gerçek
+        # yt-dlp_macos / yt-dlp.exe, Python 3.14: 1338 / 1338 'failed') aşama hatasız
+        # 'başarılı' görünüyordu; sayı yalnız manifest notundaydı. Sayaç + hata satırı.
+        failed_count = decompile_summary.get("failed", 0)
+        recovered = sum(decompile_summary.get(k, 0) for k in ("decompiled", "partial", "disasm"))
+        if failed_count and not recovered:
+            extract_errors = list(extract_errors) + [
+                f"{failed_count} .pyc'nin hiçbiri çözülemedi (decompile / disasm yok; "
+                f"Python {detected_version or 'sürümü bilinmiyor'}); yalnız ham .pyc dosyaları çıkarıldı."
+            ]
+
         return StageResult(
             stage_name="reconstruct",
             success=True,
@@ -917,6 +928,7 @@ class PythonBinaryAnalyzer(BaseAnalyzer):
                 "decompiled_count": decompile_summary.get("decompiled", 0),
                 "partial_count": decompile_summary.get("partial", 0),
                 "disasm_count": decompile_summary.get("disasm", 0),
+                "failed_count": failed_count,
                 # Manifest "extracted_modules" ile aynı sayılar (CLI/rapor için).
                 "python_modules_extracted": modules_summary.get("modules_extracted", 0),
                 "python_modules_decompile_chain": modules_summary.get("decompile_chain", 0),
