@@ -80,7 +80,19 @@ def _fake_detector() -> MagicMock:
         inst.detect_by_bytes()
         return list(findings)
 
+    def scan():
+        # P02b kalem 3: adim durumu dedektorun scan()'inden alir; taklit
+        # detect()'i cagirir ki detect.side_effect hatasi scan'e de yansisin.
+        from karadul.analyzers.anti_debug_detector import AntiDebugScan
+        bulunan = inst.detect()
+        return AntiDebugScan(
+            bulunan, "calisti", "",
+            {ad: {"status": "calisti", "reason": ""}
+             for ad in ("imports", "strings", "bytes")},
+            16, 16)
+
     inst.detect.side_effect = detect
+    inst.scan.side_effect = scan
     cls.findings = findings  # testler bulgu listesini buradan doldurur
     return cls
 

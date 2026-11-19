@@ -1,0 +1,51 @@
+--- a/scripts/measurement/mutation_specs_ps1.json
++++ b/scripts/measurement/mutation_specs_ps1.json
+@@ -12,15 +12,15 @@
+     {
+       "id": "ad_katman_hatasi_sayilmaz",
+       "desc": "anti-debug: yutulan katman istisnası duruma yansımaz (eski davranış)",
+-      "module": "karadul/pipeline/steps/anti_debug.py",
++      "module": "karadul/analyzers/anti_debug_detector.py",
+       "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_one_layer_error_is_partial_not_zero",
+-      "find": "failed = [(n, s[\"reason\"]) for n, s in layers.items() if s[\"status\"] == SCAN_ERROR]",
+-      "replace": "failed = []  # katman hatasi sayilmaz"
++      "find": "failed = [(n, s[\"reason\"]) for n, s in layers.items()\n",
++      "replace": "failed = [(n, s[\"reason\"]) for n, s in layers.items() if False\n"
+     },
+     {
+       "id": "ad_tum_katman_hata_kismi",
+       "desc": "anti-debug: üç katman da düşerse durum 'hata' değil 'kismi'",
+-      "module": "karadul/pipeline/steps/anti_debug.py",
++      "module": "karadul/analyzers/anti_debug_detector.py",
+       "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_all_layers_error_is_error",
+       "find": "if len(failed) == len(layers):",
+       "replace": "if len(failed) > len(layers):"
+@@ -28,7 +28,7 @@
+     {
+       "id": "ad_kirpma_gorunmez",
+       "desc": "anti-debug: 50 MB sınırıyla kırpılan tarama 'calisti' görünür",
+-      "module": "karadul/pipeline/steps/anti_debug.py",
++      "module": "karadul/analyzers/anti_debug_detector.py",
+       "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_truncated_scan_is_partial",
+       "find": "        if scanned < file_size:",
+       "replace": "        if scanned < file_size and False:"
+@@ -36,15 +36,15 @@
+     {
+       "id": "ad_okuma_denetimi_yok",
+       "desc": "okunamayan dosya denetlenmez (dedektör b'' ile 'temiz' döner)",
+-      "module": "karadul/pipeline/steps/anti_debug.py",
++      "module": "karadul/analyzers/anti_debug_detector.py",
+       "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_unreadable_file_is_error",
+-      "find": "        with open(path, \"rb\") as fh:\n            fh.read(1)\n",
+-      "replace": "        pass  # okuma denetimi yok\n"
++      "find": "            with self.binary_path.open(\"rb\") as fh:\n                fh.read(1)\n",
++      "replace": "            pass  # okuma denetimi yok\n"
+     },
+     {
+       "id": "ad_bayt_kapsami_yok",
+       "desc": "anti-debug: x86 dışı ikilide bayt katmanı 'calisti' görünür",
+-      "module": "karadul/pipeline/steps/anti_debug.py",
++      "module": "karadul/analyzers/anti_debug_detector.py",
+       "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_clean_scan_reports_ran_and_full_coverage",
+       "find": "            if scope:",
+       "replace": "            if scope and False:"

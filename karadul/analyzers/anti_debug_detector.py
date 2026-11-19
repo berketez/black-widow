@@ -460,6 +460,54 @@ class AntiDebugFinding:
 
 
 # ---------------------------------------------------------------------------
+# Tarama durumu (P02b kalem 3): dedektor kendi durumunu dondurur
+# ---------------------------------------------------------------------------
+# Dizgiler pipeline'in tarama durumu sozluguyle ayni (pipeline/steps/anti_debug
+# SCAN_*, yara_scanner / capa_scanner STATUS_*).
+SCAN_STATUS_RAN = "calisti"
+SCAN_STATUS_PARTIAL = "kismi"
+SCAN_STATUS_ERROR = "hata"
+SCAN_STATUS_UNSUPPORTED = "desteklenmiyor"
+
+# detect() / scan() katmanlari: rapordaki ad -> yontem adi (sira onemli).
+SCAN_LAYERS: tuple[tuple[str, str], ...] = (
+    ("imports", "detect_by_imports"),
+    ("strings", "detect_by_strings"),
+    ("bytes", "detect_by_bytes"),
+)
+
+
+@dataclass
+class AntiDebugScan:
+    """Bir taramanin bulgulari + durumu (P02b kalem 3).
+
+    status: ``calisti`` (uc katman calisti, dosyanin tamami tarandi; 0 bulgu =
+        temiz), ``kismi`` (bir katman hata verdi ya da dizgi / bayt katmanlari
+        dosyanin yalniz basini taradi), ``hata`` (dosya okunamadi ya da hicbir
+        katman calismadi).
+    layers: katman adi -> {"status", "reason"}; katman bu ikilide
+        uygulanamiyorsa ``desteklenmiyor`` + neden (or. AArch64'te bayt katmani).
+    """
+    findings: list[AntiDebugFinding]
+    status: str
+    status_reason: str
+    layers: dict[str, dict[str, str]] = field(default_factory=dict)
+    file_size: Optional[int] = None
+    scanned_bytes: Optional[int] = None
+    layer_errors: list[str] = field(default_factory=list)
+
+    def record(self) -> dict[str, Any]:
+        """Adimin JSON'una yazilan durum alanlari."""
+        return {
+            "status": self.status,
+            "status_reason": self.status_reason,
+            "file_size": self.file_size,
+            "scanned_bytes": self.scanned_bytes,
+            "layers": self.layers,
+        }
+
+
+# ---------------------------------------------------------------------------
 # Kod yerlesimi: bicim, mimari, yurutulebilir kod araliklari (IMZA-02)
 # ---------------------------------------------------------------------------
 
@@ -848,32 +896,92 @@ class AntiDebugDetector:
     def detect(self) -> list[AntiDebugFinding]:
         """Tum katmanlari calistir, multi-layer boost uygula, donder.
 
+        Durumu da isteyen cagiran ``scan()`` kullanir (ayni bulgular).
+
         Returns:
             AntiDebugFinding listesi (confidence azalan sirayla).
         """
+        return self.scan().findings
+
+    def scan(self) -> AntiDebugScan:
+        """Tum katmanlari calistir; bulgular + tarama durumunu birlikte dondur.
+
+        Durum dedektorun kendisinden gelir (P02b kalem 3): hangi katman calisti,
+        hangisi hata verdi (neden), hangisi bu ikilide uygulanamaz (neden),
+        dosyanin ne kadari tarandi. "Taranamadi" ile "tarandi, temiz" ayrilir.
+        """
+        file_size, read_error = self._probe_file()
+        if read_error:
+            return AntiDebugScan([], SCAN_STATUS_ERROR, read_error, {}, file_size, None)
+
         all_findings: list[AntiDebugFinding] = []
-
-        try:
-            all_findings.extend(self.detect_by_imports())
-        except Exception as exc:  # pragma: no cover - defensive
-            logger.warning("import-based detect hatasi: %s", exc)
-
-        try:
-            all_findings.extend(self.detect_by_strings())
-        except Exception as exc:  # pragma: no cover - defensive
-            logger.warning("string-based detect hatasi: %s", exc)
-
-        try:
-            all_findings.extend(self.detect_by_bytes())
-        except Exception as exc:  # pragma: no cover - defensive
-            logger.warning("bytes-based detect hatasi: %s", exc)
+        layers: dict[str, dict[str, str]] = {}
+        for layer, meth_name in SCAN_LAYERS:
+            try:
+                found = getattr(self, meth_name)()
+            except Exception as exc:
+                logger.warning("anti-debug %s katmani hatasi: %s", layer, exc)
+                layers[layer] = {"status": SCAN_STATUS_ERROR,
+                                 "reason": f"{type(exc).__name__}: {exc}"}
+                continue
+            all_findings.extend(found)
+            layers[layer] = {"status": SCAN_STATUS_RAN, "reason": ""}
+        if layers["bytes"]["status"] == SCAN_STATUS_RAN:
+            scope = self._bytes_layer_scope()
+            if scope:
+                layers["bytes"] = {"status": SCAN_STATUS_UNSUPPORTED, "reason": scope}
 
         # Multi-layer boost: ayni technique birden fazla kategoride varsa
         boosted = self._apply_multilayer_boost(all_findings)
-
         # Confidence azalan sirada
         boosted.sort(key=lambda f: (-f.confidence, f.technique))
-        return boosted
+
+        scanned = min(file_size, self.max_bytes_scan)
+        failed = [(n, s["reason"]) for n, s in layers.items()
+                  if s["status"] == SCAN_STATUS_ERROR]
+        layer_errors = [f"{n} katmani: {r}" for n, r in failed]
+        reasons = list(layer_errors)
+        if scanned < file_size:
+            reasons.append(
+                f"dizgi ve bayt katmanlari dosyanin ilk {scanned} baytini taradi "
+                f"(dosya {file_size} bayt)",
+            )
+        if len(failed) == len(layers):
+            status = SCAN_STATUS_ERROR
+        elif reasons:
+            status = SCAN_STATUS_PARTIAL
+        else:
+            status = SCAN_STATUS_RAN
+        return AntiDebugScan(boosted, status, "; ".join(reasons), layers,
+                             file_size, scanned, layer_errors)
+
+    def _probe_file(self) -> tuple[Optional[int], str]:
+        """Dosya boyutu ve okunabilirlik: (boyut, hata nedeni; bos = okunabilir).
+
+        Katmanlar okuma hatasini yutup bos veriyle "temiz" doner; bu yuzden
+        okunabilirlik taramadan once burada denetlenir.
+        """
+        try:
+            size = self.binary_path.stat().st_size
+            with self.binary_path.open("rb") as fh:
+                fh.read(1)
+        except OSError as exc:
+            return None, f"ikili okunamadi: {exc}"
+        return size, ""
+
+    def _bytes_layer_scope(self) -> str:
+        """Bayt katmani bu ikilide uygulanamiyorsa neden; uygulanabiliyorsa ''.
+
+        x86 islem kodu taramasi yalniz x86 / x86-64 kod bolgelerinde yapilir;
+        baska mimaride katman bos doner, bu "tarandi, temiz" sayilmaz.
+        """
+        layout = self._code_layout()
+        if layout.arch in _X86_ARCHES and layout.regions:
+            return ""
+        if layout.arch in _X86_ARCHES:
+            return f"{layout.fmt}/{layout.arch}: yurutulebilir kod bolgesi bulunamadi"
+        return (f"{layout.fmt}/{layout.arch}: x86 islem kodu taramasi (RDTSC, PEB, INT3) "
+                "bu mimaride uygulanmaz")
 
     def summary(
         self, findings: list[AntiDebugFinding],

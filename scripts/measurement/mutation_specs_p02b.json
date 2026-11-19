@@ -48,6 +48,38 @@
       "test": "tests/test_p02b_desen_dogrulama.py",
       "find": "_REAL_SAMPLE_VERIFIED: dict[str, str] = {",
       "replace": "_REAL_SAMPLE_VERIFIED: dict[str, str] = {\"FSG\": \"x\","
+    },
+    {
+      "id": "p02b_k3_katman_hatasi",
+      "desc": "Kalem 3: scan() katman istisnasını yakalamaz (durum yerine istisna)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_durum.py::TestDedektorDurumu::test_katman_hatasi_kismi",
+      "find": "            except Exception as exc:\n                logger.warning(\"anti-debug %s katmani hatasi: %s\", layer, exc)",
+      "replace": "            except ZeroDivisionError as exc:\n                logger.warning(\"anti-debug %s katmani hatasi: %s\", layer, exc)"
+    },
+    {
+      "id": "p02b_k3_bayt_kapsami",
+      "desc": "Kalem 3: uygulanamayan bayt katmanı 'calisti' yazılır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_durum.py::TestDedektorDurumu::test_temiz_tarama",
+      "find": "            if scope:\n                layers[\"bytes\"]",
+      "replace": "            if scope and False:\n                layers[\"bytes\"]"
+    },
+    {
+      "id": "p02b_k3_kesik_tarama",
+      "desc": "Kalem 3: kesik tarama kısmi sayılmaz",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_durum.py::TestDedektorDurumu::test_kesik_tarama_kismi",
+      "find": "        if scanned < file_size:\n            reasons.append(",
+      "replace": "        if scanned < 0:\n            reasons.append("
+    },
+    {
+      "id": "p02b_k3_adim_yazmaz",
+      "desc": "Kalem 3: adım dedektörün durumunu yazmaz",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_p02b_durum.py::test_adim_dedektor_durumunu_yazar",
+      "find": "        record.update(result.record())",
+      "replace": "        record.update({})"
     }
   ]
 }
