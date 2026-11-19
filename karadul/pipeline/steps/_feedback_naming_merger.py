@@ -417,6 +417,8 @@ def run_name_merger(
             functions_json=functions_json,
             # P13b / BORU-14 (a): K-4 kanalları gerçek koşuda (bayrağı açık olanlar).
             k4=k4_inputs(ctx, functions_json),
+            # P12c kalem 5: c_namer koşmadığında ön adın güveni kanalının ölçülmüş kesinliği.
+            pre_name_meta=pre_name_meta_of(ctx),
         )
         decided_map = dict(decided or {})
         for key in list(candidates_by_symbol):

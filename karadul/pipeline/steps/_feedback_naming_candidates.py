@@ -49,6 +49,8 @@ def collect_candidates(
     # ön adlar (``binary_extractor``) ve c_namer'ın kendi adları birleştiriciye aday
     # olarak GİRMEZ: c_namer'ın ad verdiği anahtarın kararı c_namer'ındır.
     pre_names_via_c_namer: bool = False,
+    # P12c kalem 5: ön ad künyesi (Faz 2 tohumu); ön adın güveni kanalının ölçülmüş kesinliği.
+    pre_name_meta: dict[str, Any] | None = None,
 ) -> dict[str, list[Any]]:
     """Tum kaynaklardan candidates_by_symbol sozlugu olustur.
 
@@ -60,7 +62,7 @@ def collect_candidates(
     candidates_by_symbol: dict[str, list[Any]] = {}
 
     if not pre_names_via_c_namer:
-        _add_binary_extractor(extracted_names, candidates_by_symbol)
+        _add_binary_extractor(extracted_names, candidates_by_symbol, pre_name_meta, stats)
         _add_c_namer(naming_result, candidates_by_symbol, stats)
     _add_bindiff(bindiff_confidence_map, candidates_by_symbol)
     _add_refdiff(refdiff_naming, candidates_by_symbol)
@@ -717,13 +719,36 @@ def _add_rtti(
 def _add_binary_extractor(
     extracted_names: dict[str, str],
     candidates: dict[str, list[Any]],
+    pre_name_meta: dict[str, Any] | None = None,
+    stats: dict[str, Any] | None = None,
 ) -> None:
+    """Ön adlar (yalnız c_namer koşmadığında; bkz. collect_candidates).
+
+    P12c kalem 5 (P13a kalanı a; AD-07): güven sabit 0,85 değil, ön adın kanalının ölçülmüş
+    kesinliğinin Wilson alt sınırı (c_namer'ın ön ad yoluyla aynı kural:
+    ``c_namer.measured_pre_name_confidence``). Ölçülmemiş kanaldaki ön ad (künyesiz, Faz 1,
+    elle) birleştiriciye sayı uydurularak girmez; ``_add_c_namer``'daki gibi aday olmaz ve
+    ``name_merger_pre_name_unmeasured`` sayacında görünür (elle ad birleştiriciden sonra
+    ``force_manual_names`` ile zorlanır).
+    """
+    from karadul.reconstruction.c_namer import measured_pre_name_confidence
+    from karadul.reconstruction.tarif import baglama as _baglama
+
+    unmeasured = 0
     for old_name, new_name in extracted_names.items():
         if not old_name or len(old_name) < 2 or not new_name:
             continue
+        conf = measured_pre_name_confidence(
+            _baglama.meta_for(pre_name_meta, old_name, new_name))
+        if conf is None:
+            unmeasured += 1
+            continue
         candidates.setdefault(old_name, []).append(
-            NamingCandidate(new_name, 0.85, "binary_extractor"),
+            NamingCandidate(new_name, conf, "binary_extractor"),
         )
+    if stats is not None and unmeasured:
+        stats["name_merger_pre_name_unmeasured"] = (
+            stats.get("name_merger_pre_name_unmeasured", 0) + unmeasured)
 
 
 def _add_c_namer(
