@@ -34,41 +34,66 @@
 
 ## 1. Zemin: Karadul bugün
 
-**Ne yapıyor:** derlenmiş ikiliyi alıyor (ELF, Mach-O, PE; ayrıca JS/Electron, Java/APK, .NET, Python paketleri). Ghidra 12.1.2'nin (PyGhidra, başsız) çıktısı üstünde **hesaplamayla** çalışıyor; motor LLM kullanmıyor. Fonksiyon ve değişkenlere ad veriyor, tip ve yapı kurtarıyor, ilişkileri çıkarıyor, analist için kaynak ağacı ve rapor üretiyor. KaradulLM ayrı ve isteğe bağlı bir katman: araç kullanan, yerel modelle (Qwen 27B, Q4) çalışan yardımcı ajan, bugün hiçbir yere bağlı değil.
+**Ne yapıyor:** derlenmiş ikiliyi alıyor (ELF, Mach-O, PE; ayrıca JS/Electron, Java/APK, .NET, Python paketleri). Ghidra 12.1.2'nin (PyGhidra, başsız) çıktısı üstünde **hesaplamayla** çalışıyor; motor LLM kullanmıyor. Fonksiyon ve değişkenlere ad veriyor, tip ve yapı kurtarıyor, ilişkileri çıkarıyor, analist için kaynak ağacı ve rapor üretiyor. KaradulLM ayrı ve isteğe bağlı bir katman: araç kullanan, yerel modelle (Qwen 27B, Q4) çalışan yardımcı ajan. Onarımda olay omurgası, denetim, araç kaydı v2, oturum / kipler ve komut satırı (`python -m karadul.lm`) kuruldu (P21, P22a/b/d/e); arayüzü P22c'de yapılıyor. Gerçek modelle hiç koşulmadı.
 
-**Ad ölçümünün son tabanı (1.22.1 ürünü, geliştirme seti, 2026-11-12):**
+**Ad ölçümü: 1.22.1 → onarım sonrası (geliştirme seti, 119 ikili):**
 
-| Ölçü | Değer |
-|---|---|
-| Ürünün verdiği fonksiyon adı (havuz) | 2 261 |
-| Doğru (tam eşitlik) | 1 589 (%70,3; %95 GA %68,4–%72,1) |
-| Yanlış | 672 (**%29,7**; %27,9–%31,6); program düzeyi makro yanlış oranı **%52,8** |
-| Ad bekleyen nüfus (Ghidra'nın jenerik bıraktığı fonksiyonlar) | 21 371 |
-| Ad verilen kapsam | 1 764 / 21 371 (%8,3) |
-| **Doğru ad kapsamı** | **1 120 / 21 371 (%5,2)** |
-| "kesin" etiketli adlar | 249 / 262 doğru (%95,0; makro %97,3); kapsamı 252 / 21 371 (%1,2) |
-| Hedef "yanlış ≤ %10" | tutmadı |
+| Ölçü | 1.22.1 (yeni2, 2026-11-12) | a62f15e (onarım sonrası, 2026-11-19) |
+|---|---|---|
+| Ürünün verdiği fonksiyon adı (havuz) | 2 261 | ⟨ÖLÇÜM: havuz⟩ |
+| Doğru (tam eşitlik) | 1 589 (%70,3; %95 GA %68,4–%72,1) | ⟨ÖLÇÜM: doğru (%; %95 GA)⟩ |
+| Yanlış | 672 (**%29,7**; %27,9–%31,6); program düzeyi makro yanlış oranı **%52,8** | ⟨ÖLÇÜM: yanlış (%; %95 GA); makro yanlış⟩ |
+| Ad bekleyen nüfus (Ghidra'nın jenerik bıraktığı fonksiyonlar; GT'den) | 21 371 | ⟨ÖLÇÜM: nüfus⟩ |
+| Ad verilen kapsam | 1 764 / 21 371 (%8,3) | ⟨ÖLÇÜM: ad verilen kapsam⟩ |
+| **Doğru ad kapsamı** | **1 120 / 21 371 (%5,2)** | ⟨ÖLÇÜM: doğru ad kapsamı⟩ |
+| "kesin" etiketli adlar | 249 / 262 doğru (%95,0; makro %97,3); kapsamı 252 / 21 371 (%1,2) | ⟨ÖLÇÜM: kesin etiketli doğru / toplam; kapsam⟩ |
+| Hedef "yanlış ≤ %10" | tutmadı | ⟨ÖLÇÜM: tuttu / tutmadı⟩ |
 
-Kaynak: `urun_olcumu_fark_yeni_yeni2.md`. Ölçü tanımları: `scripts/measurement/urun_olc.py` (tam eşitlik; Mach-O'da baştaki `_` soyulur; derleyici klonu tabana eşlenir).
+Kaynak: 1.22.1 sütunu `urun_olcumu_fark_yeni_yeni2.md`; a62f15e sütunu `docs/arge/2026-11-19_birlesik_olcum/sonuc.md`. Ölçü tanımları: `scripts/measurement/urun_olc.py` (tam eşitlik; Mach-O'da baştaki `_` soyulur; derleyici klonu tabana eşlenir; nüfus GT'den, `ks1_olc.GtBirimi.nufus`). Kanal kırılımı (1.22.1 → a62f15e): ⟨ÖLÇÜM: kanal kırılımı farkı (`urun_olc.py karsilastir`)⟩.
 
-**Ölçüm altyapısı (hazır):**
+Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; beklenen yönü gösterir (kaynak DURUM.md): `kebap_ad` −239 yanlış, kaybedilen doğru 0 / 441 (P12b, 14 ikili); gnulib coreutils dışı 7 → 0 ve coreutils yanlış 217 → 1 (P-S3, yeniden oynatma), yamalı yeniden oynatmada coreutils 620 / 0 → 732 / 0 (P-S3b); rol adının fonksiyon adı yapılması 70 → 0 (P12a); birleştiricinin `exact_multi` 42 → 0 (P13a); imza VT'nin uygulanan ad farkı 0 (P15b, 6 ikili).
+
+**Ölçüm altyapısı (onarım sonrası):**
 - Geliştirme seti: 119 ikili, `scripts/measurement/urun_kos.py` → `isleri_topla`. 117'si Debian 13 AArch64 ELF (GCC 14), 2'si Mac (htop, tmux). Bu bir yanlılıktır; G1'e bakın.
-- Ürün koşusu ve ad ölçümü: `urun_kos.py` (119 ikili ≈ 3–4 saat, `--paralel 3`) + `urun_olc.py olc / karsilastir` (birim, tabaka, kanal kırılımı, Wilson aralığı).
-- Masum ikili kapısı (sahte iddia sayımı; 5 katman × 4 set; ~25 sn): `scripts/measurement/masum_kapi.py`, el kitabı `docs/arge/2026-11-18_onarim/P00.md`.
-- Çıktı sağlamlık denetimi: `scripts/measurement/saglamlik_denetle.py`.
-- Tip tabanı (DWARF, dwz farkında): `scripts/measurement/dwarf_tip.py`, `ghidra_tip_tabani.py`, `parametre_hizala.py`; ölçüt taslağı `docs/arge/2026-10-21_k1_k2_onkayit_taslak.md`.
+- Ürün koşusu ve ad ölçümü: `urun_kos.py` + `urun_olc.py olc / karsilastir` (birim, tabaka, kanal kırılımı, Wilson aralığı). Süre: 1.22.1'de 119 ikili ≈ 3–4 saat (`--paralel 3`); a62f15e'de ⟨ÖLÇÜM: urun_kos süresi (119 ikili, `--paralel 3`)⟩. Hijyen: `PYTHONHASHSEED=0`, koşu kökü başına ayrı `KARADUL_CACHE_DIR` (BSim deposu dahil, P16b); ağaçta `signatures.lmdb` bağı şart (7b25084, P15b); kısmi çıkış (3) bitmiş koşu sayılır (6c0b79b, P15a).
+- Masum ikili kapısı (P00; `scripts/measurement/masum_kapi.py`, el kitabı `docs/arge/2026-11-18_onarim/P00.md`): doğrudan kip 5 katman (`bi`, `antidebug`, `packer`, `yara`, `capa`) × 4 set (gelistirme 119, macos 48, pe 21, pozitif 6; 194 ikili, ~25 sn); çıktı kipi 11 katman. Eşik dosyası `masum_kapi_esik.json`'ı yalnız ana oturum yazar; P01b'den sonra bütün katmanlarda geçiyor (DURUM, 11:3x ara noktası). Çıktı kipinin eşiği 14 HEAD ikilisinden kuruldu, 119 ile tamamlanacak: ⟨ÖLÇÜM: masum kapı çıktı kipi, 119 ikili; koşulmadıysa "koşulmadı"⟩.
+- Çıktı sağlamlık denetimi: `scripts/measurement/saglamlik_denetle.py` (P16a yamasıyla yeni biçimi tanıyor; kayıtlı kırpma kusur sayılmaz): ⟨ÖLÇÜM: sağlamlık denetimi kusur sayıları, 119 ikili; koşulmadıysa "koşulmadı"⟩.
+- **Ghidra'sız yeniden oynatma:** (a) masum kapının `bilesim_yeniden` / `algoritma_yeniden` katmanları (depoda; 119 / 119 aynı, P00); (b) `ReconstructionStage` yeniden oynatması: var olan koşunun çalışma alanı kopyalanır, yalnız yeniden kurma koşulur (araç depo dışı, yöntem `P12a.md`); 14 ikililik set (P12a, P12b) ve 119 ikili (P-S3). Ad kanalı değişikliğini dakikalar içinde ölçer; Ghidra tarafındaki değişikliği görmez (P12b ürün koşusunda 2 fark, `P12b.md`).
+- **BSim:** P16c'den beri toplu sorgu (tek `GenSignatures` + tek `QueryNearest`) öntanım; Ghidra köprüsü cat 2,8×, Mac htop 6,7× hızlı, `bsim_matches.json` 12 / 12 çiftte bayt bayt aynı; `bsim.batch_query` ile kapatılır (DURUM, P16c). Kilit ve sızıntı onarıldı (P16b).
+- **Mutasyon düzeni:** `scripts/mutation_probe.py` + `scripts/measurement/mutation_specs_<paket>.json` (her onarım paketinin kendi tanımı); mutant metni özgününden farklı uzunlukta, `PYTHONDONTWRITEBYTECODE=1` (`.pyc` tuzağı); aynı worktree'de eşzamanlı mutasyon koşusu yok ve mutantın `find` metni tekil (P-S3b'de bayat `find` 1 hayatta mutant verdi); ajan beyanından sonra ana oturum main koduyla bağımsız yeniden koşar (`ONARIM_BRIF.md` §4d, DURUM ara noktaları).
+- Ön kayıt düzeni: her ad / tip değişikliği `P*_on_kayit.md` ile, değişiklikten önce commit'li; tutmayan hipotez kural değiştirilmeden kayda geçer (aşağıdaki tablo).
+- Tip tabanı (DWARF, dwz farkında): `scripts/measurement/dwarf_tip.py`, `ghidra_tip_tabani.py`, `parametre_hizala.py`, `p09_olc.py`; ölçüt taslağı `docs/arge/2026-10-21_k1_k2_onkayit_taslak.md`.
 - Yerleşim (modül sınırı) ölçümü: `scripts/measurement/harita_olc.py`, `yerlesim_urun_olc.py`.
-- Kör insan etiketleme protokolü: `docs/arge/etiket_protokolu_v2.md`, `scripts/measurement/etiket_paketi.py`, `etiket_puan.py`.
-- Native olmayan hat örnekleri: `~/karadul_olcum/dogrulama_native/` (11 dosya; `MANIFEST.json`).
-- Mutasyon sınaması: `scripts/mutation_probe.py` + `scripts/measurement/mutation_specs_*.json`.
+- Kör insan etiketleme protokolü: `docs/arge/etiket_protokolu_v2.md`, `scripts/measurement/etiket_paketi.py`, `etiket_puan.py`. Onarımda tek etiketçili gevşek rubrik kullanıldı (P15c rubrik v2; P12b N0b etiketleri); iki değerlendirici ve kappa hâlâ yok (B3).
+- Native olmayan hat örnekleri: `~/karadul_olcum/dogrulama_native/` (11 dosya; `MANIFEST.json`; K-8).
 
 **Bilinen olumsuz sonuçlar (yeniden keşfetmeyin, üstüne kurun):**
 - **N4 fiil tavanı:** fonksiyon adının fiilini ikilideki kanıttan türetmenin tavanı Mac tmux'ta ≤ %11,1, Mac htop'ta ≤ %20,6. Tablo yuvası kanıtı tmux'ta ≤ %10,6. Kaynak: `docs/arge/2026-11-10_n4/`.
-- **`kebap_ad`:** seçenek adını (`monitor-silence`) fonksiyon adı yapmak 239 yanlış / 0 doğru verdi. Berke'nin kararı (K-2): susturulmayacak, kanıttan hesaplamayla doğru ada yaklaştırılacak. Bu hâlâ açık bir ARGE sorusu (A5).
 - **Adres sırasına göre yerleşim:** geliştirme setinde makro ARI 0,705 (eşit bölme 0,424, eski ürün 0,097). Sinyal GCC 14 / AArch64'e özgü (`function_align 32:16`); GCC 13 ile derlenmiş ikililerin bir kısmında ve Mach-O htop'ta yok. Bayrak arkasında, kapalı. Kaynak: `docs/arge/2026-11-12_yerlesim/`.
-- **CFG-iso eşleme ve hesaplama füzyonu** her ikilide 0 sonuç üretti. Neden yapısal: sorgu düğümleri komut sayısı, şablonlar mnemonik; füzyon eşiği tek kanıtla ulaşılamaz. Onarım paketi P11'de; sonucu DURUM.md'de.
 - **Literatür:** LLM tabanlı yöntemler (SYMGEN, REFORGE vb.) ne ölçekte ne doğrulukta tek başına çözüm değil; ölçüm tanımları bizimkinden cömert. Kaynak: `yontem_taramasi.md`.
-- **İmza veritabanı** (9,2 M ad) kitaplık adlarını yanlış veriyordu (glibc → opencv / psycopg2). K-5 kararıyla yeniden kuruluyor; sonucu DURUM.md'de.
+- **Onarımın olumsuz sonuçları ve tutmayan ön kayıtları** (sayılar DURUM.md'nin paket satırından; ayrıntı paket dosyasında):
+
+| Paket | Ne tutmadı / bedel | Sayı |
+|---|---|---|
+| P05 | doğru parametre adı düştü; ön kayıt sınırı %10 | 141 → 124 (−%12) |
+| P05b | ön kayıt "doğru ≥ 141 ya da kaybın yarısı geri" tutmadı; kanal kesinliği DWARF'a göre %2,7 | 124 → 136; 17 kaybın 5'i geri; 5 100 hükümlü addan 136 doğru |
+| P11 | CFG-iso gerçek kod bankası kesinliği hedef 0,90'ın altında (klon düzeltmesiyle 0,912; kalan 9 yanlış `quotearg_*` ↔ `*_mem` ikizleri); öntanımlı banka AArch64'te eşleşemez; ürüne alınmadı (K-1) | ham 0,882 |
+| P11 | MaxSMT ofset doğru ama kapsam düşük; erişimlerin %37'si dökülmeyen `CAST` / `PTRSUB` yüzünden çözülemiyor | 727 / 9 295 yapı işaretçisi parametresi |
+| P11 → P15c | imza VT'nin adsız fonksiyonlara verdiği adlar tam eşitlikte; gevşek ölçütte (rubrik v2, tek etiketçi) `call_pattern` / `string_ref`; ölçülmüş güvenle ad seçimi gevşek doğruyu 2 düşürdüğü için geri alındı | 0 / 208; 19 / 83 (Wilson alt 0,152) ve 5 / 153 (0,014) |
+| P12a | AD-08 H2 tutmadı (17'si ek değil, stratejinin kendi `file_handle_4` adı; tanım değiştirilmedi) | açıklanamayan yerel ad eki 46 730 → 0; H2 tanımıyla 17 |
+| P12b | `kebap_ad` adları tam eşitlikte hiç doğru değildi; ad kuralı kurulamadı, en iyi sınıf anahtar erişimi (Wilson %4,4–%21,8); AD-02 "rol + öğe" 92 satırda kural yok; H4 / H5 tanım gereği tutmadı | 239 adda 0 doğru; 5 / 49; N0b gevşek 6 / 76 |
+| P-S3 | H5 tutmadı: Homebrew `gcat` (Mach-O, gnulib 2024+) varlık kanıtı yetmedi, kanal sustu → P-S3b'de onarıldı (Mach-O kabul seti 2 / 5 → 5 / 5) | 1 / 2 |
+| P16c | "Decompiler Switch Analysis" otomatik analizin %55'i, ama kapatınca `.c` / JSON değişiyor → kabul ölçütünü geçmedi, yalnız ayar; decompile işçi sayısı yük altında ölçülemedi | — |
+| P13b | IMZA-16 (C++ RTTI üretici adımı) yapılmadı; kanal tarafı hazır, durum `desteklenmiyor` | — |
+| P13a | H6 tutmadı (Mac htop ve `defaults`'ta aday yok); P16a'nın 2 doğru `faz1` adı da gitti | birleştirici kaydı 8 / 10 |
+| P16a | GHIDRA-16 dizgi bağı (`808a7f8`) kol B'de B2 / B3 tutmadı → bekletildi; P13a'da aynı ön kayıtla alındı (`faz1` adı 0) | 60 `faz1` adı, 58'i yanlış |
+| P08 | H6 tutmadı: Mac htop'ta dizgi katmanı `entry`'ye sahte aday (koda uygulanmıyor) | — |
+| P09 | öz-kanıtsız sayacı %50 düşmedi; DWARF'a göre yanlış tip arttı (bağlamanın kaldırılmasından) | +3 |
+| P06 | bedel: içerikçe doğru yapısal algoritma etiketleri de düştü (zstd, sqlite3, openssl) | 10 etiket |
+| P15c | P08'in "`_` geri düşüşünü kapat" önerisi ölçüldü, uygulanmadı | 4 269 doğru içe aktarımı siliyordu |
+
+- **Hesaplama füzyonu** artık ad kanalı olarak kapalı (`computation.enable_fusion_naming`, P11); güveni ölçülmüş kesinliğin Wilson alt sınırı, ölçülmemiş kaynak çekimser.
+- **İmza veritabanı:** yeniden kuruldu (K-5; şema 2, 9 092 473 ad; PyPI kaynağı dışlandı). Kitaplık iddiası kesinliği 0,695 → 0,975 — bu ölçü ikilinin kendi içe aktarım tablosuna karşıdır, ad kesinliği değildir (P08). Kalan 711 yanlışın 616'sı iki sınıftı (`__cxa_*`, `acl_*`); P15c kitaplık iddiasını ikilinin bağlanma kanıtına (ELF sürüm gereksinimi + `DT_NEEDED`) bağladı, 6 742 kaydın iddiası düzeldi.
 
 ### 1.1 Onarımdan sonra (2026-11-18 akşamı, sürüm 1.24.1)
 

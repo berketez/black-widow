@@ -8,4 +8,5 @@
 ## Adımlar
 | Adım | Bölüm | Durum | Commit |
 |---|---|---|---|
-| 1 | Başlık (durum satırı, okuma sırası) + §0 okuma tablosu | bitti | (bu commit) |
+| 1 | Başlık (durum satırı, okuma sırası) + §0 okuma tablosu | bitti | 41ea923 |
+| 2 | §1: iki sütunlu ad tablosu (1.22.1 → a62f15e), ölçüm altyapısı (urun_kos hijyeni, masum kapı setleri, Ghidra'sız yeniden oynatma, toplu BSim, mutasyon düzeni), olumsuz sonuçlar tablosu (16 satır; kaynak DURUM.md) | bitti | (bu commit) |
