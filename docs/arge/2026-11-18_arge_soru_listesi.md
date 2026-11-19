@@ -195,7 +195,7 @@ Her sorunun altında aynı alanlar var:
 
 ### B. Ad doğruluğu nasıl artar? (kesinlik ve dürüst güven)
 
-**B1. 672 yanlış ad nereden geliyor?**
+**B1. Yanlış adlar nereden geliyor? (1.22.1'de 672)**
 - **Soru:** Yanlış adların kanal, alt kanal, boyut tabakası ve program bazında kırılımı nedir? Her kanalın ölçülmüş kesinliği nedir; hangileri bir kapıyla düzeltilir, hangileri yöntem değişikliği ister?
 - **Doğrulayıcı:** `urun_olc.py` kanal kırılımı, a62f15e tabanında (`docs/arge/2026-11-19_birlesik_olcum/sonuc.md`).
 - **Onarım sonrası:** kırılım ⟨ÖLÇÜM: kanal kırılımı farkı⟩ (§1). Onarımın kapattığı yanlış ad sınıfları (alt küme ölçümleri): kebap 239 (P12b), gnulib coreutils 217 → 1 (P-S3), rol adı 70 → 0 (P12a), `exact_multi` 42 → 0 (P13a). Yeni alt soru: kalan yanlışların kaçı süren / sıradaki paketlerin (P12c, P08b) kapsamına düşüyor?
@@ -425,12 +425,14 @@ Kaynak: `gonderim/OKU.md` "Atanmamış bulgular" ve DURUM.md'nin "Kalan" notlar�
 
 ## 4. Ana oturumun öncelik önerisi (yalnız bir görüş; Mythos itiraz edebilir)
 
-0. **Onarım sonrası birleşik ürün ölçümü (119 ikili) önce.** Bütün planlar o tabana göre yazılır (§1.1).
-1. **G1 + B3 önce.** Ölçü tanımı ve genelleme sorusu çözülmeden hiçbir "iyileşme" yorumlanamaz.
-2. **A1, kapsam bütçesi.** Ad sayısını artırmanın nerede mümkün olduğunu sayıyla gösterir; hangi hattın değerli olduğunu bu seçer.
-3. **A3, dil çalışma zamanı üst verisi.** Mac'te ürün bugün 0 ad veriyor. Kanıt güçlü, deterministik, yanlış oranı düşük olması beklenir. En ucuz büyük kazanç adayı.
-4. **A2, kitaplık kodu ve D1, kayıp sıfır.** Mühendislik işi ağırlıklı, riski düşük.
-5. **A5 ve F.** En belirsiz ve en araştırmacı hatlar; tek hatta uzun süre kalma kuralıyla yürütülür.
+0. **Taban: birleşik ürün ölçümü (a62f15e, 119 ikili).** Bütün planlar bu tabana göre yazılır (§1, `docs/arge/2026-11-19_birlesik_olcum/sonuc.md`). Süren ve sıradaki paketler (§1.1) tabanı kaydırabilir; her plan hangi tabana göre yazıldığını belirtir.
+1. **G1 + B3 + G4 önce.** Ölçü tanımı, genelleme ve ölçüm zemininin kararlılığı çözülmeden hiçbir "iyileşme" yorumlanamaz. G4'ün açık kalemi P16d'de.
+2. **A1, kapsam bütçesi.** Ad sayısını artırmanın nerede mümkün olduğunu sayıyla gösterir; Berke'nin hipotezinin iki kolunun (kitaplık kopyası / programın kendi kodu) payını da bu verir.
+3. **A3 + I2 + I4, üst veri ve Mach-O.** K-4 kanalları bağlandı (P13b) ama soyulmuş ELF'te ad etkisi yok; Mac'te 1.22.1'de 0 ad (a62f15e: ⟨ÖLÇÜM: Mac htop / tmux ad sayısı ve doğrusu⟩). Kanıt deterministik; düşman girdi denetimi (I4) kanal açılmadan önce.
+4. **A5 + I1 (+ H2), rol → ad hattı.** K-2'nin açık sorusu ve Berke'nin hipotezi; GTK / GLib aday nüfusu bağımsız sınamayı mümkün kılıyor. B3 ölçüsüne bağlı; tek hatta uzun süre kalma kuralıyla.
+5. **A2 + D1, kitaplık kodu ve kayıp sıfır.** Mühendislik ağırlıklı; P08b (FLIRT seçici VT) ve P12c sonuçlarını bekler.
+6. **C2 / H5 / I6 (yapı) ve E1 / E2 (hız).** P10b'nin sonucuna ve boş makine ölçümüne bağlı.
+7. **F.** Önce ana oturumun gerçek model duman listeleri (`P21.md`, `P22b.md`, `P22e.md`); F1 / F2 ancak ondan sonra.
 
 ## 5. Mythos'tan beklenen plan biçimi (seçilen her hat için)
 
@@ -448,6 +450,7 @@ Kaynak: `gonderim/OKU.md` "Atanmamış bulgular" ve DURUM.md'nin "Kalan" notlar�
 
 ## 6. Bu listenin sınırları
 
-- Sorular onarım sürerken yazıldı. Onarım sonrası sayılar (DURUM.md) bazı soruları gereksiz kılabilir ya da yenilerini doğurabilir. Mythos önce DURUM.md'yi okumalı.
+- Liste onarımın son paketleri sürerken kapatıldı (Berke, 2026-11-19: "mythosa gelelim hemen"). **Taban a62f15e.** Süren paketlerin (P12c, P16d, P-S4, P22c, P02b) ve sıradakilerin (P18, P10b, P05c, P08b, P03b, P20b, P22h, P23) etkisi bu tabanda yok; her biri kendi ön kayıtlı ölçümünü taşır. Ad ya da tip davranışını değiştirenler (P12c, P16d, P18, P10b, P05c, P08b) tabanı kaydırabilir; o zaman ilgili "Onarım sonrası" satırı ve plan yeniden tabanlanır.
+- "Onarım sonrası" satırlarındaki paket sayıları alt küme ölçümleridir (DURUM.md); birleşik sayının yerine geçmez. ⟨ÖLÇÜM⟩ yer tutucuları dolmadan liste Mythos'a verilmez.
 - Literatür sayıları bu belgede doğrulanmadı. Ayrıntı ve tarih `yontem_taramasi.md`'de; değişen konular (model sürümleri, araçlar) yeniden taranmalı.
 - "Kodun neredeyse tamamı" için kesin bir hedef bugün tanımlı değil. D1–D4 bu hedefi ölçülebilir kılmak için yazıldı.
