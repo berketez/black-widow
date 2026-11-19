@@ -16,7 +16,13 @@ Kurallar (ilk tutan neden kazanır; sıra :data:`REJECT_REASONS`)
 2. ``invalid_c_keyword``: ad bir C anahtar sözcüğü (:data:`C_KEYWORDS`).
 3. ``invalid_type_name``: ad bir C/stdint tip adı ya da Ghidra tip sözcüğü
    (:data:`FILE_SCOPE_TYPE_NAMES`; yerel adda :data:`BODY_TYPE_NAMES`).
-4. ``collides_with_existing_function``: ad ikilide BAŞKA bir fonksiyonun adı (ithal, export ya
+4. ``ghidra_placeholder``: ad Ghidra'nın yer tutucusu (:data:`GHIDRA_PLACEHOLDER_RE`): switch
+   etiketi ``caseD_<n>``, switch tablosu ``switchD_<adres>`` / ``switchdataD_<adres>``, etiket
+   ``LAB_<adres>``. Fonksiyonun ya da verinin adı değildir; Ghidra'nın FunctionID / ANALYSIS
+   kaynağı bunları ad olarak bildiriyor ve birleştirici ``function_id`` adayı yapıyordu
+   (P13a kalanı b; P12c kalem 6: 14 ikilide zstd ve pzstd'de 6'şar ``caseD_0`` / ``caseD_1``,
+   ``_2`` / ``_3`` ekleriyle). Yalnız ikili kapsamlı adda sorulur.
+5. ``collides_with_existing_function``: ad ikilide BAŞKA bir fonksiyonun adı (ithal, export ya
    da Ghidra'nın verdiği ad; kaynak ``ghidra_functions.json``). Yalnız ikili kapsamlı adda
    sorulur. İthal fonksiyon (thunk ya da dış) baştaki tek ``_`` soyulmuş adıyla da sayılır:
    Mach-O'da Ghidra ithal adını ``_gettimeofday`` diye verir, C'deki adı ``gettimeofday``'dir
@@ -27,9 +33,9 @@ Kurallar (ilk tutan neden kazanır; sıra :data:`REJECT_REASONS`)
 Kapsam
 ------
 - İkili kapsamlı ad (fonksiyon, genel veri; c_namer'ın genel anahtarları ve kendi adını
-  değiştiren fonksiyon): dört kural da geçerli. Bu adlar çıktı projesinde dosya kapsamındadır;
+  değiştiren fonksiyon): beş kural da geçerli. Bu adlar çıktı projesinde dosya kapsamındadır;
   tip adı ``types.h``'deki typedef'le, var olan fonksiyon adı o fonksiyonla çakışır.
-- Yerel ad (parametre, yerel değişken): 1-3 geçerli, 4 sorulmaz. Yerel bir değişkenin bir
+- Yerel ad (parametre, yerel değişken): 1-3 geçerli, 4 ve 5 sorulmaz. Yerel bir değişkenin bir
   fonksiyonla aynı adı taşıması C'de geçerli gölgelemedir (``time``, ``index``, ``error``
   gerçek kaynakta da yerel addır). Kural 3 yerelde yalnız fonksiyon GÖVDESİNDE tip olarak geçen
   sözcükleri reddeder: ``byte`` adlı bir yerel aynı gövdedeki ``(byte)x`` cast'ini bozar.
@@ -116,9 +122,16 @@ DEFINITION_VERSION = 1
 REASON_NOT_IDENTIFIER = "invalid_c_identifier"
 REASON_KEYWORD = "invalid_c_keyword"
 REASON_TYPE_NAME = "invalid_type_name"
+REASON_GHIDRA_PLACEHOLDER = "ghidra_placeholder"
 REASON_COLLISION = "collides_with_existing_function"
 # Sınama sırası: ilk tutan neden kazanır
-REJECT_REASONS = (REASON_NOT_IDENTIFIER, REASON_KEYWORD, REASON_TYPE_NAME, REASON_COLLISION)
+REJECT_REASONS = (REASON_NOT_IDENTIFIER, REASON_KEYWORD, REASON_TYPE_NAME,
+                  REASON_GHIDRA_PLACEHOLDER, REASON_COLLISION)
+
+# Ghidra'nın yer tutucu adları (kural 4). ``unique_name`` eki (``caseD_0_2``) önerilen adda yoktur;
+# ek c_namer / birleştirici seçiminden sonra eklenir. Aynı aile ``lm/protocol.py``'nin Ghidra
+# otomatik ad desenindedir.
+GHIDRA_PLACEHOLDER_RE = re.compile(r"(?:caseD|switchD|switchdataD|LAB)_[0-9A-Fa-f]+")
 
 # ---------------------------------------------------------------------------
 # C anahtar sözcükleri
@@ -249,16 +262,18 @@ def reject_reason(
     existing_functions: Mapping[str, str] | None = None,
     own_name: str = "",
 ) -> str | None:
-    """Adın ret nedeni (kural 1-4); ad verilebilirse ``None``.
+    """Adın ret nedeni (kural 1-5); ad verilebilirse ``None``.
 
     ``existing_functions``: :func:`existing_function_names` sözlüğü (ad → sahibinin Ghidra adı).
-    Yerel adda (``local=True``) çakışma sorulmaz.
+    Yerel adda (``local=True``) yer tutucu ve çakışma sorulmaz.
     ``own_name``: adlandırılan simgenin bugünkü adı. Adın sahibi bu simgeyse çakışma sayılmaz:
     fonksiyon kendi adıyla çakışmaz (özdeş eşleme çıktıyı değiştirmez).
     """
     reason = lexical_reject_reason(name, local=local)
     if reason is not None:
         return reason
+    if not local and isinstance(name, str) and GHIDRA_PLACEHOLDER_RE.fullmatch(name):
+        return REASON_GHIDRA_PLACEHOLDER
     if not local and existing_functions and isinstance(name, str):
         owner = existing_functions.get(name)
         if owner is not None and owner != own_name:

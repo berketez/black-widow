@@ -112,6 +112,30 @@
       "test": "tests/test_p12c_on_ad_guveni.py::test_olculmemis_kanal_none",
       "find": "    kind = meta[\"kind\"] if meta else None\n    return measured_channel_confidence(",
       "replace": "    kind = meta[\"kind\"] if meta else None\n    if meta is None:\n        return 0.85\n    return measured_channel_confidence("
+    },
+    {
+      "id": "p12c_k6_caseD_yok",
+      "desc": "6: caseD_ yer tutucu sayılmaz (FID'nin switch etiketi ad olur)",
+      "module": "karadul/reconstruction/name_validity.py",
+      "test": "tests/test_p12c_yer_tutucu.py::test_birlestirici_fid_yer_tutucusunu_uygulamaz",
+      "find": "GHIDRA_PLACEHOLDER_RE = re.compile(r\"(?:caseD|switchD|switchdataD|LAB)_[0-9A-Fa-f]+\")",
+      "replace": "GHIDRA_PLACEHOLDER_RE = re.compile(r\"(?:switchD|switchdataD|LAB)_[0-9A-Fa-f]+\")"
+    },
+    {
+      "id": "p12c_k6_onek_eslesmesi",
+      "desc": "6: yer tutucu deseni yalnız önekle sınanır (caseD_0x gibi gerçek ad reddedilir)",
+      "module": "karadul/reconstruction/name_validity.py",
+      "test": "tests/test_p12c_yer_tutucu.py::test_benzer_gercek_adlar_serbest",
+      "find": "    if not local and isinstance(name, str) and GHIDRA_PLACEHOLDER_RE.fullmatch(name):",
+      "replace": "    if not local and isinstance(name, str) and GHIDRA_PLACEHOLDER_RE.match(name):"
+    },
+    {
+      "id": "p12c_k6_yerelde_de",
+      "desc": "6: yer tutucu kuralı yerel adda da sorulur (kapsam kayar)",
+      "module": "karadul/reconstruction/name_validity.py",
+      "test": "tests/test_p12c_yer_tutucu.py::test_yer_tutucu_ad_sayilmaz",
+      "find": "    if not local and isinstance(name, str) and GHIDRA_PLACEHOLDER_RE.fullmatch(name):",
+      "replace": "    if isinstance(name, str) and GHIDRA_PLACEHOLDER_RE.fullmatch(name):"
     }
   ]
 }

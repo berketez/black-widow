@@ -138,7 +138,7 @@ def test_tanimlayici_bicimi():
 def test_neden_sirasi_ve_cakisma():
     var = nv.existing_function_names((ad, False) for ad in ("write", "uint64_t", "break", "kendi"))
     assert nv.REJECT_REASONS == (nv.REASON_NOT_IDENTIFIER, nv.REASON_KEYWORD, nv.REASON_TYPE_NAME,
-                                 nv.REASON_COLLISION)
+                                 nv.REASON_GHIDRA_PLACEHOLDER, nv.REASON_COLLISION)
     assert (nv.REASON_KEYWORD, nv.REASON_TYPE_NAME, nv.REASON_COLLISION) == (
         "invalid_c_keyword", "invalid_type_name", "collides_with_existing_function")
     # ilk tutan neden kazanır: sözcük nedenleri çakışmadan önce
