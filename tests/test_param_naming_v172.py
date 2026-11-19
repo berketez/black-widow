@@ -491,7 +491,12 @@ class TestEnhancedTypeHeuristics:
         assert result.success
         names = {sn.original_name: sn.semantic_name for sn in result.names
                  if sn.source == "type_heuristic"}
-        assert names.get("param_2") == "n_size"
+        # P05c: döngü sınırı sayı kanıtıdır, ama sayı şablonları (count / n_size …) DWARF'lı G
+        # setinde kanal eşiğini (%6) geçmedi → ad koda yazılmaz, köken kaydında aday
+        assert "param_2" not in names
+        adaylar = {(c["param"], c["name"], c["reason"].rsplit("P05c: ", 1)[-1])
+                   for c in result.provenance["candidates"]}
+        assert ("param_2", "n_size", "kanıt var, kural ölçümde eşiğin altında (aday)") in adaylar
 
     def test_char_ptr_becomes_str(self, namer, tmp_workspace):
         """char * param -> 'str' or similar text name."""
