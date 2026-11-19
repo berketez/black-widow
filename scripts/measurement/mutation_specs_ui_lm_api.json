@@ -1,0 +1,245 @@
+{
+  "_comment": "P22c1 (2026-11-19) KaradulLM arayüz sunucusu uçlarının mutasyon koruması: k3 tek komutluk izin listesi + oturum açma, k1 §4.6 uçları, k2 uzun yoklama, k4 yaşam döngüsü (kapanış, alan değişimi, boşta, yetim), k5 kabul yolu (model bölümü), k6 koruma (jeton). Her mutant bir korumayı bozar; test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ui_lm_api.json",
+  "mutants": [
+    {
+      "id": "k3_izin_listesi_yok",
+      "desc": "izin listesi kaldırılır: her komut oturum açar",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if not lm_repl.is_allowed_command(komut):\n        _lm_audit_refused(komut)",
+      "replace": "    if False:\n        _lm_audit_refused(komut)"
+    },
+    {
+      "id": "k3_ret_kaydi_yok",
+      "desc": "reddedilen komut denetim kaydına yazılmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if not lm_repl.is_allowed_command(komut):\n        _lm_audit_refused(komut)",
+      "replace": "    if not lm_repl.is_allowed_command(komut):\n        pass"
+    },
+    {
+      "id": "k3_ret_kaydinda_metin",
+      "desc": "ret kaydı komut metnini yazar",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "**lm_repl.command_audit_fields(komut))",
+      "replace": "komut=str(komut))"
+    },
+    {
+      "id": "k3_analiz_dislamasi_yok",
+      "desc": "oturum arayüzün süren analizini görmez (G6)",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "analysis_running=lambda: _running_job() is not None)",
+      "replace": "analysis_running=lambda: False)"
+    },
+    {
+      "id": "k3_sunucu_ikilisi_denetlenmez",
+      "desc": "llama-server ikilisi check_server_binary'den geçmez",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    binary = check_server_binary(Path(srv_bin), root, sha)",
+      "replace": "    binary = Path(srv_bin)"
+    },
+    {
+      "id": "k3_model_tek_basina",
+      "desc": "sunucu ve model birlikte istenmez",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if not (srv_bin and model):",
+      "replace": "    if not (srv_bin or model):"
+    },
+    {
+      "id": "k1_kapali_oturuma_yazma",
+      "desc": "yazma uçları kapanmış son oturumu da bulur",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if not open_only and last is not None and last.id == oturum:",
+      "replace": "    if last is not None and last.id == oturum:"
+    },
+    {
+      "id": "k1_girdi_reddi_200",
+      "desc": "reddedilen girdi 200 döner",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    return r if r.get(\"kabul\") else {\"__code\": 400, **r}",
+      "replace": "    return r"
+    },
+    {
+      "id": "k1_durdur_kaynagi",
+      "desc": "durdurmanın iptal kaynağı analist değil",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "bool(s.cancel(lm_session.CANCEL_ANALYST))",
+      "replace": "bool(s.cancel(\"kapanis\"))"
+    },
+    {
+      "id": "k1_denetim_baska_oturumdan",
+      "desc": "eski oturumun önerisine bu oturumun denetim raporu yapışır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "audits.get(p.get(\"gorev\")) if p.get(\"oturum\") == s.id else None",
+      "replace": "audits.get(p.get(\"gorev\"))"
+    },
+    {
+      "id": "k2_bekle_tavani_yok",
+      "desc": "uzun yoklamanın bekleme tavanı kalkar",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "timeout=min(int(bekle), _LM_POLL_MAX_SEC)",
+      "replace": "timeout=int(bekle)"
+    },
+    {
+      "id": "k2_cevap_tavani_yok",
+      "desc": "bir cevaptaki olay sayısı sınırsız",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": ", limit=_LM_POLL_LIMIT)",
+      "replace": ")"
+    },
+    {
+      "id": "k2_parametre_denetimi_yok",
+      "desc": "sonra / bekle rakam denetimi kalkar",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if not (_LM_UINT_RE.fullmatch(sonra) and _LM_UINT_RE.fullmatch(bekle)):",
+      "replace": "    if not (sonra and bekle):"
+    },
+    {
+      "id": "k4_kill_jobs_oturum_yok",
+      "desc": "arayüz kapanışı oturumu ve model sunucusunu kapatmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    _lm_close_current(lm_session.CLOSE_UI, wait=_LM_SHUTDOWN_JOIN_SEC)",
+      "replace": "    pass"
+    },
+    {
+      "id": "k4_alan_degisimi_kapatmaz",
+      "desc": "çalışma alanı değişince oturum açık kalır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "        changed = ws != WS",
+      "replace": "        changed = False"
+    },
+    {
+      "id": "k4_tazeleme_kapatir",
+      "desc": "aynı alanın tazelenmesi (ad düzeltme) oturumu kapatır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if changed:\n        _lm_close_current",
+      "replace": "    if True:\n        _lm_close_current"
+    },
+    {
+      "id": "k4_bekci_bosta_yok",
+      "desc": "ebeveyn bekçisi boşta denetimini koşmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "        _lm_idle_tick()\n",
+      "replace": "        pass\n"
+    },
+    {
+      "id": "k4_bosta_durum_olayi_yok",
+      "desc": "boşta durdurmada arka_uc_durumu yayılmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "        s._backend_state_event()   # oturumun",
+      "replace": "        pass   # oturumun"
+    },
+    {
+      "id": "k4_yasayan_cli_sunucusu",
+      "desc": "ebeveyni yaşayan sunucu da öldürülür",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if ppid and ppid != \"1\":",
+      "replace": "    if False:"
+    },
+    {
+      "id": "k4_ikili_adi_denetlenmez",
+      "desc": "kayıttaki ikilinin adı denetlenmez",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if binary.name != \"llama-server\":",
+      "replace": "    if not binary.name:"
+    },
+    {
+      "id": "k5_ozet_farki",
+      "desc": "çalışma alanının ikilisi farklıyken de yazılır",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "            if bh != s.binary_sha256:",
+      "replace": "            if bh is None:"
+    },
+    {
+      "id": "k5_model_adi_cakismasi",
+      "desc": "aynı ad iki düğüme model adı olur",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "                if other != key and rec[\"name\"] == p[\"deger\"]:",
+      "replace": "                if False:"
+    },
+    {
+      "id": "k5_hukum_on_denetimi_yok",
+      "desc": "hükmü ret/boş öneri ön denetimden geçer",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "            if p.get(\"hukum\") not in overrides._MODEL_VERDICTS:",
+      "replace": "            if False:"
+    },
+    {
+      "id": "k5_p17_ad_kurali_yok",
+      "desc": "ad P17 kuralından geçmeden karara gider",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "                overrides._validate_name(p[\"deger\"])",
+      "replace": "                pass"
+    },
+    {
+      "id": "k5_onbellek_tazelenmez",
+      "desc": "kabulden sonra /api/model eski model katmanını verir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "        _CACHE.pop(\"model\", None)   # sonraki",
+      "replace": "        pass   # sonraki"
+    },
+    {
+      "id": "k5_elle_ad_ustunlugu_yok",
+      "desc": "elle adlı düğümde model adı da gösterilir",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "                if a in addr_set and a not in manual:",
+      "replace": "                if a in addr_set:"
+    },
+    {
+      "id": "k5_model_elle_bolume",
+      "desc": "kabul edilen model adı elle (motorun okuduğu) bölüme yazılır",
+      "module": "karadul/core/overrides.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "        section[addr] = rec",
+      "replace": "        data[\"overrides\"][addr] = rec"
+    },
+    {
+      "id": "k5_motor_model_okur",
+      "desc": "all_names model bölümünü de döndürür (motor okur)",
+      "module": "karadul/core/overrides.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "for a, rec in data.get(\"overrides\", {}).items()",
+      "replace": "for a, rec in {**data.get(\"overrides\", {}), **data.get(\"model\", {})}.items()"
+    },
+    {
+      "id": "k5_ret_hukmu_yazilir",
+      "desc": "denetimin reddettiği ad depoya yazılır",
+      "module": "karadul/core/overrides.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "    if verdict not in _MODEL_VERDICTS:",
+      "replace": "    if verdict is None:"
+    },
+    {
+      "id": "k6_lm_uclari_jetonsuz",
+      "desc": "/api/lm/ uçları jeton istemez",
+      "module": "ui/server.py",
+      "test": "tests/test_ui_lm_api.py",
+      "find": "needs_token=path.startswith(\"/api/\") and path != \"/api/ping\"",
+      "replace": "needs_token=path.startswith(\"/api/\") and not path.startswith((\"/api/ping\", \"/api/lm/\"))"
+    }
+  ]
+}

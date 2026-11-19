@@ -191,7 +191,7 @@ def test_komut_model_ikilisi_denetlenir_surec_acilmaz(srv, tmp_path, monkeypatch
 
 from karadul.lm import backend as B  # noqa: E402
 from tests.test_lm_session import AdArka  # noqa: E402
-from tests.test_lm_tools import A, fun  # noqa: E402
+from tests.test_lm_tools import A, NOREC, fun  # noqa: E402
 
 BEKLE = 20.0
 
@@ -282,10 +282,16 @@ def test_oneriler_denetim_ayrintisi_sonuc_ve_ret(srv, monkeypatch):
     st, b = req(srv, "GET", f"/api/lm/oneriler?oturum={o}")
     assert st == 200 and b["oneriler"][0]["durum"] == "ret" and b["oneriler"][0]["denetim"] is not None
     assert req(srv, "POST", "/api/lm/oneri/ret", {"oneri_kimligi": "p1", "neden": "y"})[0] == 409
-    # yeni oturum: eski oturumun önerisi listede, akışı yok → denetim None (uydurulmaz)
-    o2 = ac(srv, monkeypatch, AdArka())
+    # yeni oturum: eski oturumun önerisi listede, akışı yok → denetim None (uydurulmaz). Yeni oturumun görevi de
+    # "g1" kimliğini taşır: eski önerinin görev kimliğiyle karışmamalı.
+    o2 = ac(srv, monkeypatch, AdArka(isim="close_connection"))
+    girdi(srv, o2, "/kip adlandir")
+    girdi(srv, o2, f"/ad {fun(NOREC)}")
+    assert S.current_session().wait_idle(BEKLE)
     b = req(srv, "GET", f"/api/lm/oneriler?oturum={o2}")[1]
-    assert b["oneriler"][0]["oturum"] == o and b["oneriler"][0]["denetim"] is None
+    eski, yeni = b["oneriler"]
+    assert eski["oturum"] == o and eski["gorev"] == yeni["gorev"] == "g1"
+    assert eski["denetim"] is None and yeni["denetim"] is not None and yeni["oturum"] == o2
 
 
 def test_durdur_suren_isi_iptal_eder(srv, monkeypatch):
@@ -387,7 +393,13 @@ def test_olaylar_uzun_yoklama_olayla_hemen_doner_olaysiz_bekler(srv, monkeypatch
     gecen = time.monotonic() - t0
     assert st == 200 and b["olaylar"] == [] and b["son"] == son and 0.9 <= gecen < 5
     assert s.stream.last_seq == son
-    # bekle tavanı: 999 istense de en çok _LM_POLL_MAX_SEC (burada olay 0,3 sn'de gelir)
+    # bekle tavanı: olaysız istekte 30 istense de en çok _LM_POLL_MAX_SEC (testte 1 sn'ye indirildi)
+    monkeypatch.setattr(srv, "_LM_POLL_MAX_SEC", 1)
+    t0 = time.monotonic()
+    st, b = yokla(srv, o, son, bekle=30, timeout=60)
+    assert st == 200 and b["olaylar"] == [] and time.monotonic() - t0 < 5
+    # olay gelince bekleme hemen biter (olay 0,3 sn'de gelir)
+    monkeypatch.setattr(srv, "_LM_POLL_MAX_SEC", 25)
     threading.Timer(0.3, lambda: s._line("geldi")).start()
     t0 = time.monotonic()
     st, b = yokla(srv, o, son, bekle=999)
@@ -445,9 +457,9 @@ def test_kill_jobs_ve_ebeveyn_bekcisi_oturumu_ve_arka_ucu_kapatir(srv, monkeypat
     class Cikis(Exception):
         pass
 
-    monkeypatch.setattr(srv.os, "getppid", lambda: 1)
-    monkeypatch.setattr(srv.os, "_exit", lambda code: (_ for _ in ()).throw(Cikis(code)))
-    with pytest.raises(Cikis):
+    with monkeypatch.context() as mp, pytest.raises(Cikis):
+        mp.setattr(srv.os, "getppid", lambda: 1)
+        mp.setattr(srv.os, "_exit", lambda code: (_ for _ in ()).throw(Cikis(code)))
         srv._parent_watchdog()
     assert _bitti(s3)["neden"] == "arayuz_kapandi" and "cikis" in arka3.stops
 
@@ -479,6 +491,16 @@ def test_bosta_kapatma_ve_durum_olayi(srv, monkeypatch):
     assert srv._lm_idle_tick() is True and arka.stops == ["bosta"]
     durumlar = [e["durum"] for e in olaylar(o) if e["tur"] == "arka_uc_durumu"]
     assert durumlar[-1] != "hazir" and len(durumlar) >= 2
+    # ebeveyn bekçisi her turda boşta denetimini koşar (ebeveyn yaşıyor: çıkış yok)
+    arka.start()
+
+    class Tur(Exception):
+        pass
+
+    with monkeypatch.context() as mp, pytest.raises(Tur):
+        mp.setattr(srv.time, "sleep", lambda sn: (_ for _ in ()).throw(Tur()))
+        srv._parent_watchdog()
+    assert arka.stops == ["bosta", "bosta"] and not s.closed
 
 
 class _Ps:
@@ -538,7 +560,7 @@ def test_acilista_yetim_model_sunucusu_toplanir(srv, tmp_path):
 #     naming_map'e DEĞİL); motor okumaz; arayüz ayrı katmanda gösterir
 
 from karadul.lm import notebook as N  # noqa: E402
-from tests.test_lm_tools import B as FB, NOREC  # noqa: E402
+from tests.test_lm_tools import B as FB  # noqa: E402
 
 
 def oneri(s, adres, deger, *, tur="ad", hukum="sinandi_celiski_yok"):
@@ -629,6 +651,93 @@ def test_kabul_yeniden_denetim_ve_on_denetim_yazmaz(srv, monkeypatch):
     st, b = kabul(srv, p_ok)
     assert st == 500 and b["tamam"] is False and "model bölümüne yazılamadı" in b["hata"] and "disk dolu" in b["hata"]
     assert s.notebook.proposal(p_ok)["durum"] == "kabul"
+
+
+
+# --------------------------------------------------------------------------------------------
+# (6) koruma: her /api/lm/ ucunda Host + Origin + jeton (T-4); gövde sınırı; uçlar süreç başlatmaz (T-1)
+
+import ast  # noqa: E402
+
+LM_UCLARI = {
+    ("POST", "/api/lm/terminal/komut"), ("POST", "/api/lm/terminal/girdi"), ("GET", "/api/lm/olaylar"),
+    ("POST", "/api/lm/durdur"), ("GET", "/api/lm/durum"), ("GET", "/api/lm/sonuc"), ("GET", "/api/lm/oneriler"),
+    ("POST", "/api/lm/oneri/kabul"), ("POST", "/api/lm/oneri/ret"), ("POST", "/api/lm/terminal/kapat"),
+}
+
+
+def test_uc_kumesi_tasarim_tablosuyla_ayni(srv):
+    kayitli = ({("GET", p) for p in srv._LM_GET} | {("POST", p) for p in srv._LM_POST}
+               | {("POST", "/api/lm/terminal/komut")})
+    assert kayitli == LM_UCLARI                                            # tasarım §4.6'nın 10 ucu
+
+
+def test_her_ucta_host_origin_jeton_korumasi(srv, monkeypatch):
+    o = ac(srv, monkeypatch, AdArka())
+    s = S.current_session()
+    once = s.stream.last_seq
+    for yontem, yol in sorted(LM_UCLARI):
+        tam = yol + (f"?oturum={o}&sonra=0&bekle=0&kimlik=r1" if yontem == "GET" else "")
+        govde = {"oturum": o, "komut": "karadullm", "metin": "/yardim", "oneri_kimligi": "p1", "neden": "x"}
+        for ad, kw in (("jetonsuz", {"token": None}), ("yanlış jeton", {"token": "x" * len(_TOKEN)}),
+                       ("yabancı Host", {"host": "evil.example:80"}),
+                       ("rebinding Host", {"host": f"evil.example:{srv._PORT}"}),
+                       ("yabancı Origin", {"origin": "http://evil.example"}),
+                       ("başka kapı Origin", {"origin": f"http://127.0.0.1:{srv._PORT + 1}"})):
+            st, b = req(srv, yontem, tam, govde if yontem == "POST" else None, **kw)
+            assert st == 403, (yol, ad, st, b)
+        if yontem == "POST":                                               # gövde sınırı
+            st, _ = req(srv, yontem, yol, raw=b"{" + b" " * (srv._MAX_BODY + 1) + b"}")
+            assert st == 413, yol
+    # hiçbir reddedilen istek oturuma dokunmadı: olay yok, oturum açık, karar yok
+    assert s.stream.last_seq == once and S.current_session() is s and s.notebook.proposals() == []
+    # aynı köken + jeton: geçer
+    assert req(srv, "GET", "/api/lm/durum", origin=f"http://127.0.0.1:{srv._PORT}")[0] == 200
+    assert req(srv, "GET", "/api/lm/durum", host=f"localhost:{srv._PORT}")[0] == 200
+
+
+def test_uclar_surec_baslatmaz(srv, monkeypatch):
+    """T-1 / G1 (arayüz tarafı): bütün uçlardan geçen bir oturum akışında süreç başlatan çağrı 0."""
+    cagri = []
+
+    def yasak(ad):
+        def f(*a, **k):
+            cagri.append(ad)
+            raise AssertionError(f"süreç başlatıldı: {ad}")
+        return f
+
+    for ad in ("Popen", "run", "call", "check_call", "check_output"):
+        monkeypatch.setattr(srv.subprocess, ad, yasak(ad))
+    for ad in ("system", "posix_spawn", "posix_spawnp", "fork", "execv", "execve"):
+        monkeypatch.setattr(srv.os, ad, yasak(ad))
+    o = ac(srv, monkeypatch, AdArka())
+    girdi(srv, o, "/yardim")
+    girdi(srv, o, "/kip adlandir")
+    girdi(srv, o, f"/ad {fun(A)}")
+    assert S.current_session().wait_idle(BEKLE)
+    for yol in ("/api/lm/durum", f"/api/lm/olaylar?oturum={o}&sonra=0", f"/api/lm/oneriler?oturum={o}",
+                f"/api/lm/sonuc?oturum={o}&kimlik=r1"):
+        assert req(srv, "GET", yol)[0] == 200, yol
+    assert kabul(srv, "p1")[0] == 200
+    assert req(srv, "POST", "/api/lm/durdur", {"oturum": o})[0] == 200
+    assert req(srv, "POST", "/api/lm/terminal/kapat", {"oturum": o})[0] == 200
+    assert cagri == []
+
+
+def test_terminal_uclari_durağan_surec_cagrisi_yok():
+    """G1 durağan: ``_lm_`` uçlarının gövdesinde süreç başlatan ad yok. Tek istisna açılıştaki yetim toplama
+    (``_lm_reap_orphan``: ``ps`` okur, terminal ucu değildir)."""
+    agac = ast.parse(_SERVER_PY.read_text(encoding="utf-8"))
+    yasak = {"subprocess", "Popen", "system", "posix_spawn", "posix_spawnp", "fork", "execv", "execve", "pty",
+             "spawnv", "_run_capture"}
+    bakilan = []
+    for dugum in agac.body:
+        if isinstance(dugum, ast.FunctionDef) and dugum.name.startswith("_lm_") and dugum.name != "_lm_reap_orphan":
+            bakilan.append(dugum.name)
+            adlar = {n.id for n in ast.walk(dugum) if isinstance(n, ast.Name)} | \
+                    {n.attr for n in ast.walk(dugum) if isinstance(n, ast.Attribute)}
+            assert not (adlar & yasak), (dugum.name, adlar & yasak)
+    assert {"_lm_open", "_lm_input", "_lm_events", "_lm_accept", "_lm_close"} <= set(bakilan)
 
 
 def test_overrides_model_bolumu_kurallari(tmp_path, monkeypatch):
