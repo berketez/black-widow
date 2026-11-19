@@ -377,52 +377,14 @@ class TestStagesModuleLevelHelpers:
         )
         assert callable(stages_mod._merge_stage_results)
 
-    def test_collect_all_algorithms_exists(self) -> None:
-        """_collect_all_algorithms helper'i tanimli olmali."""
+    def test_stages_collect_all_algorithms_removed(self) -> None:
+        """K-10 (2026-11-19): ölü ``stages._collect_all_algorithms`` silindi.
+
+        Adımların kendi kopyaları (semantic_naming, struct_recovery,
+        deep_tracing) kendi testlerinde sınanıyor.
+        """
         import karadul.stages as stages_mod
-        assert hasattr(stages_mod, "_collect_all_algorithms"), (
-            "_collect_all_algorithms module-level olarak tanimlanmamis"
-        )
-        assert callable(stages_mod._collect_all_algorithms)
-
-    def test_collect_all_algorithms_empty(self) -> None:
-        """Iki None input -> bos liste."""
-        import karadul.stages as stages_mod
-        result = stages_mod._collect_all_algorithms(None, None)
-        assert result == []
-
-    def test_collect_all_algorithms_with_mock(self) -> None:
-        """Mock result objelerinden algoritma toplama."""
-        import karadul.stages as stages_mod
-
-        class MockResult:
-            def __init__(self, success: bool, algorithms: list):
-                self.success = success
-                self.algorithms = algorithms
-
-        algo = MockResult(True, ["aes_encrypt", "sha256"])
-        eng = MockResult(True, ["memcpy_wrapper"])
-
-        result = stages_mod._collect_all_algorithms(algo, eng)
-        assert len(result) == 3
-        assert "aes_encrypt" in result
-        assert "sha256" in result
-        assert "memcpy_wrapper" in result
-
-    def test_collect_all_algorithms_partial_failure(self) -> None:
-        """Bir sonuc basarisiz -> sadece basarili olanin algoritmalari."""
-        import karadul.stages as stages_mod
-
-        class MockResult:
-            def __init__(self, success: bool, algorithms: list):
-                self.success = success
-                self.algorithms = algorithms
-
-        algo = MockResult(True, ["quicksort"])
-        eng = MockResult(False, ["should_not_appear"])
-
-        result = stages_mod._collect_all_algorithms(algo, eng)
-        assert result == ["quicksort"]
+        assert not hasattr(stages_mod, "_collect_all_algorithms")
 
 
 # ---------------------------------------------------------------------------

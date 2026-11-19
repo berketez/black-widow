@@ -61,14 +61,9 @@ def _merge_stage_results(
     )
 
 
-def _collect_all_algorithms(algo_result, eng_result) -> list:
-    """algo_result ve eng_result'tan algoritma listesini topla."""
-    all_algos: list = []
-    if algo_result and algo_result.success:
-        all_algos.extend(algo_result.algorithms)
-    if eng_result and eng_result.success:
-        all_algos.extend(eng_result.algorithms)
-    return all_algos
+# Not (K-10, 2026-11-19): ``_collect_all_algorithms`` buradan silindi. Çağıranı yoktu
+# (AST'de ad / nitelik atfı yalnız testte, dinamik ``getattr`` yok); adımlar
+# (semantic_naming, struct_recovery, deep_tracing) kendi kopyalarını kullanıyor.
 
 
 class IdentifyStage(Stage):
@@ -1607,9 +1602,9 @@ class ReconstructionStage(Stage):
         FUN_xxx'i davranissal sablonla (ol. ``version_output_version``,
         ``memory_exhausted``) yeniden adlandirir; recovery main'i sonradan
         extracted_names'e yazsa da AhoReplacer dosyada artik ``FUN_xxx`` literalini
-        BULAMAZ -> main/gnulib cikti dosyasina ULASMAZ. Bu metot iki noktada
-        cagrilir (Phase-2 oncesi + ortak birlesme noktasi); guard'lar sayesinde
-        ikinci cagri no-op olur.
+        BULAMAZ -> main/gnulib cikti dosyasina ULASMAZ. Bu metot asama kodunda
+        tek noktada (Phase-2 oncesi) cagrilir; Faz 2 sonrasindaki ikinci cagri
+        P-S4'te (2026-11-19) kaldirildi. Iki kez cagrilmasi yine idempotenttir.
         """
         if not isinstance(extracted_names, dict):
             return {}
@@ -2160,11 +2155,12 @@ class ReconstructionStage(Stage):
 
         IKI ASAMALI uygulama (reviewer MAJOR-1, 2026-07-14):
           1. ``extracted_names`` tohumlanir -> c_namer/merge'e guclu aday olur.
-          2. Dondurulen dogrulanmis ``{addr: name}`` map, cagiran tarafta merge
-             SONRASI ``final_naming_map``'e KOSULSUZ zorlanir. Tek basina (1)
-             yeterli DEGIL: sonraki bindiff/refdiff ``.update()``'leri ve Bayesian
-             merge manuel'i ezebilir; asama (2) bu yarisi bypass eder. Bu yuzden
-             metot uyguladigi map'i DONDURUR (cagiran zorlamada kullanir).
+          2. Birlestirme SONRASI zorlama (P13a, AD-11 / B-C6): ad birlestirici
+             (``_feedback_naming_merger.force_manual_names``) kunyedeki
+             (``pre_name_meta``) elle adlari koda giden haritaya zorlar; tek basina
+             (1) yeterli DEGIL (bindiff/refdiff ``.update()``'leri ve Bayesian merge
+             manuel'i ezebilir). Metot uyguladigi map'i yine DONDURUR (test ve
+             kunye icin); asama kodu bu donus degerini okumaz.
 
         Diger FIX metotlarindan farki: ``static_dir`` yerine ``context`` alir --
         decompiled dizine muhtac degil, yalnizca binary hash'e ihtiyac var.
@@ -2448,18 +2444,11 @@ class ReconstructionStage(Stage):
         if _stage_pending2:
             artifacts.update(_stage_pending2)
 
-        # FIX-1/2/3/5 (2026-07-06 .. 2026-07-16): main + gnulib + ELF boilerplate
-        # + analist override'lari pre_names kanalina enjekte et. Oncelik sirasi ve
-        # step-registry tuzagi _seed_recovery_pre_names icinde TEK yerde. Step
-        # registry yolunda bu ayni tohum Phase-2 ONCESI de calisti (main/gnulib'in
-        # feedback_loop naming step'inde kaybolmamasi icin); guard'lar sayesinde bu
-        # ikinci cagri no-op'tur.
-        if not isinstance(extracted_names, dict):
-            extracted_names = {}
-        self._seed_recovery_pre_names(
-            extracted_names, static_dir, context, stats,
-            kesin=_ks1_binding, meta=_pre_name_meta,
-        )
+        # P-S4 (2026-11-19): Faz 2'den sonraki ikinci ``_seed_recovery_pre_names``
+        # çağrısı kaldırıldı. Tohum yalnız Faz 2'den ÖNCE (yukarıda) koşar; ikinci
+        # çağrının mutasyona uğrattığı ``extracted_names``'i Faz 3 okumuyordu, dönüş
+        # değeri (elle ad haritası) okunmuyordu ve elle adı birleştirmeden sonra
+        # zorlayan iş P13a'dan beri ad birleştiricide (``force_manual_names``).
 
         # v1.10.0 M1 T3.5: Phase 3 — step registry runner2. 10 post-feedback
         # step'i calistir (inline_detection ... finalize). Finalize step'i
@@ -2598,6 +2587,12 @@ class ReconstructionStage(Stage):
                 stats["rename_high_confidence"] = naming_result.high_confidence
                 stats["rename_medium_confidence"] = naming_result.medium_confidence
                 stats["rename_low_confidence"] = naming_result.low_confidence
+                # P20 / BICIM-03: yukarıdaki üç kova UYGULANAN adlar (toplam ==
+                # variables_renamed); analizcinin eşik öncesi adayları ayrı.
+                stats["rename_candidates_high"] = naming_result.candidates_high
+                stats["rename_candidates_medium"] = naming_result.candidates_medium
+                stats["rename_candidates_low"] = naming_result.candidates_low
+                errors.extend(naming_result.errors)
                 current_file = naming_result.output_file
             else:
                 errors.extend(naming_result.errors)
@@ -2834,6 +2829,8 @@ class ReconstructionStage(Stage):
                     context.workspace, context.target,
                     split_result=split_result,
                     gap_result=gap_result,
+                    # P20 / BICIM-12: giriş = ad/tip/yorum adımlarının son çıktısı
+                    named_source=current_file,
                 )
                 if build_result.success:
                     stats["project_files"] = build_result.files_created
