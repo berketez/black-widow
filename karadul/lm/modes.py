@@ -7,9 +7,10 @@ ama yalnız görev sınırında (sabit önek değişir; tasarım K-B1).
 - **Hat kiplerinin (açıkla, adlandır) istem bloğu BOŞTUR.** "Ad öner" öneki KL-0, "açıkla" öneki KL-1'dir ve
   ikisi de bayt bayt kilitlidir (pilot eşitliği, K0 dumanı; ``context.SYSTEM_PROMPT_KL0`` / ``_KL1``). Bu
   kiplerin farkı istemde değil izindedir: açıkla yalnız yorum, adlandır yalnız ad önerisi açar.
-- **Keşif** bloğu cevap şemasını (``cevap`` ≤ 480 karakter, ``kanit``) ve "bu kipte öneri yok" kuralını
-  anlatır. Keşif sorusu görevi ajanda henüz YOK (``Agent``'ın görev türleri: ad öner, açıkla, özet alt
-  görevi); blok ve önek ölçümü o görev bağlandığında kullanılacak (P22e.md "Açık kalanlar").
+- **Keşif** bloğu cevap şemasını (``cevap`` ≤ 480 karakter, ``kanit``), "cevapta adı geçen her olgu
+  ``kanit``'teki bir sonuçta olmalı" ve "bu kipte öneri yok" kurallarını anlatır. Keşif sorusu görevi
+  ``Agent.ask``'tır (P22h): araç döngüsü (K2) yalnız açıkça etkinleştirilince; değilse tek atış (K0, soru +
+  anılan fonksiyonların kanıt paketleri; tasarım §0 madde 1). İki motorun öneki ``explore_prefix``.
 - **Plan** kipinde model çağrılmaz (karar 3 (a): belirlenimci plan); önek yoktur.
 
 **İzin modeli** (§3.9): sabit eylem × kip tablosu, ``allow`` / ``ask`` / ``deny``. ``uygula`` (ad haritasına
@@ -57,13 +58,21 @@ EXPLORE_ANSWER_MAX_CHARS = 480
 # Öneri türleri (``events`` ``oneri.oneri_turu`` kümesiyle aynı yazım).
 PROPOSAL_NAME, PROPOSAL_COMMENT = "ad", "yorum"
 
-# Keşif kipinin istem bloğu (İngilizce: istemin dili; analist metni Türkçe — KL-0 son satırı).
+# Keşif sorusunda anılabilen en çok fonksiyon (``@FUN_…``) [bu iş]: her anmanın kanıt paketini sunucu kurar ve
+# paket dilimini (``BUDGET_PACKAGE_TOKENS``) paylaşır; fazlası reddedilir, sessizce atılmaz (P22h kalem 1).
+EXPLORE_MENTIONS_MAX = 3
+
+# Keşif kipinin istem bloğu (İngilizce: istemin dili; analist metni Türkçe — KL-0 son satırı). İki motorda da
+# aynı blok (P22h): araç döngüsü (K2, kapılar geçilince) ve tek atış (K0; tasarım §0 madde 1, §3.4 "kapı
+# açılana kadar: soru + @FUN_… paketleriyle K0"). Kural cümlesi cevabı kanıta bağlar (denetim:
+# ``guard.check_answer``).
 EXPLORE_BLOCK = (
     "\n"
-    "Mode: explore. The researcher asks a question about the program. Use the tools to collect what you "
-    'need, then reply {"kind": "final", "cevap": "<answer in Turkish, at most '
-    f'{EXPLORE_ANSWER_MAX_CHARS} characters>", "kanit": [<ids of the results you relied on>]}}. Answer only what '
-    "the results show and say what is missing. You cannot file proposals in this mode.\n"
+    "Mode: explore. The researcher asks a question about the program. Use the results you are given, and the "
+    'tools if this task lets you call them, then reply {"kind": "final", "cevap": "<answer in Turkish, at most '
+    f'{EXPLORE_ANSWER_MAX_CHARS} characters>", "kanit": [<ids of the results you relied on>]}}. Every address, '
+    'string or call you name in "cevap" must appear in a result listed in "kanit"; say what is missing. You '
+    "cannot file proposals in this mode.\n"
 )
 
 ENGINE_LOOP, ENGINE_PIPELINE, ENGINE_NONE = "dongu", "hat", "yok"
@@ -118,6 +127,18 @@ def mode_prefix(mode: str) -> Optional[str]:
     reg = registry_for_mode(mode)
     assert reg is not None, "döngü kipinin model araç kümesi boş olamaz"
     return fixed_prefix(spec.agent_mode, reg.definition_lines(), spec.prompt_version) + spec.block
+
+
+def explore_prefix(loop: bool) -> str:
+    """Keşif sorusu görevinin sabit öneki (P22h). ``loop``: araç döngüsü (K2; ``mode_prefix("kesif")`` ile bayt
+    bayt aynı: K2 + keşif kaydının araçları + keşif bloğu). Döngü kapalıyken (öntanım; kapılar gerçek modelde
+    geçilmedi) tek atış: ``Agent.prefix("K0")`` (K0 + bugünkü kayıt + KL-0) + keşif bloğu; hat kiplerinin
+    öneki değişmez (KL-0 / KL-1 kilidi)."""
+    if loop:
+        p = mode_prefix(MODE_EXPLORE)
+        assert p is not None
+        return p
+    return fixed_prefix(MODE_K0, default_registry().definition_lines(), PROMPT_VERSION) + EXPLORE_BLOCK
 
 
 def prefix_table() -> list[dict[str, object]]:

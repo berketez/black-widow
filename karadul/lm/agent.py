@@ -36,7 +36,7 @@ import threading
 import time
 from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable, Iterable, Iterator, Mapping, Optional
+from typing import Any, Callable, Iterable, Iterator, Mapping, Optional, Sequence
 
 from karadul.lm import (
     BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, EVENT_TOKEN_MIN_INTERVAL_SEC, EVENT_TOUCHED_MAX,
@@ -47,18 +47,22 @@ from karadul.lm.backend import STATE_ERROR, STATE_MEMORY_STOPPED, Backend, Backe
 from karadul.lm.context import (
     MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, PROMPT_VERSION_KL1, SUMMARY_KIND, SUMMARY_LIMITS,
     SUMMARY_BLIND_TAGS, SUMMARY_SOURCE, SUMMARY_SOURCE_FACT, SUMMARY_SOURCE_MODEL, SUMMARY_TOOL, ContextBudget,
-    blind_leaks, estimate_result_tokens, estimate_text_tokens, explain_question, fixed_prefix, max_calls_for,
-    name_question, remaining_name_tags, safe_assistant_content, strip_name_tags, summary_items, user_message,
+    blind_leaks, estimate_result_tokens, estimate_text_tokens, explain_question, explore_question, fixed_prefix,
+    max_calls_for, name_question, remaining_name_tags, safe_assistant_content, strip_name_tags, summary_items,
+    user_message,
 )
 from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, ContentStore, touched_refs
 from karadul.lm.memory_guard import MemoryGuard
+from karadul.lm.modes import EXPLORE_ANSWER_MAX_CHARS, EXPLORE_MENTIONS_MAX, explore_prefix
 from karadul.lm.order import DEFAULT_CLOSURE_DEPTH, bottom_up_layers, layer_of
 from karadul.lm.summaries import SOURCE_FACT, SummaryKey, SummaryRecord, SummaryStore, cfg_block_counts, d0_fact, \
     model_key, package_digest
 from karadul.lm.tools import (
     ADDR_PATTERN, ERR_BUDGET, ERR_REPEAT, ERR_TOOL_CLOSED, INVALID_CALL_ERRORS, ToolContext, ToolRegistry,
-    ToolResult, Workspace, WorkspaceError, default_registry, error_result, normalize_args,
+    MODE_EXPLORE, ToolResult, Workspace, WorkspaceError, default_registry, error_result, normalize_args,
+    registry_for_mode,
 )
+from karadul.lm.repl import check_text
 
 # --- Görev durumları -------------------------------------------------------------------------
 STATUS_DONE = "tamam"                         # geçerli son cevap (ad ya da çekimser)
@@ -83,6 +87,9 @@ TASK_NAME = "ad_oner"
 TASK_EXPLAIN = "acikla"
 TASK_SUMMARY = "ozet_alt"
 SUMMARY_TASKS = (TASK_EXPLAIN, TASK_SUMMARY)
+# Keşif sorusu (P22h; tasarım §3.2 keşif döngüsü, §3.4): araştırmacının açık uçlu sorusu. Araç döngüsü (K2)
+# yalnız ``enabled_modes``'ta K2 varsa; yoksa tek atış (K0: soru + anılan fonksiyonların paketi; §0 madde 1).
+TASK_QUESTION = "soru"
 # CALLER_SERVER ("sunucu"), CALLER_MODEL ("model"): ``karadul.lm.events``'te tanımlı (olay şemasının
 # kapalı kümesi); denetim günlüğü ve olaylar aynı değeri yazar.
 # Körlük taramasına giren kanıt alanları: ad taşıyabilenler. Dizgi alanı girmez (pilot §12 madde 4:
@@ -254,6 +261,8 @@ class _Task:
     # ile süresi (``model_cevabi`` olayı ayrıştırmadan sonra yayılır).
     tool_ms: dict[str, int] = field(default_factory=dict)
     reply_meta: Optional[tuple[str, int]] = None
+    # Görevin gerçek sabit öneki kipinkinden farklıysa (keşif bloğu; P22h): denetim kaydının ``onek_sha256``'sı.
+    prefix: Optional[str] = None
 
     def finish(self, status: str, error: Optional[str] = None, *, override: bool = False) -> None:
         if self.done and not override:
@@ -459,6 +468,39 @@ class Agent:
             raise ModeDisabled(f"{mode} kapalı: kapıları geçilmeden ve açıkça etkinleştirilmeden çalışmaz")
         return self._run(mode, addr, abstain_allowed, deadline_sec)
 
+    def ask(self, question: str, mentions: Sequence[str] = (), *,
+            deadline_sec: Optional[float] = None) -> TaskResult:
+        """Keşif sorusu (P22h; tasarım §3.2, §3.4). Paket = anılan her fonksiyonun paketi (kanıt + kod; sunucu
+        kurar). Motor: ``enabled_modes``'ta K2 varsa araç döngüsü (keşif kaydının araçları, ≤ 8 çağrı); yoksa
+        tek atış (K0; kapılar gerçek modelde geçilene kadar öntanım, tasarım §0 madde 1) ve en az bir anma
+        gerekir. Cevap ``{cevap, kanit}``; kanıta bağlı olup olmadığını ``guard.check_answer`` söyler (öneri
+        DEĞİLDİR: keşifte öneri açılmaz). Körlük kipinde açılmaz (ölçüm içindir). ``mentions``: ``FUN_<adres>``,
+        en çok ``EXPLORE_MENTIONS_MAX``; soru terminal girdi kuralından geçer (``repl.check_text``)."""
+        loop = MODE_K2 in self.enabled_modes
+        if not loop and MODE_K0 not in self.enabled_modes:
+            raise ModeDisabled("keşif sorusu için K0 ya da K2 etkin olmalı")
+        if self.blind_target:
+            raise ModeDisabled("körlük kipi ölçüm içindir: keşif sorusu açılmaz")
+        check_text(question)
+        if not question.strip(" "):
+            raise ValueError("keşif sorusu boş olamaz")
+        named = list(dict.fromkeys(mentions))
+        if len(named) > EXPLORE_MENTIONS_MAX or any(not isinstance(x, str) or not _ADDR_RE.fullmatch(x)
+                                                    for x in named):
+            raise ValueError(f"keşif sorusu en çok {EXPLORE_MENTIONS_MAX} FUN_<adres> anabilir")
+        with self._exclusive():
+            own_registry = self.registry
+            if loop:
+                # Döngüde modelin araç kümesi keşif kaydıdır (P22d ``MODE_TOOLSETS``); hat görevlerinin kaydı
+                # ve öneki değişmez (görev bitince geri konur).
+                self.registry = registry_for_mode(MODE_EXPLORE)
+            try:
+                return self._run(MODE_K2 if loop else MODE_K0, named[0] if named else "", True, deadline_sec,
+                                 task_type=TASK_QUESTION, locked=True, question=question, mentions=tuple(named),
+                                 loop=loop)
+            finally:
+                self.registry = own_registry
+
     # --- yürütme çatısı -----------------------------------------------------------------------
 
     @contextmanager
@@ -544,6 +586,8 @@ class Agent:
                                       "jeton": self.context_tokens if mode == MODE_K0 else self.loop_context_tokens})
                     if task_type in SUMMARY_TASKS:
                         self._execute_explain(task, addr, **extra)
+                    elif task_type == TASK_QUESTION:
+                        self._execute_question(task, mode, **extra)
                     elif mode == MODE_K0:
                         self._execute_k0(task, addr, abstain_allowed)
                     else:
@@ -583,7 +627,8 @@ class Agent:
                              kor=r.blind, sure_sn=r.duration_sec, sure_butcesi_sn=r.time_budget_sec,
                              istem_surumu=r.prompt_version, hukum=r.verdict,
                              arac_kumesi=self.registry.version(),
-                             onek_sha256=self.prefix_sha256(r.mode, r.prompt_version),
+                             onek_sha256=(sha256_text(task.prefix) if task.prefix is not None
+                                          else self.prefix_sha256(r.mode, r.prompt_version)),
                              **({} if r.summary is None else {"ozet": {
                                  k: r.summary[k] for k in ("kaynak", "belirsiz", "pakete_girer", "depodan")}}))
         # Olaylar, denetim günlüğünden SONRA (geri çağrının hatası kaydı yarım bırakmaz). Denetim olayı
@@ -1205,3 +1250,120 @@ class Agent:
             task.results.append(result)
             messages.append({"role": "user", "content": result.wrapped()})
             prompt_est += estimate_text_tokens(reply.content) + estimate_result_tokens(result.envelope())
+
+    # --- keşif sorusu (P22h; tasarım §3.2 keşif döngüsü, §3.4, §0 madde 1) ------------------------------
+
+    def _execute_question(self, task: _Task, mode: str, *, question: str, mentions: tuple[str, ...],
+                          loop: bool) -> None:
+        """Keşif sorusu görevi. Anmalar çözülür, her birinin paketi sunucu tarafından kurulur (``get_evidence`` +
+        ``get_decompiled``, döngü kırpması), soru istemin sonuna JSON dizgisi olarak girer. Döngüde model her
+        turda bir araç ya da son cevap yazar (bütçe, tekrar, bağlam ``_execute_loop``'unkiyle aynı kural); tek
+        atışta şemada araç dalı yoktur. Son cevap ``guard.check_answer``'dan geçer."""
+        ws = self.workspace
+        addrs: list[str] = []
+        for m in mentions:
+            got = ws.resolve(m)
+            if got is None:
+                return task.finish(STATUS_UNKNOWN_ADDRESS, "anılan fonksiyon çalışma alanında yok")
+            if got not in addrs:
+                addrs.append(got)
+        if addrs:
+            task.result.addr = f"FUN_{addrs[0]}"
+        if not loop and not addrs:
+            return task.finish(STATUS_PACKAGE_ERROR,
+                               "araç döngüsü kapalı: tek atışta soru en az bir @FUN_… anması ister")
+        level = self._level(task)
+        if level is None:
+            return None
+        for a in addrs:
+            if self._build_package(task, a, single_shot=False) is None:
+                return None
+        evidence_ids = [r.id for r in task.results]
+        system = explore_prefix(loop)
+        task.prefix = system
+        asked = explore_question(question, [f"FUN_{a}" for a in addrs], evidence_ids,
+                                 max_chars=EXPLORE_ANSWER_MAX_CHARS, loop=loop)
+        convo = [{"role": "system", "content": system},
+                 {"role": "user", "content": user_message([r.wrapped() for r in task.results], asked)}]
+        est_q = (estimate_text_tokens(system) + estimate_text_tokens(asked)
+                 + sum(estimate_result_tokens(r.envelope()) for r in task.results))
+        task.result.est_prompt_tokens = est_q
+        room = ContextBudget(self.loop_context_tokens if loop else self.context_tokens, MAX_TOKENS_STEP)
+        if not room.fits(est_q):
+            # Sessiz kırpma yok: soru ve paket kısaltılmaz; görev başlamadan reddedilir.
+            return task.finish(STATUS_CONTEXT)
+        allowed = self.registry.schemas(None) if loop else {}
+        cap = max_calls_for(mode)
+        call_ctx = ToolContext(single_shot=False, blind_target=None)
+        cnt = task.result.counters
+        spent = 0                  # araç sonuçları dilimi (paket hariç)
+        final_only = not loop      # tek atışta hep, döngüde bütçe bitince: yalnız son cevap
+        fixes = 0
+        while True:
+            ok_ids = [r.id for r in task.results if r.ok]
+            turn_schema = protocol.build_explore_answer_schema(ok_ids, EXPLORE_ANSWER_MAX_CHARS,
+                                                               None if final_only else allowed)
+            reply = self._model_call(task, convo, turn_schema, "kesif" if fixes == 0 else "kesif_onarim", est_q)
+            if reply is None:
+                return None
+            turn = protocol.parse_turn(reply.content, reply.finish_reason, turn_schema)
+            self._reply_done(task, reply, turn.status, turn.obj)
+            step = protocol.next_action(level, turn, fixes)
+            if step == protocol.ACTION_REPAIR:
+                fixes += 1
+                cnt.repairs += 1
+                convo.append({"role": "assistant", "content": safe_assistant_content(reply.content, turn.obj)})
+                convo.append(protocol.repair_message(turn))
+                continue
+            if step != protocol.ACTION_ACCEPT:
+                # Döngüde bütçe bittikten sonra son cevap gelmediyse görev bütçeyle bitmiştir.
+                return task.finish(STATUS_BUDGET if loop and final_only else turn.status)
+            fixes = 0
+            convo.append({"role": "assistant", "content": safe_assistant_content(reply.content, turn.obj)})
+            if turn.obj["kind"] == "final":
+                return self._accept_answer(task, turn.obj, addrs)
+            tool_name, call_args = turn.obj["tool"], turn.obj["args"]
+            cnt.call_requests += 1
+            call_key = self._call_key(tool_name, call_args)
+            if cnt.call_requests > cap:
+                res = error_result(self._new_result_id(), tool_name, ERR_BUDGET)
+                self._tool_started(task, res.id, tool_name, call_args, CALLER_MODEL, runs=False)
+                cnt.budget_exceeded += 1
+                final_only = True
+                self._log_tool(task, res, call_args, CALLER_MODEL, 0.0)
+            elif call_key in task.seen:
+                res = error_result(self._new_result_id(), tool_name, ERR_REPEAT)
+                self._tool_started(task, res.id, tool_name, call_args, CALLER_MODEL, runs=False)
+                cnt.repeats += 1
+                self._log_tool(task, res, call_args, CALLER_MODEL, 0.0)
+            else:
+                task.seen.add(call_key)
+                res = self._run_tool(task, tool_name, call_args, call_ctx, CALLER_MODEL)
+                cnt.tool_calls += 1
+                if res.error in INVALID_CALL_ERRORS:
+                    cnt.invalid_calls += 1
+                weight = estimate_result_tokens(res.envelope())
+                actual = (reply.prompt_tokens + reply.completion_tokens
+                          if reply.prompt_tokens is not None and reply.completion_tokens is not None else None)
+                fit = room.fits(weight, actual) if actual is not None else room.fits(est_q + weight)
+                if spent + weight > BUDGET_TOOL_RESULTS_TOKENS or not fit:
+                    # Sonuç bağlama sığmıyor: sessizce kırpılmaz, verilmez; model son cevabı verir.
+                    res = error_result(res.id, tool_name, ERR_BUDGET, executed=True)
+                    cnt.context_exceeded += 1
+                    final_only = True
+                else:
+                    spent += weight
+            self._tool_done(task, res)
+            task.results.append(res)
+            convo.append({"role": "user", "content": res.wrapped()})
+            est_q += estimate_text_tokens(reply.content) + estimate_result_tokens(res.envelope())
+
+    def _accept_answer(self, task: _Task, obj: Mapping[str, Any], addrs: list[str]) -> None:
+        """Geçerli keşif cevabı ve denetimi (``guard.check_answer``: kanıta bağlı mı)."""
+        cited = [i for i in dict.fromkeys(obj["kanit"])]
+        task.result.answer = {"cevap": obj["cevap"], "kanit": cited}
+        report = guard.check_answer(task.result.answer, [r.envelope() for r in task.results], mentions=addrs,
+                                    known_functions=self.workspace.existing_function_names())
+        task.result.verdict = report.verdict
+        task.result.guard = report.as_dict()
+        task.finish(STATUS_DONE)

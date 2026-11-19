@@ -31,6 +31,8 @@ Kurallar (tasarım §5.2). Kodlananlar:
   gösterilen sonuçların hepsi hedefle ve komşularıyla ilgisiz bir adrese ait.
 - D9 görülmemiş olgu → ``celiski``: gerekçede geçen ``FUN_`` adresi, tırnaklı metin ya da çağrı
   biçimli ad (``ad(``) bu görevin sonuçlarının hiçbirinde yok.
+  Keşif sorusu cevabında (``check_answer``, P22h) D8 boş ``kanit``'i ``kanitsiz_cevap`` sayar ve D9 olguları
+  yalnız ``kanit``'te atıf yapılan sonuçlarla sınar (cevap dayandığını söylediği sonuca bağlanır).
 - D10 reddedilmiş ad → ``ret`` (araştırmacının bu fonksiyon için reddettiği ad; liste ajana verilir).
 - D11 oturum içi çakışma → ``celiski`` (ad bu oturumda başka bir fonksiyona önerildi).
 - D12 kuşkulu decompile → bayrak (hükmü değiştirmez).
@@ -95,6 +97,8 @@ CODE_MODEL_ONLY = "yalniz_model_adlari"
 # P22b (özet; KaradulLM v2 §3.6 madde 6): paketteki ``[model-özet]`` girişi kanıt değildir.
 CODE_SUMMARY_ONLY_REFS = "yalniz_ozet_kaniti"   # D8: gösterilen kanıtın hepsi model özeti
 CODE_UNSEEN_IMPORT = "gorulmemis_ithal"         # D9: özette geçen ithal / kütüphane adı sonuçlarda yok
+# P22h (keşif sorusu cevabı; ``check_answer``): cevap hiçbir sonuca dayanmıyor.
+CODE_ANSWER_NO_REFS = "kanitsiz_cevap"
 
 # Kodlanmayan kurallar ve nedeni (raporda her zaman yazılır).
 NOT_IMPLEMENTED = {
@@ -612,6 +616,73 @@ def check_summary(answer: Mapping[str, Any], envelopes: Sequence[Mapping[str, An
     if text and any(p.search(text) for p in INJECTION_PATTERNS):
         add("D13", CODE_INJECTION, EFFECT_FLAG, "ozet")
     return GuardReport(_verdict(findings, False), tuple(findings), tuple(tested), dict(NOT_IMPLEMENTED))
+
+
+def check_answer(answer: Mapping[str, Any], envelopes: Sequence[Mapping[str, Any]], *,
+                 mentions: Iterable[str] = (), known_functions: Iterable[str] = ()) -> GuardReport:
+    """Bir keşif sorusu cevabının denetimi (P22h kalem 1; tasarım §3.4 keşif satırı, §3.10). Cevap öneri değildir
+    (keşifte ``öner`` = deny); denetim cevabın KANITA BAĞLI olup olmadığını söyler.
+
+    ``answer``: ``{cevap, kanit}``. ``envelopes``: bu görevde modele verilen sonuç zarfları (hata zarfları dahil).
+    ``mentions``: araştırmacının sorusunda andığı ve sunucunun doğruladığı adresler (onaltılık, ``0x``'siz).
+    ``known_functions``: ikilideki ithal ve Ghidra adları (``Workspace.existing_function_names``).
+
+    - D8 kanıt atfı → ``celiski``: ``kanit`` boş (``kanitsiz_cevap``: cevap hiçbir sonuca dayanmıyor) ya da bu
+      görevde başarılı dönmemiş / verilmemiş kimlik (``verilmemis_kanit``).
+    - D9 kanıtta olmayan olgu → ``celiski``: ``cevap``ta geçen ``FUN_`` adresi, tırnaklı metin, boşluksuz çağrı
+      biçimli ad (``ad(``) ya da ikilinin bir fonksiyon / ithal adı, ``kanit``'te ATIF YAPILAN sonuçların hiçbirinde
+      yoksa. Kanıt kümesi yalnız atıf yapılan sonuçlardır (başka bir sonuçta görülmüş olması yetmez: cevap
+      dayandığını söylediği sonuçla sınanır); araştırmacının andığı adresler görülmüş sayılır (sorunun konusu).
+    - D13 → bayrak: sonuçların ikili kökenli metninde ya da cevabın kendi metninde talimat kalıbı.
+
+    Hüküm ``celiski`` ya da ``sinandi_celiski_yok``; ``ret`` yoktur (öneri değil). ``sinandi_celiski_yok`` cevabın
+    doğru olduğu demek DEĞİLDİR."""
+    found: list[Finding] = []
+    ran: list[str] = []
+
+    def note(rule: str, code: str, effect: str, ref: Optional[str] = None) -> None:
+        f = Finding(rule, code, effect, ref)
+        if f not in found:
+            found.append(f)
+
+    body = answer.get("cevap") if isinstance(answer.get("cevap"), str) else ""
+    cited_ids = [r for r in (answer.get("kanit") or []) if isinstance(r, str)]
+    shown = {str(e.get("id")): e for e in envelopes if e.get("ok")}
+    ran.append("D8")
+    if not cited_ids:
+        note("D8", CODE_ANSWER_NO_REFS, EFFECT_CONFLICT)
+    for r in cited_ids:
+        if r not in shown:
+            note("D8", CODE_UNKNOWN_REF, EFFECT_CONFLICT, r)
+    backing = [shown[r] for r in dict.fromkeys(cited_ids) if r in shown and not is_summary_result(shown[r])]
+    if body:
+        ran.append("D9")
+        facts = [s for e in backing for s in _all_strings(e.get("data"))]
+        known_addrs = {int(m, 16) for m in mentions if isinstance(m, str) and re.fullmatch(r"[0-9a-fA-F]{1,16}", m)}
+        for s in facts:
+            known_addrs |= {int(h, 16) for h in _FUN_HEX_RE.findall(s)}
+        if any(int(h, 16) not in known_addrs for h in _FUN_HEX_RE.findall(body)):
+            note("D9", CODE_UNSEEN_ADDRESS, EFFECT_CONFLICT)
+        lowered = [s.casefold() for s in facts]
+        for qm in _QUOTED_RE.finditer(body):
+            needle = qm.group(1).strip().casefold()
+            if needle and not any(needle in s for s in lowered):
+                note("D9", CODE_UNSEEN_QUOTE, EFFECT_CONFLICT)
+        backed_idents = {i for s in facts for i in _IDENT_RE.findall(s)}
+        if any(c not in backed_idents for c in _STRICT_CALL_RE.findall(body)):
+            note("D9", CODE_UNSEEN_CALL, EFFECT_CONFLICT)
+        names = set(known_functions)
+        stripped = {i.lstrip("_") for i in backed_idents}
+        for word in _IDENT_RE.findall(body):
+            if (word in names or word.lstrip("_") in names) and word not in backed_idents \
+                    and word.lstrip("_") not in stripped and not protocol.is_placeholder_name(word):
+                note("D9", CODE_UNSEEN_IMPORT, EFFECT_CONFLICT)
+    ran.append("D13")
+    for ref in injection_hits([t for e in envelopes for t in hostile_texts(e)]):
+        note("D13", CODE_INJECTION, EFFECT_FLAG, ref)
+    if body and any(p.search(body) for p in INJECTION_PATTERNS):
+        note("D13", CODE_INJECTION, EFFECT_FLAG, "cevap")
+    return GuardReport(_verdict(found, False), tuple(found), tuple(ran), dict(NOT_IMPLEMENTED))
 
 
 def _env_addr(envelope: Mapping[str, Any]) -> Optional[int]:

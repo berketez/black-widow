@@ -313,7 +313,8 @@ def test_oturum_yasam_dongusu_tek_oturum(tmp_path):
     r = s.submit("/ls -la")
     assert r == {"kabul": False, "is": None, "hata": "bilinmeyen komut: /ls (/yardim)"}
     assert olay(s)[-1] == {**olay(s)[-1], "tur": "satir", "duzey": "hata"}
-    assert s.submit("bu ne?")["kabul"] is False and "sorusu görevi henüz bağlı değil" in satir(s)[-1]
+    # P22h: keşif sorusu bağlı; döngü kapalıyken (öntanım) anmasız soru reddedilir (tek atış anma ister).
+    assert s.submit("bu ne?")["kabul"] is False and "araç döngüsü kapalı" in satir(s)[-1]
     # denetim kaydı içeriksiz: girdi metni yazılmaz
     girdiler = [k for k in arka.audit.records if k["olay"] == "girdi"]
     assert len(girdiler) == 3 and all("-la" not in json.dumps(k) and "bu ne" not in json.dumps(k) for k in girdiler)

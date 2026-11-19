@@ -45,27 +45,29 @@ from typing import Any, Callable, Mapping, Optional
 
 from karadul.lm import guard, probe
 from karadul.lm.agent import STATUS_DONE, Agent, ExplainRun, TaskResult
+from karadul.lm.context import MODE_K0, MODE_K2
 from karadul.lm.audit import _HEX64, _SESSION_ID, now_iso, sha256_text
 from karadul.lm.backend import Backend
 from karadul.lm.events import ContentStore, EventStream
 from karadul.lm.modes import (
-    DEFAULT_MODE, LONG_JOB_ASK, LONG_JOB_DENIED, PROPOSAL_COMMENT, PROPOSAL_NAME, SESSION_MODES, PermissionPolicy,
-    Plan, PlanError, build_plan, mode_spec, validate_plan,
+    DEFAULT_MODE, EXPLORE_MENTIONS_MAX, LONG_JOB_ASK, LONG_JOB_DENIED, PROPOSAL_COMMENT, PROPOSAL_NAME,
+    SESSION_MODES, PermissionPolicy, Plan, PlanError, build_plan, mode_spec, validate_plan,
 )
 from karadul.lm.notebook import REC_ACCEPT, REC_PROPOSAL, REC_REJECT, Notebook, NotebookError, NoteRecord
 from karadul.lm.order import bottom_up_layers
 from karadul.lm.repl import (
     CMD_APPROVE, CMD_EXIT, CMD_EXPLAIN, CMD_FOLLOW, CMD_HELP, CMD_MODE, CMD_NAME, CMD_NOTE, CMD_OPEN, CMD_PLAN,
-    CMD_PROPOSALS, CMD_QUESTION, CMD_SPEED, CMD_STOP, CMD_SUMMARY, HELP_LINES, PLAN_TASK_EXPLAIN, Command, InputError,
-    check_text, parse,
+    CMD_PROPOSALS, CMD_QUESTION, CMD_SPEED, CMD_STOP, CMD_SUMMARY, HELP_LINES, PLAN_TASK_EXPLAIN, VERDICT_LABELS,
+    Command, InputError, check_text, parse,
 )
 from karadul.lm.summaries import SummaryStore
-from karadul.lm.tools import MODE_EXPLAIN, MODE_NAME, MODE_PLAN, Workspace, WorkspaceError
+from karadul.lm.tools import MODE_EXPLAIN, MODE_EXPLORE, MODE_NAME, MODE_PLAN, Workspace, WorkspaceError
 
 # Kapanışta yürüyen işin bitmesi için beklenen en uzun süre (sn) [bu iş]. Akışlı istek iptali her parçada
 # denetler (P22a); parça gelmiyorsa arka uç ``stop`` ile kapatılır ve istek hata ile biter.
 CLOSE_JOIN_SEC = 30.0
 JOB_EXPLAIN, JOB_SUMMARY, JOB_NAME, JOB_PLAN, JOB_SPEED = "acikla", "ozet", "ad", "plan", "hiz"
+JOB_QUESTION = "soru"   # keşif sorusu (P22h)
 CANCEL_ANALYST, CANCEL_CLOSING = "analist", "kapanis"
 CLOSE_EXIT, CLOSE_UI, CLOSE_WORKSPACE, CLOSE_IDLE = "cik", "arayuz_kapandi", "calisma_alani_degisti", "bosta"
 DECIDE_ACCEPT, DECIDE_REJECT = "kabul", "ret"
@@ -138,6 +140,8 @@ class _Job:
     hedef: Optional[str] = None
     derinlik: Optional[int] = None
     plan: Optional[Plan] = None
+    metin: Optional[str] = None                  # keşif sorusunun metni (P22h)
+    anmalar: tuple[str, ...] = ()                # sorunun çözülmüş @FUN_… anmaları
 
 
 def open_session(workspace_root: Path, *, backend: Optional[Backend], binary_sha256: str,
@@ -167,7 +171,7 @@ class Session:
                  policy: Optional[PermissionPolicy] = None,
                  analysis_running: Optional[Callable[[], bool]] = None, store_root: Optional[Path] = None,
                  expected_task_sec: Optional[float] = None, network_enabled: bool = False,
-                 network_consent: bool = False):
+                 network_consent: bool = False, explore_loop: bool = False):
         if not isinstance(binary_sha256, str) or not _HEX64.fullmatch(binary_sha256):
             raise SessionError("geçersiz ikili sha256 (64 küçük harfli onaltılık basamak beklenir)")
         sid = session_id if session_id is not None else new_session_id()
@@ -194,9 +198,14 @@ class Session:
         self.backend = backend
         self.audit = backend.audit if backend is not None else None
         self.agent: Optional[Agent] = None
+        # Keşif sorusunun araç döngüsü (K2; P22h). Öntanım KAPALI: döngünün kapıları (K-Z1, K-A1…) gerçek modelde
+        # geçilene kadar keşif soruları tek atışla, soru + anılan fonksiyonların paketiyle cevaplanır (tasarım §0
+        # madde 1). Açıkça ``explore_loop=True`` verilirse ajan K2'yi de etkinleştirir (yalnız keşif sorusu kullanır).
+        self.explore_loop = explore_loop is True
         if backend is not None:
             self.agent = Agent(backend, self.workspace, on_event=self._agent_event, content_store=self.content_store,
-                               summary_store=self.summary_store, expected_task_sec=expected_task_sec)
+                               summary_store=self.summary_store, expected_task_sec=expected_task_sec,
+                               enabled_modes=(MODE_K0, MODE_K2) if self.explore_loop else (MODE_K0,))
         self.follow = True
         self.speed: Optional[dict[str, Any]] = None
         self._cond = threading.Condition()
@@ -540,8 +549,25 @@ class Session:
         return self._ok()
 
     def _cmd_soru(self, cmd: Command) -> dict[str, Any]:
-        return self._refuse("keşif sorusu görevi henüz bağlı değil (ajanda soru görevi yok); /acikla, /ozet, "
-                            "/ad ya da /plan kullanın", "uyari")
+        """Keşif sorusu (P22h): anmalar doğrulanır, iş kuyruğa girer. Keşifte öneri açılmaz, yazma yoktur; ağ
+        üstündeki uç keşifte hiçbir koşulda kullanılmaz (izin tablosu; ``_model_refusal``)."""
+        why = self._model_refusal(MODE_EXPLORE)
+        if why is not None:
+            return self._refuse(why, "uyari")
+        if len(cmd.anmalar) > EXPLORE_MENTIONS_MAX:
+            return self._refuse(f"soru en çok {EXPLORE_MENTIONS_MAX} fonksiyon anabilir (@FUN_…)", "uyari")
+        found: list[str] = []
+        for m in cmd.anmalar:
+            a = self._resolve(m)
+            if a is None:
+                return self._refuse(f"{m}: çalışma alanında böyle bir fonksiyon yok")
+            found.append(f"FUN_{a}")
+        if not found and not self.explore_loop:
+            return self._refuse("araç döngüsü kapalı (kapıları gerçek modelde geçilmedi): soru şimdilik en az bir "
+                                "@FUN_<adres> anmasıyla, o fonksiyonların paketinden cevaplanır", "uyari")
+        job = self._new_job(JOB_QUESTION, MODE_EXPLORE, hedef=found[0] if found else None, metin=cmd.metin,
+                            anmalar=tuple(found))
+        return self._enqueue(job)
 
     # --- iptal --------------------------------------------------------------------------------
 
@@ -608,6 +634,8 @@ class Session:
         assert self.agent is not None
         if job.tur == JOB_SPEED:
             return self._run_speed()
+        if job.tur == JOB_QUESTION:
+            return self._run_question(job)
         if job.tur == JOB_PLAN:
             assert job.plan is not None
             n = len(job.plan.adimlar)
@@ -649,6 +677,20 @@ class Session:
             else:
                 self._line("yorum önerisi açılmadı: özet belirsiz, modelsiz ya da denetimden geçmedi")
         self._after(run.stopped)
+
+    def _run_question(self, job: _Job) -> None:
+        """Keşif sorusunu yürütür; cevabı denetim hükmüyle terminale yazar (model metni, öneri DEĞİL: deftere
+        ve ad haritasına hiçbir şey yazılmaz). Kanıtsız cevap ayrı başlıkla ve uyarı düzeyinde gösterilir."""
+        assert self.agent is not None
+        r = self.agent.ask(job.metin or "", job.anmalar)
+        ans = r.answer or {}
+        if r.status == STATUS_DONE and isinstance(ans.get("cevap"), str):
+            codes = [f.get("kod") for f in (r.guard or {}).get("bulgular", [])]
+            head = "kanıtsız cevap" if guard.CODE_ANSWER_NO_REFS in codes else "cevap"
+            refs = " ".join(ans.get("kanit") or []) or "yok"
+            self._line(f"{head} {r.task_id} (model metni · denetim {VERDICT_LABELS.get(r.verdict, r.verdict)} · "
+                       f"kanıt {refs}): \"{ans['cevap']}\"", "bilgi" if r.verdict == guard.VERDICT_CLEAR else "uyari")
+        self._after(r.status if r.status == "iptal" else None)
 
     def _run_name(self, hedef: str, task_mode: str) -> None:
         assert self.agent is not None

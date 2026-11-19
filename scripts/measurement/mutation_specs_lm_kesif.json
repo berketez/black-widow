@@ -1,5 +1,5 @@
 {
- "_comment": "P22h (KaradulLM keşif sorusu görevi, önek bütçesi, oturum bloğu, ad kökeninde rol kanıtı). Her mutant bir davranışı bozar; hedef test KIRMIZI olmalı (killed). Mutant metni özgününden farklı uzunlukta (.pyc tuzağı); her find hedef dosyada tam bir kez. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_lm_kesif.json",
+ "_comment": "P22h (KaradulLM keşif sorusu görevi, önek bütçesi, oturum bloğu, ad kökeninde rol kanıtı). Her mutant bir davranışı bozar; hedef test KIRMIZI olmalı (killed). Mutant metni özgününden farklı uzunlukta (.pyc tuzağı); her find hedef dosyada tam bir kez. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_lm_kesif.json Çıkarılan eşdeğer mutant: ks_ajan_tek_atis_arac (tek atışta araç şemasının kurulması; final_only hep doğru olduğu için şema kullanılmaz, davranış aynı).",
  "mutants": [
   {
    "id": "rk_etiket",
@@ -64,6 +64,262 @@
    "test": "tests/test_p22h_rol_kaniti.py::test_korluk_aday_ad_sizmaz",
    "find": "s.replace(\"-\", \"_\") if isinstance(s, str) else None",
    "replace": "None"
+  },
+  {
+   "id": "ks_sema_tavan",
+   "desc": "cevap uzunluk tavanı gevşer",
+   "module": "karadul/lm/protocol.py",
+   "test": "tests/test_p22h_kesif.py::test_cevap_semasi_kimlikler_ve_dallar",
+   "find": "\"cevap\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": max_chars}",
+   "replace": "\"cevap\": {\"type\": \"string\", \"minLength\": 1, \"maxLength\": max_chars * 2}"
+  },
+  {
+   "id": "ks_sema_bos_kanit",
+   "desc": "sonuç yokken kanit dizisi serbest",
+   "module": "karadul/lm/protocol.py",
+   "test": "tests/test_p22h_kesif.py::test_cevap_semasi_kimlikler_ve_dallar",
+   "find": "refs = refs_schema(ids) if ids else {\"type\": \"array\", \"maxItems\": 0}",
+   "replace": "refs = refs_schema(ids) if ids else {\"type\": \"array\"}"
+  },
+  {
+   "id": "ks_soru_kacis",
+   "desc": "soru kaçışsız JSON (< ve > istemde kalır)",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_p22h_kesif.py::test_soru_metni_kacisli_ve_kimlik_kurali",
+   "find": "text = _QUESTION_EXPLORE.format(question=escape_json(question))",
+   "replace": "text = _QUESTION_EXPLORE.format(question=json.dumps(question))"
+  },
+  {
+   "id": "ks_soru_tek_atis_kimlik",
+   "desc": "tek atışta kimliksiz soru kurulabilir",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_p22h_kesif.py::test_soru_metni_kacisli_ve_kimlik_kurali",
+   "find": "    if not loop and not ids:\n        raise ValueError(",
+   "replace": "    if False:\n        raise ValueError("
+  },
+  {
+   "id": "ks_d8_kanitsiz",
+   "desc": "boş kanit işaretlenmez",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_p22h_kesif.py::test_kanitsiz_ve_verilmemis_kimlik",
+   "find": "    if not cited_ids:\n        note(",
+   "replace": "    if False:\n        note("
+  },
+  {
+   "id": "ks_d8_verilmemis",
+   "desc": "verilmemiş / başarısız kimlik işaretlenmez",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_p22h_kesif.py::test_kanitsiz_ve_verilmemis_kimlik",
+   "find": "        if r not in shown:\n            note(",
+   "replace": "        if False:\n            note("
+  },
+  {
+   "id": "ks_d9_atif",
+   "desc": "olgu bütün sonuçlarla sınanır (atıf yapılan değil)",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_p22h_kesif.py::test_atif_yapilan_sonucta_olmayan_olgu",
+   "find": "    backing = [shown[r] for r in dict.fromkeys(cited_ids) if r in shown and not is_summary_result(shown[r])]",
+   "replace": "    backing = list(shown.values())"
+  },
+  {
+   "id": "ks_d9_anma",
+   "desc": "anılan adres görülmüş sayılmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_p22h_kesif.py::test_kanita_bagli_cevap_sinandi",
+   "find": "known_addrs = {int(m, 16) for m in mentions if isinstance(m, str) and re.fullmatch(r\"[0-9a-fA-F]{1,16}\", m)}",
+   "replace": "known_addrs = set()"
+  },
+  {
+   "id": "ks_d9_tirnak",
+   "desc": "tırnaklı metin sınanmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_p22h_kesif.py::test_atif_yapilan_sonucta_olmayan_olgu",
+   "find": "            if needle and not any(needle in s for s in lowered):",
+   "replace": "            if False:"
+  },
+  {
+   "id": "ks_d9_cagri",
+   "desc": "çağrı biçimli ad sınanmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_p22h_kesif.py::test_atif_yapilan_sonucta_olmayan_olgu",
+   "find": "        if any(c not in backed_idents for c in _STRICT_CALL_RE.findall(body)):",
+   "replace": "        if False:"
+  },
+  {
+   "id": "ks_d9_ithal",
+   "desc": "ithal adı sınanmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_p22h_kesif.py::test_atif_yapilan_sonucta_olmayan_olgu",
+   "find": "        names = set(known_functions)",
+   "replace": "        names = set()"
+  },
+  {
+   "id": "ks_d13_cevap",
+   "desc": "cevaptaki talimat kalıbı bayraklanmaz",
+   "module": "karadul/lm/guard.py",
+   "test": "tests/test_p22h_kesif.py::test_cevapta_talimat_kalibi_bayrak",
+   "find": "    if body and any(p.search(body) for p in INJECTION_PATTERNS):",
+   "replace": "    if False:"
+  },
+  {
+   "id": "ks_ajan_dongu_kayit",
+   "desc": "döngüde keşif kaydı yerine hat kaydı",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_dongu_soru_arac_kanitli_cevap",
+   "find": "                self.registry = registry_for_mode(MODE_EXPLORE)",
+   "replace": "                pass"
+  },
+  {
+   "id": "ks_ajan_kayit_geri",
+   "desc": "görev bitince hat kaydı geri konmaz",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_dongu_soru_arac_kanitli_cevap",
+   "find": "            finally:\n                self.registry = own_registry",
+   "replace": "            finally:\n                pass"
+  },
+  {
+   "id": "ks_ajan_onek",
+   "desc": "keşif bloğu isteme girmez",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_dongu_soru_arac_kanitli_cevap",
+   "find": "        system = explore_prefix(loop)",
+   "replace": "        system = self.prefix(mode)"
+  },
+  {
+   "id": "ks_ajan_onek_kayit",
+   "desc": "denetim kaydına kipin öneki yazılır (gönderilen değil)",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_dongu_soru_arac_kanitli_cevap",
+   "find": "onek_sha256=(sha256_text(task.prefix) if task.prefix is not None",
+   "replace": "onek_sha256=(sha256_text(task.prefix) if False"
+  },
+  {
+   "id": "ks_ajan_son_tur_arac",
+   "desc": "son cevap turunda araç dalları kalır",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_dongu_anmasiz_soru_ve_butce",
+   "find": "None if final_only else allowed)",
+   "replace": "allowed)"
+  },
+  {
+   "id": "ks_ajan_butce",
+   "desc": "araç bütçesi gevşer",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_dongu_anmasiz_soru_ve_butce",
+   "find": "            if cnt.call_requests > cap:",
+   "replace": "            if cnt.call_requests > cap + 5:"
+  },
+  {
+   "id": "ks_ajan_butce_son",
+   "desc": "bütçe bitince araç dalları kalır",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_dongu_anmasiz_soru_ve_butce",
+   "find": "                cnt.budget_exceeded += 1\n                final_only = True",
+   "replace": "                cnt.budget_exceeded += 1\n                final_only = False"
+  },
+  {
+   "id": "ks_ajan_tekrar",
+   "desc": "tekrar çağrı yeniden çalışır",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_dongu_paketteki_cagri_tekrar_sayilir",
+   "find": "            elif call_key in task.seen:",
+   "replace": "            elif False:"
+  },
+  {
+   "id": "ks_ajan_anmasiz",
+   "desc": "tek atışta anmasız soru modele gider",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_tek_atis_anma_sart_semada_arac_yok",
+   "find": "        if not loop and not addrs:\n            return task.finish(",
+   "replace": "        if False:\n            return task.finish("
+  },
+  {
+   "id": "ks_ajan_bilinmeyen_anma",
+   "desc": "bilinmeyen anma atlanır",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_tek_atis_anma_sart_semada_arac_yok",
+   "find": "                return task.finish(STATUS_UNKNOWN_ADDRESS, \"anılan fonksiyon çalışma alanında yok\")",
+   "replace": "                continue"
+  },
+  {
+   "id": "ks_ajan_korluk",
+   "desc": "körlük kipinde keşif açılır",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_tek_atis_anma_sart_semada_arac_yok",
+   "find": "        if self.blind_target:\n            raise ModeDisabled(\"körlük kipi ölçüm",
+   "replace": "        if False:\n            raise ModeDisabled(\"körlük kipi ölçüm"
+  },
+  {
+   "id": "ks_ajan_anma_tavan",
+   "desc": "anma tavanı gevşer",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_tek_atis_anma_sart_semada_arac_yok",
+   "find": "        if len(named) > EXPLORE_MENTIONS_MAX or",
+   "replace": "        if len(named) > EXPLORE_MENTIONS_MAX + 1 or"
+  },
+  {
+   "id": "ks_ajan_cevap_denetim",
+   "desc": "keşif cevabı denetlenmez",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_kesif.py::test_tek_atis_kanitsiz_cevap_isaretlenir",
+   "find": "        report = guard.check_answer(",
+   "replace": "        report = guard.check_summary("
+  },
+  {
+   "id": "ks_oturum_gorev",
+   "desc": "soru işi yürütülmez",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_kesif.py::test_oturum_soru_cevabi_terminale_oneri_yok",
+   "find": "        if job.tur == JOB_QUESTION:\n            return self._run_question(job)\n",
+   "replace": ""
+  },
+  {
+   "id": "ks_oturum_anmasiz",
+   "desc": "döngü açıkken de anmasız soru reddedilir",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_kesif.py::test_oturum_soru_kurallari",
+   "find": "        if not found and not self.explore_loop:",
+   "replace": "        if not found:"
+  },
+  {
+   "id": "ks_oturum_dongu_bayragi",
+   "desc": "explore_loop ajana K2 açmaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_kesif.py::test_oturum_soru_kurallari",
+   "find": "enabled_modes=(MODE_K0, MODE_K2) if self.explore_loop else (MODE_K0,))",
+   "replace": "enabled_modes=(MODE_K0,))"
+  },
+  {
+   "id": "ks_oturum_ag",
+   "desc": "keşifte ağ ucu denetlenmez",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_kesif.py::test_oturum_soru_kurallari",
+   "find": "        why = self._model_refusal(MODE_EXPLORE)",
+   "replace": "        why = None"
+  },
+  {
+   "id": "ks_oturum_anma_tavan",
+   "desc": "oturum anma tavanını denetlemez",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_kesif.py::test_oturum_soru_kurallari",
+   "find": "        if len(cmd.anmalar) > EXPLORE_MENTIONS_MAX:",
+   "replace": "        if False:"
+  },
+  {
+   "id": "ks_oturum_kanitsiz_baslik",
+   "desc": "kanıtsız cevap ayrı başlıkla yazılmaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_kesif.py::test_oturum_soru_cevabi_terminale_oneri_yok",
+   "find": "            head = \"kanıtsız cevap\" if guard.CODE_ANSWER_NO_REFS in codes else \"cevap\"",
+   "replace": "            head = \"cevap\""
+  },
+  {
+   "id": "ks_oturum_duzey",
+   "desc": "çelişkili cevap bilgi düzeyinde",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_kesif.py::test_oturum_soru_cevabi_terminale_oneri_yok",
+   "find": "\"bilgi\" if r.verdict == guard.VERDICT_CLEAR else \"uyari\")",
+   "replace": "\"bilgi\")"
   }
  ]
 }

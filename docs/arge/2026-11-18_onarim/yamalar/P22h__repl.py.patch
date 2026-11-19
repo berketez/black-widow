@@ -1,0 +1,12 @@
+--- a/karadul/lm/repl.py
++++ b/karadul/lm/repl.py
+@@ -226,7 +226,8 @@
+     "/takip ac|kapat                   ajan imlecinin haritayı izlemesi",
+     "/yardim                           bu metin",
+     "/cik                              oturumu kapatır",
+-    "Keşif kipinde / ile başlamayan satır sorudur (keşif sorusu görevi henüz bağlı değil).",
++    "Keşif kipinde / ile başlamayan satır sorudur; @FUN_<adres> ile en çok 3 fonksiyon anılabilir; araç "
++    "döngüsü kapalıyken (öntanım) en az bir anma gerekir. Cevabın kanıta bağlı olup olmadığını denetim yazar.",
+ )
+ 
+ 

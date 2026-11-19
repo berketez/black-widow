@@ -495,6 +495,32 @@ def build_explain_answer_schema(evidence_ids: Iterable[Any]) -> dict[str, Any]:
     return schema
 
 
+# Keşif sorusu cevabı (KaradulLM v2 tasarımı §3.4 keşif satırı; P22h kalem 1):
+# ``{"kind": "final", "cevap": <metin ≤ max_chars>, "kanit": [<sonuç kimlikleri>]}``. ``max_chars`` çağırandan
+# (``modes.EXPLORE_ANSWER_MAX_CHARS``; bu modül ``modes``'u içe aktaramaz: modes → repl → protocol döngüsü).
+# ``kanit`` öğeleri yalnız o turda verilmiş başarılı sonuç kimlikleri (``refs_schema``); henüz hiç sonuç yoksa
+# (anma yok, döngünün ilk turu) dizi boş olmak zorundadır. Boş ``kanit``'i şema yasaklamaz: denetim katmanı
+# cevabı "kanıtsız" diye işaretler (``guard.check_answer`` D8), böylece L1 / L2 uçlarında da aynı kural geçer.
+EXPLORE_ANSWER_REQUIRED = ("cevap", "kanit")
+
+
+def explore_answer_branches(evidence_ids: Iterable[Any], max_chars: int) -> list[dict[str, Any]]:
+    """Keşif cevabının tek düz dalının ``properties`` sözlüğü (döngü zarfının ``final`` dalı da bu)."""
+    if not isinstance(max_chars, int) or isinstance(max_chars, bool) or max_chars < 1:
+        raise SchemaError("cevap uzunluk tavanı artı bir tamsayı olmalı")
+    ids = list(evidence_ids)
+    refs = refs_schema(ids) if ids else {"type": "array", "maxItems": 0}
+    return [{"cevap": {"type": "string", "minLength": 1, "maxLength": max_chars}, "kanit": refs}]
+
+
+def build_explore_answer_schema(evidence_ids: Iterable[Any], max_chars: int,
+                                tools: Optional[Mapping[str, Mapping[str, Any]]] = None) -> dict[str, Any]:
+    """Keşif sorusu turunun şeması: ``tools`` verilirse araç dalları + ``final`` (döngü), verilmezse yalnız
+    ``final`` (tek atış ya da bütçe bitti)."""
+    return build_task_envelope(tools or {}, explore_answer_branches(evidence_ids, max_chars),
+                               EXPLORE_ANSWER_REQUIRED)
+
+
 # ============================================================================================
 # 3. Tur ayrıştırma ve yetenek düzeyine göre kural
 # ============================================================================================
