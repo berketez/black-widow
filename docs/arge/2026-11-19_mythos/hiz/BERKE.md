@@ -1,0 +1,10 @@
+# HIZ — Berke için özet (2026-11-19)
+
+**Soru:** "M silikonlarda daha nasıl hızlandırırız?" (ve senin düzeltmenle: her makinede, değerler o makineden türetilerek).
+**Ne bulundu:** Sürenin büyük kısmı hesaplamadan değil, aynı işi tekrar yapmaktan geliyor. Ollama gösterisi uçtan uca 2 sa 9 dk sürdü: yarısı Ghidra köprüsü, onun da yarısı BSim (fonksiyon benzerliği; 32,5 dk koştu, sonuç boştu ve zaten adlara girmiyor). Ad üretim adımında (yeniden kurma; tmux üzerinde Ghidra'sız ölçüldü) zamanın yarısı aynı arama kalıplarının milyonlarca kez yeniden hazırlanması (düzenli ifade derlemesi). Küçük ikililerde en büyük kalem bu ad üretim döngüsü.
+**En çok kazandıracak üç iş (hepsi çıktıyı değiştirmez, TAHMİN):** (1) arama kalıplarını bir kez hazırlamak: her boyutta uçtan uca %6–10, en az emek; (2) BSim'in iki fazla decompile'ını kaldırıp Ghidra'nın kendi paralel taramasını kullanmak: büyük ikilide %15–23; (3) aynı `.c` dosyalarını onlarca kez diskten açmak yerine bir kez okumak: büyük ikilide %8–16.
+**Bu makineye özgü bir bulgu:** dosya açmak alışılmadık pahalı (yeni dosya yazmaktan 15–60 kat). Avast'ın her açılışta dosyayı taraması (erişimde tarama) ile tutarlı; kanıtlamak için ölçüm klasörünü Avast'tan geçici olarak dışlamak gerekir — senin kararın.
+**Genellik:** bugünkü ayarlar tek makineye göre: 128 GB'lık bir makinede Java belleği bir eşiği (32 GB) aşıp verimsiz kipe geçiyor, Windows'ta bellek hiç algılanmıyor, 8 GB'ta Java belleğin yarısını alıyor. Plan bunları çekirdek ve bellek sayısından formülle türetiyor (M5 / M6 / Linux / Windows için aynı formül); "başarım / verim çekirdeği" ayrımı yalnız işçi sayısında ve iş dağıtımında önemli.
+**Terimler:** *decompile* = makine kodundan C benzeri kod üretmek; *BSim* = Ghidra'nın fonksiyon benzerliği veritabanı; *verim çekirdeği* = Apple çipindeki az güç harcayan yavaş çekirdekler.
+**Sınır:** ölçümler başka işler koşarken yapıldı; kesin sayılar boş makinede ilk paketle (HZ-0) alınacak.
+**Karar gerekenler:** Avast dışlama denemesi; orjson bağımlılığı (küçük kazanç); BSim büyük ikilide koşsun mu (ÖLÇEK'le ortak); ikinci ad turunu ölçülmüş koşulda atlamak (çıktıyı değiştirebilir, ölçümden sonra).

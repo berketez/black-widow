@@ -59,6 +59,9 @@ sade özet ver.
 | 21 | Analist kendi modeliyle (Claude / GPT) kullanamıyor | MCP sunucusu: KaradulLM araç kaydının bağdaştırıcısı | P24 (`gonderim/P24.md`) |
 | 22 | Onarımdan kalanlar: son doğrulama mutasyonları, 9 bayat mutasyon tanımı, P18 yaması + 78 test, ölçüm aracı kusurları, parametre adı yeniden ölçümü, P23 | `gonderim/OKU.md` "2026-11-19 sonrası" | onarım paketleri |
 | 23 | KaradulLM: beklenen süre gerçek sürenin yarısı; duman kalemi 4–6 ve büyük çalışma alanı denenmedi | Duman listesinin kalanı; süre kestirimi | Y7 |
+| 24 | Yeniden kurmanın 953 sn'sinin 481 sn'si düzenli ifade derlemesi (3,68 M derleme); 96 338 dosya okuması 135 sn (Ghidra'sız profil, mac/tmux kopyası, yük altında) | Desen önbelleği; tek yazım, paralel okuma, metin önbelleği. Çıktı bayt bayt aynı kalmalı | HZ-7a (ilk kod paketi; **tahmin** uçtan uca −%6–10), HZ-6, HZ-7b |
+| 25 | Yeniden kurma döngüsünün ikinci turu 118 / 119 ikilide 0 yeni ad üretiyor, döngü süresinin %36,7'sini alıyor | Turu koşula bağla (çıktıyı değiştirebilir: ön kayıtlı ölçümle) | HZ-7c |
+| 26 | JVM yığın tavanı 32 768 MB ≥ 80 GB makinede sıkıştırılmış göstericileri kapatıyor; Windows'ta bellek algılanmıyor (yığın hep 4 096 MB); 8 yerde sabit işçi sayısı | Donanım künyesi ve formüller | HZ-5 |
 
 ## 3. Dalgalar
 
@@ -134,6 +137,8 @@ KARŞI'nın sayımıyla 74 iş paketi. Tahmin: 4–5 tam Opus günü ve 2–3 ge
 | ÖL-10 tasarım turunu kim yapsın | öneri: tek bir Mythos ajanı (tasarım işi); istemezsen Opus mimar ajanı |
 | ARGE verisinin silinmesi (yaklaşık 4,6 GB) | bitiş çizgisine kadar durması önerilir (kanıt) |
 | Karşı görüş (Astra) | KARŞI hattı Mythos ile yapıldı; ayrı model ailesinden görüş kota açılınca isteğe bağlı |
+| Avast dışlama denemesi (`hiz/PLAN.md` §6 K-HZ-1) | Bu makinede var olan dosyayı açmak 0,6–0,9 ms, yeni dosya yazmak 0,04 ms; Avast etkin ve tablo erişimde taramayla tutarlı, ama nedeni kanıtlanmadı. Karadul'un çalışma dizinlerini Avast'ta dışlayıp ölçmek Berke'nin kararı (güvenlik ayarı; ajan değiştirmez) |
+| HIZ planı KARŞI tarafından denetlenmedi | `hiz/PLAN.md` KARŞI bitirirken yarımdı; Dalga 0'da HZ-0 koşmadan önce ana oturum dosya yollarını ve kabul ölçütlerini bir kez denetlesin |
 
 ## 6. Belge dizini
 
