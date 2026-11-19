@@ -120,6 +120,46 @@
       "test": "tests/test_ps1_kapsayici.py::test_unknown_without_container_is_skipped_not_js",
       "find": "        if target.target_type == TargetType.UNKNOWN:\n            return StageResult(\n                stage_name=self.name, success=False, skipped=True,",
       "replace": "        if target.target_type == TargetType.UNKNOWN and target.metadata.get(\"container\"):\n            return StageResult(\n                stage_name=self.name, success=False, skipped=True,"
+    },
+    {
+      "id": "ps4_k3_yalniz_fonksiyon",
+      "desc": "katman yok sayılır: eski 'en çok fonksiyonlu' kural",
+      "module": "karadul/analyzers/app_bundle.py",
+      "test": "tests/test_ps4_app_bundle.py::test_electron_paketinde_ana_bilesen_uygulamanin_js_i",
+      "find": "        best_tier = min(component_tier(r) for r in successful)\n        tier = [r for r in successful if component_tier(r) == best_tier]",
+      "replace": "        best_tier = min(component_tier(r) for r in successful)\n        tier = list(successful)"
+    },
+    {
+      "id": "ps4_k3_macos_katmani_yok",
+      "desc": "Contents/MacOS ikilisi çerçeveyle aynı katmanda",
+      "module": "karadul/analyzers/app_bundle.py",
+      "test": "tests/test_ps4_app_bundle.py::test_yerel_pakette_ana_ikili_cerceveden_once",
+      "find": "        if i + 1 < len(parts) and parts[i + 1] == \"MacOS\":",
+      "replace": "        if i + 1 < len(parts) and parts[i + 1] == \"MacOS_x\":"
+    },
+    {
+      "id": "ps4_k3_jar_dali_yok",
+      "desc": "reconstruct'ta JAR dalı yok (Bilinmeyen bilesen tipi)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_app_bundle.py::test_jar_ana_bilesen_java_hattina_gider",
+      "find": "        elif main_type in (\"java_jar\", \"android_apk\", \"dotnet_assembly\", \"python_packed\"):",
+      "replace": "        elif main_type in (\"never\",):"
+    },
+    {
+      "id": "ps4_k3_bundle_deob_atla",
+      "desc": "APP_BUNDLE deobfuscation yine hep atlanır",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_app_bundle.py::test_electron_ana_bilesende_deobfuscation_bilesen_uzerinde_kosar",
+      "find": "        if main_type not in (\"electron_app\", \"js_bundle\", \"java_jar\") or not main_path:",
+      "replace": "        if True or main_type not in (\"electron_app\", \"js_bundle\", \"java_jar\") or not main_path:"
+    },
+    {
+      "id": "ps4_k3_gerekce_yok",
+      "desc": "seçim gerekçesi kayda yazılmaz",
+      "module": "karadul/analyzers/app_bundle.py",
+      "test": "tests/test_ps4_app_bundle.py::test_electron_paketinde_ana_bilesen_uygulamanin_js_i",
+      "find": "            \"main_selection_reason\": self.main_selection_reason,",
+      "replace": "            \"main_selection_reason\": \"\","
     }
   ]
 }

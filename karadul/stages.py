@@ -605,9 +605,17 @@ class StaticAnalysisStage(Stage):
         stats["strings_found"] = bundle_result.total_strings
         stats["target_type"] = "app_bundle"
 
-        # En çok fonksiyonu olan başarılı bileşen = ana bileşen (downstream için)
+        # Ana bileşen: önce tür (uygulama kodu > JAR > ana ikili > çerçeve), sonra
+        # fonksiyon sayısı (BICIM-09); gerekçe ve bileşen listesi kayıtta.
         main_comp = bundle_result.main_component
+        stats["main_selection_reason"] = bundle_result.main_selection_reason
+        stats["bundle_component_list"] = [
+            {"name": r.name, "type": r.component_type, "success": r.success,
+             "functions": r.functions_found}
+            for r in bundle_result.component_results
+        ]
         if main_comp is not None:
+            stats["main_component_type"] = main_comp.component_type
             context.metadata["main_component"] = main_comp.path
             context.metadata["main_component_type"] = main_comp.component_type
             context.metadata["main_component_name"] = main_comp.name
@@ -1021,6 +1029,12 @@ class DeobfuscationStage(Stage):
         if target.target_type in self._JS_FAMILY:
             return self._execute_deep(context, start)
 
+        # BICIM-09 (P-S4): .app'in ana bileşeni Electron JS ya da JAR ise o
+        # bileşenin hattı koşar (eskiden APP_BUNDLE hep atlanıyordu; Electron
+        # reconstruct'ı "Deobfuscate edilmis dosya bulunamadi" ile düşüyordu).
+        if target.target_type == TargetType.APP_BUNDLE:
+            return self._execute_app_bundle(context, start)
+
         # JVM/Dalvik: formatın kendi analizcisi.
         if target.target_type in self._ANALYZER_DEOB_TYPES:
             return self._execute_analyzer_deobfuscate(context, start)
@@ -1036,6 +1050,35 @@ class DeobfuscationStage(Stage):
             "tanımlı değil.",
         )
         return self._skipped(start, reason)
+
+    def _execute_app_bundle(self, context: PipelineContext, start: float) -> StageResult:
+        """APP_BUNDLE: ana bileşenin türüne göre deobfuscation (BICIM-09).
+
+        Static aşaması ana bileşeni seçip ``context.metadata``'ya yazar ve çıktılarını
+        (``raw/asar_extracted`` dahil) üst workspace'e taşır. Electron / JS bileşeni
+        derin JS hattına, JAR kendi analizcisine gider; yerel ana bileşende
+        deobfuscation tanımlı değil (eskisi gibi 'atlandı').
+        """
+        main_type = context.metadata.get("main_component_type")
+        main_path = context.metadata.get("main_component")
+        if main_type not in ("electron_app", "js_bundle", "java_jar") or not main_path:
+            return self._skipped(start, self._SKIP_REASONS[TargetType.APP_BUNDLE] + (
+                f" Ana bileşen: {main_type or 'yok'}."
+            ))
+        from karadul.analyzers.app_bundle import build_component_target, component_context
+
+        comp = {"path": main_path, "type": main_type,
+                "name": context.metadata.get("main_component_name", "")}
+        comp_ctx = component_context(
+            context, build_component_target(comp, context.target.name),
+        )
+        if main_type == "java_jar":
+            res = self._execute_analyzer_deobfuscate(comp_ctx, start)
+        else:
+            res = self._execute_deep(comp_ctx, start)
+        res.stats["bundle_main_component"] = comp["name"]
+        res.stats["bundle_main_component_type"] = main_type
+        return res
 
     def _skipped(self, start: float, reason: str) -> StageResult:
         """Deobfuscation ATLANDI sonucu (hata DEĞİL).
@@ -1469,6 +1512,13 @@ class ReconstructionStage(Stage):
                 _merge(self._execute_js(comp_context, start))
             except Exception as exc:
                 errors.append(f"JS bilesen reconstruction hatasi: {exc}")
+        elif main_type in ("java_jar", "android_apk", "dotnet_assembly", "python_packed"):
+            # BORU-08: JAR'ın kendi hattı (eskiden "Bilinmeyen bilesen tipi").
+            try:
+                stats["main_reconstruction"] = "analyzer"
+                _merge(self._execute_analyzer_reconstruct(comp_context, start))
+            except Exception as exc:
+                errors.append(f"{main_type} bilesen reconstruction hatasi: {exc}")
         else:
             errors.append(f"Bilinmeyen bilesen tipi: {main_type}")
 

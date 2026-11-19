@@ -2,9 +2,10 @@
 
 Bir .app dizinindeki tüm bileşenleri keşfedip uygun analyzer'larla SIRAYLA
 analiz eder. Her bileşen kendi alt-workspace'ine yazar
-(``<workspace>/components/<bileşen>/``); en çok fonksiyonu olan başarılı
-bileşen "ana bileşen" olur ve çıktıları üst workspace'e taşınır (downstream
-stage'ler, raporlar ve arayüz üst workspace'i okur).
+(``<workspace>/components/<bileşen>/``); ana bileşen önce türe (uygulamanın kendi
+kodu: Electron JS > JAR > Contents/MacOS ikilisi > çerçeve / dylib), sonra fonksiyon
+sayısına göre seçilir ve gerekçesi kayda geçer (BICIM-09); çıktıları üst workspace'e
+taşınır (downstream stage'ler, raporlar ve arayüz üst workspace'i okur).
 """
 from __future__ import annotations
 
@@ -68,11 +69,34 @@ class BundleAnalysisResult:
 
     @property
     def main_component(self) -> ComponentResult | None:
-        """En çok fonksiyonu olan başarılı bileşen (eşitlikte listede ilk olan)."""
+        """Ana bileşen: önce TÜR, sonra fonksiyon sayısı (BICIM-09, P-S4).
+
+        Eskiden yalnız "en çok fonksiyonlu başarılı bileşen" seçiliyordu: Electron
+        bileşeni fonksiyon saymadığı (0) için bir Electron `.app`'inde ana bileşen
+        hep en büyük yerel çerçeve (Chromium) oluyordu; Java uygulamasında JAR
+        seçilince reconstruct "Bilinmeyen bilesen tipi" ile düşüyordu. Sıra:
+        uygulamanın kendi kodu (electron_app / js_bundle > java_jar) >
+        Contents/MacOS ikilileri > çerçeve / dylib; aynı katmanda en çok
+        fonksiyonlu (eşitlikte listede ilk).
+        """
+        return self._select_main()[0]
+
+    @property
+    def main_selection_reason(self) -> str:
+        """Ana bileşenin neden seçildiği (kayıt ve rapor için)."""
+        return self._select_main()[1]
+
+    def _select_main(self) -> tuple[ComponentResult | None, str]:
         successful = [r for r in self.component_results if r.success]
         if not successful:
-            return None
-        return max(successful, key=lambda r: r.functions_found)
+            return None, "başarılı bileşen yok"
+        best_tier = min(component_tier(r) for r in successful)
+        tier = [r for r in successful if component_tier(r) == best_tier]
+        main = max(tier, key=lambda r: r.functions_found)
+        why = _TIER_REASONS[best_tier]
+        if len(tier) > 1:
+            why += f"; bu katmanda {len(tier)} aday, en çok fonksiyonlu seçildi"
+        return main, why
 
     def to_dict(self) -> dict:
         main = self.main_component
@@ -88,11 +112,14 @@ class BundleAnalysisResult:
             "total_duration": round(self.total_duration, 2),
             "main_component": main.name if main else "",
             "main_component_path": main.path if main else "",
+            "main_component_type": main.component_type if main else "",
+            "main_selection_reason": self.main_selection_reason,
             "component_results": [
                 {
                     "name": cr.name,
                     "path": cr.path,
                     "type": cr.component_type,
+                    "role": _TIER_ROLES[component_tier(cr)],
                     "success": cr.success,
                     "duration": round(cr.duration, 2),
                     "functions": cr.functions_found,
@@ -103,6 +130,41 @@ class BundleAnalysisResult:
                 for cr in self.component_results
             ],
         }
+
+
+# Ana bileşen seçim katmanları (BICIM-09). Küçük sayı önce gelir.
+_TIER_APP_CODE = 0      # uygulamanın kendi kodu: Electron JS (app.asar / app/)
+_TIER_JAVA = 1          # Java uygulaması: JAR
+_TIER_MAIN_BINARY = 2   # Contents/MacOS altındaki ikili(ler)
+_TIER_RUNTIME = 3       # çerçeve / dylib (çoğunlukla üçüncü taraf çalışma zamanı)
+_TIER_REASONS = {
+    _TIER_APP_CODE: "uygulamanın kendi JS kodu (Electron): yerel çerçeveler çalışma zamanı",
+    _TIER_JAVA: "Java uygulaması: asıl kod JAR'da; yerel başlatıcı / JRE çalışma zamanı",
+    _TIER_MAIN_BINARY: "Contents/MacOS ana ikilisi",
+    _TIER_RUNTIME: "yalnız çerçeve / dylib bileşeni başarılı (ana ikili yok ya da başarısız)",
+}
+_TIER_ROLES = {
+    _TIER_APP_CODE: "uygulama_kodu", _TIER_JAVA: "java_kodu",
+    _TIER_MAIN_BINARY: "ana_ikili", _TIER_RUNTIME: "cerceve_dylib",
+}
+
+
+def component_tier(comp: Any) -> int:
+    """Bileşenin ana bileşen seçimindeki katmanı (ComponentResult ya da dict)."""
+    if isinstance(comp, dict):
+        ctype, path = comp.get("type", ""), str(comp.get("path", ""))
+    else:
+        ctype, path = comp.component_type, str(comp.path)
+    if ctype in ("electron_app", "js_bundle"):
+        return _TIER_APP_CODE
+    if ctype == "java_jar":
+        return _TIER_JAVA
+    parts = Path(path).parts
+    if "Contents" in parts:
+        i = len(parts) - 1 - parts[::-1].index("Contents")
+        if i + 1 < len(parts) and parts[i + 1] == "MacOS":
+            return _TIER_MAIN_BINARY
+    return _TIER_RUNTIME
 
 
 # TargetType -> analyzer TargetType mapping
