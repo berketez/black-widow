@@ -1,0 +1,3124 @@
+{
+ "ikili_sayisi": 119,
+ "okunamayan": [],
+ "toplam": {
+  "fonksiyon": [
+   66983,
+   66983
+  ],
+  "total_attempted": [
+   66983,
+   66983
+  ],
+  "success": [
+   66983,
+   66983
+  ],
+  "failed": [
+   0,
+   0
+  ],
+  "skipped": [
+   0,
+   0
+  ]
+ },
+ "farkli_ikili_sayisi": 0,
+ "farkli": [],
+ "satirlar": [
+  {
+   "ikili": "debian/coreutils/[",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    278,
+    278
+   ],
+   "total_attempted": [
+    278,
+    278
+   ],
+   "success": [
+    278,
+    278
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/arch",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    246,
+    246
+   ],
+   "total_attempted": [
+    246,
+    246
+   ],
+   "success": [
+    246,
+    246
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/b2sum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    314,
+    314
+   ],
+   "total_attempted": [
+    314,
+    314
+   ],
+   "success": [
+    314,
+    314
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/base32",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    301,
+    301
+   ],
+   "total_attempted": [
+    301,
+    301
+   ],
+   "success": [
+    301,
+    301
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/base64",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    298,
+    298
+   ],
+   "total_attempted": [
+    298,
+    298
+   ],
+   "success": [
+    298,
+    298
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/basename",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    247,
+    247
+   ],
+   "total_attempted": [
+    247,
+    247
+   ],
+   "success": [
+    247,
+    247
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/basenc",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    343,
+    343
+   ],
+   "total_attempted": [
+    343,
+    343
+   ],
+   "success": [
+    343,
+    343
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/cat",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    296,
+    296
+   ],
+   "total_attempted": [
+    296,
+    296
+   ],
+   "success": [
+    296,
+    296
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/chcon",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    446,
+    446
+   ],
+   "total_attempted": [
+    446,
+    446
+   ],
+   "success": [
+    446,
+    446
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/chgrp",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    403,
+    403
+   ],
+   "total_attempted": [
+    403,
+    403
+   ],
+   "success": [
+    403,
+    403
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/chmod",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    365,
+    365
+   ],
+   "total_attempted": [
+    365,
+    365
+   ],
+   "success": [
+    365,
+    365
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/chown",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    403,
+    403
+   ],
+   "total_attempted": [
+    403,
+    403
+   ],
+   "success": [
+    403,
+    403
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/chroot",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    311,
+    311
+   ],
+   "total_attempted": [
+    311,
+    311
+   ],
+   "success": [
+    311,
+    311
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/cksum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    479,
+    479
+   ],
+   "total_attempted": [
+    479,
+    479
+   ],
+   "success": [
+    479,
+    479
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/comm",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    296,
+    296
+   ],
+   "total_attempted": [
+    296,
+    296
+   ],
+   "success": [
+    296,
+    296
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/cp",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    746,
+    746
+   ],
+   "total_attempted": [
+    746,
+    746
+   ],
+   "success": [
+    746,
+    746
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/csplit",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    347,
+    347
+   ],
+   "total_attempted": [
+    347,
+    347
+   ],
+   "success": [
+    347,
+    347
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/cut",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    313,
+    313
+   ],
+   "total_attempted": [
+    313,
+    313
+   ],
+   "success": [
+    313,
+    313
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/date",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    376,
+    376
+   ],
+   "total_attempted": [
+    376,
+    376
+   ],
+   "success": [
+    376,
+    376
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/dd",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    388,
+    388
+   ],
+   "total_attempted": [
+    388,
+    388
+   ],
+   "success": [
+    388,
+    388
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/df",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    472,
+    472
+   ],
+   "total_attempted": [
+    472,
+    472
+   ],
+   "success": [
+    472,
+    472
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/dir",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    665,
+    665
+   ],
+   "total_attempted": [
+    665,
+    665
+   ],
+   "success": [
+    665,
+    665
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/dircolors",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    283,
+    283
+   ],
+   "total_attempted": [
+    283,
+    283
+   ],
+   "success": [
+    283,
+    283
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/dirname",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    249,
+    249
+   ],
+   "total_attempted": [
+    249,
+    249
+   ],
+   "success": [
+    249,
+    249
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/du",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    532,
+    532
+   ],
+   "total_attempted": [
+    532,
+    532
+   ],
+   "success": [
+    532,
+    532
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/echo",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    246,
+    246
+   ],
+   "total_attempted": [
+    246,
+    246
+   ],
+   "success": [
+    246,
+    246
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/env",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    318,
+    318
+   ],
+   "total_attempted": [
+    318,
+    318
+   ],
+   "success": [
+    318,
+    318
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/expand",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    284,
+    284
+   ],
+   "total_attempted": [
+    284,
+    284
+   ],
+   "success": [
+    284,
+    284
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/expr",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    298,
+    298
+   ],
+   "total_attempted": [
+    298,
+    298
+   ],
+   "success": [
+    298,
+    298
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/factor",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    383,
+    383
+   ],
+   "total_attempted": [
+    383,
+    383
+   ],
+   "success": [
+    383,
+    383
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/false",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    239,
+    239
+   ],
+   "total_attempted": [
+    239,
+    239
+   ],
+   "success": [
+    239,
+    239
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/fmt",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    293,
+    293
+   ],
+   "total_attempted": [
+    293,
+    293
+   ],
+   "success": [
+    293,
+    293
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/fold",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    284,
+    284
+   ],
+   "total_attempted": [
+    284,
+    284
+   ],
+   "success": [
+    284,
+    284
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/groups",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    270,
+    270
+   ],
+   "total_attempted": [
+    270,
+    270
+   ],
+   "success": [
+    270,
+    270
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/head",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    292,
+    292
+   ],
+   "total_attempted": [
+    292,
+    292
+   ],
+   "success": [
+    292,
+    292
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/hostid",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    247,
+    247
+   ],
+   "total_attempted": [
+    247,
+    247
+   ],
+   "success": [
+    247,
+    247
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/id",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    306,
+    306
+   ],
+   "total_attempted": [
+    306,
+    306
+   ],
+   "success": [
+    306,
+    306
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/install",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    815,
+    815
+   ],
+   "total_attempted": [
+    815,
+    815
+   ],
+   "success": [
+    815,
+    815
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/join",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    330,
+    330
+   ],
+   "total_attempted": [
+    330,
+    330
+   ],
+   "success": [
+    330,
+    330
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/libstdbuf.so",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    34,
+    34
+   ],
+   "total_attempted": [
+    34,
+    34
+   ],
+   "success": [
+    34,
+    34
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/link",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    247,
+    247
+   ],
+   "total_attempted": [
+    247,
+    247
+   ],
+   "success": [
+    247,
+    247
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/ln",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    421,
+    421
+   ],
+   "total_attempted": [
+    421,
+    421
+   ],
+   "success": [
+    421,
+    421
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/logname",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    250,
+    250
+   ],
+   "total_attempted": [
+    250,
+    250
+   ],
+   "success": [
+    250,
+    250
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/ls",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    665,
+    665
+   ],
+   "total_attempted": [
+    665,
+    665
+   ],
+   "success": [
+    665,
+    665
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/md5sum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    299,
+    299
+   ],
+   "total_attempted": [
+    299,
+    299
+   ],
+   "success": [
+    299,
+    299
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/mkdir",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    514,
+    514
+   ],
+   "total_attempted": [
+    514,
+    514
+   ],
+   "success": [
+    514,
+    514
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/mkfifo",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    471,
+    471
+   ],
+   "total_attempted": [
+    471,
+    471
+   ],
+   "success": [
+    471,
+    471
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/mknod",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    481,
+    481
+   ],
+   "total_attempted": [
+    481,
+    481
+   ],
+   "success": [
+    481,
+    481
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/mktemp",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    285,
+    285
+   ],
+   "total_attempted": [
+    285,
+    285
+   ],
+   "success": [
+    285,
+    285
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/mv",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    753,
+    753
+   ],
+   "total_attempted": [
+    753,
+    753
+   ],
+   "success": [
+    753,
+    753
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/nice",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    258,
+    258
+   ],
+   "total_attempted": [
+    258,
+    258
+   ],
+   "success": [
+    258,
+    258
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/nl",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    299,
+    299
+   ],
+   "total_attempted": [
+    299,
+    299
+   ],
+   "success": [
+    299,
+    299
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/nohup",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    274,
+    274
+   ],
+   "total_attempted": [
+    274,
+    274
+   ],
+   "success": [
+    274,
+    274
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/nproc",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    275,
+    275
+   ],
+   "total_attempted": [
+    275,
+    275
+   ],
+   "success": [
+    275,
+    275
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/numfmt",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    312,
+    312
+   ],
+   "total_attempted": [
+    312,
+    312
+   ],
+   "success": [
+    312,
+    312
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/od",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    380,
+    380
+   ],
+   "total_attempted": [
+    380,
+    380
+   ],
+   "success": [
+    380,
+    380
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/paste",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    278,
+    278
+   ],
+   "total_attempted": [
+    278,
+    278
+   ],
+   "success": [
+    278,
+    278
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/pathchk",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    259,
+    259
+   ],
+   "total_attempted": [
+    259,
+    259
+   ],
+   "success": [
+    259,
+    259
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/pinky",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    402,
+    402
+   ],
+   "total_attempted": [
+    402,
+    402
+   ],
+   "success": [
+    402,
+    402
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/pr",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    377,
+    377
+   ],
+   "total_attempted": [
+    377,
+    377
+   ],
+   "success": [
+    377,
+    377
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/printenv",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    245,
+    245
+   ],
+   "total_attempted": [
+    245,
+    245
+   ],
+   "success": [
+    245,
+    245
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/printf",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    310,
+    310
+   ],
+   "total_attempted": [
+    310,
+    310
+   ],
+   "success": [
+    310,
+    310
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/ptx",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    335,
+    335
+   ],
+   "total_attempted": [
+    335,
+    335
+   ],
+   "success": [
+    335,
+    335
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/pwd",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    285,
+    285
+   ],
+   "total_attempted": [
+    285,
+    285
+   ],
+   "success": [
+    285,
+    285
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/readlink",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    300,
+    300
+   ],
+   "total_attempted": [
+    300,
+    300
+   ],
+   "success": [
+    300,
+    300
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/realpath",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    306,
+    306
+   ],
+   "total_attempted": [
+    306,
+    306
+   ],
+   "success": [
+    306,
+    306
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/rm",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    395,
+    395
+   ],
+   "total_attempted": [
+    395,
+    395
+   ],
+   "success": [
+    395,
+    395
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/rmdir",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    274,
+    274
+   ],
+   "total_attempted": [
+    274,
+    274
+   ],
+   "success": [
+    274,
+    274
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/runcon",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    307,
+    307
+   ],
+   "total_attempted": [
+    307,
+    307
+   ],
+   "success": [
+    307,
+    307
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/seq",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    297,
+    297
+   ],
+   "total_attempted": [
+    297,
+    297
+   ],
+   "success": [
+    297,
+    297
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sha1sum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    299,
+    299
+   ],
+   "total_attempted": [
+    299,
+    299
+   ],
+   "success": [
+    299,
+    299
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sha224sum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    323,
+    323
+   ],
+   "total_attempted": [
+    323,
+    323
+   ],
+   "success": [
+    323,
+    323
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sha256sum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    323,
+    323
+   ],
+   "total_attempted": [
+    323,
+    323
+   ],
+   "success": [
+    323,
+    323
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sha384sum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    323,
+    323
+   ],
+   "total_attempted": [
+    323,
+    323
+   ],
+   "success": [
+    323,
+    323
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sha512sum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    323,
+    323
+   ],
+   "total_attempted": [
+    323,
+    323
+   ],
+   "success": [
+    323,
+    323
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/shred",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    393,
+    393
+   ],
+   "total_attempted": [
+    393,
+    393
+   ],
+   "success": [
+    393,
+    393
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/shuf",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    377,
+    377
+   ],
+   "total_attempted": [
+    377,
+    377
+   ],
+   "success": [
+    377,
+    377
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sleep",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    263,
+    263
+   ],
+   "total_attempted": [
+    263,
+    263
+   ],
+   "success": [
+    263,
+    263
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sort",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    625,
+    625
+   ],
+   "total_attempted": [
+    625,
+    625
+   ],
+   "success": [
+    625,
+    625
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/split",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    396,
+    396
+   ],
+   "total_attempted": [
+    396,
+    396
+   ],
+   "success": [
+    396,
+    396
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/stat",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    471,
+    471
+   ],
+   "total_attempted": [
+    471,
+    471
+   ],
+   "success": [
+    471,
+    471
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/stdbuf",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    286,
+    286
+   ],
+   "total_attempted": [
+    286,
+    286
+   ],
+   "success": [
+    286,
+    286
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/stty",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    309,
+    309
+   ],
+   "total_attempted": [
+    309,
+    309
+   ],
+   "success": [
+    309,
+    309
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sum",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    314,
+    314
+   ],
+   "total_attempted": [
+    314,
+    314
+   ],
+   "success": [
+    314,
+    314
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/sync",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    261,
+    261
+   ],
+   "total_attempted": [
+    261,
+    261
+   ],
+   "success": [
+    261,
+    261
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/tac",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    306,
+    306
+   ],
+   "total_attempted": [
+    306,
+    306
+   ],
+   "success": [
+    306,
+    306
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/tail",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    412,
+    412
+   ],
+   "total_attempted": [
+    412,
+    412
+   ],
+   "success": [
+    412,
+    412
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/tee",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    306,
+    306
+   ],
+   "total_attempted": [
+    306,
+    306
+   ],
+   "success": [
+    306,
+    306
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/test",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    268,
+    268
+   ],
+   "total_attempted": [
+    268,
+    268
+   ],
+   "success": [
+    268,
+    268
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/timeout",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    333,
+    333
+   ],
+   "total_attempted": [
+    333,
+    333
+   ],
+   "success": [
+    333,
+    333
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/touch",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    361,
+    361
+   ],
+   "total_attempted": [
+    361,
+    361
+   ],
+   "success": [
+    361,
+    361
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/tr",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    299,
+    299
+   ],
+   "total_attempted": [
+    299,
+    299
+   ],
+   "success": [
+    299,
+    299
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/true",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    239,
+    239
+   ],
+   "total_attempted": [
+    239,
+    239
+   ],
+   "success": [
+    239,
+    239
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/truncate",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    266,
+    266
+   ],
+   "total_attempted": [
+    266,
+    266
+   ],
+   "success": [
+    266,
+    266
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/tsort",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    279,
+    279
+   ],
+   "total_attempted": [
+    279,
+    279
+   ],
+   "success": [
+    279,
+    279
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/tty",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    251,
+    251
+   ],
+   "total_attempted": [
+    251,
+    251
+   ],
+   "success": [
+    251,
+    251
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/uname",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    246,
+    246
+   ],
+   "total_attempted": [
+    246,
+    246
+   ],
+   "success": [
+    246,
+    246
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/unexpand",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    287,
+    287
+   ],
+   "total_attempted": [
+    287,
+    287
+   ],
+   "success": [
+    287,
+    287
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/uniq",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    309,
+    309
+   ],
+   "total_attempted": [
+    309,
+    309
+   ],
+   "success": [
+    309,
+    309
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/unlink",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    247,
+    247
+   ],
+   "total_attempted": [
+    247,
+    247
+   ],
+   "success": [
+    247,
+    247
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/users",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    363,
+    363
+   ],
+   "total_attempted": [
+    363,
+    363
+   ],
+   "success": [
+    363,
+    363
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/vdir",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    665,
+    665
+   ],
+   "total_attempted": [
+    665,
+    665
+   ],
+   "success": [
+    665,
+    665
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/wc",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    355,
+    355
+   ],
+   "total_attempted": [
+    355,
+    355
+   ],
+   "success": [
+    355,
+    355
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/who",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    403,
+    403
+   ],
+   "total_attempted": [
+    403,
+    403
+   ],
+   "success": [
+    403,
+    403
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/whoami",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    253,
+    253
+   ],
+   "total_attempted": [
+    253,
+    253
+   ],
+   "success": [
+    253,
+    253
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/coreutils/yes",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    249,
+    249
+   ],
+   "total_attempted": [
+    249,
+    249
+   ],
+   "success": [
+    249,
+    249
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/htop/htop",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    1148,
+    1148
+   ],
+   "total_attempted": [
+    1148,
+    1148
+   ],
+   "success": [
+    1148,
+    1148
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/openssl/openssl",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    5672,
+    5672
+   ],
+   "total_attempted": [
+    5672,
+    5672
+   ],
+   "success": [
+    5672,
+    5672
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/redis-tools/redis-benchmark",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    892,
+    892
+   ],
+   "total_attempted": [
+    892,
+    892
+   ],
+   "success": [
+    892,
+    892
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/redis-tools/redis-check-aof",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    5697,
+    5697
+   ],
+   "total_attempted": [
+    5697,
+    5697
+   ],
+   "success": [
+    5697,
+    5697
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/redis-tools/redis-check-rdb",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    5697,
+    5697
+   ],
+   "total_attempted": [
+    5697,
+    5697
+   ],
+   "success": [
+    5697,
+    5697
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/redis-tools/redis-cli",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    1111,
+    1111
+   ],
+   "total_attempted": [
+    1111,
+    1111
+   ],
+   "success": [
+    1111,
+    1111
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/sqlite3/sqlite3",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    1144,
+    1144
+   ],
+   "total_attempted": [
+    1144,
+    1144
+   ],
+   "success": [
+    1144,
+    1144
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/tmux/tmux",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    2588,
+    2588
+   ],
+   "total_attempted": [
+    2588,
+    2588
+   ],
+   "success": [
+    2588,
+    2588
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/tree/tree",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    250,
+    250
+   ],
+   "total_attempted": [
+    250,
+    250
+   ],
+   "success": [
+    250,
+    250
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/zstd/pzstd",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    1156,
+    1156
+   ],
+   "total_attempted": [
+    1156,
+    1156
+   ],
+   "success": [
+    1156,
+    1156
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "debian/zstd/zstd",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    1444,
+    1444
+   ],
+   "total_attempted": [
+    1444,
+    1444
+   ],
+   "success": [
+    1444,
+    1444
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "mac/htop",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    790,
+    790
+   ],
+   "total_attempted": [
+    790,
+    790
+   ],
+   "success": [
+    790,
+    790
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  },
+  {
+   "ikili": "mac/tmux",
+   "adresler_ayni": true,
+   "yalniz_tabanda": 0,
+   "yalniz_yenide": 0,
+   "fonksiyon": [
+    2821,
+    2821
+   ],
+   "total_attempted": [
+    2821,
+    2821
+   ],
+   "success": [
+    2821,
+    2821
+   ],
+   "failed": [
+    0,
+    0
+   ],
+   "skipped": [
+    0,
+    0
+   ]
+  }
+ ]
+}

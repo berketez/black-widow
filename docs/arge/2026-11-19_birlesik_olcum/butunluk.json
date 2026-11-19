@@ -1,0 +1,2322 @@
+{
+ "kok": "/Users/apple/karadul_olcum/runs/urun-onarim-a62f15e",
+ "taban_kok": "/Users/apple/karadul_olcum/runs/urun-yeni2-f30ac9a",
+ "B1": {
+  "ikili": 119,
+  "beklenen": 119,
+  "taban_ikili": 119,
+  "anahtarlar_ayni": true,
+  "bitti_icerik": {
+   "0": 119
+  },
+  "kismi": [],
+  "bittisiz": [],
+  "kunye_sonuc_durumu": {
+   "tamam": 119
+  },
+  "kunye_bitmeyen": []
+ },
+ "B2": {
+  "commit": true,
+  "kirli_yok": true,
+  "karadul_agactan": true,
+  "surum": true,
+  "agac_degismedi": true,
+  "PYTHONHASHSEED": "0",
+  "bitis_var": true,
+  "tabandaki_is": 119,
+  "secilen_is": 119
+ },
+ "B3": {
+  "girdi_ozeti_farkli": []
+ },
+ "B4": {
+  "beklenen": {
+   "sigdb_schema_version": "2",
+   "sigdb_lmdb_symbol_count": 9092473,
+   "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+   "sigdb_path_source": "data_root:signatures.lmdb",
+   "sigdb_schema_warning": null,
+   "sigdb_lmdb_error": null
+  },
+  "farkli": [],
+  "ornek": {
+   "sigdb_schema_version": "2",
+   "sigdb_lmdb_symbol_count": 9092473,
+   "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+   "sigdb_path_source": "data_root:signatures.lmdb",
+   "sigdb_schema_warning": null,
+   "sigdb_lmdb_error": null
+  }
+ },
+ "B5": {
+  "farkli": []
+ },
+ "B8": {
+  "overrides_dosyalari": []
+ },
+ "ikililer": {
+  "debian/coreutils/[": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "ddee5112577e6ef997d98fa50e06fc7d300e5a46ac2883349970e06cf0215238",
+   "taban_file_hash": "ddee5112577e6ef997d98fa50e06fc7d300e5a46ac2883349970e06cf0215238",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/arch": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9616f03321ce762171bf3eabc695d28315ff1929b0ea55777652c5970a6c9939",
+   "taban_file_hash": "9616f03321ce762171bf3eabc695d28315ff1929b0ea55777652c5970a6c9939",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/b2sum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "fa9494e4564363a29f7c029d6ebaf31e275e229fac1f8ba059ed6f4f9e0a26e4",
+   "taban_file_hash": "fa9494e4564363a29f7c029d6ebaf31e275e229fac1f8ba059ed6f4f9e0a26e4",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/base32": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "8584a7bf4503bc64beb4308a15b1112790369eb2e434d8e1a97d2cc1e33c58a0",
+   "taban_file_hash": "8584a7bf4503bc64beb4308a15b1112790369eb2e434d8e1a97d2cc1e33c58a0",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/base64": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "678daa837b6f8873d3e24775d357a619fb034e31b990510d8ae35293662a92ae",
+   "taban_file_hash": "678daa837b6f8873d3e24775d357a619fb034e31b990510d8ae35293662a92ae",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/basename": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "e5f735ef1e239481d53e44dae4217948198ac93f319cbd0df58a9e9a507d91c7",
+   "taban_file_hash": "e5f735ef1e239481d53e44dae4217948198ac93f319cbd0df58a9e9a507d91c7",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/basenc": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "a3d913eb626433a36e8b9e6125e067a5165adaba3e58ae84f31c0d4292e94cee",
+   "taban_file_hash": "a3d913eb626433a36e8b9e6125e067a5165adaba3e58ae84f31c0d4292e94cee",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/cat": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "0d5a5dd543ed8d31220320eb513e4680ab303e48cb22a5edbf27a5a91561a71e",
+   "taban_file_hash": "0d5a5dd543ed8d31220320eb513e4680ab303e48cb22a5edbf27a5a91561a71e",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/chcon": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "eb92e9c7515bd04780ec19750dec33a97f4f07cba9747b3be9fccdf389d00490",
+   "taban_file_hash": "eb92e9c7515bd04780ec19750dec33a97f4f07cba9747b3be9fccdf389d00490",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/chgrp": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "4c0c9e16288bcbabb922a47f6914d02e1b2e5cb6f2416f266cd3b07511f3fa3d",
+   "taban_file_hash": "4c0c9e16288bcbabb922a47f6914d02e1b2e5cb6f2416f266cd3b07511f3fa3d",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/chmod": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f00c257ef26821b07d22863543f61f8f44cf16ca06be47adc2a18abfb40c6802",
+   "taban_file_hash": "f00c257ef26821b07d22863543f61f8f44cf16ca06be47adc2a18abfb40c6802",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/chown": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f3522e4eb2c654c1ea0e0b550aa83ffa8ca36e2660c3aca4b1afcbc399170b30",
+   "taban_file_hash": "f3522e4eb2c654c1ea0e0b550aa83ffa8ca36e2660c3aca4b1afcbc399170b30",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/chroot": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f78db8013c10b4ea8ed234afe1936504053cb4fa24b88938c5ec8fdc54bbd8a8",
+   "taban_file_hash": "f78db8013c10b4ea8ed234afe1936504053cb4fa24b88938c5ec8fdc54bbd8a8",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/cksum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9afa16517b9a1212f5c583e31f1b693688265ccb1f959e7ef39e256d8af99309",
+   "taban_file_hash": "9afa16517b9a1212f5c583e31f1b693688265ccb1f959e7ef39e256d8af99309",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/comm": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f87d284af034f8460c03e2ca61615ad89eed4e2014036d97760d159e48ef5836",
+   "taban_file_hash": "f87d284af034f8460c03e2ca61615ad89eed4e2014036d97760d159e48ef5836",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/cp": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "175656d7957b42e9be1dadce5621cdc3c8ba76a552f9c84a2457f287618fc5a0",
+   "taban_file_hash": "175656d7957b42e9be1dadce5621cdc3c8ba76a552f9c84a2457f287618fc5a0",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/csplit": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "2bee94acfcee8d7139f5c7283c71276e82206ffd6a036a8c1ee1be44ab81cb43",
+   "taban_file_hash": "2bee94acfcee8d7139f5c7283c71276e82206ffd6a036a8c1ee1be44ab81cb43",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/cut": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "2b910f41d86805c20131df9f5ceec50831db66644b56cfb44facf83e79fbdd61",
+   "taban_file_hash": "2b910f41d86805c20131df9f5ceec50831db66644b56cfb44facf83e79fbdd61",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/date": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "07eedd3ee45fb55b4062f0affe3258c1e043445d551b48227451cd9257d15ad9",
+   "taban_file_hash": "07eedd3ee45fb55b4062f0affe3258c1e043445d551b48227451cd9257d15ad9",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/dd": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "98ea6bdb1e445f9e49dd3a6a604797332b232539c56818f30875d73f3ff2e18c",
+   "taban_file_hash": "98ea6bdb1e445f9e49dd3a6a604797332b232539c56818f30875d73f3ff2e18c",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/df": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f090beb7722427e271be80b7e1e55e5c127a9f49d914f7fbfef7ca6709e98ce5",
+   "taban_file_hash": "f090beb7722427e271be80b7e1e55e5c127a9f49d914f7fbfef7ca6709e98ce5",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/dir": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "6ef3e9c9dd3c0e0106c60639331de36b314433f542a3fef7b73cb4a4faffd019",
+   "taban_file_hash": "6ef3e9c9dd3c0e0106c60639331de36b314433f542a3fef7b73cb4a4faffd019",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/dircolors": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "e356aaed8e5bf09e0b738497013749346c8cba00b12284601fab850d23bf00bc",
+   "taban_file_hash": "e356aaed8e5bf09e0b738497013749346c8cba00b12284601fab850d23bf00bc",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/dirname": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "e7cc1ed30a72608bca6a2e393917bec77b0e5aaceefdb6b9442b674128562714",
+   "taban_file_hash": "e7cc1ed30a72608bca6a2e393917bec77b0e5aaceefdb6b9442b674128562714",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/du": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "62767cb901f5c9fc43a8897d005e4528cae7d0905a78af35536caed5474aa434",
+   "taban_file_hash": "62767cb901f5c9fc43a8897d005e4528cae7d0905a78af35536caed5474aa434",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/echo": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "7d6a11b0739e83183bd01147b3e7e196ad99c24b4c282bab820d57314942b6e4",
+   "taban_file_hash": "7d6a11b0739e83183bd01147b3e7e196ad99c24b4c282bab820d57314942b6e4",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/env": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "a1a366aeec990c18d7ff97358e523925e449e2df224029fe048fc3ae35a97720",
+   "taban_file_hash": "a1a366aeec990c18d7ff97358e523925e449e2df224029fe048fc3ae35a97720",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/expand": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "a92445aa97168266b0b11f642f5c368b95490216a5c7a834cd5ee1dc853f8d75",
+   "taban_file_hash": "a92445aa97168266b0b11f642f5c368b95490216a5c7a834cd5ee1dc853f8d75",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/expr": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "56ae85a0c61b2d3aba0940a0aa0c6da3029dbabceb32ce959bb340926e35e9f3",
+   "taban_file_hash": "56ae85a0c61b2d3aba0940a0aa0c6da3029dbabceb32ce959bb340926e35e9f3",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/factor": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "a758f307f3b968b941ea5d5e9fec9b138606f927ffced15b9948816c75d07a30",
+   "taban_file_hash": "a758f307f3b968b941ea5d5e9fec9b138606f927ffced15b9948816c75d07a30",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/false": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "712b3620b56a553535fe7de0d6c613880fe984bfa7aa371901a61587f7f1d65b",
+   "taban_file_hash": "712b3620b56a553535fe7de0d6c613880fe984bfa7aa371901a61587f7f1d65b",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/fmt": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "540a07a9e627588f37049164b6acfc8497554a1c1a3d0828ef1f4fefa5046a6d",
+   "taban_file_hash": "540a07a9e627588f37049164b6acfc8497554a1c1a3d0828ef1f4fefa5046a6d",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/fold": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "d85f2d99a9eaeff43bd887dc9458b61f36e5d384b73dfc17388f7e3072aa1989",
+   "taban_file_hash": "d85f2d99a9eaeff43bd887dc9458b61f36e5d384b73dfc17388f7e3072aa1989",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/groups": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "62400fad5b74de132cc77f4fce17928e6d4ebbfb5d97dae3ecbecb42ef5e2672",
+   "taban_file_hash": "62400fad5b74de132cc77f4fce17928e6d4ebbfb5d97dae3ecbecb42ef5e2672",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/head": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "87b37095fa9c479fb59783f296ed2f88e87e14be4157f2955bcab5b5f3260769",
+   "taban_file_hash": "87b37095fa9c479fb59783f296ed2f88e87e14be4157f2955bcab5b5f3260769",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/hostid": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "8df6e20164976bf1ddc0b38701f459581b942cc3000b9552fbc763fcaf94d44e",
+   "taban_file_hash": "8df6e20164976bf1ddc0b38701f459581b942cc3000b9552fbc763fcaf94d44e",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/id": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9099881905b68f7831560a3cccef1a04d475568f985b97da51a9d88db84b9415",
+   "taban_file_hash": "9099881905b68f7831560a3cccef1a04d475568f985b97da51a9d88db84b9415",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/install": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9b55c1c1d6c20ea4092d28a2d9700ef633c036b97f5731c5920b72f83755ba23",
+   "taban_file_hash": "9b55c1c1d6c20ea4092d28a2d9700ef633c036b97f5731c5920b72f83755ba23",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/join": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "3ebd12f8c301f5b1b424ea5c1f6b04781ea2dddaeec6c2bf61172bc4c2209833",
+   "taban_file_hash": "3ebd12f8c301f5b1b424ea5c1f6b04781ea2dddaeec6c2bf61172bc4c2209833",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/libstdbuf.so": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "28e4024ee88ecff586e9c9cd46f8688242597fe35429e302219f6eb950a642bc",
+   "taban_file_hash": "28e4024ee88ecff586e9c9cd46f8688242597fe35429e302219f6eb950a642bc",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/link": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "0b65a64aa17794126a1189fdd07fdcef72a692e67e6cac906360ebbfba838a56",
+   "taban_file_hash": "0b65a64aa17794126a1189fdd07fdcef72a692e67e6cac906360ebbfba838a56",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/ln": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "311846cb11aaeb5b0655b41a1f1bde2cd5150d90b92970cc376c2acbd6f635ee",
+   "taban_file_hash": "311846cb11aaeb5b0655b41a1f1bde2cd5150d90b92970cc376c2acbd6f635ee",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/logname": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "c491a666ae66df2a3032b676ac7b0ef21dd15ca7a364f6c7b3604af9d089a608",
+   "taban_file_hash": "c491a666ae66df2a3032b676ac7b0ef21dd15ca7a364f6c7b3604af9d089a608",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/ls": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "0c062cc32ec13a8b0542c25659bd52faec0659f49b9efdd45eb383b26f1e10f5",
+   "taban_file_hash": "0c062cc32ec13a8b0542c25659bd52faec0659f49b9efdd45eb383b26f1e10f5",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/md5sum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "261c116cb55c248aa6bb571d2cf46689cf8a88e0965fcf875181bf2cc6e0f7a5",
+   "taban_file_hash": "261c116cb55c248aa6bb571d2cf46689cf8a88e0965fcf875181bf2cc6e0f7a5",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/mkdir": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "6f977f773468265ba072d0f7e51f5ef74778e483fc65db8ebb685ea2a5d9da79",
+   "taban_file_hash": "6f977f773468265ba072d0f7e51f5ef74778e483fc65db8ebb685ea2a5d9da79",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/mkfifo": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "78539e1b604de20a574ff23da69606cfbbc5870653b35c01dbf55c01701dac0b",
+   "taban_file_hash": "78539e1b604de20a574ff23da69606cfbbc5870653b35c01dbf55c01701dac0b",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/mknod": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "656886bafca08949f11556ddc931b7895588a98b4129c0bac582d1ecefc5ca07",
+   "taban_file_hash": "656886bafca08949f11556ddc931b7895588a98b4129c0bac582d1ecefc5ca07",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/mktemp": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "321488fd7287d0fdf33d38527b74d80fa629b6cd89276a114ae721aa2fc39b0d",
+   "taban_file_hash": "321488fd7287d0fdf33d38527b74d80fa629b6cd89276a114ae721aa2fc39b0d",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/mv": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f1bc7dd4e9fd6d11791ab70901239dd4fa57f00d18be26c9d82603f6a985ff2e",
+   "taban_file_hash": "f1bc7dd4e9fd6d11791ab70901239dd4fa57f00d18be26c9d82603f6a985ff2e",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/nice": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "0254981a2daaa7129ccfd8c62996032a2c97c803a2e9d3efbe17850698436a3e",
+   "taban_file_hash": "0254981a2daaa7129ccfd8c62996032a2c97c803a2e9d3efbe17850698436a3e",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/nl": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "4263e59545aa8b4df6290e6ba9f00e084a55d05ebee8188a375fd7e92a568c09",
+   "taban_file_hash": "4263e59545aa8b4df6290e6ba9f00e084a55d05ebee8188a375fd7e92a568c09",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/nohup": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "6908402cbf9b157c2071fb974329a8c456c6e2ac3df29b8b6e96a6d88db34eb5",
+   "taban_file_hash": "6908402cbf9b157c2071fb974329a8c456c6e2ac3df29b8b6e96a6d88db34eb5",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/nproc": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "fcb928960e01bfea14766e256f18237ec8a378a2a37581b1bd3c260fb7f2f311",
+   "taban_file_hash": "fcb928960e01bfea14766e256f18237ec8a378a2a37581b1bd3c260fb7f2f311",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/numfmt": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "75606dfdc3d57f1d059d70ef4088464244930a09fbf5ef8cc4f42e2aaeab1a04",
+   "taban_file_hash": "75606dfdc3d57f1d059d70ef4088464244930a09fbf5ef8cc4f42e2aaeab1a04",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/od": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "7f2a4cb682a2e7a6d678d5a368793f87bb9ee266bb9a734c31eba65ffcd3bf6e",
+   "taban_file_hash": "7f2a4cb682a2e7a6d678d5a368793f87bb9ee266bb9a734c31eba65ffcd3bf6e",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/paste": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "bcfb30eafb4e6eb5f831c15ba3e6a14cfd4c74fb6ef7722c522a146082792be2",
+   "taban_file_hash": "bcfb30eafb4e6eb5f831c15ba3e6a14cfd4c74fb6ef7722c522a146082792be2",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/pathchk": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "0ccc3bdfd46bc5f3d218ee6063bc88fd42ceec707a3e12997ba5970e7ad6e45b",
+   "taban_file_hash": "0ccc3bdfd46bc5f3d218ee6063bc88fd42ceec707a3e12997ba5970e7ad6e45b",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/pinky": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "5d7c6fb7abca7482113171dd078e9f09a001351997827d261bee3b64409291d5",
+   "taban_file_hash": "5d7c6fb7abca7482113171dd078e9f09a001351997827d261bee3b64409291d5",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/pr": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "aacabdf202a7a7e6a0d6ceecd31f621a69fe40f2c160d41f49417aa4eb6dc1b7",
+   "taban_file_hash": "aacabdf202a7a7e6a0d6ceecd31f621a69fe40f2c160d41f49417aa4eb6dc1b7",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/printenv": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "dedeaa124bd5f2a354dd36b0760a3ba388b69d496fc56feaa2ed072a711cb324",
+   "taban_file_hash": "dedeaa124bd5f2a354dd36b0760a3ba388b69d496fc56feaa2ed072a711cb324",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/printf": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "432943fe5b987a5f4db1c66f7cfba8b16880ae10e7d1eebfe261403327faad0a",
+   "taban_file_hash": "432943fe5b987a5f4db1c66f7cfba8b16880ae10e7d1eebfe261403327faad0a",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/ptx": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "721348e8052de7d11f5c2322a6f2647e7ed96de6ca26b3001c3ac0da6428924f",
+   "taban_file_hash": "721348e8052de7d11f5c2322a6f2647e7ed96de6ca26b3001c3ac0da6428924f",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/pwd": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "c588ccde0d255690843a57b5b868c44cfec513cec4eedeefe5d0e2b4ba8a9c4d",
+   "taban_file_hash": "c588ccde0d255690843a57b5b868c44cfec513cec4eedeefe5d0e2b4ba8a9c4d",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/readlink": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "8c9d035b9810368ae67845e15bc155a8309bf184510dec046a84c6cacc3c9cfe",
+   "taban_file_hash": "8c9d035b9810368ae67845e15bc155a8309bf184510dec046a84c6cacc3c9cfe",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/realpath": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "3dfcf6a616926abc0e154213156cdf876b2b109519183d907205a587ca0735d4",
+   "taban_file_hash": "3dfcf6a616926abc0e154213156cdf876b2b109519183d907205a587ca0735d4",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/rm": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "0bc3147fa63e9dba4eac651f71e09c41c663f539566e39e870b1d1e65795e106",
+   "taban_file_hash": "0bc3147fa63e9dba4eac651f71e09c41c663f539566e39e870b1d1e65795e106",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/rmdir": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f144ddbb3f8d07f3e5e4278fab9f84def93a58b728aaa7e1443bba1703e7ba1f",
+   "taban_file_hash": "f144ddbb3f8d07f3e5e4278fab9f84def93a58b728aaa7e1443bba1703e7ba1f",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/runcon": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "e4be3517845dbd2f672a23a6362292db8ad3defd1e9c8a0166b0a502b59c51a7",
+   "taban_file_hash": "e4be3517845dbd2f672a23a6362292db8ad3defd1e9c8a0166b0a502b59c51a7",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/seq": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "b597d04caa08ed39d9906f90361b3558fc5e65ae7eae6724f958ca7224eb80f0",
+   "taban_file_hash": "b597d04caa08ed39d9906f90361b3558fc5e65ae7eae6724f958ca7224eb80f0",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sha1sum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "aa660065dd668e36996da3ba351abe594f8e3a395221ff5b6b92077da5f3b5e7",
+   "taban_file_hash": "aa660065dd668e36996da3ba351abe594f8e3a395221ff5b6b92077da5f3b5e7",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sha224sum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "85967d32ef0123d2781b11637f1acb02471c022bb2b97736fa051c76d9d19fb0",
+   "taban_file_hash": "85967d32ef0123d2781b11637f1acb02471c022bb2b97736fa051c76d9d19fb0",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sha256sum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "7911a1f0aec4678c540bd78ff886f48d42790c8689a82ed0ae25ed79ed5dd512",
+   "taban_file_hash": "7911a1f0aec4678c540bd78ff886f48d42790c8689a82ed0ae25ed79ed5dd512",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sha384sum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "aa826c3aa99e309038f4ba4930c33769f0f7d7a8ab622ba9d6bf34a9f0504e26",
+   "taban_file_hash": "aa826c3aa99e309038f4ba4930c33769f0f7d7a8ab622ba9d6bf34a9f0504e26",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sha512sum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "e0eaa4b151cef9866e810acf2096761c7682179a8af0749db118c5dace389f0f",
+   "taban_file_hash": "e0eaa4b151cef9866e810acf2096761c7682179a8af0749db118c5dace389f0f",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/shred": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "6e657549cacbd5f1925dc772e9840b6e6a9f863da35e5ad23f99f377dea2b2bf",
+   "taban_file_hash": "6e657549cacbd5f1925dc772e9840b6e6a9f863da35e5ad23f99f377dea2b2bf",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/shuf": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "c0ef0149dbbee09e0df79d54ac21c47e2afaed8e2ab0ac8c4c9d665072b3b42a",
+   "taban_file_hash": "c0ef0149dbbee09e0df79d54ac21c47e2afaed8e2ab0ac8c4c9d665072b3b42a",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sleep": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f42cf7276848ac3dfd4d90295233c1f12f5cdc7da2e5715e75a15f2c790acbd6",
+   "taban_file_hash": "f42cf7276848ac3dfd4d90295233c1f12f5cdc7da2e5715e75a15f2c790acbd6",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sort": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "5cce41d5c496065cae95bae390c0798b53928156c8487258ffbe0d795886d381",
+   "taban_file_hash": "5cce41d5c496065cae95bae390c0798b53928156c8487258ffbe0d795886d381",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/split": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "6b5010dfc10f19f1527f429b57a4ab045b0e517a111346ec46cc2d8189d8b9b3",
+   "taban_file_hash": "6b5010dfc10f19f1527f429b57a4ab045b0e517a111346ec46cc2d8189d8b9b3",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/stat": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "5e4061cf4a54cc95985750521258b2062799beb6ec36d5694cc0b155291d27f7",
+   "taban_file_hash": "5e4061cf4a54cc95985750521258b2062799beb6ec36d5694cc0b155291d27f7",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/stdbuf": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "ca717a5a12706782d78330eccf53c882e08a17a42840f068b9ba3dad50537b71",
+   "taban_file_hash": "ca717a5a12706782d78330eccf53c882e08a17a42840f068b9ba3dad50537b71",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/stty": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "632b8bf557b2b2dfde99c3f5909ea3038dbd41bcd8eb133c230ae5ac02df2dc7",
+   "taban_file_hash": "632b8bf557b2b2dfde99c3f5909ea3038dbd41bcd8eb133c230ae5ac02df2dc7",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sum": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "8a2462669b91c7861ecd46d4c2f90f6dd7b70efe0fe0aa076a8904a0616b090d",
+   "taban_file_hash": "8a2462669b91c7861ecd46d4c2f90f6dd7b70efe0fe0aa076a8904a0616b090d",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/sync": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "53de48f72a80c63bc2691d287c3e50dc485b593aac0a313fd0268157d318a575",
+   "taban_file_hash": "53de48f72a80c63bc2691d287c3e50dc485b593aac0a313fd0268157d318a575",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/tac": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "1f5fd8ec9c33ae07d5a1357c2a7b6cb5176f4c9a220b6059d7a0219f373d4106",
+   "taban_file_hash": "1f5fd8ec9c33ae07d5a1357c2a7b6cb5176f4c9a220b6059d7a0219f373d4106",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/tail": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "0deef9e8fab638b146b8e2e798a44a114e5f45ba2b5deedf4271017f0a8ecdbd",
+   "taban_file_hash": "0deef9e8fab638b146b8e2e798a44a114e5f45ba2b5deedf4271017f0a8ecdbd",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/tee": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "7cca81f5933fad4f6c49171a049d6cb4057477032f8e7c4ab78b0ac1907419e2",
+   "taban_file_hash": "7cca81f5933fad4f6c49171a049d6cb4057477032f8e7c4ab78b0ac1907419e2",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/test": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "6e03bbb1938ceede5ae4f69e87f6f2790d94bf60562d4a0806c2f19d8e2fa401",
+   "taban_file_hash": "6e03bbb1938ceede5ae4f69e87f6f2790d94bf60562d4a0806c2f19d8e2fa401",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/timeout": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "bd653cdde85e17eafc0dbb0478f41598b87f24ae26f20a10f2366f1df8d5eb43",
+   "taban_file_hash": "bd653cdde85e17eafc0dbb0478f41598b87f24ae26f20a10f2366f1df8d5eb43",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/touch": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "6c71a54d3c8ccc318aa5774fcd2e5bc462e9aed196d41cb43a591211bcd608cf",
+   "taban_file_hash": "6c71a54d3c8ccc318aa5774fcd2e5bc462e9aed196d41cb43a591211bcd608cf",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/tr": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "5c1750985b32b46ae8ae08022ca9f27b8b313f6a2926217c67de803f2724420a",
+   "taban_file_hash": "5c1750985b32b46ae8ae08022ca9f27b8b313f6a2926217c67de803f2724420a",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/true": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "c5884f055e6a99450a4712bc03cc6551f8e28c80c81a3787174e78737860c530",
+   "taban_file_hash": "c5884f055e6a99450a4712bc03cc6551f8e28c80c81a3787174e78737860c530",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/truncate": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "e12d8d36ca5d7ff32c3f7525b4afd7cfb41e7ea1396e4bd8eabb1d3ed28b95d1",
+   "taban_file_hash": "e12d8d36ca5d7ff32c3f7525b4afd7cfb41e7ea1396e4bd8eabb1d3ed28b95d1",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/tsort": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "6e590952d6054614e61d33c95530c403e92ae6bb3f449f784b29248d4cc7a65f",
+   "taban_file_hash": "6e590952d6054614e61d33c95530c403e92ae6bb3f449f784b29248d4cc7a65f",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/tty": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "f6713cf82ce57b0a93202d1fa71b42577aa0fac934f8c193415a43262627c0fe",
+   "taban_file_hash": "f6713cf82ce57b0a93202d1fa71b42577aa0fac934f8c193415a43262627c0fe",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/uname": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "d2be7afa7502647bb7efdd9ac226adb25844aa6a439e2dbacd34ec998aac4a14",
+   "taban_file_hash": "d2be7afa7502647bb7efdd9ac226adb25844aa6a439e2dbacd34ec998aac4a14",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/unexpand": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "ab67c3e1a04678f1dac3064a1bbbc12633cecf41d31b37fbb56bb2cf83ed4dff",
+   "taban_file_hash": "ab67c3e1a04678f1dac3064a1bbbc12633cecf41d31b37fbb56bb2cf83ed4dff",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/uniq": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "5fcd8781da5f3c60f2accbf302ff3d0e15314af6076cffcec88cc31527c3b2c1",
+   "taban_file_hash": "5fcd8781da5f3c60f2accbf302ff3d0e15314af6076cffcec88cc31527c3b2c1",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/unlink": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9b418f9ae69fddefb96cda6f9da1cacbe9cdd93fb01b4a8aa7c0f61cbb980eb9",
+   "taban_file_hash": "9b418f9ae69fddefb96cda6f9da1cacbe9cdd93fb01b4a8aa7c0f61cbb980eb9",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/users": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "1302433ca91c6faa33605b86978c7ebabfb3a7bc4505e4c710f76cc1acd27545",
+   "taban_file_hash": "1302433ca91c6faa33605b86978c7ebabfb3a7bc4505e4c710f76cc1acd27545",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/vdir": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "a2c769ffb5844255ac896d2a3446c87a225d94f3d052abf5baf5a100903da828",
+   "taban_file_hash": "a2c769ffb5844255ac896d2a3446c87a225d94f3d052abf5baf5a100903da828",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/wc": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "067f08d102fefbcb16fce1c3832136fa964a41e39b7a9570172c1e07ec6adba4",
+   "taban_file_hash": "067f08d102fefbcb16fce1c3832136fa964a41e39b7a9570172c1e07ec6adba4",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/who": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "22441ce27551367c3525924db4d452063c0f8b90d14371384f6ae966db793bc7",
+   "taban_file_hash": "22441ce27551367c3525924db4d452063c0f8b90d14371384f6ae966db793bc7",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/whoami": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "7f02d3409f02aa8ad4c9540035916c948001242b8fa8b7e5cdcf251793cd7efb",
+   "taban_file_hash": "7f02d3409f02aa8ad4c9540035916c948001242b8fa8b7e5cdcf251793cd7efb",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/coreutils/yes": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "1ed1c1273388d22daaf00af35329df9874576018dad49cc6ea2913bb862890f5",
+   "taban_file_hash": "1ed1c1273388d22daaf00af35329df9874576018dad49cc6ea2913bb862890f5",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/htop/htop": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9b61e8bec98fbab6b9d8bf8103573018f9ece4d476c21e312a9c81130e8cc767",
+   "taban_file_hash": "9b61e8bec98fbab6b9d8bf8103573018f9ece4d476c21e312a9c81130e8cc767",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/openssl/openssl": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "ef437d6d4088fb209e02d98d86c2f258f95bc68c0130ea358bbaca32b1462ab5",
+   "taban_file_hash": "ef437d6d4088fb209e02d98d86c2f258f95bc68c0130ea358bbaca32b1462ab5",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/redis-tools/redis-benchmark": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9a8b0a194af33cda5f64529e44269cd1c62fa94096229a2af833a715e1d42691",
+   "taban_file_hash": "9a8b0a194af33cda5f64529e44269cd1c62fa94096229a2af833a715e1d42691",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/redis-tools/redis-check-aof": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "65846e52d7bbebe852b033fd567680bb7640ad49fb6890c6f0ce3ae055d1012d",
+   "taban_file_hash": "65846e52d7bbebe852b033fd567680bb7640ad49fb6890c6f0ce3ae055d1012d",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/redis-tools/redis-check-rdb": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "65846e52d7bbebe852b033fd567680bb7640ad49fb6890c6f0ce3ae055d1012d",
+   "taban_file_hash": "65846e52d7bbebe852b033fd567680bb7640ad49fb6890c6f0ce3ae055d1012d",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/redis-tools/redis-cli": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9202a178d416da94340f6d0c82c11a7ca553f90d0c0960399725289eb26f595b",
+   "taban_file_hash": "9202a178d416da94340f6d0c82c11a7ca553f90d0c0960399725289eb26f595b",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/sqlite3/sqlite3": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "9d3aa02b5acd6dbc7c34cf95d3904f6bb5e6669f1134c7d3c41e70df967a987d",
+   "taban_file_hash": "9d3aa02b5acd6dbc7c34cf95d3904f6bb5e6669f1134c7d3c41e70df967a987d",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/tmux/tmux": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "0ad19f45a67c8b35b98dd5a7171e939b93b2879990d4ec04393f8131965650a4",
+   "taban_file_hash": "0ad19f45a67c8b35b98dd5a7171e939b93b2879990d4ec04393f8131965650a4",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/tree/tree": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "62810aca29543a765fa72b0d159e5bc61c21f3b6bedd79967d53a0db949f00c0",
+   "taban_file_hash": "62810aca29543a765fa72b0d159e5bc61c21f3b6bedd79967d53a0db949f00c0",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/zstd/pzstd": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "77866a8bf262a8651226151416a36e6e4f3e7fbdf201c64725b60be65ebf801b",
+   "taban_file_hash": "77866a8bf262a8651226151416a36e6e4f3e7fbdf201c64725b60be65ebf801b",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "debian/zstd/zstd": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "d1c353e40c4df2f11cf35c244980bf6e105764093da60ed0f0f2b388c1317c3e",
+   "taban_file_hash": "d1c353e40c4df2f11cf35c244980bf6e105764093da60ed0f0f2b388c1317c3e",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "mac/htop": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "50d172cee23cb6f5793969e7612fd29723c4a927ea4161a7e8f039cfca70f1c3",
+   "taban_file_hash": "50d172cee23cb6f5793969e7612fd29723c4a927ea4161a7e8f039cfca70f1c3",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  },
+  "mac/tmux": {
+   "bitti": "0",
+   "calisma_alani": true,
+   "file_hash": "10fa041195a823953e2b207faeb4e34478048ba2c39d7f8fe6e7b9fc0c9997b7",
+   "taban_file_hash": "10fa041195a823953e2b207faeb4e34478048ba2c39d7f8fe6e7b9fc0c9997b7",
+   "ghidra": [
+    "12.1.2",
+    true
+   ],
+   "sigdb": {
+    "sigdb_schema_version": "2",
+    "sigdb_lmdb_symbol_count": 9092473,
+    "sigdb_build_id": "s2-b32ee9f65b1a-20261118",
+    "sigdb_path_source": "data_root:signatures.lmdb",
+    "sigdb_schema_warning": null,
+    "sigdb_lmdb_error": null
+   },
+   "sigdb_tutarsiz_tekrar": []
+  }
+ },
+ "hepsi_tuttu": true
+}
