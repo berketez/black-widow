@@ -1,0 +1,173 @@
+{
+  "_comment": "P05c (kanıtsız genel adlar → aday kaydı, imza deseni dönüş tipleri, n-gram köken kaydı ve aday kipi) onarımlarının mutasyon koruması. Her mutant bir kuralı bozar; ilgili test KIRMIZI olmalı (killed). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p05c.json",
+  "mutants": [
+    {
+      "id": "p05c_k12_paralel_kapi_yok",
+      "desc": "K1-2: paralel yolda genel ad kapısı atlanır (kanıtsız ad yazılır)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_kanitsiz_aday_kanitli_ad",
+      "find": "\n            gate = _generic_name_gate(tup.name, param_type, func_code, param_name)\n",
+      "replace": "\n            gate = None\n"
+    },
+    {
+      "id": "p05c_k12_dizisel_kapi_yok",
+      "desc": "K1-2: dizisel yolda genel ad kapısı atlanır",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_kanitsiz_aday_kanitli_ad",
+      "find": "\n                gate = _generic_name_gate(tup.name, param_type, func_code, param_name)\n",
+      "replace": "\n                gate = None\n"
+    },
+    {
+      "id": "p05c_k12_aday_kapidan_gecer",
+      "desc": "K1-2: ad kapısı aday işaretini yok sayar (aday koda yazılır)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_kapi_adayi_koda_yazmaz_kokene_yazar",
+      "find": "                if cand.candidate_only:\n",
+      "replace": "                if False and cand.candidate_only:\n"
+    },
+    {
+      "id": "p05c_k12_aday_yayilir",
+      "desc": "K1-2: aday bilinen ad sayılır (yayılıma girer)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_aday_yayilmaz",
+      "find": "            if sn.candidate_only:  # P05c: koda yazılmayan aday yayılmaz\n",
+      "replace": "            if False:\n"
+    },
+    {
+      "id": "p05c_k12_tutan_kural_ters",
+      "desc": "K1-2: tutan kural kümesi ters okunur (flags aday, count yazılır)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_flags_bit_maskesiyle_yazilir",
+      "find": "    if template_name not in _GENERIC_NAME_KEPT:\n",
+      "replace": "    if template_name in _GENERIC_NAME_KEPT:\n"
+    },
+    {
+      "id": "p05c_k12_tutan_kurala_count",
+      "desc": "K1-2: G'de eşiği geçemeyen count tutan kurallara girer",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_kanitsiz_aday_kanitli_ad",
+      "find": "_GENERIC_NAME_KEPT: frozenset[str] = frozenset({\"flags\"})",
+      "replace": "_GENERIC_NAME_KEPT: frozenset[str] = frozenset({\"flags\", \"count\"})"
+    },
+    {
+      "id": "p05c_k12_dogruluk_bir_kullanim_yeter",
+      "desc": "K2: bir doğruluk sınaması yeter (karışık kullanım kanıt sayılır)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_dogruluk_sinamasi_karisik_kullanim_kanit_degil",
+      "find": "    return len(truth_spans) == total\n",
+      "replace": "    return len(truth_spans) >= 1\n"
+    },
+    {
+      "id": "p05c_k12_dongu_karsilastirmasiz",
+      "desc": "K2: döngü başlığında karşılaştırma aranmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_dongu_basliginda_karsilastirma_sart",
+      "find": "        if word.search(head) and _COMPARE_OP_RE.search(head):\n",
+      "replace": "        if word.search(head):\n"
+    },
+    {
+      "id": "p05c_k12_boyut_konumu_kayar",
+      "desc": "K2: memcpy'nin boyut konumu 2 değil 1",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_boyut_konumu_chk_ve_macho",
+      "find": "    \"memcpy\": (2,), \"memmove\": (2,), \"memset\": (2,), \"memcmp\": (2,),\n",
+      "replace": "    \"memcpy\": (1, 2), \"memmove\": (2,), \"memset\": (2,), \"memcmp\": (2,),\n"
+    },
+    {
+      "id": "p05c_k12_chk_soyulmaz",
+      "desc": "K2: __X_chk biçimi tabloya inmez",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_boyut_konumu_chk_ve_macho",
+      "find": "            if base.endswith(\"_chk\"):\n",
+      "replace": "            if base.endswith(\"_xchk\"):\n"
+    },
+    {
+      "id": "p05c_k1_bayt_tipi_yok",
+      "desc": "K1: bildirilen bayt işaretçisi kanıt sayılmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_kanit_turleri",
+      "find": "        if a in _BYTE_POINTER_TYPES:\n",
+      "replace": "        if a in _BOOL_TYPES:\n"
+    },
+    {
+      "id": "p05c_k1_geri_cagri_yok",
+      "desc": "K1: işlev göstericili çağrının argümanı kanıt sayılmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_kanit_turleri",
+      "find": "            if re.fullmatch(p, a):\n",
+      "replace": "            if re.fullmatch(p, a) and False:\n"
+    },
+    {
+      "id": "p05c_k2_bit_maskesi_mantiksal_ve",
+      "desc": "K2: bit maskesi yerine mantıksal && kanıt sayılır",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_genel_ad.py::test_flags_bit_maskesi",
+      "find": "rf\"\\b{p}\\s*&(?!&)|[^&]&\\s*{p}\\b\"",
+      "replace": "rf\"\\b{p}\\s*&&|[^&]&&\\s*{p}\\b\""
+    },
+    {
+      "id": "p05c_k3_deyim_imza_sayilir",
+      "desc": "K3: dönüş tipi deyim sözcüğü olabilir (return foo(x) { imza sayılır)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_imza.py::test_deyim_imza_sayilmaz",
+      "find": "    r\"(?!(?:return|else|if|while|for|switch|do|case|goto|sizeof|typedef)\\b)\"\n",
+      "replace": "    r\"\"\n"
+    },
+    {
+      "id": "p05c_k3_bitisik_isaretci_yok",
+      "desc": "K3: char *f( (bitişik işaretçi) tanınmaz",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_imza.py::test_bitisik_isaretci",
+      "find": "    r\"[A-Za-z_]\\w*(?:\\s*\\*+\\s*|\\s+)\"\n",
+      "replace": "    r\"[A-Za-z_]\\w*(?:\\s*\\*+\\s+|\\s+)\"\n"
+    },
+    {
+      "id": "p05c_k3_eski_tip_listesi",
+      "desc": "K3: dönüş tipi yine sabit listeden (uint64_t tanınmaz)",
+      "module": "karadul/reconstruction/engineering/semantic_namer.py",
+      "test": "tests/test_p05c_imza.py::test_donus_tipi_taninir",
+      "find": "    r\"[A-Za-z_]\\w*(?:\\s*\\*+\\s*|\\s+)\"\n",
+      "replace": "    r\"(?:void|int|uint|long|char|\\w+\\s*\\*+)(?:\\s*\\*+\\s*|\\s+)\"\n"
+    },
+    {
+      "id": "p05c_k5_ad_yazilir",
+      "desc": "K5: ölçülen kesinlik eşiğin altındayken n-gram adı yine koda yazılır",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p05c_ngram_koken.py::test_ontanim_aday_kaydi_kod_degismez",
+      "find": "NGRAM_APPLY_NAMES = False\n",
+      "replace": "NGRAM_APPLY_NAMES = True\n"
+    },
+    {
+      "id": "p05c_k5_koken_yok",
+      "desc": "K5: uygulanan ad köken kaydına girmez",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p05c_ngram_koken.py::test_uygulanan_ad_koken_kaydina_yazilir",
+      "find": "                    if NGRAM_APPLY_NAMES:\n                        prov_applied.append(record)\n",
+      "replace": "                    if NGRAM_APPLY_NAMES:\n                        pass\n"
+    },
+    {
+      "id": "p05c_k5_sayac_ustune_yazar",
+      "desc": "K5: sayaç yinelemede üstüne yazılır (eski davranış)",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p05c_ngram_koken.py::test_sayac_yinelemeler_boyunca_toplanir",
+      "find": "            stats[key] = stats.get(key, 0) + value\n",
+      "replace": "            stats[key] = value\n"
+    },
+    {
+      "id": "p05c_k5_plan_donmez",
+      "desc": "K5: apply_local_renames uygulanan eşlemeyi döndürmez",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p05c_ngram_koken.py::test_apply_local_renames_plan_doner",
+      "find": "    if applied_out is not None:\n",
+      "replace": "    if applied_out is None:\n"
+    },
+    {
+      "id": "p05c_k5_c_namer_kaydi_ezilir",
+      "desc": "K5: c_namer'ın köken kaydı yerine ayrı dosya yazılır",
+      "module": "karadul/pipeline/steps/_feedback_typing_extras.py",
+      "test": "tests/test_p05c_ngram_koken.py::test_c_namer_kaydina_bolum_eklenir",
+      "find": "        if target.is_file():\n",
+      "replace": "        if False and target.is_file():\n"
+    }
+  ]
+}
