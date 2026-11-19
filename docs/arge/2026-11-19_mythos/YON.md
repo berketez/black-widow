@@ -3,7 +3,7 @@
 - **Taban:** birleşik ölçüm a62f15e (`docs/arge/2026-11-19_birlesik_olcum/sonuc.md`). main bugün fc3c5c6 (tabandan sonra P02b, P16d, P-S4, P12c, P05c, P22c, P22h, P20b, P18 girdi; ad etkileri bu tabanda yok).
 - **Soru listesi:** `docs/arge/2026-11-18_arge_soru_listesi.md` (SON SÜRÜM).
 - **Düzen (Berke, 2026-11-19):** en çok 3 Mythos ajanı, yalnız araştırma için; ölçüm, veri hazırlığı ve uygulama Opus ajanlarına.
-- Bu belge yön kararıdır; Onuncu Adam itirazı aynı anda istendi (`onuncu_adam.md`), ikinci dalgadan önce işlenir.
+- Bu belge yön kararıdır. Onuncu Adam itirazı (Astra) istendi ama codex çağrılmadan durduruldu: Berke 10:3x'te Astra kotasının bittiğini bildirdi. Karşı görüş açık kalem; ikinci dalgadan önce başka bir model ailesiyle ya da kota açılınca alınır.
 
 ## 1. Zeminin okunuşu
 
@@ -47,7 +47,7 @@ Opus desteği (ilk dalga): **OLGU** — 119 ikilinin bütün fonksiyonları içi
 ## 5. Yaratıcılık protokolü (CLAUDE.md §29) nasıl uygulanıyor
 
 1. **Denetlenebilir soru:** her hattın ilk turu bir sayım; doğrulayıcı yukarıdaki tabloda.
-2. **Uzlaşıyı kır:** her hat metninde literatürün beklenen cevabı yasak cevap olarak yazılı, aykırı öncül verildi. Onuncu Adam (Astra, xhigh) yön kararına karşı aynı anda çalışıyor.
+2. **Uzlaşıyı kır:** her hat metninde literatürün beklenen cevabı yasak cevap olarak yazılı, aykırı öncül verildi. Onuncu Adam yön kararına karşı çalışacaktı; kota yüzünden ertelendi (yukarıdaki not).
 3. **Tek hatta kal:** üç hat sabit; sonraki dalgalar aynı hatların devamıdır. Her hat `DEFTER.md` tutar ("neden olmadı" notları dahil).
 4. **İnsan uzman:** eşiğe gelen sonuç yayımdan önce dış bir tersine mühendislik uzmanına okutulur; Berke'ye teknik yol ayrımı sorulmaz.
 
