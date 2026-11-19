@@ -48,6 +48,31 @@ Kaynak: `denetim_A.md` §6–§8, `denetim_B.md` (yayını durduranlar, ertelene
 | G3 | Mach-O + Go içeren ikilide "Objective-C Message Analyzer" öntanımda kapatılsın mı: ölçerek karar (çıktıya etkisi; `objc_msgSend` çözümlemesi kaybı) | `deneme1_jstack.txt` (10 düzey `getAddressFromVarnode` özyinelemesi) |
 | G4 | Go ikilisi: Ghidra "Untested Go version [1.26.0] … unable to extract Go RTTI info" diyor; Karadul'un Go kanalı (pclntab) K-4 ile kapalı. Bu ikilide Go adlarının ne kadarı kurtarılabilir, ölçülmeli | Ghidra `application.log` 2026-11-19 10:42 |
 
+### 5.1 Gösteri koşusu 2'nin sonucu (2026-11-19 11:10:50 → 13:20:12)
+
+Ollama.app 0.40.3 ana ikilisi (51,8 MB evrensel; analiz edilen arm64 dilimi 26,6 MB), main 2381dce, "Objective-C Message Analyzer" kapalı (`gosteri.yaml`), `--skip-dynamic`. Makine koşunun çoğunda ağır yük altındaydı (yük ortalaması 30–60). Kaynak: `~/karadul_olcum/runs/gosteri-2026-11-19/ollama/` (`kosu.log`, `out/README.md`, `out/naming_map.json`).
+
+| Ölçü | Değer |
+|---|---|
+| Çıkış kodu | 3 (kısmi) |
+| Süre | 7 761,6 sn (129 dk); Ghidra aşaması 64 dk (BSim 32,5 dk, sonuç boş) |
+| Tepe bellek | 4,68 GB yerleşik; 5,83 GB tepe ayak izi |
+| Disk | çalışma alanı 2,0 GB; çıktı 139 MB |
+| Fonksiyon | 13 160 (+ 399 içe aktarım kütüğü); dizgi 26 277 |
+| Yazılan dosya | 13 272 (13 267 kaynak) |
+| **Koda uygulanan fonksiyon adı** | **17** |
+| Uygulanmayan ad adayı | 1 142 |
+| Yeniden adlandırılan yerel değişken | 85 931 |
+| Üst veriden okunabilecek tam ad (ÜST VERİ hattının ölçümü, aynı dilim) | 10 751 / 12 952 |
+
+| # | İş | Kanıt |
+|---|---|---|
+| G5 | 129 dakikalık analizden 17 fonksiyon adı çıkıyor; aynı dilimde Go `pclntab` ve Objective-C yöntem listeleri 10 751 tam ad taşıyor ve okunmuyor | `out/README.md`; `docs/arge/2026-11-19_mythos/ustveri/BULGULAR.md` |
+| G6 | Ürün uyarısı: "evrensel ikilide go dilimi tanındı ama Go analizcisi şişman dosyayı açmıyor" → Go hattı evrensel Mach-O'da hiç çalışmıyor | `kosu.log` son satırlar |
+| G7 | Çelişkili durum: komut satırı "kısmi (çıkış 3)" diyor, `out/README.md` "Status: SUCCESS" ve "Language: C/C++" yazıyor (ikili Go + C++ + Objective-C) | `kosu.log`, `out/README.md` |
+| G8 | "Pipeline iteration 1 took 1311s (> 600s timeout), skipping remaining 2 iteration(s)": yeniden kurma döngüsünün sabit 600 sn sınırı büyük ikilide ilk turda aşılıyor; kalan turlar sessizce atlanıyor | `kosu.log`; `karadul/config.py` `pipeline_iteration_timeout` |
+| G9 | Ollama.app'te asıl sunucu ikilisi paketin başka yerinde; ana ikili yalnız kabuk (ÖLÇEK envanteri). Paket verildiğinde hangi ikililerin analiz edileceği kuralı yanlış | `docs/arge/2026-11-19_mythos/olcek/BULGULAR.md` |
+
 ## 3. Açık sorular (Berke'ye)
 
 - Yayın biçimi: yalnız kaynak (GitHub) mı, DMG de mi?
