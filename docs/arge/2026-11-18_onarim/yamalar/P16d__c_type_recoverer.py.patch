@@ -1,0 +1,61 @@
+--- a/karadul/reconstruction/c_type_recoverer.py	2026-11-19 08:35:52
++++ b/karadul/reconstruction/c_type_recoverer.py	2026-11-19 08:35:53
+@@ -675,6 +675,10 @@
+         return replacements.get(word, word)
+ 
+     return combined.sub(_sub, content)
++
++
++def _is_ident_char(ch: str) -> bool:
++    return ch.isalnum() or ch == "_"
+ 
+ 
+ def _replace_first_in_code(text: str, old: str, new: str) -> str:
+@@ -690,8 +694,18 @@
+         return text
+     spans = [(m.start(), m.end()) for m in _C_NONCODE_TOKEN.finditer(text)]
+     starts = [s for s, _ in spans]
++    # P16d: tanımlayıcı sınırı. ``undefined8 uVar1`` kalıbı ``undefined8 uVar15`` bildirimine
++    # uymaz; eskiden ilk geçiş oysa tip başka değişkene yazılıyordu (ham Ghidra metninde 2e
++    # katmanının bulduğu 69 kalıbın 69'u böyleydi).
++    sol_sinir = _is_ident_char(old[0])
++    sag_sinir = _is_ident_char(old[-1])
+     while pos != -1:
+         end = pos + len(old)
++        if (sag_sinir and end < len(text) and _is_ident_char(text[end])) or (
++            sol_sinir and pos > 0 and _is_ident_char(text[pos - 1])
++        ):
++            pos = text.find(old, pos + 1)
++            continue
+         # [pos, end) ile kesişebilecek tek aday: end'den önce başlayan son birim
+         idx = bisect.bisect_left(starts, end) - 1
+         if idx < 0 or spans[idx][1] <= pos:
+--- /dev/null
++++ b/tests/test_p16d_sozcuk_siniri.py
+@@ -0,0 +1,26 @@
++"""P16d yaması: tip değişimi tanımlayıcı sınırına uyar (``uVar1`` kalıbı ``uVar15``'e düşmez)."""
++from karadul.reconstruction.c_type_recoverer import _apply_per_func_replacements, _replace_first_in_code
++
++
++def test_onek_degiskene_dusmez():
++    text = "void f(void) {\n  undefined8 uVar15;\n  undefined8 uVar1;\n}\n"
++    assert _replace_first_in_code(text, "undefined8 uVar1", "long uVar1") == (
++        "void f(void) {\n  undefined8 uVar15;\n  long uVar1;\n}\n")
++
++
++def test_yalniz_onekli_bildirim_varsa_dokunulmaz():
++    text = "  undefined8 uVar15;\n"
++    assert _replace_first_in_code(text, "undefined8 uVar1", "long uVar1") == text
++
++
++def test_sol_sinir():
++    text = "  xundefined8 a;\n  undefined8 a;\n"
++    assert _replace_first_in_code(text, "undefined8 a", "long a") == "  xundefined8 a;\n  long a;\n"
++
++
++def test_uygulama_sirasindan_bagimsiz():
++    text = "void FUN_00001000(void)\n{\n  undefined8 uVar15;\n  undefined8 uVar1;\n}\n"
++    a = {"FUN_00001000": {"undefined8 uVar1": "long uVar1", "undefined8 uVar15": "char * uVar15"}}
++    b = {"FUN_00001000": {"undefined8 uVar15": "char * uVar15", "undefined8 uVar1": "long uVar1"}}
++    assert _apply_per_func_replacements(text, a) == _apply_per_func_replacements(text, b)
++    assert "char * uVar15;" in _apply_per_func_replacements(text, a)
