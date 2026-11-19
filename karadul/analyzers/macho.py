@@ -160,6 +160,13 @@ def read_fat_slices(path: Path) -> list[dict[str, Any]]:
     return slices
 
 
+# P-S4 (kalem 4): seçilen dilimin gerekçesi kayda geçer (static/universal_slice.json).
+SLICE_SELECTION_RULE = (
+    "tercih sırası: arm64 > arm64e > öbür arm64 > x86_64 > x86_64h > öbürleri; "
+    "eşitlikte dosyadaki ilk dilim"
+)
+
+
 def select_fat_slice(slices: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Tercih sırasında ilk dilim; eşitlikte dosyadaki ilk (belirlenimci)."""
     return min(slices, key=lambda s: (s["rank"], s["index"])) if slices else None
@@ -1073,6 +1080,7 @@ class MachOAnalyzer(BaseAnalyzer):
             "selected": chosen["arch"] if thin_path is not None else None,
             "path": thin_path.name if thin_path is not None else None,
             "error": reason,
+            "selection_rule": SLICE_SELECTION_RULE,
         }
         try:
             workspace.save_json("static", "universal_slice", record)
@@ -1086,6 +1094,7 @@ class MachOAnalyzer(BaseAnalyzer):
             logger.warning("Evrensel ikili: dilim secilemedi: %s", reason)
             return None
         stats["universal_slice"] = chosen["arch"]
+        stats["universal_slice_rule"] = SLICE_SELECTION_RULE
         logger.info("Evrensel ikili: %s dilimi secildi (%s) -> %s",
                     chosen["arch"], ", ".join(stats["universal_slices"]), thin_path)
         return thin_path
