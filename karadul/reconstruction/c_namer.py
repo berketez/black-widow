@@ -689,6 +689,27 @@ def _signature_params_blob(body: str, fname: str) -> str | None:
     return None
 
 
+def pre_name_strategy(meta: dict[str, Any] | None) -> str:
+    """Ön adın strateji adı: KS-1 künyeli ise ``ks1``, değilse ``binary_extract``."""
+    kind = meta["kind"] if meta else None
+    return STRATEGY_KS1 if kind == _baglama.KIND_KS1 else "binary_extract"
+
+
+def measured_pre_name_confidence(meta: dict[str, Any] | None) -> float | None:
+    """Ön adın güveni (P12a / AD-07): kanalının ölçülmüş kesinliğinin Wilson %95 alt sınırı
+    (``naming_labels.MEASURED_PRE_NAME_PRECISION``); ölçülmemiş kanalda (künyesiz ön ad, Faz 1,
+    elle) ``None`` — sayı uydurulmaz.
+
+    ``meta``: anahtarın geçerli künyesi (``baglama.meta_for``). c_namer'ın ön ad yolu ve c_namer
+    koşmadığında birleştiriciye giden ön adlar (P12c kalem 5) aynı kuralı buradan okur.
+    """
+    kind = meta["kind"] if meta else None
+    return measured_channel_confidence(provenance_channel({
+        "strategy": pre_name_strategy(meta), "pre_name_kind": kind,
+        STRATEGY_KS1: (meta or {}).get(STRATEGY_KS1),
+    }))
+
+
 def _is_ghidra_auto_name(name: str) -> bool:
     """Verilen isim Ghidra'nin otomatik urettigi bir isim mi."""
     return bool(
@@ -2440,7 +2461,7 @@ class CVariableNamer:
                     # CamelCase'i koru (Swift/ObjC isimleri icin)
                     has_camel = any(c.isupper() for c in new_name[1:]) if len(new_name) > 1 else False
                     sanitized = _sanitize_c_name(new_name, preserve_case=has_camel) if hasattr(new_name, '__len__') else str(new_name)
-                strategy = STRATEGY_KS1 if kind == _baglama.KIND_KS1 else "binary_extract"
+                strategy = pre_name_strategy(meta)
                 # Ad geçerliliği: ön ad her türde (elle, main, KS-1 dahil) aynı kurallardan
                 # geçer. Reddedilen ön ad verilmez ve "aynı ad" düşmesi sayılmaz; anahtar
                 # aday listesiyle yarışmayı sürdürür.
@@ -2468,10 +2489,7 @@ class CVariableNamer:
                     # alt sınırı, naming_labels.MEASURED_PRE_NAME_PRECISION); ölçülmemiş kanalda
                     # güven yazılmaz. Eskiden her ön ada sabit 0,95 yazılıyordu. Ad seçimi güvene
                     # bakmaz: yalnız gösterilen ve dışa verilen sayı değişir.
-                    pre_conf = measured_channel_confidence(provenance_channel({
-                        "strategy": strategy, "pre_name_kind": kind,
-                        STRATEGY_KS1: (meta or {}).get(STRATEGY_KS1),
-                    }))
+                    pre_conf = measured_pre_name_confidence(meta)
                     if pre_conf is not None:
                         confidence_map[old_name] = pre_conf
                     strategy_map[old_name] = strategy

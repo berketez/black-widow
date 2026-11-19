@@ -1,0 +1,170 @@
+diff --git a/karadul/pipeline/steps/_feedback_naming_candidates.py b/karadul/pipeline/steps/_feedback_naming_candidates.py
+index 2f46fcf..1981080 100644
+--- a/karadul/pipeline/steps/_feedback_naming_candidates.py
++++ b/karadul/pipeline/steps/_feedback_naming_candidates.py
+@@ -49,6 +49,8 @@ def collect_candidates(
+     # ön adlar (``binary_extractor``) ve c_namer'ın kendi adları birleştiriciye aday
+     # olarak GİRMEZ: c_namer'ın ad verdiği anahtarın kararı c_namer'ındır.
+     pre_names_via_c_namer: bool = False,
++    # P12c kalem 5: ön ad künyesi (Faz 2 tohumu); ön adın güveni kanalının ölçülmüş kesinliği.
++    pre_name_meta: dict[str, Any] | None = None,
+ ) -> dict[str, list[Any]]:
+     """Tum kaynaklardan candidates_by_symbol sozlugu olustur.
+ 
+@@ -60,7 +62,7 @@ def collect_candidates(
+     candidates_by_symbol: dict[str, list[Any]] = {}
+ 
+     if not pre_names_via_c_namer:
+-        _add_binary_extractor(extracted_names, candidates_by_symbol)
++        _add_binary_extractor(extracted_names, candidates_by_symbol, pre_name_meta, stats)
+         _add_c_namer(naming_result, candidates_by_symbol, stats)
+     _add_bindiff(bindiff_confidence_map, candidates_by_symbol)
+     _add_refdiff(refdiff_naming, candidates_by_symbol)
+@@ -717,13 +719,36 @@ def _add_rtti(
+ def _add_binary_extractor(
+     extracted_names: dict[str, str],
+     candidates: dict[str, list[Any]],
++    pre_name_meta: dict[str, Any] | None = None,
++    stats: dict[str, Any] | None = None,
+ ) -> None:
++    """Ön adlar (yalnız c_namer koşmadığında; bkz. collect_candidates).
++
++    P12c kalem 5 (P13a kalanı a; AD-07): güven sabit 0,85 değil, ön adın kanalının ölçülmüş
++    kesinliğinin Wilson alt sınırı (c_namer'ın ön ad yoluyla aynı kural:
++    ``c_namer.measured_pre_name_confidence``). Ölçülmemiş kanaldaki ön ad (künyesiz, Faz 1,
++    elle) birleştiriciye sayı uydurularak girmez; ``_add_c_namer``'daki gibi aday olmaz ve
++    ``name_merger_pre_name_unmeasured`` sayacında görünür (elle ad birleştiriciden sonra
++    ``force_manual_names`` ile zorlanır).
++    """
++    from karadul.reconstruction.c_namer import measured_pre_name_confidence
++    from karadul.reconstruction.tarif import baglama as _baglama
++
++    unmeasured = 0
+     for old_name, new_name in extracted_names.items():
+         if not old_name or len(old_name) < 2 or not new_name:
+             continue
++        conf = measured_pre_name_confidence(
++            _baglama.meta_for(pre_name_meta, old_name, new_name))
++        if conf is None:
++            unmeasured += 1
++            continue
+         candidates.setdefault(old_name, []).append(
+-            NamingCandidate(new_name, 0.85, "binary_extractor"),
++            NamingCandidate(new_name, conf, "binary_extractor"),
+         )
++    if stats is not None and unmeasured:
++        stats["name_merger_pre_name_unmeasured"] = (
++            stats.get("name_merger_pre_name_unmeasured", 0) + unmeasured)
+ 
+ 
+ def _add_c_namer(
+diff --git a/tests/test_p12c_birlestirici_on_ad.py b/tests/test_p12c_birlestirici_on_ad.py
+new file mode 100644
+index 0000000..10c4cce
+--- /dev/null
++++ b/tests/test_p12c_birlestirici_on_ad.py
+@@ -0,0 +1,36 @@
++"""P12c kalem 5 (P13a kalanı a): c_namer koşmadığında ön adlar birleştiriciye sabit 0,85 ile
++girmez; güven kanalın ölçülmüş kesinliğinin Wilson alt sınırıdır, ölçülmemişse aday olmaz.
++
++Bu test ``yamalar/P12c___feedback_naming_candidates.py.patch`` ve
++``yamalar/P12c___feedback_naming_merger.py.patch`` ile birlikte uygulanır.
++"""
++from __future__ import annotations
++
++from karadul.core.naming_labels import MEASURED_PRE_NAME_PRECISION
++from karadul.pipeline.steps._feedback_naming_candidates import collect_candidates
++
++
++def _topla(extracted, meta):
++    stats: dict = {}
++    c = collect_candidates(
++        extracted_names=extracted, naming_result=None, bindiff_confidence_map={},
++        refdiff_naming={}, fid_json=None, computation_result=None,
++        pcode_naming_candidates=[], iter_index=0, stats=stats, pre_name_meta=meta,
++    )
++    return {k: [(x.name, x.confidence, x.source) for x in v] for k, v in c.items()}, stats
++
++
++def test_olculmus_kanal_guveni_sabit_degil():
++    meta = {"FUN_00101000": {"kind": "gnulib", "name": "xmalloc"}}
++    c, stats = _topla({"FUN_00101000": "xmalloc"}, meta)
++    assert c == {"FUN_00101000": [
++        ("xmalloc", MEASURED_PRE_NAME_PRECISION["on_ad:gnulib"][2], "binary_extractor")]}
++    assert "name_merger_pre_name_unmeasured" not in stats
++
++
++def test_olculmemis_on_ad_aday_olmaz_ve_sayilir():
++    # künyesiz ön ad ve künyesi başka adı anlatan ön ad (ad sonradan ezilmiş): ölçülmemiş
++    meta = {"FUN_00102000": {"kind": "gnulib", "name": "baska_ad"}}
++    c, stats = _topla({"FUN_00101000": "read_config", "FUN_00102000": "xstrdup"}, meta)
++    assert c == {}
++    assert stats["name_merger_pre_name_unmeasured"] == 2
+diff --git a/tests/test_p13a_birlestirici.py b/tests/test_p13a_birlestirici.py
+index 2b53ef5..71f3eea 100644
+--- a/tests/test_p13a_birlestirici.py
++++ b/tests/test_p13a_birlestirici.py
+@@ -19,10 +19,18 @@ from karadul.pipeline.steps import _feedback_naming_candidates as FC
+ from karadul.pipeline.steps import _feedback_naming_merger as FM
+ 
+ 
+-def _ctx() -> SimpleNamespace:
++def _ctx(pre_name_meta=None) -> SimpleNamespace:
+     cfg = Config()
+     cfg.binary_reconstruction.apply_global_naming_threshold = True
+-    return SimpleNamespace(pipeline_context=SimpleNamespace(config=cfg, metadata={}), artifacts={})
++    artifacts = {} if pre_name_meta is None else {"pre_name_meta": pre_name_meta}
++    return SimpleNamespace(pipeline_context=SimpleNamespace(config=cfg, metadata={}),
++                           artifacts=artifacts)
++
++
++def _gnulib_kunyesi(extracted) -> dict:
++    # P12c kalem 5: c_namer koşmadığında ön adın güveni kanalının ölçülmüş kesinliği; künyesiz
++    # ön ad birleştiriciye girmez. Bu testler birleştiricinin süzgecini sınar: ölçülmüş kanal.
++    return {k: {"kind": "gnulib", "name": v} for k, v in extracted.items()}
+ 
+ 
+ def _functions(tmp_path: Path) -> Path:
+@@ -37,7 +45,7 @@ def _functions(tmp_path: Path) -> Path:
+     return p
+ 
+ 
+-def _kos(tmp_path: Path, *, extracted, naming_result, refdiff=None, provenance=True):
++def _kos(tmp_path: Path, *, extracted, naming_result, refdiff=None, provenance=True, meta=None):
+     dec = tmp_path / "src"
+     dec.mkdir(parents=True)
+     (dec / "a.c").write_text(
+@@ -49,7 +57,7 @@ def _kos(tmp_path: Path, *, extracted, naming_result, refdiff=None, provenance=T
+     stats: dict = {}
+     errors: list[str] = []
+     harita, adli, dizin = FM.run_name_merger(
+-        ctx=_ctx(), iter_index=0, decompiled_dir=dec, reconstructed_dir=rec,
++        ctx=_ctx(meta), iter_index=0, decompiled_dir=dec, reconstructed_dir=rec,
+         incremental_files=None, extracted_names=dict(extracted), naming_result=naming_result,
+         bindiff_confidence_map={}, refdiff_naming=dict(refdiff or {}),
+         fid_json=tmp_path / "fid.json", computation_result=None, pcode_naming_candidates=[],
+@@ -84,9 +92,9 @@ def test_ad05_c_namerin_reddettigi_on_ad_geri_gelmez(tmp_path) -> None:
+ 
+ 
+ def test_ad05_c_namer_kosmadiysa_birlestirici_ad_gecerliligi_uygular(tmp_path) -> None:
+-    k = _kos(tmp_path, extracted={"FUN_00102000": "free", "FUN_00103000": "_$s4main3FooV",
+-                                  "FUN_00104000": "parse_header"},
+-             naming_result=None)
++    on_ad = {"FUN_00102000": "free", "FUN_00103000": "_$s4main3FooV",
++             "FUN_00104000": "parse_header"}
++    k = _kos(tmp_path, extracted=on_ad, naming_result=None, meta=_gnulib_kunyesi(on_ad))
+     assert k.harita == {"FUN_00104000": "parse_header"}
+     assert k.stats["name_merger_rejected"] == {
+         "collides_with_existing_function": 1, "invalid_c_identifier": 1}
+@@ -109,8 +117,9 @@ def test_birlestiricinin_karari_koken_kaydina_yazilir(tmp_path) -> None:
+ 
+ 
+ def test_koken_kaydi_yoksa_ayri_dosyaya_yazilir(tmp_path) -> None:
+-    k = _kos(tmp_path, extracted={"FUN_00104000": "parse_header"}, naming_result=None,
+-             provenance=False)
++    on_ad = {"FUN_00104000": "parse_header"}
++    k = _kos(tmp_path, extracted=on_ad, naming_result=None, provenance=False,
++             meta=_gnulib_kunyesi(on_ad))
+     kayit = json.loads((k.rec / "name_merger_provenance.json").read_text())["name_merger"]
+     assert kayit["decisions"]["FUN_00104000"]["applied_name"] == "parse_header"
+ 
