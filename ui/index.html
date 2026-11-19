@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="karadul-token" content="__KARADUL_TOKEN__">
+<!-- İçerik güvenlik politikası (P22c2; tasarım §4.3): betik yalnız bu sayfanın tek satır içi bloğu (sha256 karması;
+     'unsafe-inline' YOK: enjekte edilen betik ve olay özniteliği çalışmaz), istek yalnız aynı kökene (connect-src: model
+     / ikili metni başka makineye gönderilemez), form ve <base> yok. Betik değişince karma değişir:
+     tests/test_ui_lm_panel.py karmayı betikten hesaplayıp bu satırla karşılaştırır. 'unsafe-eval' YALNIZ uygulama
+     penceresinin köprüsü için: pywebview js_api, window.pywebview.api.* işlevlerini sayfada `new Function` ile kurar
+     (webview/js/api.js); eval yasaklanırsa güncelleme banner'ının "İndir ve Aç" köprüsü kurulamaz. Sayfanın kendi
+     kodunda eval / new Function yok (testli). Stil satır içi (öznitelik + dinamik @keyframes). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-Jv6rASQHCK1pW1kTCPg9a48gI8yC5TcYZHk0UU7Dexc=' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>BLACK WIDOW — Karadul</title>
 <style>
   :root{

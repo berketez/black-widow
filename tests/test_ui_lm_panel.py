@@ -276,6 +276,20 @@ console.log(JSON.stringify([lmShownName(f,mn),lmShownName(g,mn),lmShownName(f,nu
 # (f) güvenlik
 
 
+def test_csp_betik_karmasi_ve_kisitlar():
+    html = _html()
+    m = re.search(r'<meta http-equiv="Content-Security-Policy" content="([^"]+)">', html)
+    assert m, "CSP yok"
+    csp = dict((p.strip().split(" ", 1) + [""])[:2] for p in m.group(1).split(";"))
+    karma = base64.b64encode(hashlib.sha256(_script().encode("utf-8")).digest()).decode()
+    # tek betik (karma); 'unsafe-inline' / 'self' yok. 'unsafe-eval' yalnız pywebview js_api köprüsü için (new Function)
+    assert csp["script-src"] == f"'sha256-{karma}' 'unsafe-eval'" and "unsafe-inline" not in csp["script-src"]
+    assert csp["connect-src"] == "'self'" and csp["form-action"] == "'none'" and csp["base-uri"] == "'none'"
+    assert csp["object-src"] == "'none'" and csp["default-src"] == "'self'" and csp["img-src"] == "'self' data:"
+    assert html.count("<script") == 1 and not re.search(r"\son[a-z]+=\"", html)   # satır içi olay özniteliği yok
+    assert html.index("Content-Security-Policy") < html.index("<script>")
+
+
 def test_panel_metni_yalniz_textcontent():
     blok = _blok("P22C2-LM") + _lm_dom()
     for yasak in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function"):
