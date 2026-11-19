@@ -151,6 +151,35 @@ def _address_sort_key(addr: str) -> tuple[str, int, str]:
         return (space, -1, addr)
 
 
+# Varnode.toString(): "(register, 0x4000, 8)", "(stack, 0xfffffffffffffff0, 8)".
+_VARNODE_TEXT = re.compile(r"^\((?P<space>[^,()]+), 0x(?P<offset>[0-9a-fA-F]+), (?P<size>\d+)\)$")
+
+
+def high_var_sort_key(entry: dict) -> tuple:
+    """``pcode_high_vars`` kaydı için kararlı sıralama anahtarı (P16d).
+
+    Ghidra'nın ``LocalSymbolMap.getSymbols()`` yinelemesi simge kimliğiyle anahtarlanmış bir
+    eşlemin değerleridir; aynı girdide sırası koşudan koşuya değişiyordu (küme aynı). Liste
+    üretim noktasında depolama yerine göre sıralanır: biçimi tanınan depolama (alan adı, sayısal
+    ofset, genişlik) önce, tanınmayan (``unknown`` vb.) metniyle sonra; eşitlikte ad, tip,
+    boyut. 119 ikilinin dökümünde (depolama, ad, tip, boyut) dörtlüsü fonksiyon içinde hiç
+    yinelenmiyor, yani sıra tam belirlidir. Anahtar hiçbir girdide istisna atmaz.
+    """
+    storage = str(entry.get("storage", "") or "")
+    m = _VARNODE_TEXT.match(storage)
+    if m:
+        where: tuple = (0, m.group("space"), int(m.group("offset"), 16), int(m.group("size")), "")
+    else:
+        where = (1, "", 0, 0, storage)
+    size = entry.get("size")
+    return (
+        where,
+        str(entry.get("name", "") or ""),
+        str(entry.get("type", "") or ""),
+        size if isinstance(size, int) and not isinstance(size, bool) else -1,
+    )
+
+
 class GhidraHeadless:
     """Ghidra headless analiz wrapper.
 
@@ -1542,6 +1571,8 @@ class GhidraHeadless:
                         except Exception:
                             logger.debug("Pcode variable extraction basarisiz, atlaniyor", exc_info=True)
 
+                        # P16d: getSymbols() sırası koşudan koşuya değişiyor; liste kararlı sırada.
+                        pcode_high_vars.sort(key=high_var_sort_key)
                         result_entry["pcode_ops"] = pcode_ops_selective
                         result_entry["pcode_high_vars"] = pcode_high_vars
 
@@ -1872,6 +1903,7 @@ class GhidraHeadless:
                             "size": sym.getSize(),
                             "storage": str(hv.getRepresentative()) if hv and hv.getRepresentative() else "unknown",
                         })
+                high_vars.sort(key=high_var_sort_key)  # P16d: getSymbols() sırası kararsız
 
                 total_ops += len(ops_data)
                 functions_data.append({

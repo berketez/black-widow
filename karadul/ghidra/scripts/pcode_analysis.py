@@ -218,7 +218,22 @@ def extract_high_variables(high_func) -> list:
 
         variables.append(var_entry)
 
+    # P16d: getSymbols() bir eşlemin değerlerini dolaşır, sırası koşudan koşuya değişir.
+    variables.sort(key=high_var_order_key)
     return variables
+
+
+def high_var_order_key(var_entry: dict) -> tuple:
+    """Yüksek değişken kaydı için kararlı sıra: depolama alanı, ofset, boyut, ad, tip (P16d)."""
+    offset = var_entry.get("storage_offset", 0)
+    size = var_entry.get("size", 0)
+    return (
+        str(var_entry.get("storage_space", "")),
+        offset if isinstance(offset, int) else 0,
+        size if isinstance(size, int) else 0,
+        str(var_entry.get("name", "")),
+        str(var_entry.get("type", "")),
+    )
 
 
 def extract_pcode_for_all_functions() -> dict:

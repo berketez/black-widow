@@ -1,0 +1,93 @@
+{
+  "_comment": "P16d (pcode_high_vars sırasının belirlenimciliği; tüketicinin sıradan bağımsızlığı) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p16d.json",
+  "mutants": [
+    {
+      "id": "p16d_decompile_siralama_yok",
+      "desc": "Decompile yolunda liste sıralanmaz (getSymbols() sırası geçer)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_decompile_yolu_iki_sirada_ayni_liste",
+      "find": "                        pcode_high_vars.sort(key=high_var_sort_key)\n",
+      "replace": "                        pass\n"
+    },
+    {
+      "id": "p16d_tam_pcode_siralama_yok",
+      "desc": "Tam P-Code yolunda liste sıralanmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_tam_pcode_yolu_iki_sirada_ayni",
+      "find": "                high_vars.sort(key=high_var_sort_key)  # P16d: getSymbols() sırası kararsız\n",
+      "replace": "                pass\n"
+    },
+    {
+      "id": "p16d_ofset_metin_sirasi",
+      "desc": "Ofset sayı yerine metin olarak sıralanır (0x10 < 0x8)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_decompile_yolu_iki_sirada_ayni_liste",
+      "find": "where: tuple = (0, m.group(\"space\"), int(m.group(\"offset\"), 16), int(m.group(\"size\")), \"\")",
+      "replace": "where: tuple = (0, m.group(\"space\"), m.group(\"offset\"), int(m.group(\"size\")), \"\")"
+    },
+    {
+      "id": "p16d_tanimsiz_depolama_once",
+      "desc": "Tanınmayan depolama (unknown) tanınanlardan önce gelir",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_decompile_yolu_iki_sirada_ayni_liste",
+      "find": "        where = (1, \"\", 0, 0, storage)",
+      "replace": "        where = (-1, \"\", 0, 0, storage)"
+    },
+    {
+      "id": "p16d_anahtar_ad_yok",
+      "desc": "Anahtardan ad çıkar: aynı depolamayı paylaşan kayıtlarda sıra girdiye bağlı kalır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_sira_anahtari_ayni_depolamada_ad_ve_tip_belirler",
+      "find": "        where,\n        str(entry.get(\"name\", \"\") or \"\"),\n        str(entry.get(\"type\", \"\") or \"\"),",
+      "replace": "        where,\n        \"\",\n        \"\","
+    },
+    {
+      "id": "p16d_betik_siralama_yok",
+      "desc": "CLI betiği (analyzeHeadless yedeği) listeyi sıralamaz",
+      "module": "karadul/ghidra/scripts/pcode_analysis.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_cli_betigi_iki_sirada_ayni_liste",
+      "find": "    variables.sort(key=high_var_order_key)\n",
+      "replace": "    pass\n"
+    },
+    {
+      "id": "p16d_tuketici_siralamaz",
+      "desc": "Tüketici kayıtları girdi sırasıyla dolaşır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_tuketici_sozluk_sirasi_girdi_sirasindan_bagimsiz",
+      "find": "            for hv in sorted((h for h in high_vars if isinstance(h, dict)), key=high_var_sort_key):",
+      "replace": "            for hv in [h for h in high_vars if isinstance(h, dict)]:"
+    },
+    {
+      "id": "p16d_tuketici_sonuncu_kazanir",
+      "desc": "Aynı adda eski davranış: sonraki kayıt öncekini ezer",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_tuketici_yinelenen_adda_depolama_sirasinda_ilk_kazanir",
+      "find": "                if var_name in resolved:\n                    if resolved[var_name] != var_type:",
+      "replace": "                if var_name in resolved and False:\n                    if resolved[var_name] != var_type:"
+    },
+    {
+      "id": "p16d_tuketici_yineleme_kaydi_yok",
+      "desc": "Farklı tipli yineleme kayda yazılmaz",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_tuketici_yinelenen_adda_depolama_sirasinda_ilk_kazanir",
+      "find": "                    if resolved[var_name] != var_type:\n                        self.ghidra_high_var_duplicates.append({",
+      "replace": "                    if resolved[var_name] == 0:\n                        self.ghidra_high_var_duplicates.append({"
+    },
+    {
+      "id": "p16d_tuketici_ayni_tip_kaydi",
+      "desc": "Aynı tipli yineleme de çakışma diye kayda yazılır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_tuketici_ayni_tipli_yineleme_kayda_girmez",
+      "find": "                    if resolved[var_name] != var_type:\n                        self.ghidra_high_var_duplicates.append({",
+      "replace": "                    if True or resolved[var_name] != var_type:\n                        self.ghidra_high_var_duplicates.append({"
+    },
+    {
+      "id": "p16d_tuketici_liste_denetimi_yok",
+      "desc": "Liste olmayan alan (sözlük) dolaşılır",
+      "module": "karadul/reconstruction/c_type_recoverer.py",
+      "test": "tests/test_p16d_high_vars_sirasi.py::test_tuketici_liste_olmayan_alani_atlar",
+      "find": "            if not high_vars or not isinstance(high_vars, list):",
+      "replace": "            if not high_vars:"
+    }
+  ]
+}

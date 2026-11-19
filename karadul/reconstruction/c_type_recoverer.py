@@ -1196,6 +1196,8 @@ class CTypeRecoverer:
         self._case_comment_names: dict[str, dict[int, str]] = {}
         # v1.8: Ghidra pcode_high_vars -- {func_name: {var_name: resolved_type}}
         self._ghidra_high_vars: dict[str, dict[str, str]] = {}
+        # P16d: aynı fonksiyonda aynı ada farklı tip (seçilmeyen kayıtlar)
+        self.ghidra_high_var_duplicates: list[dict[str, str]] = []
 
         # FIX 2: _state_lock ve import threading kaldirildi (ProcessPool'da gereksiz)
 
@@ -1627,6 +1629,7 @@ class CTypeRecoverer:
         self._type_usage.clear()
         self._case_comment_names.clear()
         self._ghidra_high_vars.clear()
+        self.ghidra_high_var_duplicates.clear()
 
     def _merge_parse_result(self, result: dict[str, Any]) -> None:
         """ProcessPool worker'dan donen parse sonucunu ic state'e merge et.
@@ -1968,6 +1971,8 @@ class CTypeRecoverer:
                        "undefined4", "undefined8", "undefined *",
                        "undefined1 *", "undefined4 *", "undefined8 *"}
 
+        from karadul.ghidra.headless import high_var_sort_key
+
         for func_entry in functions:
             if not isinstance(func_entry, dict):
                 continue
@@ -1975,13 +1980,17 @@ class CTypeRecoverer:
             if not func_name:
                 continue
             high_vars = func_entry.get("pcode_high_vars", [])
-            if not high_vars:
+            if not high_vars or not isinstance(high_vars, list):
                 continue
 
+            # P16d: listenin sırası anlamsız (Ghidra'nın simge eşlemi; eski dökümlerde koşudan
+            # koşuya değişiyordu) ama eski kod sıraya bağlıydı: aynı ad iki kez geçerse listede
+            # SONUNCU kazanıyordu, sözlük sırası da tip değişimlerinin uygulanma sırasıydı.
+            # Kural: kayıtlar depolama yerine göre kararlı sıraya konur (``high_var_sort_key``,
+            # üretimdeki sıra); aynı ad birden çok kez geçerse bu sıradaki İLK çözülmüş tip
+            # seçilir, farklı tipli öbürleri ``ghidra_high_var_duplicates``'e ve günlüğe yazılır.
             resolved: dict[str, str] = {}
-            for hv in high_vars:
-                if not isinstance(hv, dict):
-                    continue
+            for hv in sorted((h for h in high_vars if isinstance(h, dict)), key=high_var_sort_key):
                 var_name = hv.get("name", "")
                 var_type = hv.get("type", "")
                 if not var_name or not var_type:
@@ -1997,11 +2006,25 @@ class CTypeRecoverer:
                 # undefined1[N] gibi array tipleri de atla
                 if var_type.startswith("undefined"):
                     continue
+                if var_name in resolved:
+                    if resolved[var_name] != var_type:
+                        self.ghidra_high_var_duplicates.append({
+                            "function": func_name, "name": var_name,
+                            "chosen_type": resolved[var_name], "dropped_type": var_type,
+                            "dropped_storage": str(hv.get("storage", "")),
+                        })
+                    continue
                 resolved[var_name] = var_type
 
             if resolved:
                 self._ghidra_high_vars[func_name] = resolved
 
+        if self.ghidra_high_var_duplicates:
+            logger.warning(
+                "Ghidra pcode_high_vars: %d yinelenen ad farklı tiple geldi; depolama sırasında "
+                "ilk tip seçildi (ilki: %s)",
+                len(self.ghidra_high_var_duplicates), self.ghidra_high_var_duplicates[0],
+            )
         logger.debug(
             "Ghidra pcode_high_vars: %d fonksiyon, %d toplam resolved degisken",
             len(self._ghidra_high_vars),
