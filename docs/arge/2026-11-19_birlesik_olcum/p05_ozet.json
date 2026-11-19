@@ -1,0 +1,3176 @@
+{
+ "arac": "p05_olc/2",
+ "dogrulama": {
+  "ayni": 119
+ },
+ "durum": {
+  "tamam": 119
+ },
+ "etiket": "birlesik",
+ "hizalama": "/Users/apple/karadul_olcum/runs/t0b-1acba60/hizalama",
+ "hukum": {
+  "gt_yok": 198,
+  "tam": 41,
+  "yakin": 44,
+  "yanlis": 3004
+ },
+ "ikili": 119,
+ "ikili_sayilari": {
+  "gt_li": 22,
+  "koken_esit_True": 119
+ },
+ "ikililer": {
+  "debian/coreutils/[": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.43
+  },
+  "debian/coreutils/arch": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yakin": 1,
+    "yanlis": 18
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 4
+    },
+    "type_heuristic": {
+     "yanlis": 12
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.46
+  },
+  "debian/coreutils/b2sum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 7,
+    "type_heuristic": 20
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 29,
+    "toplam": 29
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.4
+  },
+  "debian/coreutils/base32": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 7,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 25,
+    "toplam": 25
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.44
+  },
+  "debian/coreutils/base64": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 7,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 25,
+    "toplam": 25
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.59
+  },
+  "debian/coreutils/basename": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.36
+  },
+  "debian/coreutils/basenc": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 8,
+    "type_heuristic": 33
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 43,
+    "toplam": 43
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.63
+  },
+  "debian/coreutils/cat": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 23,
+    "toplam": 23
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.8
+  },
+  "debian/coreutils/chcon": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 10,
+    "type_heuristic": 20
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 32,
+    "toplam": 32
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.97
+  },
+  "debian/coreutils/chgrp": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 3,
+    "yakin": 1,
+    "yanlis": 38
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 12,
+    "type_heuristic": 26
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 4
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 11
+    },
+    "type_heuristic": {
+     "gt_yok": 3,
+     "yanlis": 23
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 42,
+    "toplam": 42
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.77
+  },
+  "debian/coreutils/chmod": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 12,
+    "type_heuristic": 21
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 35,
+    "toplam": 35
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.53
+  },
+  "debian/coreutils/chown": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 12,
+    "type_heuristic": 26
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 42,
+    "toplam": 42
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 1.01
+  },
+  "debian/coreutils/chroot": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 5,
+    "type_heuristic": 15
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 24,
+    "toplam": 24
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.42
+  },
+  "debian/coreutils/cksum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 11,
+    "signature_based": 1,
+    "type_heuristic": 37
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 52,
+    "toplam": 52
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 1.3
+  },
+  "debian/coreutils/comm": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 24,
+    "toplam": 24
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.54
+  },
+  "debian/coreutils/cp": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 27,
+    "type_heuristic": 60
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 90,
+    "toplam": 90
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 4,
+    "char_isaretci": 4,
+    "kanitsiz": 4,
+    "type_heuristic|char_isaretci": 4
+   },
+   "sure_sn": 1.42
+  },
+  "debian/coreutils/csplit": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 8,
+    "type_heuristic": 19
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 29,
+    "toplam": 29
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 1,
+    "char_isaretci": 1,
+    "kanitsiz": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.39
+  },
+  "debian/coreutils/cut": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 18
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 26,
+    "toplam": 26
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.33
+  },
+  "debian/coreutils/date": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 7,
+    "type_heuristic": 15
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 26,
+    "toplam": 26
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.56
+  },
+  "debian/coreutils/dd": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 9,
+    "type_heuristic": 20
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 32,
+    "toplam": 32
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.52
+  },
+  "debian/coreutils/df": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 5,
+    "call_graph_propagation": 11,
+    "type_heuristic": 24
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 40,
+    "toplam": 40
+   },
+   "str_ailesi": {
+    "char_isaretci": 3,
+    "type_heuristic|char_isaretci": 3
+   },
+   "sure_sn": 0.71
+  },
+  "debian/coreutils/dir": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 1,
+    "tam": 1,
+    "yakin": 2,
+    "yanlis": 58
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 26,
+    "type_heuristic": 32
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 4
+    },
+    "call_graph_propagation": {
+     "tam": 1,
+     "yakin": 2,
+     "yanlis": 23
+    },
+    "type_heuristic": {
+     "gt_yok": 1,
+     "yanlis": 31
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 62,
+    "toplam": 62
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 3,
+    "char_isaretci": 1,
+    "kanitsiz": 3,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.95
+  },
+  "debian/coreutils/dircolors": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 7,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 25,
+    "toplam": 25
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.37
+  },
+  "debian/coreutils/dirname": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.28
+  },
+  "debian/coreutils/du": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 4,
+    "yakin": 1,
+    "yanlis": 36
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 11,
+    "type_heuristic": 26
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 4
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 10
+    },
+    "type_heuristic": {
+     "gt_yok": 4,
+     "yanlis": 22
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 41,
+    "toplam": 41
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.7
+  },
+  "debian/coreutils/echo": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.53
+  },
+  "debian/coreutils/env": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yakin": 1,
+    "yanlis": 19
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 4
+    },
+    "type_heuristic": {
+     "yanlis": 13
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.34
+  },
+  "debian/coreutils/expand": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 24,
+    "toplam": 24
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 1,
+    "char_isaretci": 1,
+    "kanitsiz": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.54
+  },
+  "debian/coreutils/expr": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 15
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 23,
+    "toplam": 23
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.53
+  },
+  "debian/coreutils/factor": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 15,
+    "type_heuristic": 23
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 40,
+    "toplam": 40
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.48
+  },
+  "debian/coreutils/false": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.33
+  },
+  "debian/coreutils/fmt": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 8,
+    "type_heuristic": 18
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 28,
+    "toplam": 28
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.41
+  },
+  "debian/coreutils/fold": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 18
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 26,
+    "toplam": 26
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.35
+  },
+  "debian/coreutils/groups": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 15
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 22,
+    "toplam": 22
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.28
+  },
+  "debian/coreutils/head": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 9,
+    "type_heuristic": 19
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 30,
+    "toplam": 30
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.3
+  },
+  "debian/coreutils/hostid": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.27
+  },
+  "debian/coreutils/id": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 7,
+    "type_heuristic": 17
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 28,
+    "toplam": 28
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.29
+  },
+  "debian/coreutils/install": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 8,
+    "call_graph_propagation": 22,
+    "type_heuristic": 64
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 94,
+    "toplam": 94
+   },
+   "str_ailesi": {
+    "char_isaretci": 4,
+    "type_heuristic|char_isaretci": 4
+   },
+   "sure_sn": 0.98
+  },
+  "debian/coreutils/join": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 23
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 30,
+    "toplam": 30
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.39
+  },
+  "debian/coreutils/libstdbuf.so": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {},
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {},
+   "str_ailesi": {},
+   "sure_sn": 0.02
+  },
+  "debian/coreutils/link": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.24
+  },
+  "debian/coreutils/ln": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 2,
+    "yakin": 1,
+    "yanlis": 44
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 9,
+    "type_heuristic": 35
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 3
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 8
+    },
+    "type_heuristic": {
+     "gt_yok": 2,
+     "yanlis": 33
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 47,
+    "toplam": 47
+   },
+   "str_ailesi": {
+    "char_isaretci": 3,
+    "type_heuristic|char_isaretci": 3
+   },
+   "sure_sn": 0.54
+  },
+  "debian/coreutils/logname": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yakin": 1,
+    "yanlis": 19
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 4
+    },
+    "type_heuristic": {
+     "yanlis": 13
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.29
+  },
+  "debian/coreutils/ls": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 26,
+    "type_heuristic": 32
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 62,
+    "toplam": 62
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 3,
+    "char_isaretci": 1,
+    "kanitsiz": 3,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.85
+  },
+  "debian/coreutils/md5sum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yakin": 1,
+    "yanlis": 20
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 4
+    },
+    "type_heuristic": {
+     "yanlis": 14
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 21,
+    "toplam": 21
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.34
+  },
+  "debian/coreutils/mkdir": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 7,
+    "call_graph_propagation": 17,
+    "type_heuristic": 29
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 53,
+    "toplam": 53
+   },
+   "str_ailesi": {
+    "char_isaretci": 2,
+    "type_heuristic|char_isaretci": 2
+   },
+   "sure_sn": 0.59
+  },
+  "debian/coreutils/mkfifo": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 12,
+    "type_heuristic": 23
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 37,
+    "toplam": 37
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.55
+  },
+  "debian/coreutils/mknod": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 12,
+    "type_heuristic": 23
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 37,
+    "toplam": 37
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.56
+  },
+  "debian/coreutils/mktemp": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 21,
+    "toplam": 21
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.39
+  },
+  "debian/coreutils/mv": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 20,
+    "type_heuristic": 56
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 79,
+    "toplam": 79
+   },
+   "str_ailesi": {
+    "char_isaretci": 4,
+    "type_heuristic|char_isaretci": 4
+   },
+   "sure_sn": 1.24
+  },
+  "debian/coreutils/nice": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.31
+  },
+  "debian/coreutils/nl": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 18
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 26,
+    "toplam": 26
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.3
+  },
+  "debian/coreutils/nohup": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 21,
+    "toplam": 21
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.29
+  },
+  "debian/coreutils/nproc": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yakin": 1,
+    "yanlis": 23
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 5
+    },
+    "type_heuristic": {
+     "yanlis": 16
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 24,
+    "toplam": 24
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.3
+  },
+  "debian/coreutils/numfmt": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 8,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 23,
+    "toplam": 23
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.35
+  },
+  "debian/coreutils/od": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 7,
+    "type_heuristic": 54
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 64,
+    "toplam": 64
+   },
+   "str_ailesi": {
+    "char_isaretci": 3,
+    "type_heuristic|char_isaretci": 3
+   },
+   "sure_sn": 0.4
+  },
+  "debian/coreutils/paste": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 15
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 22,
+    "toplam": 22
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.28
+  },
+  "debian/coreutils/pathchk": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.27
+  },
+  "debian/coreutils/pinky": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 12,
+    "type_heuristic": 15
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 30,
+    "toplam": 30
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.51
+  },
+  "debian/coreutils/pr": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 10,
+    "type_heuristic": 20
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 33,
+    "toplam": 33
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.51
+  },
+  "debian/coreutils/printenv": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.25
+  },
+  "debian/coreutils/printf": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 9,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 23,
+    "toplam": 23
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.35
+  },
+  "debian/coreutils/ptx": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 6,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 21,
+    "toplam": 21
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.35
+  },
+  "debian/coreutils/pwd": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.3
+  },
+  "debian/coreutils/readlink": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 7,
+    "type_heuristic": 17
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 26,
+    "toplam": 26
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.46
+  },
+  "debian/coreutils/realpath": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 7,
+    "type_heuristic": 17
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 26,
+    "toplam": 26
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.48
+  },
+  "debian/coreutils/rm": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 13,
+    "type_heuristic": 20
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 36,
+    "toplam": 36
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.55
+  },
+  "debian/coreutils/rmdir": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.35
+  },
+  "debian/coreutils/runcon": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.5
+  },
+  "debian/coreutils/seq": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.5
+  },
+  "debian/coreutils/sha1sum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 21,
+    "toplam": 21
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.51
+  },
+  "debian/coreutils/sha224sum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yakin": 1,
+    "yanlis": 21
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 5
+    },
+    "type_heuristic": {
+     "yanlis": 14
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 22,
+    "toplam": 22
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.46
+  },
+  "debian/coreutils/sha256sum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 22,
+    "toplam": 22
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.34
+  },
+  "debian/coreutils/sha384sum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 22,
+    "toplam": 22
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.42
+  },
+  "debian/coreutils/sha512sum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 22,
+    "toplam": 22
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.35
+  },
+  "debian/coreutils/shred": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 6,
+    "type_heuristic": 23
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 33,
+    "toplam": 33
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.41
+  },
+  "debian/coreutils/shuf": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 18
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 25,
+    "toplam": 25
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.44
+  },
+  "debian/coreutils/sleep": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.33
+  },
+  "debian/coreutils/sort": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 24,
+    "type_heuristic": 32
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 59,
+    "toplam": 59
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 1,
+    "char_isaretci": 1,
+    "kanitsiz": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.87
+  },
+  "debian/coreutils/split": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 8,
+    "type_heuristic": 30
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 42,
+    "toplam": 42
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.4
+  },
+  "debian/coreutils/stat": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 7,
+    "type_heuristic": 15
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 26,
+    "toplam": 26
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.47
+  },
+  "debian/coreutils/stdbuf": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 6,
+    "type_heuristic": 15
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 24,
+    "toplam": 24
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.32
+  },
+  "debian/coreutils/stty": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 7,
+    "type_heuristic": 20
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 29,
+    "toplam": 29
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.33
+  },
+  "debian/coreutils/sum": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 6,
+    "type_heuristic": 21
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 30,
+    "toplam": 30
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.32
+  },
+  "debian/coreutils/sync": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.27
+  },
+  "debian/coreutils/tac": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 23,
+    "toplam": 23
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.33
+  },
+  "debian/coreutils/tail": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 11,
+    "type_heuristic": 26
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 40,
+    "toplam": 40
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 3,
+    "char_isaretci": 1,
+    "kanitsiz": 3,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.45
+  },
+  "debian/coreutils/tee": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 5,
+    "type_heuristic": 20
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 28,
+    "toplam": 28
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.32
+  },
+  "debian/coreutils/test": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.27
+  },
+  "debian/coreutils/timeout": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.36
+  },
+  "debian/coreutils/touch": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 7,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 26,
+    "toplam": 26
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.37
+  },
+  "debian/coreutils/tr": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yakin": 1,
+    "yanlis": 27
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 7,
+    "type_heuristic": 19
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 6
+    },
+    "type_heuristic": {
+     "yanlis": 19
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 28,
+    "toplam": 28
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.33
+  },
+  "debian/coreutils/true": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.29
+  },
+  "debian/coreutils/truncate": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 17
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 25,
+    "toplam": 25
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.5
+  },
+  "debian/coreutils/tsort": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 24,
+    "toplam": 24
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.38
+  },
+  "debian/coreutils/tty": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.3
+  },
+  "debian/coreutils/uname": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 12
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 19,
+    "toplam": 19
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.27
+  },
+  "debian/coreutils/unexpand": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 6,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 24,
+    "toplam": 24
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 1,
+    "char_isaretci": 1,
+    "kanitsiz": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.31
+  },
+  "debian/coreutils/uniq": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 5,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 24,
+    "toplam": 24
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.32
+  },
+  "debian/coreutils/unlink": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yakin": 1,
+    "yanlis": 19
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "yakin": 1,
+     "yanlis": 4
+    },
+    "type_heuristic": {
+     "yanlis": 13
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.46
+  },
+  "debian/coreutils/users": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 13,
+    "type_heuristic": 17
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 33,
+    "toplam": 33
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.45
+  },
+  "debian/coreutils/vdir": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 26,
+    "type_heuristic": 32
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 62,
+    "toplam": 62
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 3,
+    "char_isaretci": 1,
+    "kanitsiz": 3,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.7
+  },
+  "debian/coreutils/wc": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 4,
+    "call_graph_propagation": 10,
+    "type_heuristic": 17
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 31,
+    "toplam": 31
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 1,
+    "char_isaretci": 1,
+    "kanitsiz": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.44
+  },
+  "debian/coreutils/who": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 3,
+    "call_graph_propagation": 18,
+    "type_heuristic": 16
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 37,
+    "toplam": 37
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.39
+  },
+  "debian/coreutils/whoami": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 13
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 20,
+    "toplam": 20
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.29
+  },
+  "debian/coreutils/yes": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 5,
+    "type_heuristic": 14
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 21,
+    "toplam": 21
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 0.39
+  },
+  "debian/htop/htop": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 13,
+    "tam": 1,
+    "yakin": 9,
+    "yanlis": 98
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_graph_propagation": 65,
+    "type_heuristic": 56
+   },
+   "kaynak_hukum": {
+    "call_graph_propagation": {
+     "gt_yok": 12,
+     "tam": 1,
+     "yakin": 9,
+     "yanlis": 43
+    },
+    "type_heuristic": {
+     "gt_yok": 1,
+     "yanlis": 55
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 121,
+    "toplam": 121
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 8,
+    "kanitsiz": 8
+   },
+   "sure_sn": 2.45
+  },
+  "debian/openssl/openssl": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 6,
+    "tam": 4,
+    "yakin": 1,
+    "yanlis": 112
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 6,
+    "call_graph_propagation": 36,
+    "type_heuristic": 81
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "tam": 2,
+     "yanlis": 4
+    },
+    "call_graph_propagation": {
+     "gt_yok": 4,
+     "tam": 2,
+     "yanlis": 30
+    },
+    "type_heuristic": {
+     "gt_yok": 2,
+     "yakin": 1,
+     "yanlis": 78
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 123,
+    "toplam": 123
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 2,
+    "char_isaretci": 6,
+    "kanitsiz": 2,
+    "type_heuristic|char_isaretci": 6
+   },
+   "sure_sn": 6.57
+  },
+  "debian/redis-tools/redis-benchmark": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 12,
+    "yanlis": 52
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 15,
+    "type_heuristic": 47
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "gt_yok": 5,
+     "yanlis": 10
+    },
+    "type_heuristic": {
+     "gt_yok": 7,
+     "yanlis": 40
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 64,
+    "toplam": 64
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 2,
+    "kanitsiz": 2
+   },
+   "sure_sn": 1.65
+  },
+  "debian/redis-tools/redis-check-aof": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 48,
+    "tam": 19,
+    "yakin": 7,
+    "yanlis": 732
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 15,
+    "call_graph_propagation": 426,
+    "type_heuristic": 365
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 15
+    },
+    "call_graph_propagation": {
+     "gt_yok": 36,
+     "tam": 15,
+     "yakin": 6,
+     "yanlis": 369
+    },
+    "type_heuristic": {
+     "gt_yok": 12,
+     "tam": 4,
+     "yakin": 1,
+     "yanlis": 348
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 806,
+    "toplam": 806
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 7,
+    "char_isaretci": 1,
+    "kanitsiz": 7,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 11.16
+  },
+  "debian/redis-tools/redis-check-rdb": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 15,
+    "call_graph_propagation": 426,
+    "type_heuristic": 365
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 806,
+    "toplam": 806
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 7,
+    "char_isaretci": 1,
+    "kanitsiz": 7,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 14.8
+  },
+  "debian/redis-tools/redis-cli": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 17,
+    "yakin": 2,
+    "yanlis": 89
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 47,
+    "type_heuristic": 59
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yanlis": 2
+    },
+    "call_graph_propagation": {
+     "gt_yok": 12,
+     "yakin": 2,
+     "yanlis": 33
+    },
+    "type_heuristic": {
+     "gt_yok": 5,
+     "yanlis": 54
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 108,
+    "toplam": 108
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 3,
+    "kanitsiz": 3
+   },
+   "sure_sn": 2.68
+  },
+  "debian/sqlite3/sqlite3": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 32,
+    "tam": 5,
+    "yanlis": 23
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 2,
+    "call_graph_propagation": 49,
+    "type_heuristic": 9
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "tam": 2
+    },
+    "call_graph_propagation": {
+     "gt_yok": 32,
+     "tam": 3,
+     "yanlis": 14
+    },
+    "type_heuristic": {
+     "yanlis": 9
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 60,
+    "toplam": 60
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 2,
+    "kanitsiz": 2
+   },
+   "sure_sn": 2.13
+  },
+  "debian/tmux/tmux": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 37,
+    "tam": 3,
+    "yakin": 1,
+    "yanlis": 426
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 11,
+    "call_graph_propagation": 149,
+    "type_heuristic": 307
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "tam": 1,
+     "yakin": 1,
+     "yanlis": 9
+    },
+    "call_graph_propagation": {
+     "gt_yok": 31,
+     "tam": 2,
+     "yanlis": 116
+    },
+    "type_heuristic": {
+     "gt_yok": 6,
+     "yanlis": 301
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 467,
+    "toplam": 467
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 5,
+    "char_isaretci": 4,
+    "kanitsiz": 5,
+    "type_heuristic|char_isaretci": 4
+   },
+   "sure_sn": 5.11
+  },
+  "debian/tree/tree": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "yanlis": 9
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_graph_propagation": 5,
+    "type_heuristic": 4
+   },
+   "kaynak_hukum": {
+    "call_graph_propagation": {
+     "yanlis": 5
+    },
+    "type_heuristic": {
+     "yanlis": 4
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 9,
+    "toplam": 9
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 1,
+    "kanitsiz": 1
+   },
+   "sure_sn": 0.49
+  },
+  "debian/zstd/pzstd": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 4,
+    "tam": 3,
+    "yakin": 3,
+    "yanlis": 497
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 10,
+    "call_graph_propagation": 111,
+    "type_heuristic": 386
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "yakin": 1,
+     "yanlis": 9
+    },
+    "call_graph_propagation": {
+     "tam": 3,
+     "yakin": 1,
+     "yanlis": 107
+    },
+    "type_heuristic": {
+     "gt_yok": 4,
+     "yakin": 1,
+     "yanlis": 381
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 507,
+    "toplam": 507
+   },
+   "str_ailesi": {
+    "char_isaretci": 1,
+    "type_heuristic|char_isaretci": 1
+   },
+   "sure_sn": 4.04
+  },
+  "debian/zstd/zstd": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": {
+    "gt_yok": 19,
+    "tam": 5,
+    "yakin": 8,
+    "yanlis": 624
+   },
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 35,
+    "call_graph_propagation": 147,
+    "type_heuristic": 474
+   },
+   "kaynak_hukum": {
+    "call_context": {
+     "gt_yok": 1,
+     "yakin": 3,
+     "yanlis": 31
+    },
+    "call_graph_propagation": {
+     "gt_yok": 3,
+     "tam": 5,
+     "yakin": 2,
+     "yanlis": 137
+    },
+    "type_heuristic": {
+     "gt_yok": 15,
+     "yakin": 3,
+     "yanlis": 456
+    }
+   },
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 656,
+    "toplam": 656
+   },
+   "str_ailesi": {
+    "char_isaretci": 4,
+    "kanitli": 1,
+    "type_heuristic|char_isaretci": 4,
+    "type_heuristic|kanitli": 1
+   },
+   "sure_sn": 5.14
+  },
+  "mac/htop": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_graph_propagation": 33,
+    "signature_based": 4,
+    "type_heuristic": 46
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 83,
+    "toplam": 83
+   },
+   "str_ailesi": {},
+   "sure_sn": 1.93
+  },
+  "mac/tmux": {
+   "dogrulama": "ayni",
+   "durum": "tamam",
+   "hukum": null,
+   "ipucu": 0,
+   "isaretciye_skaler": {},
+   "kaynak": {
+    "call_context": 13,
+    "call_graph_propagation": 161,
+    "signature_based": 9,
+    "type_heuristic": 326
+   },
+   "kaynak_hukum": {},
+   "koken_esit": true,
+   "sayac": {
+    "gecerli": 509,
+    "toplam": 509
+   },
+   "str_ailesi": {
+    "call_graph_propagation|kanitsiz": 5,
+    "char_isaretci": 3,
+    "kanitsiz": 5,
+    "type_heuristic|char_isaretci": 3
+   },
+   "sure_sn": 4.15
+  }
+ },
+ "ipucu": 0,
+ "isaretciye_skaler": {},
+ "isaretciye_skaler_toplam": 0,
+ "kaynak": {
+  "call_context": 381,
+  "call_graph_propagation": 2539,
+  "signature_based": 14,
+  "type_heuristic": 4537
+ },
+ "kaynak_hukum": {
+  "call_context": {
+   "gt_yok": 1,
+   "tam": 5,
+   "yakin": 5,
+   "yanlis": 103
+  },
+  "call_graph_propagation": {
+   "gt_yok": 135,
+   "tam": 32,
+   "yakin": 33,
+   "yanlis": 952
+  },
+  "type_heuristic": {
+   "gt_yok": 62,
+   "tam": 4,
+   "yakin": 6,
+   "yanlis": 1949
+  }
+ },
+ "kosu": "/Users/apple/karadul_olcum/runs/urun-onarim-a62f15e",
+ "sayac": {
+  "gecerli": 7471,
+  "toplam": 7471
+ },
+ "str_ailesi": {
+  "call_graph_propagation|kanitsiz": 63,
+  "char_isaretci": 141,
+  "kanitli": 1,
+  "kanitsiz": 63,
+  "type_heuristic|char_isaretci": 141,
+  "type_heuristic|kanitli": 1
+ }
+}
