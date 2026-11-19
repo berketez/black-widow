@@ -19,7 +19,9 @@ Bu belge yayından önce tutması gereken koşulları sayar. Her satırın kanı
 | Y9 | Sürüm numarası, değişiklik günlüğü, kılavuz güncel; herkese açık depoda gizli anahtar / üçüncü taraf metni taraması temiz | açık | — |
 | Y10 | Rapordaki ve arayüzdeki her sayı ölçülmüş; "ne yapmıyor" bölümü yazılı (kapsam %5,7; set içi ölçüm) | açık | — |
 
-## 2. Yayına bilerek girmeyecekler (bayrak arkasında, kapalı)
+## 2. Yayına bilerek girmeyecekler — GEÇERSİZ (2026-11-19 13:0x)
+
+**Berke'nin kararı (KARARLAR A-7):** erken yayın yok; bitiş çizgisi "her şey tam ve Berke'nin makinesine kurulu". Aşağıdaki liste artık "yayına girmeyecekler" değil, tamamlanacak işlerdir; ARGE hatlarının planları da bitiş çizgisinin parçasıdır. Eski metin kayıt için duruyor:
 
 Bekletilen katmanlar oldukları gibi kalır: yapı yeniden yazımı (P10b), FLIRT bayt imzaları (P08b), capa kod beslemesi (P03b), füzyon ad kanalı, K-4 ad kanalları (PDB dışı), yerleşim bayrağı. ARGE hatlarının (KİMLİK, ÖZ KOD, ÖLÇÜ) sonuçları yayını beklemez; sonraki sürüme girer.
 
