@@ -690,6 +690,13 @@ class Session:
             refs = " ".join(ans.get("kanit") or []) or "yok"
             self._line(f"{head} {r.task_id} (model metni · denetim {VERDICT_LABELS.get(r.verdict, r.verdict)} · "
                        f"kanıt {refs}): \"{ans['cevap']}\"", "bilgi" if r.verdict == guard.VERDICT_CLEAR else "uyari")
+        sb = r.session_block
+        if sb is not None and sb.get("kisaldi"):
+            self._line(f"oturum bloğu bağlama sığmadı: {sb['pay']} jetonluk pay, isteme giren ≈ {sb['kestirim']} "
+                       "jeton (en eski defter kayıtları girmedi)", "uyari")
+        if r.status == "baglam_asimi":
+            self._line("soru ve anılan fonksiyonların paketi bağlama sığmıyor (kısaltılmaz): daha az fonksiyon anın",
+                       "uyari")
         self._after(r.status if r.status == "iptal" else None)
 
     def _notebook_block(self, max_tokens: int) -> str:

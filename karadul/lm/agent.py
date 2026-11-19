@@ -48,8 +48,8 @@ from karadul.lm.context import (
     MODE_K0, MODE_K1, MODE_K2, MODES, PROMPT_VERSION, PROMPT_VERSION_KL1, SUMMARY_KIND, SUMMARY_LIMITS,
     SUMMARY_BLIND_TAGS, SUMMARY_SOURCE, SUMMARY_SOURCE_FACT, SUMMARY_SOURCE_MODEL, SUMMARY_TOOL, ContextBudget,
     blind_leaks, estimate_result_tokens, estimate_text_tokens, explain_question, explore_question, fixed_prefix,
-    max_calls_for, name_question, remaining_name_tags, safe_assistant_content, strip_name_tags, summary_items,
-    user_message,
+    max_calls_for, name_question, remaining_name_tags, safe_assistant_content, session_room, strip_name_tags,
+    summary_items, user_message,
 )
 from karadul.lm.events import CALLER_MODEL, CALLER_SERVER, ContentStore, touched_refs
 from karadul.lm.memory_guard import MemoryGuard
@@ -214,6 +214,10 @@ class TaskResult:
     # "kanit", "hukum", "pakete_girer", "depodan"}. Model önerisi değildir; çağıranın paketine yalnız
     # ``pakete_girer`` doğruysa girer. Özet yoksa None.
     summary: Optional[dict[str, Any]] = None
+    # Keşif sorusunun oturum bloğu (P22h kalem 2-3): {"pay": bütçe kuralının verdiği jeton, "kestirim": isteme
+    # giren bloğun kestirimi, "kisaldi": tam blok (≤ BUDGET_SESSION_TOKENS) sığmadığı için kısaldı / düştü mü}.
+    # Blok verilmediyse ya da görev bloktan önce bittiyse None.
+    session_block: Optional[dict[str, Any]] = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -1290,14 +1294,23 @@ class Agent:
                                  max_chars=EXPLORE_ANSWER_MAX_CHARS, loop=loop)
         est_q = (estimate_text_tokens(system) + estimate_text_tokens(asked)
                  + sum(estimate_result_tokens(r.envelope()) for r in task.results))
-        # Oturum bloğu (§3.7; P22h kalem 3): defterin belirlenimci özeti, yalnız bu görev türünde.
-        notes = session_block(BUDGET_SESSION_TOKENS) if session_block is not None else ""
+        room = ContextBudget(self.loop_context_tokens if loop else self.context_tokens, MAX_TOKENS_STEP)
+        # Oturum bloğu (§3.7; P22h kalem 3) ve bütçe kuralı (kalem 2, ``context.session_room``): önek, soru ve
+        # paketler kısaltılmaz; kısalan tek parça oturum bloğudur. Payı en çok BUDGET_SESSION_TOKENS; döngüde
+        # araç sonuçları dilimi ayrıldıktan sonra kalan. Sığmazsa en eski kayıtlar düşer, gerekirse blok hiç
+        # girmez; bu görevin sonucuna yazılır (``session_block``), oturum terminale söyler.
+        notes = ""
+        if session_block is not None:
+            share = session_room(room, est_q, BUDGET_TOOL_RESULTS_TOKENS if loop else 0)
+            full = session_block(BUDGET_SESSION_TOKENS)
+            notes = full if estimate_text_tokens(full) <= share else (session_block(share) if share > 0 else "")
+            task.result.session_block = {"pay": share, "kestirim": estimate_text_tokens(notes),
+                                         "kisaldi": notes != full}
         est_q += estimate_text_tokens(notes) if notes else 0
         convo = [{"role": "system", "content": system},
                  {"role": "user", "content": user_message([r.wrapped() for r in task.results], asked,
                                                           session_block=notes)}]
         task.result.est_prompt_tokens = est_q
-        room = ContextBudget(self.loop_context_tokens if loop else self.context_tokens, MAX_TOKENS_STEP)
         if not room.fits(est_q):
             # Sessiz kırpma yok: soru ve paket kısaltılmaz; görev başlamadan reddedilir.
             return task.finish(STATUS_CONTEXT)

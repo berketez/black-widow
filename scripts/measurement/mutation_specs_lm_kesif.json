@@ -326,8 +326,8 @@
    "desc": "keşif istemine blok girmez",
    "module": "karadul/lm/agent.py",
    "test": "tests/test_p22h_oturum_blogu.py::test_blok_kesif_isteminin_basinda_ve_belirlenimci",
-   "find": "notes = session_block(BUDGET_SESSION_TOKENS) if session_block is not None else \"\"",
-   "replace": "notes = \"\""
+   "find": "        if session_block is not None:\n            share =",
+   "replace": "        if False:\n            share ="
   },
   {
    "id": "ob_blok_istem",
@@ -368,6 +368,78 @@
    "test": "tests/test_p22h_oturum_blogu.py::test_defter_okunamazsa_bloksuz_ve_satir",
    "find": "            return self.notebook.session_block(max_tokens=max_tokens)\n        except OSError as e:",
    "replace": "            return self.notebook.session_block(max_tokens=max_tokens)\n        except KeyError as e:"
+  },
+  {
+   "id": "bu_rezerv",
+   "desc": "döngüde araç dilimi ayrılmaz",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_butce.py::test_dongude_arac_dilimi_once_ayrilir",
+   "find": "share = session_room(room, est_q, BUDGET_TOOL_RESULTS_TOKENS if loop else 0)",
+   "replace": "share = session_room(room, est_q, 0)"
+  },
+  {
+   "id": "bu_pay_tavan",
+   "desc": "blok payı tavanı aşar",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_p22h_butce.py::test_session_room_kurali",
+   "find": "    lo, hi = 0, cap\n",
+   "replace": "    lo, hi = 0, cap + 50\n"
+  },
+  {
+   "id": "bu_sabit_sigmaz",
+   "desc": "sabit + yedek sığmazken pay verilir",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_p22h_butce.py::test_session_room_kurali",
+   "find": "    if not budget.fits(fixed_tokens + reserve_tokens):\n        return 0",
+   "replace": "    if not budget.fits(fixed_tokens + reserve_tokens):\n        return cap"
+  },
+  {
+   "id": "bu_ikili_arama_yedek",
+   "desc": "ikili aramada yedek unutulur",
+   "module": "karadul/lm/context.py",
+   "test": "tests/test_p22h_butce.py::test_session_room_kurali",
+   "find": "        if budget.fits(fixed_tokens + mid + reserve_tokens):",
+   "replace": "        if budget.fits(fixed_tokens + mid):"
+  },
+  {
+   "id": "bu_kisalma",
+   "desc": "blok kısalmaz (tam blok isteme girer)",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_butce.py::test_blok_kisalir_soru_ve_paket_kisalmaz",
+   "find": "notes = full if estimate_text_tokens(full) <= share else (session_block(share) if share > 0 else \"\")",
+   "replace": "notes = full"
+  },
+  {
+   "id": "bu_kisaldi_kayit",
+   "desc": "kısalma sonuca yazılmaz",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_butce.py::test_blok_kisalir_soru_ve_paket_kisalmaz",
+   "find": "\"kisaldi\": notes != full}",
+   "replace": "\"kisaldi\": False}"
+  },
+  {
+   "id": "bu_satir",
+   "desc": "kısalma terminale yazılmaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_butce.py::test_oturum_kisalma_ve_sigmayan_soru_satirlari",
+   "find": "        if sb is not None and sb.get(\"kisaldi\"):",
+   "replace": "        if False:"
+  },
+  {
+   "id": "bu_ret_satir",
+   "desc": "sığmayan soru terminalde açıklanmaz",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_butce.py::test_oturum_kisalma_ve_sigmayan_soru_satirlari",
+   "find": "        if r.status == \"baglam_asimi\":",
+   "replace": "        if False:"
+  },
+  {
+   "id": "bu_ret",
+   "desc": "sığmayan istem modele gider",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_butce.py::test_blok_kisalir_soru_ve_paket_kisalmaz",
+   "find": "        if not room.fits(est_q):\n            # Sessiz kırpma yok: soru ve paket kısaltılmaz",
+   "replace": "        if False:\n            # Sessiz kırpma yok: soru ve paket kısaltılmaz"
   }
  ]
 }

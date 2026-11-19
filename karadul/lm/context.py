@@ -652,6 +652,29 @@ class ContextBudget:
         return self.context_needed(estimated_tokens, known_tokens) <= self.context_tokens
 
 
+def session_room(budget: ContextBudget, fixed_tokens: int, reserve_tokens: int = 0,
+                 cap: int = BUDGET_SESSION_TOKENS) -> int:
+    """Keşif sorusunda oturum bloğunun payı (P22h kalem 2; tasarım §3.7 dilim tablosu).
+
+    Kural: istemin sabit parçaları (önek, soru, anılan fonksiyonların paketleri; ``fixed_tokens``) KISALTILMAZ;
+    kısalan tek parça oturum bloğudur. Pay = ``fixed + s + reserve`` bağlama sığan en büyük ``s``, en çok ``cap``
+    (``BUDGET_SESSION_TOKENS``). ``reserve``: döngüde araç sonuçları dilimi (``BUDGET_TOOL_RESULTS_TOKENS``) önce
+    ayrılır; tek atışta 0. Hiç yer yoksa 0 (blok girmez); sabit parçalar bloksuz da sığmıyorsa görev başlamadan
+    reddedilir (çağıranın ``fits`` denetimi). ``fits`` kestirimde tekdüze artan olduğu için ikili arama."""
+    if fixed_tokens < 0 or reserve_tokens < 0 or cap < 0:
+        raise ValueError("jeton sayısı eksi olamaz")
+    if not budget.fits(fixed_tokens + reserve_tokens):
+        return 0
+    lo, hi = 0, cap
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if budget.fits(fixed_tokens + mid + reserve_tokens):
+            lo = mid
+        else:
+            hi = mid - 1
+    return lo
+
+
 # ============================================================================================
 # 6. Körlük taraması (pilot_protokolu.md §12 madde 4; llm_pilot.py:384-393, :472-476)
 # ============================================================================================
