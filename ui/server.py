@@ -60,6 +60,12 @@ from karadul.core.naming_labels import (  # noqa: E402
     PRE_NAME_KIND_MANUAL,
     SOURCE_C_NAMER,
 )
+# KaradulLM terminali (P22c1): arayüz motor değildir, karadul.lm'i içe aktarabilir (tasarım §3.1 K-M1).
+from karadul.lm import repl as lm_repl  # noqa: E402
+from karadul.lm import session as lm_session  # noqa: E402
+from karadul.lm.audit import AuditLog, session_log_path  # noqa: E402
+from karadul.lm.backend import LlamaServerBackend  # noqa: E402
+from karadul.lm.modes import ServerBinaryRefused, check_server_binary  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 HOME = Path.home()
@@ -2530,6 +2536,101 @@ def _progress_and_activate(job: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# KaradulLM kısıtlı terminali (P22c1; KaradulLM v2 tasarımı §4.2, §4.3, §4.6)
+#
+# Terminal kabuk DEĞİLDİR: tek kabul edilen komut tam olarak ``karadullm`` (``lm_repl.is_allowed_command``)
+# ve bu komut süreç başlatmaz; bu sürecin içinde bir KaradulLM oturumu açar (``lm_session.open_session``).
+# Oturum açıkken girilen satırlar yalnız ``Session.submit``'e (``repl.parse``'ın kapalı komut kümesi) gider.
+# Tek alt süreç, model yapılandırılmışsa yerel ``llama-server``'dır (karar 8 (a): yalnız yerel model; ikili
+# ``check_server_binary``'den geçer). Bütün uçlar ``/api/lm/`` altında: ``_guard`` (Host + Origin + jeton) her
+# istekte koşar, POST gövdesi ``_MAX_BODY`` ile sınırlı.
+# ---------------------------------------------------------------------------
+# Defter / özet / içerik / denetim deposunun kökü. None: kitaplığın öntanımı (~/.karadul/lm). Testler geçici
+# dizin verir (kullanıcının deposuna yazılmaz).
+_LM_STORE_ROOT: Path | None = None
+# Oturum açma tek kilitte: eşzamanlı iki ``karadullm`` iki oturum açamasın (tek oturum, §4.3 G6).
+_LM_OPEN_LOCK = threading.Lock()
+# Son açılan oturum: kapandıktan sonra da kalan olaylarını (``oturum_bitti``) verebilmek için tutulur.
+_LM_LAST = None
+_LM_HEX64_RE = re.compile(r"[0-9a-f]{64}")
+# Model yolu ortamdan (karar 8 (a) yalnız yerel model). Kalıcı ayar yeri (``karadul/config.py``) bu paketin
+# dosyası değil; ikisi de verilmezse oturum modelsiz açılır (plan, not, öneri listesi çalışır).
+_LM_ENV_SERVER, _LM_ENV_MODEL, _LM_ENV_TEMPLATE = "KARADUL_LLAMA_SERVER", "KARADUL_LM_MODEL", "KARADUL_LM_SABLON"
+_LM_REFUSED_LINE = "bu terminal yalnız `karadullm` çalıştırır"
+
+
+def _lm_base() -> Path:
+    return _LM_STORE_ROOT if _LM_STORE_ROOT is not None else Path.home() / ".karadul" / "lm"
+
+
+def _lm_audit_refused(komut) -> None:
+    """Reddedilen terminal komutunun denetim kaydı (§4.3 G3): komut metni YAZILMAZ, yalnız uzunluk + sha256."""
+    try:
+        AuditLog(_lm_base() / "arayuz-komut.jsonl").write("komut_reddedildi", **lm_repl.command_audit_fields(komut))
+    except OSError:
+        pass  # kayıt yazılamadı diye ret değişmez; ret yine döner
+
+
+def _lm_workspace_root() -> Path | None:
+    """Etkin çalışma alanının kökü (ad haritasının bulunduğu koşu; ``find_ws`` ile aynı seçim)."""
+    ws = WS
+    if not ws:
+        return None
+    nm, _ = find_ws(ws)
+    return nm.parents[2] if nm is not None else None
+
+
+def _lm_make_backend(root: Path, sha: str, sid: str):
+    """Oturumun arka ucu: yalnız yerel ``llama-server`` (karar 8 (a); bulut ucu yok). Yapılandırılmamışsa
+    ``None`` (modelsiz oturum). İkili ``check_server_binary``'den geçer: adı ``llama-server``, çalışma alanının
+    dışında, analiz edilen ikili değil (reddedilirse ``ServerBinaryRefused``; süreç açılmaz). Nesne kurmak süreç
+    başlatmaz; sunucu ilk model isteğinde başlar."""
+    srv_bin = os.environ.get(_LM_ENV_SERVER) or ""
+    model = os.environ.get(_LM_ENV_MODEL) or ""
+    if not srv_bin and not model:
+        return None
+    if not (srv_bin and model):
+        raise ServerBinaryRefused(f"model için {_LM_ENV_SERVER} ve {_LM_ENV_MODEL} birlikte verilmeli")
+    binary = check_server_binary(Path(srv_bin), root, sha)
+    tmpl = os.environ.get(_LM_ENV_TEMPLATE) or None
+    return LlamaServerBackend(binary, Path(model), _lm_base() / "sunucu",
+                              template_path=Path(tmpl) if tmpl else None,
+                              audit=AuditLog(session_log_path(sha, sid, _LM_STORE_ROOT)))
+
+
+def _lm_open(komut) -> dict:
+    """``POST /api/lm/terminal/komut``: izin listesi tek öğe (G2); başka her komut 400 + içeriksiz denetim kaydı
+    (G3). Kabul edilen komut bu süreçte tek oturumu açar (G6); süreç başlatmaz."""
+    global _LM_LAST
+    if not lm_repl.is_allowed_command(komut):
+        _lm_audit_refused(komut)
+        return {"__code": 400, "hata": "izin verilmeyen komut", "satir": _LM_REFUSED_LINE}
+    with _LM_OPEN_LOCK:
+        if lm_session.current_session() is not None:
+            return {"__code": 400, "hata": "oturum zaten açık"}
+        root = _lm_workspace_root()
+        if root is None:
+            return {"__code": 400, "hata": "çalışma alanı yok: önce bir analiz sonucu açın"}
+        sha = _active_binary_hash(WS)
+        if not sha or not _LM_HEX64_RE.fullmatch(sha):
+            return {"__code": 400, "hata": "çalışma alanında ikilinin özeti yok (reports/report.json, raw/): "
+                                           "defter ve öneriler ikiliye bağlanamaz"}
+        sid = lm_session.new_session_id()
+        try:
+            backend = _lm_make_backend(root, sha, sid)
+        except (ServerBinaryRefused, ValueError) as e:
+            return {"__code": 400, "hata": f"model başlatılmaz: {e}"}
+        try:
+            s = lm_session.open_session(root, backend=backend, binary_sha256=sha, session_id=sid,
+                                        store_root=_LM_STORE_ROOT,
+                                        analysis_running=lambda: _running_job() is not None)
+        except lm_session.SessionError as e:   # SessionExists dahil
+            return {"__code": 400, "hata": str(e)}
+        _LM_LAST = s
+    return {"oturum": s.id}
+
+
+# ---------------------------------------------------------------------------
 # HTTP
 # ---------------------------------------------------------------------------
 def _json_object(raw: bytes) -> dict:
@@ -2728,6 +2829,9 @@ class Handler(BaseHTTPRequestHandler):
             # Gövde kullanılmaz (JS'ten URL ALINMAZ) -- sadece tetikleyici.
             self._json(_safe(_start_update_download, {"status": "error",
                        "error": "ic hata", "downloaded": 0, "total": 0}))
+        elif path == "/api/lm/terminal/komut":
+            result = _lm_open(_json_object(raw).get("komut"))
+            self._json(result, result.pop("__code", 200))
         else:
             self._json({"error": "not found"}, 404)
 
