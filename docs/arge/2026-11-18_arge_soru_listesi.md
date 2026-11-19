@@ -54,7 +54,7 @@ Kaynak: 1.22.1 sütunu `urun_olcumu_fark_yeni_yeni2.md`; a62f15e sütunu `docs/a
 Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; beklenen yönü gösterir (kaynak DURUM.md): `kebap_ad` −239 yanlış, kaybedilen doğru 0 / 441 (P12b, 14 ikili); gnulib coreutils dışı 7 → 0 ve coreutils yanlış 217 → 1 (P-S3, yeniden oynatma), yamalı yeniden oynatmada coreutils 620 / 0 → 732 / 0 (P-S3b); rol adının fonksiyon adı yapılması 70 → 0 (P12a); birleştiricinin `exact_multi` 42 → 0 (P13a); imza VT'nin uygulanan ad farkı 0 (P15b, 6 ikili).
 
 **Ölçüm altyapısı (onarım sonrası):**
-- Geliştirme seti: 119 ikili, `scripts/measurement/urun_kos.py` → `isleri_topla`. 117'si Debian 13 AArch64 ELF (GCC 14), 2'si Mac (htop, tmux). Bu bir yanlılıktır; G1'e bakın.
+- Geliştirme seti: 119 ikili, `scripts/measurement/urun_kos.py` → `isleri_topla`. 117'si Debian 13 AArch64 ELF (GCC 14), 2'si Mac (htop, tmux). Bu bir yanlılıktır; G1'e bakın. Native olmayan hat örnekleri: `~/karadul_olcum/dogrulama_native/` (11 dosya; `MANIFEST.json`; K-8).
 - Ürün koşusu ve ad ölçümü: `urun_kos.py` + `urun_olc.py olc / karsilastir` (birim, tabaka, kanal kırılımı, Wilson aralığı). Süre: 1.22.1'de 119 ikili ≈ 3–4 saat (`--paralel 3`); a62f15e'de ⟨ÖLÇÜM: urun_kos süresi (119 ikili, `--paralel 3`)⟩. Hijyen: `PYTHONHASHSEED=0`, koşu kökü başına ayrı `KARADUL_CACHE_DIR` (BSim deposu dahil, P16b); ağaçta `signatures.lmdb` bağı şart (7b25084, P15b); kısmi çıkış (3) bitmiş koşu sayılır (6c0b79b, P15a).
 - Masum ikili kapısı (P00; `scripts/measurement/masum_kapi.py`, el kitabı `docs/arge/2026-11-18_onarim/P00.md`): doğrudan kip 5 katman (`bi`, `antidebug`, `packer`, `yara`, `capa`) × 4 set (gelistirme 119, macos 48, pe 21, pozitif 6; 194 ikili, ~25 sn); çıktı kipi 11 katman. Eşik dosyası `masum_kapi_esik.json`'ı yalnız ana oturum yazar; P01b'den sonra bütün katmanlarda geçiyor (DURUM, 11:3x ara noktası). Çıktı kipinin eşiği 14 HEAD ikilisinden kuruldu, 119 ile tamamlanacak: ⟨ÖLÇÜM: masum kapı çıktı kipi, 119 ikili; koşulmadıysa "koşulmadı"⟩.
 - Çıktı sağlamlık denetimi: `scripts/measurement/saglamlik_denetle.py` (P16a yamasıyla yeni biçimi tanıyor; kayıtlı kırpma kusur sayılmaz): ⟨ÖLÇÜM: sağlamlık denetimi kusur sayıları, 119 ikili; koşulmadıysa "koşulmadı"⟩.
@@ -62,10 +62,8 @@ Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; bekl
 - **BSim:** P16c'den beri toplu sorgu (tek `GenSignatures` + tek `QueryNearest`) öntanım; Ghidra köprüsü cat 2,8×, Mac htop 6,7× hızlı, `bsim_matches.json` 12 / 12 çiftte bayt bayt aynı; `bsim.batch_query` ile kapatılır (DURUM, P16c). Kilit ve sızıntı onarıldı (P16b).
 - **Mutasyon düzeni:** `scripts/mutation_probe.py` + `scripts/measurement/mutation_specs_<paket>.json` (her onarım paketinin kendi tanımı); mutant metni özgününden farklı uzunlukta, `PYTHONDONTWRITEBYTECODE=1` (`.pyc` tuzağı); aynı worktree'de eşzamanlı mutasyon koşusu yok ve mutantın `find` metni tekil (P-S3b'de bayat `find` 1 hayatta mutant verdi); ajan beyanından sonra ana oturum main koduyla bağımsız yeniden koşar (`ONARIM_BRIF.md` §4d, DURUM ara noktaları).
 - Ön kayıt düzeni: her ad / tip değişikliği `P*_on_kayit.md` ile, değişiklikten önce commit'li; tutmayan hipotez kural değiştirilmeden kayda geçer (aşağıdaki tablo).
-- Tip tabanı (DWARF, dwz farkında): `scripts/measurement/dwarf_tip.py`, `ghidra_tip_tabani.py`, `parametre_hizala.py`, `p09_olc.py`; ölçüt taslağı `docs/arge/2026-10-21_k1_k2_onkayit_taslak.md`.
-- Yerleşim (modül sınırı) ölçümü: `scripts/measurement/harita_olc.py`, `yerlesim_urun_olc.py`.
+- Tip tabanı (DWARF, dwz farkında): `scripts/measurement/dwarf_tip.py`, `ghidra_tip_tabani.py`, `parametre_hizala.py`, `p09_olc.py`; ölçüt taslağı `docs/arge/2026-10-21_k1_k2_onkayit_taslak.md`. Yerleşim (modül sınırı): `harita_olc.py`, `yerlesim_urun_olc.py`.
 - Kör insan etiketleme protokolü: `docs/arge/etiket_protokolu_v2.md`, `scripts/measurement/etiket_paketi.py`, `etiket_puan.py`. Onarımda tek etiketçili gevşek rubrik kullanıldı (P15c rubrik v2; P12b N0b etiketleri); iki değerlendirici ve kappa hâlâ yok (B3).
-- Native olmayan hat örnekleri: `~/karadul_olcum/dogrulama_native/` (11 dosya; `MANIFEST.json`; K-8).
 
 **Bilinen olumsuz sonuçlar (yeniden keşfetmeyin, üstüne kurun):**
 - **N4 fiil tavanı:** fonksiyon adının fiilini ikilideki kanıttan türetmenin tavanı Mac tmux'ta ≤ %11,1, Mac htop'ta ≤ %20,6. Tablo yuvası kanıtı tmux'ta ≤ %10,6. Kaynak: `docs/arge/2026-11-10_n4/`.
@@ -92,9 +90,6 @@ Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; bekl
 | P06 | bedel: içerikçe doğru yapısal algoritma etiketleri de düştü (zstd, sqlite3, openssl) | 10 etiket |
 | P15c | P08'in "`_` geri düşüşünü kapat" önerisi ölçüldü, uygulanmadı | 4 269 doğru içe aktarımı siliyordu |
 
-- **Hesaplama füzyonu** artık ad kanalı olarak kapalı (`computation.enable_fusion_naming`, P11); güveni ölçülmüş kesinliğin Wilson alt sınırı, ölçülmemiş kaynak çekimser.
-- **İmza veritabanı:** yeniden kuruldu (K-5; şema 2, 9 092 473 ad; PyPI kaynağı dışlandı). Kitaplık iddiası kesinliği 0,695 → 0,975 — bu ölçü ikilinin kendi içe aktarım tablosuna karşıdır, ad kesinliği değildir (P08). Kalan 711 yanlışın 616'sı iki sınıftı (`__cxa_*`, `acl_*`); P15c kitaplık iddiasını ikilinin bağlanma kanıtına (ELF sürüm gereksinimi + `DT_NEEDED`) bağladı, 6 742 kaydın iddiası düzeldi.
-
 ### 1.1 Onarımın özeti (2026-11-18/19, 40 paket)
 
 İş emri genel taramadır (`RAPOR.md`, 137 bulgu). a62f15e'de 40 paket main'de; tam takım 10 042 geçti / 11 atlandı / 0 kaldı (DURUM, 2026-11-18 20:4x ara noktası). Her pakette ajanın mutasyon sınaması ve ana oturumun main koduyla bağımsız yeniden koşusu var. Paket başına önce / sonra sayıları DURUM.md'de; aşağıdaki bütün sayılar oradandır.
@@ -104,15 +99,9 @@ Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; bekl
 - Mühendislik paketi: raporlanan bileşim şablonu 533 → 0 (P04a); kapı açıkken API dışı tespit 307 448 → 6 (P04b); `types.h` kanıtsız yapı 4 109 → 0, Ghidra'nın somut tipini ezen 781 → 0 (P09); `rewritten_files` 40 016 → 0, ezilen Ghidra alan adı 4 722 → 0 (P10).
 - Adlar: kodda geçersiz parametre adı 2 249 → 0 (P05), işaretçiye skaler ad 656 → 0 (P05b); rol adı fonksiyon adı olarak 70 → 0 (P12a); gnulib kanalı kanıta bağlı (P-S3, P-S3b); dizgi kaynaklı Faz 1 önerisi ön ad değil kanıt satırı (P13a AD-09); kebap adı 239 → 0, yerine `string_roles` kanıt satırı 0 → 266 (P12b); imza VT'nin yanlış kimlik iddiası geliştirme 236 → 0, kabul 123 → 0 (P15c); kitaplık iddiası kesinliği 0,695 → 0,975 (P08); `pdb_parser` her PDB adresini yanlış okuyordu, libz3.dll'de 0 / 771 → 771 / 771 (P13b).
 - Rapor, arayüz, akış: uydurma sayaç 42 → 0, dört rapor üreticisi tek veri katmanından (P07); arayüzde eski "F1 ~0.45" yerine yeni2 künyesi, ad düzeltmesi doğru ikiliye 0 / 14 → 14 / 14 (P17); tarama durumları dürüst (`calisti / kismi / hata / arac_yok / desteklenmiyor / kapali`, P-S1); belirlenimci hata aşamayı 4 kez → 1 kez koşturuyor, 8 eşzamanlı çalışma alanı 1 → 8 ayrı dizin (P14).
-- Belirlenimcilik: ad haritası `PYTHONHASHSEED`'den bağımsız (P12a; Ghidra dahil 3 ikilide bayt bayt aynı); decompile sırası (P16a); veri akışı birleştirme sırası (P-S3).
 - KaradulLM: kanıtsız ad kabulü 4 / 4 → 0 / 4, enjeksiyon 6 / 6 → 0 / 6, masum 8 324 fonksiyonda yanlış alarm 0 (P21).
 
-**Kapanan: güvenlik**
-- P-GÜV: hedef çalıştırma ve ağ (GHIDRA-07, 11, 13, MEK-03), 4 / 4; kaynak eşleme artık `network.enabled` da istiyor.
-- P19: native olmayan hatlarda düşman girdi 11 + 3 → 0, içe aktarma 2 / 5 → 0.
-- P15a: `clean . --yes` bütün çalışma alanlarını siliyordu → reddediliyor; `allow_reference_download` yalnız açık true.
-- P16b: BSim sızıntısı (soyulmuş Mac htop'ta sembollü kopyadan adlı aday 597 → 0, GT adı 585 → 0) ve süreçler arası kilit.
-- P17 / K-6: ayarsız ilk açılışta giden güncelleme isteği 1 → 0; yeni uçlarda jeton / Host / Origin / yol geçişi 403.
+**Kapanan: güvenlik.** Hedef çalıştırma ve ağ (GHIDRA-07, 11, 13, MEK-03) 4 / 4, kaynak eşleme artık `network.enabled` da istiyor (P-GÜV); native olmayan hatlarda düşman girdi 11 + 3 → 0, içe aktarma 2 / 5 → 0 (P19); `clean . --yes` bütün çalışma alanlarını siliyordu → reddediliyor, `allow_reference_download` yalnız açık true (P15a); BSim sızıntısı (soyulmuş Mac htop'ta sembollü kopyadan adlı aday 597 → 0, GT adı 585 → 0) ve süreçler arası kilit (P16b); ayarsız ilk açılışta giden güncelleme isteği 1 → 0, yeni uçlarda jeton / Host / Origin / yol geçişi 403 (P17, K-6).
 
 **Hız:** toplu BSim (Ghidra köprüsü 2,8×–6,7×) ve otomatik analiz süre sınırı (P16c); istihbarat taraması 196 ikilide 208 sn → 14 sn (P01b).
 
@@ -131,10 +120,7 @@ Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; bekl
 | K-2 | Susturma yok, düzelt: ad kanalları hesaplamayla doğru ada yaklaştırılır. 2026-11-19: `kebap_ad` için Berke karar veremedi; ana oturum önerisi uygulanıyor — kanal ölçülmüş kural gelene kadar ad değil kanıt satırı yazar; ad kuralı Mythos'a hat olarak gider (A5, I1). |
 | K-3 | Ölü kod silme (A listesi: `stages.py` monoliti, Ghidra `legacy/`, `confidence_calibration.py`, paralel ad koşucusu); B türü (bağlanabilir) silinmez. |
 | K-4 | B türü ad kanalları (PDB, DWARF, BN, TRex, Rust / Go, RTTI) bağlanır; ad üretenler bayrak arkasında ve ölçülerek açılır. |
-| K-5 | Yeniden kurulan imza VT uygulama paketine gömülür. |
-| K-6 | Açılıştaki güncelleme sorgusu öntanımlı kapalı (uygulandı; açık onay alınmadı). |
-| K-7 | Güvenlik bulgularını içeren rapor, güvenlik onarımlarından sonra push edilir (uygulandı; main a62f15e push edildi). |
-| K-8 | Native olmayan hatlar için 11 dosyalık örnek seti (`~/karadul_olcum/dogrulama_native/`); hiçbiri çalıştırılmaz. |
+| K-5 … K-8 | İmza VT uygulama paketine gömülür (K-5); açılıştaki güncelleme sorgusu öntanımlı kapalı (K-6; açık onay alınmadı); güvenlik bulgulu rapor güvenlik onarımlarından sonra push edilir (K-7; main a62f15e push edildi); native olmayan hatlar için 11 dosyalık örnek seti, hiçbiri çalıştırılmaz (K-8). |
 | K-9 / K-10 | Ölçüm kopyalarının ve onaylı ölü kodun silinmesi; 2026-11-19'da K-10 onaylandı (eski füzyon, VF2 süreç yolu → P23; `_collect_all_algorithms` → P-S4), eski deobf zincirinin `beautify` / `babel_transforms` adımları silinecek (P20b). |
 
 **Ölçüm zemininde değişenler (planlar bunu bilmeli):** ön ad güveni kanal başına ölçülmüş kesinliğin Wilson alt sınırı (`karadul/core/naming_labels.py` `MEASURED_PRE_NAME_PRECISION`; ölçülmemiş kanalda `null`); gnulib satırı (0,706) P-S3 / P-S3b'den sonra bayat → ⟨ÖLÇÜM: gnulib ön ad kanalının yeni kesinliği⟩; yerel adlar fonksiyon başına tekil; `ghidra_function_count` artık program fonksiyonunu sayıyor, thunk ayrı (eski koşularla kıyas yarıya iner; P16a) — ad nüfusu GT'den geldiği için etkilenmez; imza VT şema 2 veri kökünden açılıyor (P15b); ad haritasında kaynak `signature_db:kimlik` / `signature_db:davranis` (P15c).
@@ -179,13 +165,7 @@ Her sorunun altında aynı alanlar var:
 - **Berke'nin hipotezi (2026-11-19):** "Elimizde çok sayıda imzalı kütüphane var; adı bilinmeyen fonksiyonun ne olabileceğini imzalı olanlardan tahmin edip yerine koymak lazım." Ana oturumun ayrımı: (1) fonksiyon gerçekten bir kütüphanenin kopyasıysa (statik bağlı libc, openssl, zlib, gnulib) imza eşleme doğru yoldur; bu soru A2'dir, ölçülmüş kanıtı yukarıdaki P08 / P-S3b / P15b sayıları. (2) Fonksiyon programın kendi koduysa hiçbir kütüphanede yoktur (A5). (3) İkisinin birleşimi araştırma hattıdır (I1). Bekleyen nüfusta (1) ile (2)'nin payını A1 sayar.
 
 **A3. Derleyicinin kendi bıraktığı üst veriden ad: hiç kullanılmayan kaynaklar.**
-- **Soru:** Silinmiş ikilide bile kalan dil çalışma zamanı üst verisi nerede ve ne kadar ad verir?
-  - Go: `pclntab`.
-  - Rust: v0 / legacy simgeler, panik dizgilerindeki dosya yolları.
-  - C++: RTTI / vtable sınıf adları.
-  - Objective-C: sınıf ve seçici adları.
-  - Swift: tip üst verisi.
-  - PDB / DWARF kalıntıları.
+- **Soru:** Silinmiş ikilide bile kalan dil çalışma zamanı üst verisi nerede ve ne kadar ad verir? Go `pclntab`; Rust v0 / legacy simgeler ve panik dizgilerindeki dosya yolları; C++ RTTI / vtable sınıf adları; Objective-C sınıf ve seçici adları; Swift tip üst verisi; PDB / DWARF kalıntıları.
 - **Bugün (1.22.1):** PDB / DWARF / Binary Ninja / TRex / Rust / Go / RTTI kanalları yazılmış ama akışa bağlı değildi. Mac htop'ta ürün 0 ad veriyordu.
 - **Doğrulayıcı:** Mac uygulamaları ve Go/Rust ikililerinden küçük bir set. Kategori başına ad sayısı ve kesinlik. GT'si olan Mach-O'lar `workspaces/olcum_mac/`'ta.
 - **Aykırı öncül:** "Mac'te ad sorunu aslında çözülmüş bir sorundur; ObjC / Swift üst verisini okumuyoruz, o kadar" önermesini sına.
@@ -203,7 +183,7 @@ Her sorunun altında aynı alanlar var:
 - **Bugün (1.22.1):** N4 fiil tavanı düşük (§1). Seçenek adını doğrudan ad yapmak 239 adda 0 doğru verdi.
 - **Doğrulayıcı:** B3'te tanımlanan benzerlik ölçüsünün GT'ye karşı dağılımı. Tam eşitlik ayrıca raporlanır. Kural tmux'ta okunduysa tmux dışı, kör etiketli sette sınanır (`P12b.md` kalem 2).
 - **Aykırı öncül:** "Uygulamaya özgü adların büyük kısmı ikilide hiçbir kanıt taşımaz" önermesini nicel olarak sına: kanıt taşıyan oran nedir, tavan nedir?
-- **Onarım sonrası:** kısmen ele alındı, araştırma açık (P12b). Kebap dizgisinin rolü sınıflandı; kanal ad değil kanıt satırı yazıyor (`string_roles` 0 → 266). 14 ikilide yanlış ad havuzu %44,7 → %21,1, kaybedilen doğru 0 / 441. Ad kuralı kurulamadı (en iyi sınıf 5 / 49). Umut veren iki biçim (`get_<seçenek>` ince alıcı; ikilide tek yayan olay → `<eylem>_<nesne>`) yalnız tmux'ta görüldü; 119'luk sette tmux dışında kebap adı yalnız openssl ve sqlite3'te, toplam 3 ad (`P12b.md`).
+- **Onarım sonrası:** kısmen ele alındı, araştırma açık (P12b). Kebap dizgisinin rolü sınıflandı; kanal ad değil kanıt satırı yazıyor (`string_roles` 0 → 266). 14 ikilide yanlış ad havuzu %44,7 → %21,1, kaybedilen doğru 0 / 441. Ad kuralı kurulamadı (en iyi sınıf 5 / 49). Umut veren iki biçim (`get_<seçenek>` ince alıcı; ikilide tek yayan olay → `<eylem>_<nesne>`) yalnız tmux'ta görüldü; 119'luk sette tmux dışında kebap adı yalnız openssl ve sqlite3'te, toplam 3 ad (`P12b.md`). Yeni alt soru: `string_intel` kalıpları (assert / hata / protokol dizgileri) ayrı alt kanal olarak ölçülmedi; c_namer'da `agresif` alt kanalına düşüyor, dizgi bağlı koşuda 81 öneriden 2'si doğru (P13a; `P12b.md` "P13a notu").
 - **Karar 2 (K-2, 2026-11-19):** Berke karar veremedi; ana oturumun önerisi uygulanıyor: kanal şimdilik ad değil kanıt satırı yazar. Ad kuralı araştırması kapanmadı; bu hat olarak Mythos'a gider. K-2 bozulmuyor: kanal kapalı değil, ölçülmüş bir kural bekliyor.
 - **Bağımsız sınama nüfusu için aday (iddia değil, yalnız aday):** GTK / GLib programları. Kebap biçimli GObject özellik adları (`g_object_get(o, "border-width", …)`) ve sinyal adları (`g_signal_connect(w, "button-press-event", cb)`; geri çağrıların adı çoğu kez `on_<öğe>_<sinyal>`). GT kaynağı Debian dbgsym. Bu nüfus AD-02 "rol + öğe" sorusu için de bağımsızdır.
 - **Berke'nin hipotezi burada (A2'deki ayrımın 2. kolu):** programın kendi kodu hiçbir kütüphanede yoktur; `kebap_ad` fonksiyonlarının çoğu tmux'un kendi seçenek işleyicileri. "Benzer imzalı fonksiyonun adını koymak" ölçüldü ve yanlış ad üretiyor: imza VT'nin adsız fonksiyonlara verdiği adlar tam eşitlikte 0 / 208 (P11); gevşek ölçütte `call_pattern` 19 / 83, `string_ref` 5 / 153 (P15c); BSim'deki adlı adaylar aynı programın sembollü kopyasından sızıyordu (597 → 0, P16b). İki bilginin birleşimi I1'de.
@@ -226,9 +206,7 @@ Her sorunun altında aynı alanlar var:
 - **Onarım sonrası:** kısmen ele alındı: ön ad güveni kanalın ölçülmüş kesinliğinin Wilson alt sınırı (P12a AD-07; gnulib 0,706, ELF önyükü 0,992, `main` 0,966, `ks1:func_kalibi` 0,916; ölçülmemiş kanalda `null`, 14 ikilide 398 / 398); füzyon (P11) ve imza VT davranış iddiası (P15c) aynı kuralla; sahte kalibrasyon değerleri kaldırıldı (P04b); birleştiricinin 0,70 uydurması kalktı (P13a). Açık: gnulib satırı bayat (G4); c_namer kapalıyken ön ad sabit 0,85 (→ P12c); doğrulama setinde kalibrasyon (Brier / ECE) hiç ölçülmedi.
 
 **B3. "Benzer ad" ölçüsü: tanım ve insan doğrulaması.**
-- **Soru:** Berke benzerliği kabul ediyor. Hangi ölçü insanın "amaç doğru" yargısıyla en iyi uyuşur?
-  - Adaylar: normalleştirilmiş belirteç Jaccard'ı, eşanlam / kısaltma sözlüğü, düzenleme uzaklığı, belirteç gömme benzerliği.
-  - Aday ölçünün eşiği nerede?
+- **Soru:** Berke benzerliği kabul ediyor. Hangi ölçü insanın "amaç doğru" yargısıyla en iyi uyuşur (adaylar: normalleştirilmiş belirteç Jaccard'ı, eşanlam / kısaltma sözlüğü, düzenleme uzaklığı, belirteç gömme benzerliği) ve eşiği nerede?
 - **Doğrulayıcı:** kör iki değerlendirici (`etiket_protokolu_v2.md`). Değerlendiriciler arası uyum (kappa), ölçü ile insan yargısının uyumu (ROC / AUC), eşik doğrulama setinde.
 - **Not:** bu ölçü tanımlanmadan A5 / A6 / F'nin hiçbir "benzer ad" iddiası kabul edilmez.
 - **Onarım sonrası:** kısmen: tek etiketçili gevşek rubrik iki pakette kullanıldı (P15c rubrik v2, gerçek ad gösterilerek, etiketler koddan önce sha256'lı; P12b N0b kör L1 etiketleri); iki değerlendirici, kappa ve ölçü ↔ insan uyumu hâlâ yok. A5 ve I1'in bütün "yakın ad" iddiaları buna bağlı.
@@ -373,13 +351,13 @@ Her sorunun altında aynı alanlar var:
 - **Doğrulayıcı:** ayrı önbellekli iki koşuda Ghidra dökümlerinin ve ad haritasının bayt eşitliği; güven satırı başına "son ölçüm commit'i ↔ kanalı değiştiren son commit" denetimi.
 - **Onarım sonrası:** kısmen: ad haritası tohumdan bağımsız (P12a; Ghidra dahil htop, tree, expr bayt bayt aynı); decompile sırası (P16a), veri akışı (P-S3), eşzamanlı yarış 12 / 12 aynı (P14). Açık: `pcode_high_vars` sırası `PYTHONHASHSEED=0` ile bile koşudan koşuya değişiyor (cat 4–6, tree 7–8, sort 11–16 fonksiyon), `c_type_recoverer`'da son kazanıyor → P16d (süren); gnulib güveni 0,706, P-S3 / P-S3b'den sonra bayat (yamalı yeniden oynatmada 732 / 732) → ⟨ÖLÇÜM: gnulib ön ad kanalının yeni kesinliği⟩.
 
-### H. Onarımda ortaya çıkan sorular
+### H. Onarımın ilk gününde (2026-11-18) ortaya çıkan sorular
 
 **H1. Bekletilen katmanların serbest bırakılma kapısı.**
 - **Soru:** K-1 ile bekletilen her katman (bileşim şablonu, yapı yeniden yazımı, capa kod beslemesi, füzyon ad kanalı) hangi ölçüm tutunca öntanımda açılır? Ortak bir "doğrulama kapısı" tanımı: masum ikili kapısında yanlış iddia 0, GT'li sette kesinliğin Wilson alt sınırı ≥ eşik, doğrulama setinde tekrar.
 - **Bugün:** her katman kendi paketinde ölçüldü ama açılma ölçütü tek tek yazılmadı.
 - **Doğrulayıcı:** katman başına ön kayıtlı kapı + `masum_kapi.py` + GT ölçümü.
-- **Onarım sonrası:** değişmedi; ilk açılma ölçümü yapı yeniden yazımı için P10b'de (sırada). Ortak kapı tanımı yazılmadı.
+- **Onarım sonrası:** değişmedi; ilk açılma ölçümü yapı yeniden yazımı için P10b'de (sırada). Ortak kapı tanımı yazılmadı. Yeni alt soru (bileşim / algoritma şablonları): genel bileşimler (iterate / pipeline / fork-join) hâlâ alt dizgiyle eşleşiyor (P04a); `patterns.py` genel aritmetik desenleri iki yapısal kanıtla bile yanlış, sabit katmanı 195 algoritmanın 78'ine etiket verebiliyor (P04b). Hangi kanıt bileşimi bir şablonu masum kapıdan geçirir?
 
 **H2. İmza veritabanının adsız fonksiyonlara verdiği adlar.**
 - **Soru:** `call_pattern` ve `string_ref` yöntemleri adsız fonksiyonlara betimleyici tahmin üretiyor (`read_env_var`, `verify_certificate`); 12 Debian ikilisinde **0 / 208 doğru** (P11 ölçümü). Bu yöntemler kimlik değil, rol tahmini üretiyor. K-2'ye göre susturulmaz: rol tahmini doğru ada (ya da doğru rol etiketine) nasıl yaklaştırılır, gevşek ölçüyle (B3) ne kadarı "amacı doğru" sayılır?
@@ -403,8 +381,47 @@ Her sorunun altında aynı alanlar var:
 - **Onarım sonrası:** P10b'de (sırada), ön kayıtlı ölçümle; `pcode_selective_ops` P-code'un öbür tüketicilerini de etkiler (OKU.md).
 
 **H6. Hız: BSim ve Ghidra'nın payı (E1, E2, E5'e veri).**
-- **Bugün (2026-11-18 öğlen):** BSim fonksiyon başına ayrı sorgu (Mac htop 597 fonksiyonda 133 sn); otomatik analiz süre sınırsız.
-- **Onarım sonrası:** büyük ölçüde ele alındı (P16c): toplu BSim öntanım; otomatik analiz süre sınırı (aşılırsa `analysis.status=timeout` → kısmi). Kalanlar E1 ve E2'de.
+- **Onarım sonrası:** büyük ölçüde ele alındı (P16c): BSim fonksiyon başına ayrı sorgu (Mac htop 597 fonksiyonda 133 sn) yerine toplu sorgu öntanım; otomatik analiz süre sınırı (aşılırsa `analysis.status=timeout` → kısmi). Kalanlar E1 ve E2'de.
+
+### I. Onarımdan doğan araştırma soruları (2026-11-18 akşamı – 2026-11-19)
+
+Kaynak: `gonderim/OKU.md` "Atanmamış bulgular" ve DURUM.md'nin "Kalan" notları. Düz hatalar pakettir, burada yok. Var olan sorulara alt soru olarak eklenenler yinelenmez: `string_intel` (A5), imza VT davranış iddiasının kanıtı (H2), `CAST` / `PTRSUB` (H5), capa CRT ayrımı (C5), bileşim kanıt kuralı (H1), c_namer'ın görmediği fonksiyonlar (A1, D1).
+
+**I1. Berke'nin hipotezi, birleşim hattı: kütüphane bilgisinden rol, programın dizgisinden öğe.**
+- **Soru:** Programın kendi fonksiyonu anlamı bilinen imzalı bir kütüphane fonksiyonunu çağırıyorsa kütüphane bilgisi rolü (`g_object_get` = özellik okuma; `g_signal_emit` / `g_signal_connect` = olay), kebap dizgisi öğeyi verir: `get_border_width`, `on_window_delete_event`. Bu birleşim GT'ye ne kadar yakın ad üretir? A2'deki ayrımın (1) ve (2) kollarını birleştirir; AD-02 "rol + öğe" sorusunu da kapsar.
+- **Bugün:** iki kol ayrı ölçüldü: kütüphane kopyasında imza doğru yol (A2); programın kendi kodunda "benzer imzalı fonksiyonun adı" yanlış (A5: 0 / 208; gevşek 19 / 83 ve 5 / 153). Birleşim denenmedi; tmux'ta umut veren iki biçim var, bağımsız nüfus yok (A5).
+- **Doğrulayıcı:** aday nüfus GTK / GLib programları, GT kaynağı Debian dbgsym; kural geliştirme setinde okunur, GTK setinde kör sınanır; tam eşitlik + B3 ölçüsü; rol sınıfı başına Wilson alt sınırı ≥ ürün eşiği. Bekleyen nüfusta programın kendi kodunun payı A1'den.
+- **Aykırı öncül:** "Rolü veren kütüphane çağrısı çoğu kez adlandırılan fonksiyonda değil, ortak bir sarmalayıcıdadır." Rolün hangi çağrı derinliğinde durduğunu say.
+
+**I2. Mach-O'da program giriş zinciri ve kök fonksiyon adları.**
+- **Soru:** LC_MAIN, LC_UNIXTHREAD ve Swift / ObjC çalışma zamanı sarmalayıcıları üstünden `main` ve gelenek fonksiyonları (`usage`) ne kesinlikle kurtarılır; bu, çağrı grafiğinden yayılan kanallara (A6, I5) ne katar?
+- **Bugün:** LC_MAIN girişi Ghidra'da `entry` (P08); `_recover_main_from_entry` 6 / 6 Mach-O ikilisinde `main` bulmuyor, bu yüzden `usage` gelenek kanalı Mac'te çalışmıyor (P-S3b); ELF'te `main` kanalının ölçülmüş kesinliği 0,966 (P12a).
+- **Doğrulayıcı:** GT'li Mach-O seti (`workspaces/olcum_mac/`, P-S3b kabul seti); kök adların kesinliği ve onlardan yayılan adların farkı, ön kayıtlı.
+- **Aykırı öncül:** "LC_MAIN girişi zaten `main`'dir; sorun kurtarma değil, kanalların `entry` adını tanımaması." Doğruysa bu bir pakettir, araştırma değil; önce bunu sına.
+
+**I3. Ghidra'nın dizgi temsili ile kaynak metin arasındaki fark.**
+- **Soru:** Ghidra dökümündeki dizgi dönüşümleri (`\'` kaçışı; olası başka kaçışlar, kodlama, kesme) dizgiyi kaynak metinle karşılaştıran kanalların (gnulib işaretleri, imza VT'nin decompile gövdesinden okuduğu kanıt, `kebap_ad` rolleri, `string_intel`) eşleşmesini ne kadar düşürüyor?
+- **Bugün:** P-S3b'de xstrtol-error işaretleri hiç eşleşmiyordu (coreutils'te ham 0, çözülmüş 8); öbür kanallara bakılmadı (OKU.md).
+- **Doğrulayıcı:** 119 ikilide kanal başına ham ↔ çözülmüş dizgiyle eşleşme sayısı; ad farkı GT'ye karşı.
+- **Aykırı öncül:** "Etki P-S3b'deki tek kalıpla sınırlıdır." Sınanır; tutarsa soru kapanır.
+
+**I4. Üst veri kanallarının düşman girdiye dayanıklılığı.**
+- **Soru:** RTTI / vtable sınıf adları, PDB yolu, Go `pclntab`, Rust panik yolları saldırganca yazılabilir; sahte üst veri analisti yanıltır. Yapısal tutarlılık (typeinfo ↔ vtable ↔ çağrı yerleri; `pclntab` ↔ fonksiyon sınırları) sahte üst veriyi ayırt eder mi?
+- **Bugün:** K-4 kanallarında aday yalnız Ghidra'nın adsız bıraktığı fonksiyona, güven `null` (P13b); RTTI üretici adımı yok ve `cpp_rtti.py` düşman girdiye denetlenmedi (IMZA-16, P13b). Dizgi enjeksiyonu yalnız KaradulLM'de denetleniyor (6 / 6 → 0 / 6, P21).
+- **Doğrulayıcı:** GT'li C++ / Go / Rust ikilileri + üst verisi bozulmuş kopyaları (sahte sınıf adı, kaydırılmış `pclntab`); masum kapı düzeninde yanlış ad 0, gerçek sette kesinlik.
+- **Aykırı öncül:** "Derleyicinin yazdığı üst veri güvenilirdir; saldırgan bozarsa ikili çalışmaz." Hangi alanların çalışma için gerçekten gerekli olduğunu say.
+
+**I5. Parametre adı yayılımı: uygulanınca kesinlik.**
+- **Soru:** Çağıran ↔ çağrılan arasında parametre adı yayılımı ad kapısıyla (geçerlilik, çakışma, köken) uygulanırsa DWARF'a göre kesinlik ne olur; hangi yön ve hangi kanıt (ithal API'nin bilinen argüman adı, adlı küresel) yanlış eklemeden doğru ekler?
+- **Bugün:** hesaplanıyor, uygulanmıyor (61 "yayıldı" → uygulanan 0; uygulama `stages.py` + `project_build` + ölçüm ister; P13b); yayılımın doğru oranı ~%6 (P05).
+- **Doğrulayıcı:** `p09_olc.py` + `parametre_hizala.py`, DWARF'lı 22 ikili; kural başına kesinlik, ön kayıtlı; kabul ölçümü geliştirme dışı ikililerde (P05b yöntemi).
+- **Aykırı öncül:** "Yayılım yalnız taşıdığı adın kalitesindedir; kanalın %2,7'lik kesinliğini (H4) çoğaltır." Önce kaynak adların kesinliğini ayır.
+
+**I6. Yapı alanı adları.**
+- **Soru:** Ofseti ve tipi doğru kurtarılan yapı alanlarına (P10, P11) DWARF'a yakın ad nasıl hesaplanır? Adaylar: alanın geçtiği API argümanı (`read(fd, p->X, …)`), alanla karşılaştırılan sabit ya da dizgi, alanı okuyan fonksiyonun adı.
+- **Bugün:** öneriler doğru ofset / tip ama zayıf alan adı (`size_1`, `flags_2`; P10); yeniden yazım K-1 ile kapalı, açılma ölçümü P10b'de.
+- **Doğrulayıcı:** DWARF yapı alanı adı; tam eşitlik + B3 ölçüsü; alan başına kesinlik / kapsam.
+- **Aykırı öncül:** "Alan adı yapı kurtarmanın ikincil çıktısıdır; analist için ofset ve tip yeterlidir." B4'ün maliyet modeliyle sına.
 
 ## 4. Ana oturumun öncelik önerisi (yalnız bir görüş; Mythos itiraz edebilir)
 
