@@ -9,6 +9,13 @@ Bu dosya yaşayan durum kaydıdır: hangi paket kimde, ne birleşti, hangi karar
 - Her ajan kendi git worktree'sinde (`.claude/worktrees/agent-*`, taban e9d2d08); dosya kümeleri ayrık. Ana oturum ajan commit'lerini doğrulayıp `main`'e alır (cherry-pick).
 - Push her seferinde Berke'ye sorulur. Güvenlik bulgularını içeren rapor, güvenlik onarımları `main`'e girmeden push edilmez (K-7).
 
+## 2026-11-19 oturumu (Berke: "son hızda, aynı anda en çok 7 ajan"; "mythosa gelelim hemen"; "arge listesine hızlıca gelebilmek istiyorum")
+- **Kararlar (Berke, 2026-11-19):** DURUŞ'taki beş sorudan 1, 3, 4, 5 onaylandı (eski deobf `beautify` / `babel_transforms` silinir → P20b; K-10 ölü kod silinir → P-S4 / P23; ölçüm kopyaları silinir → ana oturum, ajanlar o dizinleri bırakınca; push). 2. madde (`kebap_ad`) için Berke karar veremedi → ana oturum önerisi: kanal şimdilik kanıt satırı yazar, ad kuralı araştırması Mythos'a ARGE hattı (A5). Notlar: `gonderim/OTURUM_2026-11-19.md`.
+- **Push:** 08:0x, d2f205d..a62f15e (120 commit; gizli anahtar / büyük dosya / e-posta taraması temiz). Sürüm 1.24.1 kaldı; onarım bitince yükseltilecek.
+- **Birleşik 119 ölçümü (Mythos tabanı) başladı 08:11:** ağaç `~/karadul_olcum/urun-a62f15e` (a62f15e, temiz, 1.24.1, `signatures.lmdb` şema 2 bağı), kök `~/karadul_olcum/runs/urun-onarim-a62f15e`, `urun_kos.py --paralel 3`, `PYTHONHASHSEED=0`, ayrı `KARADUL_CACHE_DIR`. Ön kayıt GT karşılaştırmasından önce (ajan OLCUM, `docs/arge/2026-11-19_birlesik_olcum/`).
+- **1. dalga (08:1x, 7 ajan):** OLCUM (ön kayıt; ölçüm sonrası aşama 2), ARGE (soru listesinin son hâli; sayılar ⟨ÖLÇÜM⟩ yer tutucusu), P12c (c_namer çok satırlı imza + P13a kalanları; metin `gonderim/P12c.md`), P16d, P-S4, P22c (c1 → c2), P02b. Bekçi Monitor ile.
+- **Sırada:** P18, P10b, P05c, P08b, P03b, P20b, P22h (metni yazılacak); en son P23 + kapanış denetimi.
+
 ## Kararlar
 | No | Karar | Kaynak |
 |---|---|---|
