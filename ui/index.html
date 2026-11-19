@@ -471,7 +471,8 @@
 
   /* ===================== KARADULLM: terminal çekmecesi, ajan imleci, öneri kartı (P22c2) =====================
      Kural (Berke): sahte veri / sahte animasyon YOK. Bu bölümde hiçbir seçicide süresiz (infinite) ya da kendiliğinden
-     oynayan animasyon yoktur. */
+     oynayan animasyon yoktur; imleç yalnız gerçek olayla (gorev_basladi / arac_basladi) yer değiştirir ve geçiş tek
+     seferliktir (<= 200 ms); prefers-reduced-motion açıksa geçiş de yok (tests/test_ui_lm_panel.py U-1 / U-2). */
   .lmdrawer{display:flex; flex-direction:column; border-top:1px solid var(--border); background:var(--panel); z-index:5; min-height:0}
   .lmdrawer .lmbar{display:flex; align-items:center; gap:12px; padding:5px 14px; font-size:10px; letter-spacing:1.2px;
     color:var(--dim); background:var(--bg2); cursor:pointer; user-select:none; border-bottom:1px solid var(--border)}
@@ -497,6 +498,16 @@
   .lmin{display:flex; align-items:center; gap:8px; padding:6px 12px; border-top:1px solid var(--border); background:var(--bg2)}
   .lmin .lmps{color:var(--widow); font-size:12px; white-space:nowrap}
   .lmin input{flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:inherit; font-size:12px}
+  .lmspider{position:absolute; left:0; top:0; width:30px; height:30px; margin:-15px 0 0 -15px; z-index:3; pointer-events:none;
+    display:none; transition:transform .18s ease-out}
+  .lmspider.on{display:block} .lmspider.idle{opacity:.45}
+  .lmspider svg{width:30px; height:30px; display:block}
+  .lmspider .lmsplbl{position:absolute; left:-4px; top:32px; white-space:nowrap; font-size:10px; color:var(--named);
+    background:rgba(6,10,18,.85); border:1px solid var(--border); padding:1px 6px; border-radius:2px}
+  .lmspider .lmsplbl:empty{display:none}
+  @media (prefers-reduced-motion: reduce){ .lmspider{transition:none} }
+  .ray.lm-touch{stroke-width:2.4; opacity:1}
+  .fn.lm-agent{box-shadow:inset -3px 0 0 var(--widow)}
 </style>
 </head>
 <body>
@@ -585,6 +596,13 @@
         <div class="tag">FAN-OUT SIRALI · <span class="rk">RECON</span></div>
       </div>
       <div class="crumbs" id="crumbs"></div>
+      <!-- KaradulLM ajan imleci: yalnız gerçek olayla yer değiştirir (P22c2; tasarım §4.5) -->
+      <div class="lmspider" id="lmSpider" aria-hidden="true">
+        <svg viewBox="0 0 30 30"><g stroke="#e51334" stroke-width="1.1" stroke-linecap="round">
+          <path d="M9 11L3 6M9 14L2 13M9 17L2 19M9 20L4 25M21 11L27 6M21 14L28 13M21 17L28 19M21 20L26 25"/></g>
+          <path d="M9 6.5H21L15 15L21 23.5H9L15 15Z" fill="#e51334" stroke="#2a0510" stroke-width=".6"/></svg>
+        <span class="lmsplbl" id="lmSpLbl"></span>
+      </div>
     </section>
     <section class="code" id="codePanel">
       <div class="chead"><span class="t" id="cTitle">—</span><span class="iv-edit" id="cEdit" title="yeniden adlandır (başlığa çift-tıkla)">✎</span><span class="badge" id="cBadge"></span>
@@ -1079,7 +1097,7 @@ function buildList(list){
     const mtag=MANUAL.has(f.addr)?'<span class="iv-mtag">manuel</span>':'';
     const ltag=labelBadge(f.label,true);   // etiket yoksa '' (işaret çizilmez)
     d.innerHTML=`<span class="dot"></span><span class="nm">${esc(shownName(f))}</span>${ltag}${mtag}<span class="deg"><b>${f.out}</b>↗ ${f.in}↘</span>`;
-    d.onclick=()=>focus(f.addr);
+    d.onclick=()=>userFocus(f.addr);
     frag.appendChild(d);
   }
   const more=moreRowText(rows.length,matched.length);
@@ -1115,7 +1133,7 @@ function drawRadial(addr){
   const f=BYADDR[addr];
   const svg=$('svg'); const st=svg.parentElement.getBoundingClientRect();
   const W=st.width, H=st.height; if(!W||!H) return;
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML='';
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=''; LM_POS={};
   // ters-komşuluk (çağıranlar) bir kez hesapla, MODEL üstünde cache'le
   if(!MODEL._rev){ const rev={}; for(const a in MODEL.calls){ for(const c of (MODEL.calls[a]||[])){ (rev[c]=rev[c]||[]).push(a); } } MODEL._rev=rev; }
   const callees=(MODEL.calls[addr]||[]).map(a=>BYADDR[a]).filter(Boolean);
@@ -1140,7 +1158,7 @@ function drawRadial(addr){
       const mx=cx+(x-cx)*0.5, my=cy+(y-cy)*0.5-(i%2?8:-8);
       const ray=el('path');
       ray.setAttribute('d',`M${cx.toFixed(1)},${cy.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${x.toFixed(1)},${y.toFixed(1)}`);
-      ray.setAttribute('class','ray '+c.cls);
+      ray.setAttribute('class','ray '+c.cls); ray.dataset.addr=c.addr; LM_POS[c.addr]={x:x,y:y};
       const len=Math.hypot(x-cx,y-cy)+40; ray.style.strokeDasharray=len; ray.style.strokeDashoffset=len;
       ray.style.animation=`draw .5s ease forwards ${i*0.012+seed}s`; gRays.appendChild(ray);
       const g=el('g'); g.setAttribute('class','node'); g.style.cursor='pointer';
@@ -1152,7 +1170,7 @@ function drawRadial(addr){
       t.textContent=trunc(shownName(c),18);
       g.appendChild(hit); g.appendChild(dot); g.appendChild(t);
       g.style.opacity=0; g.style.animation=`fade .4s ease forwards ${i*0.012+seed+0.2}s`;
-      g.onclick=()=>focus(c.addr); gNodes.appendChild(g);
+      g.onclick=()=>userFocus(c.addr); gNodes.appendChild(g);
     });
     if(extra>0){
       const t=el('text'); t.setAttribute('x',cx+(isLeft?-R*0.52:R*0.52)); t.setAttribute('y',cy+R*0.64);
@@ -1176,6 +1194,7 @@ function drawRadial(addr){
   ring2.setAttribute('filter','url(#glow)'); ring2.style.filter='drop-shadow(0 0 6px var(--widow-glow))';
   const lbl=el('text'); lbl.setAttribute('x',cx); lbl.setAttribute('y',cy-34); lbl.setAttribute('class','corelbl');
   lbl.textContent=trunc(shownName(f),30);
+  LM_POS[addr]={x:cx,y:cy};
   const ad=el('text'); ad.setAttribute('x',cx); ad.setAttribute('y',cy+38); ad.setAttribute('class','coreaddr');
   // çağrı grafiği yoksa sunucu metin yöntemine düşer (calls_source==='text'): sayılar çağrı değil
   ad.textContent=MODEL.calls_source==='text'
@@ -1189,6 +1208,7 @@ function drawRadial(addr){
   $('tgCount').textContent=callees.length+callers.length;
   $('fCenter').textContent=f.cls==='unnamed'?f.addr:f.name;
   $('fEdges').textContent=callees.length+callers.length; $('fStatus').textContent='İZLENİYOR';
+  lmReanchor();
 }
 
 function crumbs(){
@@ -1237,7 +1257,7 @@ function highlight(code){
 }
 function wireRefs(){
   $('cBody').querySelectorAll('[data-a]').forEach(s=>{
-    const a=s.getAttribute('data-a'); if(BYADDR[a]){ s.style.cursor='pointer'; s.onclick=()=>focus(a); }
+    const a=s.getAttribute('data-a'); if(BYADDR[a]){ s.style.cursor='pointer'; s.onclick=()=>userFocus(a); }
   });
 }
 
@@ -1855,7 +1875,7 @@ window.bwShowUpdate=bwShowUpdate;
 /* P22C2-LM-BASLA: KaradulLM terminali, ajan imleci ve öneri kartı — saf mantık (DOM yok; node ile sınanır:
    tests/test_ui_lm_panel.py). Olaylar sunucuda arındırılmıştır (karadul/lm/events.py); satırlar yine yalnız
    textContent ile basılır. Satır biçiminin başvurusu karadul/lm/repl.py::render (aynı metinler). Sayılar olaylardaki
-   gerçek değerlerdir; ölçülmemiş değer '?'. */
+   gerçek değerlerdir; ölçülmemiş değer '?'. İmleç yalnız gerçek olayla yer değiştirir (tasarım §4.5, §4.7). */
 const LM_VERDICT={ret:'RET',celiski:'ÇELİŞKİ',sinandi_celiski_yok:'ÇELİŞKİ BULUNMADI (sınandı)',sinanamadi:'SINANAMADI (kanıt yok)'};
 const LM_TASK={acikla:'açıkla',ad_oner:'ad öner',ozet_alt:'özet',soru:'soru',plan:'plan'};
 const LM_POLL_WAIT=25;      // uzun yoklama bekleme tavanı (sn; sunucunun _LM_POLL_MAX_SEC'i ile aynı)
@@ -1905,6 +1925,31 @@ function lmPollApply(prevSeq,resp){
   return {pre:lost>0?[{t:'! '+lost+' olay kaçırıldı',c:'warn'}]:[], events:resp.olaylar||[],
     son:(typeof resp.son==='number')?resp.son:last, stop:!!resp.kapali, lost:lost};
 }
+/* İmlecin bir olaya tepkisi (olay yoksa çağrılmaz: hareket de yok). `byaddr`: arayüz modelinin düğümleri; `drawn`:
+   haritada şu an çizili düğümlerin konumu; `follow`: takip açık mı. Dönüş {act, fn?, line?, list?, text?}:
+     focus      takip açık, düğüm modelde var → harita o düğüme odaklanır, imleç merkeze;
+     move       takip kapalı, düğüm haritada çizili → imleç o düğüme;
+     off_map    takip kapalı, düğüm modelde var ama çizili değil → imleç kalkar, listede işaret, terminal satırı;
+     not_on_map düğüm arayüz modelinde yok (fn boş ya da bilinmiyor) → imleç YER DEĞİŞTİRMEZ, terminal "haritada yok";
+     touch      arac_bitti.dokunulan → o düğümlere giden ışınlar sonraki olaya kadar vurgulu (zamanlayıcı yok);
+     label / idle / remove / none. */
+function lmSpiderAct(e,byaddr,drawn,follow){
+  const t=e&&e.tur;
+  if(t==='gorev_basladi'||t==='arac_basladi'){
+    const h=e.hedef; if(!h||typeof h!=='object') return {act:'none'};
+    const fn=h.fn?String(h.fn):null;
+    if(!fn||!lmHas(byaddr,fn))
+      return {act:'not_on_map',fn:fn,line:(fn||('adres '+h.adres))+': haritada yok (arayüz düğümü yok) · ajan imleci yer değiştirmedi'};
+    if(follow) return {act:'focus',fn:fn};
+    if(lmHas(drawn,fn)) return {act:'move',fn:fn};
+    return {act:'off_map',fn:fn,line:'ajan: '+fn+' (haritada çizili değil · takip kapalı: /takip ac)'};
+  }
+  if(t==='arac_bitti') return {act:'touch',list:(e.dokunulan||[]).filter(a=>lmHas(byaddr,a))};
+  if(t==='oneri') return {act:'label',fn:(e.hedef&&e.hedef.fn)||null,text:'öneri '+e.oneri_kimligi+': '+e.deger+' · '+lmV(e.hukum)};
+  if(t==='gorev_bitti') return {act:'idle'};
+  if(t==='oturum_bitti') return {act:'remove'};
+  return {act:'none'};
+}
 /* Durum satırı. Hız ölçülmeden boş ("ölçülmedi"); beklenen süre yalnız ölçülen hızdan ve "beklenen" diye (U-3). */
 function lmStatusText(st){
   if(!st||!st.oturum) return 'oturum yok · kabuk değildir: yalnız `karadullm`'+(st&&st.model_ayari?(' · model: '+st.model_ayari):' · model yapılandırılmamış');
@@ -1918,8 +1963,9 @@ function lmStatusText(st){
 }
 /* P22C2-LM-BITIS */
 
-/* ---- KaradulLM: DOM (çekmece, uzun yoklama) ---- */
-const LM={oturum:null, son:0, follow:true, polling:false, fails:0, dropped:0};
+/* ---- KaradulLM: DOM (çekmece, uzun yoklama, imleç, kart) ---- */
+const LM={oturum:null, son:0, follow:true, polling:false, fails:0, dropped:0, spFn:null, touched:[]};
+let LM_POS={};   // drawRadial'ın çizdiği düğümlerin konumu (sahne koordinatı); imleç buradan konumlanır
 function lmJson(url,body){
   return fetch(url,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(async r=>{ let j={}; try{ j=await r.json(); }catch(e){} return {ok:r.ok,status:r.status,j:j}; });
@@ -1935,7 +1981,7 @@ function lmToggle(open){
   const d=$('lmDrawer'); const on=open===undefined?!d.classList.contains('open'):!!open;
   d.classList.toggle('open',on); $('lmChev').textContent=on?'▾':'▸';
   if(on) setTimeout(()=>$('lmIn').focus(),0);
-  if(CENTER) drawRadial(CENTER);   // sahne boyu değişti: harita yeniden yerleşir
+  if(CENTER) drawRadial(CENTER);   // sahne boyu değişti: harita ve imleç yeniden yerleşir
 }
 async function lmRefreshStatus(){
   const r=await lmJson('/api/lm/durum').catch(()=>null); if(!r||!r.ok) return;
@@ -1988,6 +2034,46 @@ function lmHandle(e){
   for(const l of lmLines(e)) lmAdd(l.t,l.c);
   if(e.tur==='jeton') $('lmTok').textContent='akış: '+lmCnt(e.parca)+' parça · '+lmCnt(e.karakter)+' karakter (jeton sayısı değil; gerçek sayı model satırında)';
   else if(e.tur==='gorev_basladi') $('lmTok').textContent='';
+  if(e.tur==='satir'&&(e.metin==='takip açık'||e.metin==='takip kapalı')) LM.follow=e.metin==='takip açık';
+  lmSpider(e);
+}
+function lmPlace(fn,instant){
+  const sp=$('lmSpider'), p=LM_POS[fn];
+  if(!p){ sp.classList.remove('on'); return; }
+  if(instant){ sp.style.transition='none'; }
+  sp.style.transform='translate('+p.x.toFixed(1)+'px,'+p.y.toFixed(1)+'px)';
+  sp.classList.add('on');
+  if(instant){ void sp.offsetWidth; sp.style.transition=''; }
+}
+function lmMarkRow(fn){ document.querySelectorAll('.fn.lm-agent').forEach(x=>x.classList.remove('lm-agent'));
+  if(fn){ const row=document.querySelector('.fn[data-addr="'+(window.CSS&&CSS.escape?CSS.escape(fn):fn)+'"]'); if(row) row.classList.add('lm-agent'); } }
+function lmTouch(list){
+  document.querySelectorAll('.ray.lm-touch').forEach(x=>x.classList.remove('lm-touch'));
+  LM.touched=list||[];
+  for(const a of LM.touched){ document.querySelectorAll('.ray').forEach(x=>{ if(x.dataset.addr===a) x.classList.add('lm-touch'); }); }
+}
+/* "haritada yok / çizili değil" satırı aynı hedef için bir kez (görevin her araç çağrısında yinelenmez). */
+function lmNote(a){ if(a.line!==LM.noteLine){ LM.noteLine=a.line; lmAdd(a.line,'warn'); } }
+function lmSpider(e){
+  if(e.tur==='gorev_basladi') LM.noteLine=null;
+  const a=lmSpiderAct(e,BYADDR,LM_POS,LM.follow); const sp=$('lmSpider');
+  if(a.act==='none') return;
+  if(a.act!=='touch'&&a.act!=='label') lmTouch([]);       // vurgu bir sonraki olaya kadar; zamanlayıcıyla sönmez
+  if(a.act==='focus'){ LM.spFn=a.fn; sp.classList.remove('idle'); if(CENTER!==a.fn) focus(a.fn); else lmPlace(a.fn); lmMarkRow(a.fn); }
+  else if(a.act==='move'){ LM.spFn=a.fn; sp.classList.remove('idle'); lmPlace(a.fn); lmMarkRow(a.fn); }
+  else if(a.act==='off_map'){ LM.spFn=a.fn; sp.classList.remove('on'); lmMarkRow(a.fn); lmNote(a); }
+  else if(a.act==='not_on_map'){ lmNote(a); }
+  else if(a.act==='touch'){ lmTouch(a.list); }
+  else if(a.act==='label'){ $('lmSpLbl').textContent=a.text; }
+  else if(a.act==='idle'){ sp.classList.add('idle'); }
+  else if(a.act==='remove'){ LM.spFn=null; sp.classList.remove('on','idle'); $('lmSpLbl').textContent=''; lmMarkRow(null); lmTouch([]); }
+}
+/* drawRadial sonrası: imleç bağlı olduğu düğüm çiziliyse oraya geçişsiz yerleşir (sahne değişti), değilse kalkar. */
+function lmReanchor(){ if(!LM.spFn) return; if(LM_POS[LM.spFn]) lmPlace(LM.spFn,true); else $('lmSpider').classList.remove('on'); if(LM.touched.length) lmTouch(LM.touched); }
+/* Analistin kendi tıklaması takibi kapatır (ajan analistin görüşünü elinden almaz; tasarım §4.5). */
+function userFocus(addr){
+  if(LM.oturum&&LM.follow){ LM.follow=false; lmJson('/api/lm/terminal/girdi',{oturum:LM.oturum,metin:'/takip kapat'}).catch(()=>{}); }
+  focus(addr);
 }
 $('lmBar').onclick=(ev)=>{ if(ev.target&&ev.target.tagName==='BUTTON') return; lmToggle(); };
 $('lmIn').addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); lmSubmit(); } });

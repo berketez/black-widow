@@ -154,6 +154,56 @@ console.log(JSON.stringify({r1:[r1.pre,r1.son,r1.stop],r2:[r2.pre,r2.son,r2.lost
 # (c) imleç
 
 
+@nodeli
+def test_imlec_yalniz_olayla_ve_dugum_yoksa_yer_degistirmez(tmp_path):
+    out = _run(tmp_path, r"""
+const BY={FUN_1:{},FUN_2:{},FUN_3:{}}, DRAWN={FUN_1:{x:1,y:2},FUN_2:{x:3,y:4}};
+const g=(fn,adres)=>({tur:'gorev_basladi',hedef:{fn:fn,adres:adres}});
+const a=(fn)=>({tur:'arac_basladi',hedef:fn===undefined?null:{fn:fn,adres:'9'}});
+const R=[
+  lmSpiderAct(g('FUN_2','2'),BY,DRAWN,true),           // takip açık → odak
+  lmSpiderAct(g('FUN_2','2'),BY,DRAWN,false),          // takip kapalı, çizili → taşı
+  lmSpiderAct(a('FUN_3'),BY,DRAWN,false),              // takip kapalı, çizili değil → haritadan kalk
+  lmSpiderAct(g('FUN_9','9'),BY,DRAWN,true),           // modelde yok → yer değiştirmez
+  lmSpiderAct(g(null,'9000'),BY,DRAWN,true),           // dosyasız adres (fn null) → yer değiştirmez
+  lmSpiderAct(a(undefined),BY,DRAWN,true),             // reddedilen çağrı (hedef null) → hiçbir şey
+  lmSpiderAct({tur:'arac_bitti',dokunulan:['FUN_1','FUN_9','FUN_3']},BY,DRAWN,true),
+  lmSpiderAct({tur:'jeton',parca:3,karakter:9},BY,DRAWN,true),   // jeton: imleç oynamaz
+  lmSpiderAct({tur:'model_cevabi'},BY,DRAWN,true),
+  lmSpiderAct({tur:'oneri',oneri_kimligi:'p1',deger:'f',hukum:'celiski',hedef:{fn:'FUN_1'}},BY,DRAWN,true),
+  lmSpiderAct({tur:'gorev_bitti'},BY,DRAWN,true),
+  lmSpiderAct({tur:'oturum_bitti'},BY,DRAWN,true),
+];
+console.log(JSON.stringify(R));
+""")
+    assert out[0] == {"act": "focus", "fn": "FUN_2"}
+    assert out[1] == {"act": "move", "fn": "FUN_2"}
+    assert out[2]["act"] == "off_map" and out[2]["fn"] == "FUN_3" and "takip kapalı" in out[2]["line"]
+    assert out[3]["act"] == "not_on_map" and out[3]["line"].startswith("FUN_9: haritada yok")
+    assert "yer değiştirmedi" in out[3]["line"]
+    assert out[4]["act"] == "not_on_map" and out[4]["line"].startswith("adres 9000: haritada yok")
+    assert out[5] == {"act": "none"}
+    assert out[6] == {"act": "touch", "list": ["FUN_1", "FUN_3"]}
+    assert out[7] == {"act": "none"} and out[8] == {"act": "none"}
+    assert out[9]["act"] == "label" and out[9]["text"] == "öneri p1: f · ÇELİŞKİ"
+    assert out[10] == {"act": "idle"} and out[11] == {"act": "remove"}
+
+
+def test_imlec_yalniz_olay_isleyicisinden_cagrilir():
+    """İmleci yerleştiren tek yol olay işleyicisi (lmHandle → lmSpider) ve harita yeniden çizimi (drawRadial →
+    lmReanchor; analistin kendi eylemi ya da sahne boyu). Zamanlayıcı / döngüyle hareket yok."""
+    s = _script()
+    assert s.count("lmSpider(e);") == 1 and s.count("lmSpider(") == 2 and "function lmHandle(e){" in s
+    assert re.findall(r"\blmPlace\(", s).__len__() == 4                     # tanım + focus/move + reanchor
+    assert len(re.findall(r"\blmReanchor\(\)", s)) == 2                     # tanım + drawRadial sonu
+    dom = _lm_dom()
+    for yasak in ("setInterval", "requestAnimationFrame", "animate(", ".animation", "infinite"):
+        assert yasak not in dom, yasak
+    # setTimeout yalnız girişe odak ve ağ yeniden denemesi (ikisi de imleç / satır üretmez)
+    st = [ln for ln in dom.splitlines() if "setTimeout" in ln]
+    assert len(st) == 2 and all("lmSpider" not in ln and "lmPlace" not in ln and "lmAdd" not in ln for ln in st)
+
+
 # --------------------------------------------------------------------------------------------
 # (d) öneri kartı
 
@@ -200,6 +250,7 @@ def test_cekmece_haritanin_altinda_ve_tek_komut_ipucu():
     sonuc = html[html.index('<section id="result"'):html.index("<!-- ===================== AYARLAR")]
     i_main, i_dr, i_ft = sonuc.index('<div class="rmain">'), sonuc.index('id="lmDrawer"'), sonuc.index("<footer>")
     assert i_main < i_dr < i_ft                                          # karar 4 (a): alt çekmece
+    assert 'id="lmSpider"' in sonuc[sonuc.index('<section class="stage">'):sonuc.index('<section class="code"')]
     assert "kabuk değildir" in sonuc
 
 
