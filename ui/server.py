@@ -418,6 +418,20 @@ def build_model() -> dict | None:
                       "out": len(calls[addr]), "in": indeg.get(addr, 0),
                       "label": (_record_label(_name_record(cmap, addr, name))
                                 if cls != "ghidra" else None)})
+    # KaradulLM (P22c1): analistin kabul ettiği model adları AYRI katman (motor adı < model adı < elle ad;
+    # önceki tasarım §5.3). ``names`` ve ad sayaçları değişmez (model adı Karadul'un adı sayılmaz); elle ad
+    # verilmiş düğümde model adı gösterilmez. Depo okunamazsa ``None`` (bilinmiyor; boş sözlük "yok" demektir).
+    model_names: dict | None = {}
+    bh = _active_binary_hash(ws)
+    if bh:
+        try:
+            manual = overrides.all_names(bh)
+            for a, rec in overrides.model_names(bh).items():
+                if a in addr_set and a not in manual:
+                    model_names[a] = {"name": rec["name"], "oneri_kimligi": rec.get("proposal_id"),
+                                      "hukum": rec.get("hukum")}
+        except (OSError, ValueError):
+            model_names = None
     n_named = sum(1 for x in funcs if x["cls"] == "named")
     n_weak = sum(1 for x in funcs if x["cls"] == "weak")
     n_unnamed = sum(1 for x in funcs if x["cls"] == "unnamed")
@@ -431,7 +445,7 @@ def build_model() -> dict | None:
         security = {"packer": None, "anti_debug": None}
     model = {
         "functions": funcs, "calls": calls, "calls_source": calls_source,
-        "addr_refs": addr_refs, "names": names,
+        "addr_refs": addr_refs, "names": names, "model_names": model_names,
         # total: Karadul'un adlandırma işi olan FUN_ fonksiyonları; Ghidra adlıları ayrı
         "total": len(funcs) - n_ghidra, "named": n_named, "weak": n_weak,
         "unnamed": n_unnamed, "recovered": n_named + n_weak, "ghidra_named": n_ghidra,
@@ -2753,6 +2767,66 @@ def _lm_reject(body: dict) -> dict:
     return {"tamam": True, "oneri": r["oneri"]} if r["tamam"] else {"__code": 400, "tamam": False, "hata": r["hata"]}
 
 
+_LM_ACCEPT_LOCK = threading.Lock()
+
+
+def _lm_accept(body: dict) -> dict:
+    """``POST /api/lm/oneri/kabul``: YALNIZ öneri kimliği (ad istemciden alınmaz; tasarım §4.6, önceki tasarım §5.3).
+
+    Sıra: (1) öneri defterde bekleyen olmalı; ad önerisinde ön denetim — arayüzün ikili özeti oturumunkiyle aynı
+    (çalışma alanı değişmemiş), hedefin arayüz düğümü var, ad P17 kuralından geçer (``overrides._validate_name``),
+    denetim hükmü yazılabilir (``ret`` değil), aynı ad başka bir düğüme model adı olarak verilmemiş; (2)
+    ``Session.decide(kabul)``: D1 ve D2 bugünkü çalışma alanıyla yeniden koşar, tutmazsa kabul YAZILMAZ; (3) ad
+    önerisi ``overrides.set_model_name`` ile deponun ``model`` bölümüne yazılır — ``overrides`` (elle) bölümüne ve
+    ``naming_map.json``'a YAZILMAZ: motor okumaz, ürün ölçümüne girmez. Yorum önerisinin kabulü yalnız deftere
+    düşer (yazılacak bölüm yok). (3) patlarsa defterde kabul kalır ve bu açıkça söylenir (uydurma başarı yok)."""
+    s = lm_session.current_session()
+    if s is None:
+        return {"__code": 409, "hata": "açık oturum yok"}
+    pid = body.get("oneri_kimligi")
+    with _LM_ACCEPT_LOCK:
+        try:
+            p = s.notebook.proposal(pid) if isinstance(pid, str) else None
+        except OSError as e:
+            return {"__code": 500, "hata": f"defter okunamadı: {e}"}
+        if p is None:
+            return {"__code": 404, "hata": "böyle bir öneri yok"}
+        if p["durum"] != "bekleyen":
+            return {"__code": 409, "hata": f"öneri zaten karara bağlanmış: {p['durum']}"}
+        key = None
+        if p["oneri_turu"] == "ad":
+            bh = _active_binary_hash(WS)
+            if bh != s.binary_sha256:
+                return {"__code": 409, "hata": "çalışma alanının ikilisi oturumunkiyle aynı değil: kabul yazılmadı"}
+            key = s.workspace.ui_name(p["adres"])
+            if key is None:
+                return {"__code": 409, "hata": "fonksiyonun arayüzde düğümü yok: kabul yazılmadı"}
+            try:
+                overrides._validate_addr(key)
+                overrides._validate_name(p["deger"])
+            except ValueError as e:
+                return {"__code": 400, "hata": f"ad kabul edilemez: {e}"}
+            if p.get("hukum") not in overrides._MODEL_VERDICTS:
+                return {"__code": 409, "hata": f"denetim hükmü {p.get('hukum')!r}: kabul yazılmadı"}
+            for other, rec in overrides.model_names(bh).items():
+                if other != key and rec["name"] == p["deger"]:
+                    return {"__code": 409, "hata": f"çakışma: '{p['deger']}' model adı olarak {other} düğümünde"}
+        r = s.decide(pid, lm_session.DECIDE_ACCEPT)
+        if not r["tamam"]:
+            return {"__code": 409, "tamam": False, "hata": r["hata"]}
+        if key is None:
+            return {"tamam": True, "oneri": r["oneri"], "yazildi": None}
+        try:
+            overrides.set_model_name(bh, key, p["deger"], proposal_id=pid, session_id=s.id, verdict=p["hukum"],
+                                     ws_addr=p["adres"], binary=_ws_binary_name(WS))
+        except (ValueError, OSError) as e:
+            return {"__code": 500, "tamam": False, "oneri": r["oneri"],
+                    "hata": f"kabul deftere yazıldı ama ad deponun model bölümüne yazılamadı ({e}): ad uygulanmadı"}
+    with _CACHE_LOCK:
+        _CACHE.pop("model", None)   # sonraki /api/model model katmanını taze okur
+    return {"tamam": True, "oneri": r["oneri"], "yazildi": "model", "fn": key}
+
+
 def _lm_close(body: dict) -> dict:
     """``POST /api/lm/terminal/kapat``: oturum ve arka uç kapanır (``oturum_bitti``)."""
     s, err = _lm_find(body.get("oturum"), open_only=True)
@@ -2840,6 +2914,7 @@ _LM_GET = {
 _LM_POST = {
     "/api/lm/terminal/girdi": _lm_input,
     "/api/lm/durdur": _lm_stop,
+    "/api/lm/oneri/kabul": _lm_accept,
     "/api/lm/oneri/ret": _lm_reject,
     "/api/lm/terminal/kapat": _lm_close,
 }

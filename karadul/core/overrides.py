@@ -236,8 +236,82 @@ def remove(binary_hash: str, addr: str) -> dict:
 
 
 def all_names(binary_hash: str) -> dict:
-    """Düz addr -> name eşlemesi (isim override'ları için hızlı uygula)."""
+    """Düz addr -> name eşlemesi (isim override'ları için hızlı uygula).
+
+    Yalnız ``overrides`` (elle) bölümü: ``model`` bölümündeki adlar (analistin kabul ettiği KaradulLM önerileri)
+    BURADAN DÖNMEZ. Analiz hattı (``stages.py`` ``_apply_manual_overrides``) yalnız bunu okur: motorun girdisi
+    yapım gereği LLM'siz kalır (KaradulLM tasarımı §5.3, K-M3)."""
     with _LOCK:
         data = _read(binary_hash)
     return {a: rec.get("name") for a, rec in data.get("overrides", {}).items()
             if isinstance(rec, dict) and rec.get("name")}
+
+
+# ---------------------------------------------------------------------------
+# Model bölümü (P22c1): analistin kabul ettiği KaradulLM ad önerileri
+#
+# Aynı dosyada ayrı üst düzey bölüm (şema yalnız eklemeli; v1 okuyucuları etkilenmez):
+#   "model": {addr -> {"name", "source": "karadullm", "proposal_id", "oturum", "hukum", "adres", "ts"}}
+# Motor bu bölümü OKUMAZ (``all_names`` yalnız ``overrides``); ad ``naming_map.json``'a da yazılmaz. Arayüz
+# gösterimde katmanları birleştirir: motor adı < model adı < elle ad. Kayıt yalnız analistin kabul ucundan
+# (``ui/server.py`` ``/api/lm/oneri/kabul``) ve yalnız defterdeki öneri kimliğiyle gelir; ad P17'nin kurallarıyla
+# (``_validate_name``) doğrulanır. Bu modül ``karadul.lm``'i içe aktarmaz (motor sınırı, K-M1).
+# ---------------------------------------------------------------------------
+MODEL_SECTION = "model"
+MODEL_SOURCE = "karadullm"
+_PROPOSAL_ID_RE = re.compile(r"^p[1-9][0-9]{0,8}$")       # karadul/lm/notebook.py PROPOSAL_ID_RE ile aynı
+_SESSION_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")     # karadul/lm/audit.py _SESSION_ID ile aynı
+_WS_ADDR_RE = re.compile(r"^[0-9a-f]{1,16}$")             # çalışma alanı adres yazımı (notebook _ADDR_RE)
+# Denetim hükümleri (karadul/lm/guard.py VERDICTS); "ret" yazılmaz: denetimin reddettiği ad uygulanmaz.
+_MODEL_VERDICTS = frozenset({"celiski", "sinandi_celiski_yok", "sinanamadi"})
+
+
+def set_model_name(
+    binary_hash: str,
+    addr: str,
+    name: str,
+    *,
+    proposal_id: str,
+    session_id: str,
+    verdict: str,
+    ws_addr: str,
+    binary: str | None = None,
+) -> dict:
+    """Kabul edilen model önerisini ``model`` bölümüne yazar (upsert); ``overrides`` (elle) bölümüne DOKUNMAZ.
+
+    ``addr``: arayüz düğüm anahtarı (``FUN_<hex>``); ``ws_addr``: çalışma alanı adres yazımı. Ad P17'nin kuralıyla
+    doğrulanır (C tanımlayıcısı, anahtar sözcük / tip adı değil). Denetim hükmü ``ret`` ya da tanınmayan değer,
+    biçimsiz öneri / oturum kimliği ``ValueError``. Yazdığı kaydı döndürür."""
+    _validate_addr(addr)
+    _validate_name(name)
+    if not isinstance(proposal_id, str) or not _PROPOSAL_ID_RE.fullmatch(proposal_id):
+        raise ValueError(f"geçersiz öneri kimliği: {proposal_id!r}")
+    if not isinstance(session_id, str) or not _SESSION_ID_RE.fullmatch(session_id):
+        raise ValueError(f"geçersiz oturum kimliği: {session_id!r}")
+    if verdict not in _MODEL_VERDICTS:
+        raise ValueError(f"denetim hükmü yazılamaz: {verdict!r}")
+    if not isinstance(ws_addr, str) or not _WS_ADDR_RE.fullmatch(ws_addr):
+        raise ValueError(f"geçersiz adres: {ws_addr!r}")
+    rec = {"name": name, "source": MODEL_SOURCE, "proposal_id": proposal_id, "oturum": session_id,
+           "hukum": verdict, "adres": ws_addr, "ts": _now_iso()}
+    with _LOCK:
+        data = _read(binary_hash, binary)
+        if binary and not data.get("binary"):
+            data["binary"] = binary
+        section = data.get(MODEL_SECTION)
+        if not isinstance(section, dict):
+            section = data[MODEL_SECTION] = {}
+        section[addr] = rec
+        _atomic_write(binary_hash, data)
+    return rec
+
+
+def model_names(binary_hash: str) -> dict:
+    """``model`` bölümü: addr -> kayıt (yalnız ``name``'i geçerli tanımlayıcı olan kayıtlar). Motor bunu okumaz."""
+    with _LOCK:
+        data = _read(binary_hash)
+    section = data.get(MODEL_SECTION)
+    if not isinstance(section, dict):
+        return {}
+    return {a: dict(rec) for a, rec in section.items()
+            if isinstance(rec, dict) and isinstance(rec.get("name"), str) and _NAME_RE.fullmatch(rec["name"])}

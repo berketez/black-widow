@@ -531,3 +531,127 @@ def test_acilista_yetim_model_sunucusu_toplanir(srv, tmp_path):
     kayit()
     ps = _Ps({})
     assert "eşleşmedi" in srv._lm_reap_orphan(run=ps.run, kill=ps.kill) and ps.kills == [] and not pidf.exists()
+
+
+# --------------------------------------------------------------------------------------------
+# (5) kabul yolu: yalnız öneri kimliği; D1 / D2 yeniden; ad deponun ``model`` bölümüne (elle bölümüne ve
+#     naming_map'e DEĞİL); motor okumaz; arayüz ayrı katmanda gösterir
+
+from karadul.lm import notebook as N  # noqa: E402
+from tests.test_lm_tools import B as FB, NOREC  # noqa: E402
+
+
+def oneri(s, adres, deger, *, tur="ad", hukum="sinandi_celiski_yok"):
+    pid = s.notebook.next_proposal_id()
+    s.notebook.append(N.NoteRecord("oneri", "2026-11-19T09:00:00+03:00", s.id, adres=adres, oneri_kimligi=pid,
+                                   oneri_turu=tur, deger=deger, gerekce="g", hukum=hukum, gorev="g1"))
+    return pid
+
+
+def kabul(mod, pid):
+    return req(mod, "POST", "/api/lm/oneri/kabul", {"oneri_kimligi": pid})
+
+
+def depo(mod) -> dict:
+    p = mod._ov_dir / f"{SHA}.json"
+    return json.loads(p.read_text(encoding="utf-8")) if p.exists() else {}
+
+
+def test_kabul_model_bolumune_yazar_motor_ve_naming_map_gormez(srv, monkeypatch):
+    nm = srv._ws_path / "reconstructed" / "src" / "naming_map.json"
+    nm_once = nm.read_bytes()
+    model_once = req(srv, "GET", "/api/model")[1]
+    assert model_once["model_names"] == {}
+    assert kabul(srv, "p1") == (409, {"hata": "açık oturum yok"})
+    o = ac(srv, monkeypatch, AdArka())
+    girdi(srv, o, "/kip adlandir")
+    girdi(srv, o, f"/ad {fun(A)}")
+    assert S.current_session().wait_idle(BEKLE)
+    st, b = kabul(srv, "p1")
+    assert st == 200 and (b["tamam"], b["yazildi"], b["fn"]) == (True, "model", fun(A))
+    assert b["oneri"]["durum"] == "kabul"
+    d = depo(srv)
+    rec = d["model"][fun(A)]
+    assert (rec["name"], rec["source"], rec["proposal_id"], rec["oturum"], rec["adres"]) == (
+        "open_connection", "karadullm", "p1", o, A)
+    assert rec["hukum"] in ("celiski", "sinandi_celiski_yok", "sinanamadi")
+    assert d["overrides"] == {} and overrides.all_names(SHA) == {}           # motorun okuduğu bölüm boş
+    assert nm.read_bytes() == nm_once                                      # ad haritası değişmedi
+    m = req(srv, "GET", "/api/model")[1]
+    assert m["model_names"] == {fun(A): {"name": "open_connection", "oneri_kimligi": "p1", "hukum": rec["hukum"]}}
+    assert m["names"] == model_once["names"]                               # Karadul adları ve sayaçlar aynı
+    assert {k: m[k] for k in ("total", "named", "weak", "unnamed")} == \
+        {k: model_once[k] for k in ("total", "named", "weak", "unnamed")}
+    assert kabul(srv, "p1")[1]["hata"] == "öneri zaten karara bağlanmış: kabul"
+    assert kabul(srv, "p99") == (404, {"hata": "böyle bir öneri yok"})
+    assert kabul(srv, None)[0] == 404
+    # aynı ad başka düğüme model adı olarak verilemez
+    s = S.current_session()
+    pid = oneri(s, NOREC, "open_connection")
+    st, b = kabul(srv, pid)
+    assert st == 409 and b["hata"].startswith("çakışma") and s.notebook.proposal(pid)["durum"] == "bekleyen"
+    # elle ad model adından üstün: elle adlı düğümde model katmanı gösterilmez
+    overrides.set_name(SHA, fun(A), "typed_name")
+    srv.activate_workspace(str(srv._ws_path))
+    assert req(srv, "GET", "/api/model")[1]["model_names"] == {}
+    assert S.current_session() is s                                        # aynı alanın tazelenmesi kapatmaz
+
+
+def test_kabul_yeniden_denetim_ve_on_denetim_yazmaz(srv, monkeypatch):
+    o = ac(srv, monkeypatch, B.FakeBackend([]))
+    s = S.current_session()
+    p_d1 = oneri(s, A, "malloc")                                            # ikilide başka fonksiyonun adı
+    p_d2 = oneri(s, FB, "read_header")                                      # kesin etiketli hedef
+    p_kw = oneri(s, A, "while")                                             # C anahtar sözcüğü (P17 kuralı)
+    p_ret = oneri(s, A, "parse_line", hukum="ret")                          # denetimin reddettiği
+    p_yok = oneri(s, A, "parse_line2", hukum=None)                          # hüküm yok: uydurulmaz
+    p_yorum = oneri(s, A, "Ağ bağlantısı açar.", tur="yorum")
+    st, b = kabul(srv, p_d1)
+    assert st == 409 and "D1" in b["hata"]
+    st, b = kabul(srv, p_d2)
+    assert st == 409 and "D2" in b["hata"]
+    st, b = kabul(srv, p_kw)
+    assert st == 400 and b["hata"].startswith("ad kabul edilemez")
+    assert kabul(srv, p_ret)[0] == 409 and kabul(srv, p_yok)[0] == 409
+    assert [s.notebook.proposal(p)["durum"] for p in (p_d1, p_d2, p_kw, p_ret, p_yok)] == ["bekleyen"] * 5
+    st, b = kabul(srv, p_yorum)                                             # yorum: yalnız defter
+    assert st == 200 and b["yazildi"] is None and b["oneri"]["durum"] == "kabul"
+    assert depo(srv).get("model", {}) == {}
+    # çalışma alanının ikilisi oturumunkiyle aynı değil → yazılmaz
+    p_ok = oneri(s, A, "parse_line3")
+    with monkeypatch.context() as mp:
+        mp.setattr(srv, "_active_binary_hash", lambda ws=None: "ab" * 32)
+        st, b = kabul(srv, p_ok)
+    assert st == 409 and "ikilisi" in b["hata"] and s.notebook.proposal(p_ok)["durum"] == "bekleyen"
+    # depoya yazılamazsa: defterde kabul kalır ve bu açıkça söylenir (uydurma başarı yok)
+    monkeypatch.setattr(srv.overrides, "set_model_name",
+                        lambda *a, **k: (_ for _ in ()).throw(OSError("disk dolu")))
+    st, b = kabul(srv, p_ok)
+    assert st == 500 and b["tamam"] is False and "model bölümüne yazılamadı" in b["hata"] and "disk dolu" in b["hata"]
+    assert s.notebook.proposal(p_ok)["durum"] == "kabul"
+
+
+def test_overrides_model_bolumu_kurallari(tmp_path, monkeypatch):
+    monkeypatch.setattr(overrides, "overrides_dir", lambda: tmp_path)
+    h = "de" * 32
+    ok = dict(proposal_id="p3", session_id="o1a2", verdict="celiski", ws_addr="1000")
+    for kotu, alan in [(dict(ok, proposal_id="q3"), "öneri"), (dict(ok, proposal_id="p0"), "öneri"),
+                       (dict(ok, session_id="../x"), "oturum"), (dict(ok, verdict="ret"), "hükmü"),
+                       (dict(ok, verdict=None), "hükmü"), (dict(ok, ws_addr="0x1000"), "adres")]:
+        with pytest.raises(ValueError, match=alan):
+            overrides.set_model_name(h, "FUN_00001000", "good_name", **kotu)
+    for ad in ("int", "while", "uint8_t", "1abc", "a b"):
+        with pytest.raises(ValueError):
+            overrides.set_model_name(h, "FUN_00001000", ad, **ok)
+    with pytest.raises(ValueError):
+        overrides.set_model_name(h, "../x", "good_name", **ok)
+    assert not (tmp_path / f"{h}.json").exists()                           # hiçbir ret dosya yazmadı
+    overrides.set_model_name(h, "FUN_00001000", "good_name", **ok)
+    overrides.set_name(h, "FUN_00002000", "elle_ad")                        # elle yazım model bölümünü silmez
+    overrides.remove(h, "FUN_00002000")
+    assert set(overrides.model_names(h)) == {"FUN_00001000"} and overrides.all_names(h) == {}
+    d = json.loads((tmp_path / f"{h}.json").read_text(encoding="utf-8"))
+    d["model"]["FUN_bozuk"] = {"name": "x; rm"}
+    d["model"]["FUN_00003000"] = "duz"
+    (tmp_path / f"{h}.json").write_text(json.dumps(d), encoding="utf-8")
+    assert set(overrides.model_names(h)) == {"FUN_00001000"}                # bozuk kayıt okunmaz
