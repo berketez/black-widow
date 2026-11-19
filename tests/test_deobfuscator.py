@@ -156,9 +156,8 @@ class TestDeobfuscationManager:
     """DeobfuscationManager testleri."""
 
     def test_default_chain_order(self, deob_config: Config) -> None:
-        """Config'deki default zincir sirasi: beautify -> synchrony -> babel_transforms."""
-        expected = ["beautify", "synchrony", "babel_transforms"]
-        assert deob_config.analysis.deobfuscation_chain == expected
+        """Config'deki default zincir: yalniz synchrony (P20b: beautify / babel_transforms silindi)."""
+        assert deob_config.analysis.deobfuscation_chain == ["synchrony"]
 
     def test_custom_chain(
         self,

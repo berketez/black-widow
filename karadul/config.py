@@ -371,8 +371,11 @@ class AnalysisConfig:
     # docs/arge/2026-11-18_onarim/P16c.md kalem 2); bu yüzden öntanım boş.
     ghidra_disabled_analyzers: list[str] = field(default_factory=list)
     webpack_module_min_size: int = 50
+    # Eski zincir (DeobfuscationManager; yalnız ElectronAnalyzer.deobfuscate()).
+    # P20b (Berke kararı 2026-11-19): "beautify" ve "babel_transforms" adımları
+    # silindi; listede kalırlarsa koşmaz, atlandı + neden olarak raporlanır.
     deobfuscation_chain: list[str] = field(
-        default_factory=lambda: ["beautify", "synchrony", "babel_transforms"]
+        default_factory=lambda: ["synchrony"]
     )
     # ETKİSİZ (BORU-13, P15b): okuyan tek yol (stages.py `_execute_legacy` / use_deep)
     # P-S2'de silindi. Kullanıcı YAML'ı kırılmasın diye alan duruyor; yazılırsa
