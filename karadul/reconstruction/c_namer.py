@@ -611,6 +611,55 @@ def _count_braces(line: str) -> int:
     return stripped.count("{") - stripped.count("}")
 
 
+# P12c: fonksiyon tanımının (imzanın) dengeli parantezle bulunması.
+# Ghidra uzun imzayı satırlara böler (``bool FUN_x(BIO *param_1, … long param_5`` /
+# ``,long param_6)``), parametrede iç parantez olabilir (``void (*param_2)(int)``) ve dönüş
+# tipini ayrı satıra yazabilir. Eski desen ``ad\s*\([^)]*\)\s*\{?\s*$`` bunları tanımıyordu.
+# Gövde çıkarıcı: kapanıştan sonra satırda yalnız ``{`` ya da boşluk (eski desenin kuyruğu).
+_SIG_TAIL_DEF = re.compile(r"\s*\{?\s*$")
+# Parametre listesi en çok bu kadar satıra yayılır (Ghidra çıktısında 2-4 satır).
+_SIG_MAX_LINES = 64
+
+
+def _balanced_signature(
+    lines: list[str], i: int, col: int, tail_re: "re.Pattern[str]",
+) -> tuple[int, str] | None:
+    """``lines[i][col:]`` ``\\s*(`` ile başlıyorsa parametre listesini dengeli parantezle oku.
+
+    Döner: (listenin kapandığı satırın indeksi, parantez içi metin) ya da None. Parantez
+    içindeyken ``;`` ``{`` ``}`` görülürse (imzada bulunmaz; çağrı, kesik metin) ya da
+    kapanıştan sonra satırın kalanı ``tail_re``'ye uymuyorsa (çağrı, koşul, ifade) tanım
+    değildir → None. İmzada dizgi sabiti olmadığından sabit ayıklanmaz; dizgideki parantez
+    taramayı ancak ``;`` / kuyruk koşuluyla reddedilecek bir satırda bulabilir.
+    """
+    m = re.match(r"\s*\(", lines[i][col:])
+    if m is None:
+        return None
+    depth = 0
+    inner: list[str] = []
+    limit = min(len(lines), i + _SIG_MAX_LINES)
+    j = i
+    text = lines[i][col + m.end() - 1:]
+    while j < limit:
+        for k, ch in enumerate(text):
+            if ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    if tail_re.match(text, k + 1) is None:
+                        return None
+                    inner.append(text[:k])
+                    blob = "".join(inner)
+                    return j, blob[1:]  # açılış parantezi hariç
+            elif ch in ";{}":
+                return None
+        inner.append(text + "\n")
+        j += 1
+        if j < limit:
+            text = lines[j]
+    return None
+
 
 def _is_ghidra_auto_name(name: str) -> bool:
     """Verilen isim Ghidra'nin otomatik urettigi bir isim mi."""
@@ -2999,25 +3048,35 @@ class CVariableNamer:
         # (Eski yontem: devasa alternation regex O(N*M), 22K+ isim)
         all_names = list(self._func_by_name.keys())
         func_finder = AhoFinder(all_names) if all_names else None
-        # Suffix dogrulama: isimden sonra \s*\([^)]*\)\s*\{?\s*$ olmali
-        _func_suffix_re = re.compile(r"\s*\([^)]*\)\s*\{?\s*$")
+        # Ad doğrulama (P12c): addan sonra dengeli parantezle kapanan parametre listesi ve
+        # satırın kalanında yalnız `{` / boşluk. Liste sonraki satırlarda kapanabilir (Ghidra
+        # uzun imzayı böler) ve iç parantez taşıyabilir (işlev işaretçisi parametresi).
+        # Eski desen `\s*\([^)]*\)\s*\{?\s*$` bu iki biçimi kaçırıyordu.
 
-        for line in lines:
+        n_lines = len(lines)
+        idx = 0
+        while idx < n_lines:
+            line = lines[idx]
             if current_func is None:
                 if func_finder:
                     # Satirdaki TUM fonksiyon isimlerini bul
-                    # (ayni isim birden fazla yerde olabilir, suffix uyani ariyoruz)
+                    # (ayni isim birden fazla yerde olabilir, imza uyani ariyoruz)
                     all_hits = func_finder.find_all_words(line)
                     matched_func = None
+                    sig_end = idx
                     for start_pos, name in all_hits:
-                        after = line[start_pos + len(name):]
-                        if _func_suffix_re.match(after):
+                        res = _balanced_signature(
+                            lines, idx, start_pos + len(name), _SIG_TAIL_DEF)
+                        if res is not None:
                             matched_func = name
+                            sig_end = res[0]
                             break
                     if matched_func:
                         current_func = matched_func
-                        brace_depth = _count_braces(line)
-                        body_lines = [line]
+                        body_lines = lines[idx:sig_end + 1]
+                        brace_depth = sum(_count_braces(s) for s in body_lines)
+                        idx = sig_end + 1
+                        continue
             else:
                 body_lines.append(line)
                 brace_depth += _count_braces(line)
@@ -3027,6 +3086,7 @@ class CVariableNamer:
                     self._func_bodies[current_func] = "\n".join(body_lines)
                     current_func = None
                     body_lines = []
+            idx += 1
 
         # Son fonksiyon kapanmamis olabilir
         if current_func and body_lines:

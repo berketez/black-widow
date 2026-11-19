@@ -1,0 +1,53 @@
+{
+  "_comment": "P12c (c_namer gövde çıkarıcısı ve imza ayrıştırıcıları dengeli parantezle; P13a kalanları) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p12c.json",
+  "mutants": [
+    {
+      "id": "p12c_kuyruk_gevsek",
+      "desc": "3A: imza kapanışından sonra satırın kalanı denetlenmez (bölünmüş çağrı / koşul tanım sayılır)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_govde_cikarici.py::test_cok_satirli_cagri_ve_kosul_tanim_degil",
+      "find": "_SIG_TAIL_DEF = re.compile(r\"\\s*\\{?\\s*$\")",
+      "replace": "_SIG_TAIL_DEF = re.compile(r\".*$\")"
+    },
+    {
+      "id": "p12c_ic_parantez_erken_kapanir",
+      "desc": "3A: iç parantezde liste erken kapanmış sayılır (işlev işaretçili imza görünmez)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_govde_cikarici.py::test_ic_parantezli_imza_govdesi_alinir",
+      "find": "                if depth == 0:\n                    if tail_re.match(text, k + 1) is None:",
+      "replace": "                if depth <= 1:\n                    if tail_re.match(text, k + 1) is None:"
+    },
+    {
+      "id": "p12c_tek_satir_siniri",
+      "desc": "3A: parametre listesi tek satırla sınırlı (eski kusur: çok satırlı imza görünmez)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_govde_cikarici.py::test_cok_satirli_imza_govdesi_alinir",
+      "find": "_SIG_MAX_LINES = 64",
+      "replace": "_SIG_MAX_LINES = 1"
+    },
+    {
+      "id": "p12c_govde_imza_sonundan",
+      "desc": "3A: gövde imzanın son satırından başlar (dönüş tipi ve ilk parametreler kaybolur)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_govde_cikarici.py::test_cok_satirli_imza_govdesi_alinir",
+      "find": "                        body_lines = lines[idx:sig_end + 1]",
+      "replace": "                        body_lines = lines[sig_end:sig_end + 1]"
+    },
+    {
+      "id": "p12c_imza_satiri_iki_kez",
+      "desc": "3A: tarama imzanın ikinci satırından sürer (imza satırları gövdede iki kez)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_govde_cikarici.py::test_cok_satirli_imza_govdesi_alinir",
+      "find": "                        idx = sig_end + 1\n",
+      "replace": "                        idx = idx + 1\n"
+    },
+    {
+      "id": "p12c_acik_parantezde_durmaz",
+      "desc": "3A: parantez açıkken ; { } taramayı durdurmaz (kesik metinde sahte tanım)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12c_govde_cikarici.py::test_kesik_metinde_acik_parantez_tanim_uydurmaz",
+      "find": "            elif ch in \";{}\":\n                return None\n        inner.append(text + \"\\n\")",
+      "replace": "            elif ch in \"\":\n                return None\n        inner.append(text + \"\\n\")"
+    }
+  ]
+}
