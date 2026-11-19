@@ -138,6 +138,12 @@ Sabitlenen 14 dosyanın sha256'sı ölçümden hemen önce yeniden hesaplandı. 
 3. Agresif aday, N0b susturmasında `agresif` alt kanalı olarak atılıyor. Faz 1'in aynı ada verdiği aday da AD-09 gereği `aggressive` kod yoluyla geliyor ve o da susuyor.
 4. Anahtar adsız kalıyor.
 
+**Düzeltme (P12d, 2026-11-19; ayrıntı `docs/arge/2026-11-18_onarim/P12d.md` Kalem 0):** 2. adım bu 27 anahtarda işlemiyor.
+- 27 / 27'de agresif eşleşmenin en yüksek güveni 0,75'in altında (en çok 0,65); erken dönüş yok, klasik aşama koşuyor.
+- Kayıp klasik aşamanın kanıt seçiminde. Eşit puanlı dizgilerden ilk görülen kanıt oluyor. GHIDRA-16'dan sonra dizgi bağları dizgi adresi sırasıyla yükleniyor; dosya yolu ya da hata iletisi, aynı puanı veren öz-ad dizgisinin önüne geçiyor ve aday susuyor.
+- Doğruların 17 / 19'unda öz-ad dizgisi aynı adı veriyor; yanlışların 0 / 8'inde.
+- 19 doğru kayıp 18 değil 16 ikiliye dağılmış (`kayip27.json`).
+
 **Ölçek:** 119 ikilide susturulan `agresif` aday 1 495 → 2 824 (+1 329). Öbür alt kanallarda değişim küçük. `kebap_ad` 0 → 266 yeni bir satır: P12b'nin kanıt satırı adayları, beklenen.
 
 **Neden önceden görülmedi:**
