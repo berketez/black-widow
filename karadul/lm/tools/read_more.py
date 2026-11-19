@@ -23,7 +23,7 @@ from typing import Any, Mapping, Optional
 
 from karadul.core.naming_labels import NAMING_PROVENANCE_FILE, provenance_channel, provenance_evidence
 from karadul.lm import ENVELOPE_OVERHEAD_BYTES, LINE_NUMBER_MAX
-from karadul.lm.context import escape_json, strip_header
+from karadul.lm.context import blind_leaks, escape_json, strip_header
 from karadul.lm.tools import (
     ADDR_PATTERN, CALL_GRAPH_MAX_DEPTH, CALL_GRAPH_MAX_EDGES, CALL_GRAPH_MAX_NODES, CALL_GRAPH_RESULT_MAX_BYTES,
     ERR_BAD_ARGUMENT, ERR_NO_DATA, ERR_STALE, ERR_TOOL_CLOSED, ERR_UNKNOWN_ADDRESS, ERR_UNKNOWN_NAME,
@@ -494,9 +494,16 @@ LIMITS_PROVENANCE = (
     "yok = kayıt yok.",
     "params param_naming_map.json'dandır; yerel değişken adları bu sonuçta yoktur.",
     "Değeri null olan alanın kaynağı bu çalışma alanında yok: 'missing' hangi dosya / alan olmadığını söyler.",
+    "string_roles bir rol kanıtıdır, ad değildir: dizgi fonksiyonun okuduğu seçeneğin ya da yaydığı olayın "
+    "adıdır, fonksiyonun adı değildir; addan bağımsız hesaplanır (P12b).",
 )
 PARAM_MAP_FILE = "param_naming_map.json"
 ROLE_EVIDENCE_KEY = "role_evidence"
+# P12b (AD-01): kebap dizgilerinin rolü (``tarif.alt_kanal.KebabIndex.role``). Ad DEĞİL, rol kanıtıdır; araç bu
+# etiketle verir ve modelin ad kanıtı sanmaması için sınırlarda da yazar (P22h kalem 4).
+STRING_ROLES_KEY = "string_roles"
+STRING_ROLE_VERSION_KEY = "string_role_version"
+STRING_ROLES_LABEL = "rol kanıtı, ad değil"
 
 
 def _clip_opt(v: Any) -> Optional[str]:
@@ -541,6 +548,38 @@ def _param_rows(ws: Workspace, a: str) -> Optional[list[dict[str, Any]]]:
             rows.append({"param": str(old)[:TYPES_TEXT_MAX_CHARS], "name": new[:TYPES_TEXT_MAX_CHARS],
                          "source": n.get("source") if isinstance(n.get("source"), str) else None,
                          "reason": _clip_opt(n.get("reason"))})
+    return rows
+
+
+def _string_role_rows(ws: Workspace, a: str, prov_file: Optional[dict], ctx: ToolContext,
+                      missing: list[str]) -> Optional[list[dict[str, Any]]]:
+    """Fonksiyonun ``string_roles`` satırları (P12b; köken dosyasının anahtarı ``FUN_x`` / ``FUN_x::yerel``).
+
+    Kayıt yoksa ``None`` ve ``missing`` nedenini söyler (uydurma yok). Körlük kipinde (ölçüm) dizgisi ya da
+    API'si gizli hedefin Karadul adını tam sözcük olarak taşıyan satır verilmez: kebap dizgisinin tanımlayıcı
+    biçimi (``monitor-silence`` → ``monitor_silence``) hedefin aday adı olabilir; aday ad sızmaz."""
+    if prov_file is None:
+        return None
+    table = prov_file.get(STRING_ROLES_KEY)
+    if not isinstance(table, dict):
+        missing.append(f"{NAMING_PROVENANCE_FILE}: {STRING_ROLES_KEY} (bu çıktıda yok)")
+        return None
+    hidden = ws.raw_name(ctx.blind_target) if ctx.blind_target is not None else None
+    rows: list[dict[str, Any]] = []
+    for key in sorted(table):
+        if ws.resolve(str(key).partition("::")[0]) != a or not isinstance(table[key], list):
+            continue
+        for r in table[key]:
+            if not isinstance(r, dict):
+                continue
+            s, api = r.get("string"), r.get("api")
+            if hidden and blind_leaks([x for x in (s, s.replace("-", "_") if isinstance(s, str) else None, api)
+                                       if isinstance(x, str)], [hidden]):
+                continue
+            rows.append({"string": _clip_opt(s), "role": _clip_opt(r.get("role")), "api": _clip_opt(api),
+                         "arg_index": _int_or_none(r.get("arg_index")),
+                         "api_distinct_strings": _int_or_none(r.get("api_distinct_strings")),
+                         "emitters": _int_or_none(r.get("emitters"))})
     return rows
 
 
@@ -601,9 +640,16 @@ def get_name_provenance(ws: Workspace, args: Mapping[str, Any], ctx: ToolContext
         missing.append(f"{NAMING_PROVENANCE_FILE}: {ROLE_EVIDENCE_KEY} (bu çıktıda yok)")
     data["roles"] = roles[:PROVENANCE_ROLES_MAX] if roles is not None else None
     data["roles_total"] = len(roles) if roles is not None else None
+    srows = _string_role_rows(ws, a, prov_file, ctx, missing)
+    data["string_roles_label"] = STRING_ROLES_LABEL if srows is not None else None
+    data["string_roles"] = srows[:PROVENANCE_ROLES_MAX] if srows is not None else None
+    data["string_roles_total"] = len(srows) if srows is not None else None
+    version = prov_file.get(STRING_ROLE_VERSION_KEY) if prov_file is not None else None
+    data["string_role_version"] = version if isinstance(version, (int, str)) and not isinstance(version, bool) \
+        else None
     data["missing"] = missing
     truncated = None
-    cut = {k: data[f"{k}_total"] - len(data[k]) for k in ("params", "roles")
+    cut = {k: data[f"{k}_total"] - len(data[k]) for k in ("params", "roles", "string_roles")
            if data[k] is not None and data[f"{k}_total"] > len(data[k])}
     if cut:
         truncated = {"omitted": sum(cut.values()), "total": sum(data[f"{k}_total"] for k in cut), **cut}

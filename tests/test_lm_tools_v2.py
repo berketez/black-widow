@@ -474,6 +474,11 @@ def proot(tmp_path) -> Path:
     data["role_evidence"] = {f"FUN_{X(1)}::param_1": [{"role": "buf", "api": "read", "arg_index": 1,
                                                       "caller": f"FUN_{X(2)}"}],
                              f"FUN_{X(4)}": [{"role": "fd", "api": "close", "arg_index": 0, "caller": None}]}
+    # P12b (AD-01) rol kanıtı; P22h kalem 4 bunu araçta gösterir (``tests/test_p22h_rol_kaniti.py``).
+    data["string_roles"] = {f"FUN_{X(1)}": [{"string": "monitor-activity", "role": "anahtar_erisimi",
+                                             "api": f"FUN_{X(2)}", "arg_index": 1, "api_distinct_strings": 60,
+                                             "emitters": 2, "function_kebab_strings": 1}]}
+    data["string_role_version"] = 1
     pf.write_text(json.dumps(data), encoding="utf-8")
     pm = {"version": "1.7.2", "schema_version": 2, "functions": {
         f"FUN_{X(1)}": {"renames": {"param_2": "value"},
@@ -529,11 +534,14 @@ def test_koken_eksik_dosyalar(proot):
     pf = proot / "reconstructed" / "src" / "naming_provenance.json"
     data = json.loads(pf.read_text())
     del data["role_evidence"]
+    del data["string_roles"]
     pf.write_text(json.dumps(data), encoding="utf-8")
     d = prov(T.Workspace(proot), X(1)).data
     assert d["params"] is None and d["roles"] is None and d["record"] == "eslesti"
+    assert d["string_roles"] is None and d["string_roles_label"] is None and d["string_role_version"] == 1
     assert d["missing"] == ["reconstructed/param_naming_map.json",
-                            "naming_provenance.json: role_evidence (bu çıktıda yok)"]
+                            "naming_provenance.json: role_evidence (bu çıktıda yok)",
+                            "naming_provenance.json: string_roles (bu çıktıda yok)"]
     pf.unlink()
     d = prov(T.Workspace(proot), X(1)).data
     assert d["record"] == "yok" and "reconstructed/src/naming_provenance.json" in d["missing"]

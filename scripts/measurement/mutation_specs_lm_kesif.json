@@ -1,0 +1,69 @@
+{
+ "_comment": "P22h (KaradulLM keşif sorusu görevi, önek bütçesi, oturum bloğu, ad kökeninde rol kanıtı). Her mutant bir davranışı bozar; hedef test KIRMIZI olmalı (killed). Mutant metni özgününden farklı uzunlukta (.pyc tuzağı); her find hedef dosyada tam bir kez. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_lm_kesif.json",
+ "mutants": [
+  {
+   "id": "rk_etiket",
+   "desc": "rol kanıtı etiketi yazılmaz",
+   "module": "karadul/lm/tools/read_more.py",
+   "test": "tests/test_p22h_rol_kaniti.py::test_rol_kaniti_etiketle_ve_surumle",
+   "find": "data[\"string_roles_label\"] = STRING_ROLES_LABEL if srows is not None else None",
+   "replace": "data[\"string_roles_label\"] = None"
+  },
+  {
+   "id": "rk_surum",
+   "desc": "string_role_version yazılmaz",
+   "module": "karadul/lm/tools/read_more.py",
+   "test": "tests/test_p22h_rol_kaniti.py::test_rol_kaniti_etiketle_ve_surumle",
+   "find": "    data[\"string_role_version\"] = version if isinstance(version, (int, str))",
+   "replace": "    data[\"string_role_version\"] = None if isinstance(version, (int, str))"
+  },
+  {
+   "id": "rk_yerel_anahtar",
+   "desc": "FUN_x::yerel anahtarı fonksiyona bağlanmaz",
+   "module": "karadul/lm/tools/read_more.py",
+   "test": "tests/test_p22h_rol_kaniti.py::test_rol_kaniti_etiketle_ve_surumle",
+   "find": "if ws.resolve(str(key).partition(\"::\")[0]) != a or not isinstance(table[key], list):",
+   "replace": "if ws.resolve(str(key)) != a or not isinstance(table[key], list):"
+  },
+  {
+   "id": "rk_alan_suzgeci",
+   "desc": "kaynaktaki bütün alanlar (güven dahil) sonuca geçer",
+   "module": "karadul/lm/tools/read_more.py",
+   "test": "tests/test_p22h_rol_kaniti.py::test_rol_kaniti_etiketle_ve_surumle",
+   "find": "rows.append({\"string\": _clip_opt(s),",
+   "replace": "rows.append({**r, \"string\": _clip_opt(s),"
+  },
+  {
+   "id": "rk_kayit_yok",
+   "desc": "kayıt yokken null yerine boş liste (uydurma)",
+   "module": "karadul/lm/tools/read_more.py",
+   "test": "tests/test_p22h_rol_kaniti.py::test_kayit_yoksa_null_ve_neden",
+   "find": "missing.append(f\"{NAMING_PROVENANCE_FILE}: {STRING_ROLES_KEY} (bu çıktıda yok)\")\n        return None",
+   "replace": "missing.append(f\"{NAMING_PROVENANCE_FILE}: {STRING_ROLES_KEY} (bu çıktıda yok)\")\n        return []"
+  },
+  {
+   "id": "rk_kirpma",
+   "desc": "string_roles kırpması truncated'a yazılmaz",
+   "module": "karadul/lm/tools/read_more.py",
+   "test": "tests/test_p22h_rol_kaniti.py::test_tavan_ve_kirpma",
+   "find": "for k in (\"params\", \"roles\", \"string_roles\")",
+   "replace": "for k in (\"params\", \"roles\")"
+  },
+  {
+   "id": "rk_korluk",
+   "desc": "körlükte rol satırı süzülmez",
+   "module": "karadul/lm/tools/read_more.py",
+   "test": "tests/test_p22h_rol_kaniti.py::test_korluk_aday_ad_sizmaz",
+   "find": "if hidden and blind_leaks(",
+   "replace": "if False and blind_leaks("
+  },
+  {
+   "id": "rk_korluk_tanimlayici",
+   "desc": "körlükte dizginin tanımlayıcı biçimi taranmaz",
+   "module": "karadul/lm/tools/read_more.py",
+   "test": "tests/test_p22h_rol_kaniti.py::test_korluk_aday_ad_sizmaz",
+   "find": "s.replace(\"-\", \"_\") if isinstance(s, str) else None",
+   "replace": "None"
+  }
+ ]
+}
