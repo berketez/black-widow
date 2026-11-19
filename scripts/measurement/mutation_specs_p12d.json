@@ -1,5 +1,5 @@
 {
-  "_comment": "P12d mutasyon koruması. D1: susacak agresif aday klasik aşamanın önünü kesmez (erken dönüş susturmayı hesaba katar; işçi süreçler susan kümeyi alır). Her mutant onarımın bir parçasını bozar; ilgili test KIRMIZI olmalı. find metinleri c_namer.py'de tekil; mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p12d.json",
+  "_comment": "P12d mutasyon koruması. D1: susacak agresif aday klasik aşamanın önünü kesmez (erken dönüş susturmayı hesaba katar; işçi süreçler susan kümeyi alır). D2: klasik aşamada aynı puanı ve aynı adı veren dizgiler arasında susmayan alt kanallı kanıt seçilir. Her mutant onarımın bir parçasını bozar; ilgili test KIRMIZI olmalı. find metinleri c_namer.py'de tekil; mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p12d.json",
   "mutants": [
     {
       "id": "p12d_d1_erken_donus_susturmaya_bakmaz",
@@ -32,6 +32,54 @@
       "test": "tests/test_p12d_erken_donus.py::test_gercek_havuzda_klasik_ad_verilir",
       "find": "            getattr(self, \"_silenced_subchannels\", frozenset()),\n        )\n",
       "replace": "            frozenset(),\n        )\n"
+    },
+    {
+      "id": "p12d_d2_secici_cagrilmaz",
+      "desc": "D2: klasik aşama yine ilk öğeyi alır (kanıt seçimi devre dışı)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_kanit_secimi.py::test_ayni_ad_ayni_puan_susmayan_kanit_secilir",
+      "find": "best_score, best_string, best_keywords, best_idx = self._classic_evidence(\n            scored, len(strings))",
+      "replace": "best_score, best_string, best_keywords, best_idx = scored[0]"
+    },
+    {
+      "id": "p12d_d2_puan_siniri_yok",
+      "desc": "D2: eşit puan sınırı kalkar; daha düşük puanlı aynı adlı dizgiye geçilir",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_kanit_secimi.py::test_dusuk_puanli_ayni_ad_secilmez",
+      "find": "            if alt[0] != best[0]:\n                break\n",
+      "replace": "            if alt[0] > best[0]:\n                break\n"
+    },
+    {
+      "id": "p12d_d2_ad_denetimi_yok",
+      "desc": "D2: aynı ad şartı kalkar; aynı puanlı FARKLI ad veren dizgiye geçilir",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_kanit_secimi.py::test_farkli_ad_kurali_susturma_kumesinden_bagimsiz",
+      "find": "            if _sanitize_c_name(\"_\".join(alt[2][:3])) != name:\n                continue\n",
+      "replace": ""
+    },
+    {
+      "id": "p12d_d2_alt_kanal_denetimi_yok",
+      "desc": "D2: eşdeğer dizginin alt kanalına bakılmaz; o da susuyorsa bile kanıt değişir",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_kanit_secimi.py::test_esdeger_aday_da_susuyorsa_ilk_kalir",
+      "find": "            if self._classic_sub_channel(alt, name, n_refs) not in silenced:\n                return alt\n",
+      "replace": "            return alt\n"
+    },
+    {
+      "id": "p12d_d2_ilk_kanit_denetimi_yok",
+      "desc": "D2: öndeki kanıt zaten kalan alt kanaldayken de sonraki aynı adlı dizgiye geçilir",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_kanit_secimi.py::test_ilk_kanit_zaten_kaliyorsa_degismez",
+      "find": "        if self._classic_sub_channel(best, name, n_refs) not in silenced:\n            return best\n",
+      "replace": ""
+    },
+    {
+      "id": "p12d_d2_susturma_ayarina_bakmaz",
+      "desc": "D2: seçici ad çözücünün susturma ayarını değil sabit kümeyi okur",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_kanit_secimi.py::test_susturma_kapaliyken_ilk_gorulen_kalir",
+      "find": "        best = scored[0]\n        silenced = getattr(self, \"_silenced_subchannels\", frozenset())\n",
+      "replace": "        best = scored[0]\n        silenced = _alt_kanal.SILENCED_SUBCHANNELS\n"
     }
   ]
 }

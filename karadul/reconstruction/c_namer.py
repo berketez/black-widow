@@ -3551,7 +3551,8 @@ class CVariableNamer:
             return
 
         scored.sort(key=lambda x: x[0], reverse=True)
-        best_score, best_string, best_keywords, best_idx = scored[0]
+        best_score, best_string, best_keywords, best_idx = self._classic_evidence(
+            scored, len(strings))
 
         # Isim olustur: kelimeleri birlestir
         new_name = "_".join(best_keywords[:3])
@@ -3574,6 +3575,45 @@ class CVariableNamer:
             rule="keywords",
             evidence_origin=_string_evidence_origin(best_idx, len(strings)),
         ), func_name=func_info.name)
+
+    def _classic_evidence(
+        self, scored: list[tuple[float, str, list[str], int]], n_refs: int,
+    ) -> tuple[float, str, list[str], int]:
+        """Klasik aşamanın kanıt dizgisi (P12d D2).
+
+        ``scored`` puana göre azalan sırada (eşitlikte görülme sırası). Öntanımlı seçim ilk
+        öğedir. Susturma açıkken o dizginin adayı susan bir alt kanala düşüyorsa, AYNI puanı ve
+        AYNI adı veren dizgiler arasında susmayan alt kanala düşen ilki kanıt olur: ad değişmez,
+        yalnız adı taşıyan kanıt değişir. Neden: aynı adı aynı puanla veren dizgilerin sırası
+        dizgi bağlarının yüklenme sırasıdır (GHIDRA-16'dan beri dizgi adresi sırası); sıra,
+        adın susup susmayacağına karar vermemeli. Farklı ad veren ya da daha düşük puanlı
+        dizgiye GEÇİLMEZ (analyze_and_rename'deki susturma notu).
+        """
+        best = scored[0]
+        silenced = getattr(self, "_silenced_subchannels", frozenset())
+        if not silenced:
+            return best
+        name = _sanitize_c_name("_".join(best[2][:3]))
+        if self._classic_sub_channel(best, name, n_refs) not in silenced:
+            return best
+        for alt in scored[1:]:
+            if alt[0] != best[0]:
+                break
+            if _sanitize_c_name("_".join(alt[2][:3])) != name:
+                continue
+            if self._classic_sub_channel(alt, name, n_refs) not in silenced:
+                return alt
+        return best
+
+    @staticmethod
+    def _classic_sub_channel(
+        entry: tuple[float, str, list[str], int], name: str, n_refs: int,
+    ) -> str:
+        """Klasik adayın alt kanalı (``_string_sub_channel`` ile aynı dört alan)."""
+        return _alt_kanal.classify(
+            evidence=entry[1], name=name, code_path="classic",
+            evidence_origin=_string_evidence_origin(entry[3], n_refs),
+        )
 
     # ------------------------------------------------------------------
     # Strateji 3: API-Call (confidence: 0.6-0.8)
