@@ -2,11 +2,16 @@
 Deobfuscation pipeline ve Electron analyzer testleri.
 
 Test 1: SynchronyWrapper.is_available() -- True donmeli (kurulu)
-Test 2: DeobfuscationManager chain sirasi -- beautify -> synchrony -> babel
-Test 3: sample_minified.js uzerinde beautify adimi -- cikti daha uzun olmali
-Test 4: Gercek Claude Code CLI uzerinde tam chain (skip if not exists)
+Test 2: DeobfuscationManager zinciri (ozel zincir, bilinmeyen adim)
 Test 5: ElectronAnalyzer._find_asar() -- Claude Desktop varsa test et
 Test 6: extract-modules.mjs sample webpack bundle uzerinde
+
+P20b (2026-11-19): eski zincirin ``beautify`` ve ``babel_transforms`` adimlari
+silindi (BabelPipeline modulu dahil). Yalniz onlari sinayan testler kaldirildi:
+TestBeautifyStep (2 test; manager'in beautify adimi) ve TestFullChainClaudeCode
+(Mach-O bir ikiliye beautify + synchrony; yalniz beautify'in "girdiyi kopyala,
+basarili don" geri dususu sayesinde geciyordu). Silinen adimlarin zincirde
+kalinca nasil raporlandigi tests/test_p20b_eski_zincir.py'de.
 """
 
 from __future__ import annotations
@@ -20,7 +25,6 @@ import pytest
 from karadul.config import Config
 from karadul.core.workspace import Workspace
 from karadul.deobfuscators.synchrony_wrapper import SynchronyWrapper
-from karadul.deobfuscators.babel_pipeline import BabelPipeline
 from karadul.deobfuscators.manager import DeobfuscationManager, DeobfuscationResult
 
 
@@ -167,7 +171,7 @@ class TestDeobfuscationManager:
         result = manager.run_chain(
             sample_minified_js,
             deob_workspace,
-            chain=["beautify"],
+            chain=["synchrony"],
         )
         assert isinstance(result, DeobfuscationResult)
         assert result.duration_seconds >= 0
@@ -198,126 +202,11 @@ class TestDeobfuscationManager:
         result = manager.run_chain(
             sample_minified_js,
             deob_workspace,
-            chain=["beautify", "unknown_step_xyz"],
+            chain=["synchrony", "unknown_step_xyz"],
         )
-        # unknown_step_xyz filtrelenmeli, beautify calismali
+        # unknown_step_xyz filtrelenmeli
         assert "unknown_step_xyz" not in result.steps_completed
         assert "unknown_step_xyz" not in result.steps_failed
-
-
-# ====================================================================
-# Test 3: Beautify adimi -- cikti daha uzun olmali
-# ====================================================================
-
-class TestBeautifyStep:
-    """Beautify adimi testleri."""
-
-    def test_beautify_expands_output(
-        self,
-        deob_config: Config,
-        deob_workspace: Workspace,
-    ) -> None:
-        """Beautify adimi: cikti satir sayisi girdi satir sayisindan fazla olmali."""
-        # Tek satirlik minified JS olustur
-        minified = (
-            'var a=1;var b=2;function c(d,e){return d+e}'
-            'var f=c(a,b);console.log(f);'
-            'if(f>2){console.log("yes")}else{console.log("no")}'
-        )
-        js_file = deob_workspace.path / "test_minified.js"
-        js_file.write_text(minified, encoding="utf-8")
-
-        input_lines = minified.count("\n") + 1
-        assert input_lines <= 3  # Minified: 1-3 satir
-
-        manager = DeobfuscationManager(deob_config)
-        result = manager.run_chain(
-            js_file,
-            deob_workspace,
-            chain=["beautify"],
-        )
-
-        # beautify.mjs mevcut degilse atlayabilir
-        if "beautify" in result.steps_completed and result.output_file:
-            output_text = result.output_file.read_text(encoding="utf-8")
-            output_lines = output_text.count("\n") + 1
-            assert output_lines > input_lines, (
-                f"Beautify cikti ({output_lines} satir) "
-                f"girdiden ({input_lines} satir) uzun olmali"
-            )
-
-    def test_beautify_with_sample_minified(
-        self,
-        deob_config: Config,
-        sample_minified_js: Path,
-        deob_workspace: Workspace,
-    ) -> None:
-        """sample_minified.js uzerinde beautify."""
-        manager = DeobfuscationManager(deob_config)
-        result = manager.run_chain(
-            sample_minified_js,
-            deob_workspace,
-            chain=["beautify"],
-        )
-
-        assert isinstance(result, DeobfuscationResult)
-        assert result.duration_seconds >= 0
-
-        if "beautify" in result.steps_completed:
-            assert result.output_file is not None
-            assert result.output_file.exists()
-            # Cikti bos olmamali
-            assert result.output_file.stat().st_size > 0
-
-
-# ====================================================================
-# Test 4: Gercek Claude Code CLI uzerinde tam chain
-# ====================================================================
-
-CLAUDE_CODE_CLI = Path(
-    "/Users/apple/.local/bin/claude"
-)
-
-
-class TestFullChainClaudeCode:
-    """Claude Code CLI uzerinde tam deobfuscation chain testi."""
-
-    @pytest.mark.skipif(
-        not CLAUDE_CODE_CLI.exists(),
-        reason="Claude Code CLI bulunamadi",
-    )
-    def test_full_chain_claude_code(
-        self,
-        deob_config: Config,
-        deob_workspace: Workspace,
-    ) -> None:
-        """Claude Code CLI uzerinde beautify -> synchrony chain."""
-        manager = DeobfuscationManager(deob_config)
-
-        # Sadece beautify + synchrony (babel_transforms scripti yoksa basarisiz olur)
-        result = manager.run_chain(
-            CLAUDE_CODE_CLI,
-            deob_workspace,
-            chain=["beautify", "synchrony"],
-        )
-
-        assert isinstance(result, DeobfuscationResult)
-        assert result.duration_seconds > 0
-
-        # En az bir adim basarili olmali
-        assert len(result.steps_completed) >= 1, (
-            f"En az bir adim basarili olmali: "
-            f"completed={result.steps_completed}, "
-            f"failed={result.steps_failed}"
-        )
-
-        # Original boyut kaydi
-        assert "original_size" in result.stats
-        assert result.stats["original_size"] > 1_000_000  # 9MB+ dosya
-
-        print(f"\nClaude Code CLI deobfuscation sonucu:")
-        print(f"  {result.summary()}")
-        print(f"  Stats: {json.dumps(result.stats, indent=2, default=str)}")
 
 
 # ====================================================================

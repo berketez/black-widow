@@ -544,10 +544,20 @@ class ElectronAnalyzer(BaseAnalyzer):
         if deob_result.output_file:
             artifacts["deobfuscated_main"] = deob_result.output_file
 
+        # P20b: koşmayan adım (zincir tanımında kalmış, silinmiş adım) sessiz
+        # geçmez; nedeniyle aşama hatalarına yazılır.
+        skipped_reasons = deob_result.stats.get("skipped_reasons") or {}
+        for step in deob_result.steps_skipped:
+            errors.append(
+                f"Deobfuscation adimi kosmadi: {step} "
+                f"({skipped_reasons.get(step, 'neden bildirilmedi')})"
+            )
+
         if not deob_result.success:
             errors.append(
-                f"Deobfuscation basarisiz: "
-                f"failed={deob_result.steps_failed}"
+                "Deobfuscation basarisiz: hicbir adim tamamlanmadi "
+                f"(basarisiz={deob_result.steps_failed}, "
+                f"atlanan={deob_result.steps_skipped})"
             )
 
         duration = time.monotonic() - start

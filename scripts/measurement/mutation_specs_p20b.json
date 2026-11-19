@@ -72,6 +72,30 @@
       "test": "tests/test_p20b_webpack_harita.py::test_valid_js_is_not_broken_by_typescript_plugin",
       "find": "  const MODULE_CHECK_PLUGINS = parserMode === \"typescript\" ? PLUGINS_TS : PLUGINS_JS;",
       "replace": "  const MODULE_CHECK_PLUGINS = PLUGINS_TS;"
+    },
+    {
+      "id": "p20b_k3_kaldirilan_adim_sessiz",
+      "desc": "Kalem 3: zincir tanımında kalan silinmiş adım atlandı olarak raporlanmaz (sessizce düşer)",
+      "module": "karadul/deobfuscators/manager.py",
+      "test": "tests/test_p20b_eski_zincir.py::test_old_chain_runs_remaining_step_and_reports_removed_ones",
+      "find": "        removed = [s for s in effective_chain if s in _REMOVED_STEPS]",
+      "replace": "        removed = []"
+    },
+    {
+      "id": "p20b_k3_elektron_atlanan_yazilmaz",
+      "desc": "Kalem 3: Electron yolu koşmayan adımı aşama hatalarına yazmaz",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p20b_eski_zincir.py::test_electron_path_runs_remaining_chain",
+      "find": "        for step in deob_result.steps_skipped:",
+      "replace": "        for step in []:"
+    },
+    {
+      "id": "p20b_k3_elektron_basarisizlik_yazilmaz",
+      "desc": "Kalem 3: hiçbir adım tamamlanmadığında Electron yolu hata satırı yazmaz",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p20b_eski_zincir.py::test_electron_path_without_synchrony_is_honest_failure",
+      "find": "        if not deob_result.success:",
+      "replace": "        if False and not deob_result.success:"
     }
   ]
 }

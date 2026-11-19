@@ -1,9 +1,17 @@
-"""Deobfuscation zincir orkestrasyonu.
+"""Deobfuscation zincir orkestrasyonu (eski zincir).
 
-Pipeline: beautify -> synchrony -> babel_transforms -> webpack_unpack
+Adımlar: synchrony, webpack_unpack, deep_pipeline (sıra zincir tanımından).
 
 Her adimin ciktisi bir sonrakinin girdisi olur. Bir adim basarisiz olursa
 atlenir ve bir onceki basarili cikti ile devam edilir (graceful degradation).
+
+P20b (Berke kararı, 2026-11-19): ``beautify`` ve ``babel_transforms`` adımları
+SİLİNDİ. ``beautify`` derin hattın (DeepDeobfuscationPipeline) aynı betikle
+yaptığının kopyasıydı ve betik hata verince girdiyi kopyalayıp "başarılı"
+dönüyordu; ``babel_transforms`` (BabelPipeline) analiz betiğini (deobfuscate.mjs)
+dönüştürücü sanıp çağırıyordu, çıktı dosyası hiç oluşmuyordu (P20 kalem 6:
+5/5 girdide başarısız). Zincir tanımında bu adlar kalırsa adım koşmaz,
+``steps_skipped`` + ``stats["skipped_reasons"]``'ta nedeniyle görünür.
 """
 
 from __future__ import annotations
@@ -18,7 +26,6 @@ from typing import Any
 from ..config import Config
 from ..core.subprocess_runner import SubprocessRunner
 from ..core.workspace import Workspace
-from .babel_pipeline import BabelPipeline
 from .synchrony_wrapper import SynchronyWrapper
 
 logger = logging.getLogger(__name__)
@@ -70,13 +77,28 @@ class DeobfuscationResult:
 
 
 # Desteklenen zincir adimlari
-_KNOWN_STEPS = {"beautify", "synchrony", "babel_transforms", "webpack_unpack", "deep_pipeline"}
+_KNOWN_STEPS = {"synchrony", "webpack_unpack", "deep_pipeline"}
+
+# P20b: silinen adımlar. Zincir tanımında (config ya da kullanıcı YAML'ı)
+# kalırlarsa koşmazlar; sessizce de düşmezler: atlandı + neden.
+_REMOVED_STEPS = {
+    "beautify": (
+        "adım kaldırıldı (P20b, 2026-11-19): derin hattın beautify adımının "
+        "kopyasıydı; hata verince girdiyi kopyalayıp başarılı dönüyordu"
+    ),
+    "babel_transforms": (
+        "adım kaldırıldı (P20b, 2026-11-19): deobfuscate.mjs bir analiz betiği, "
+        "çıktı dosyası üretmiyordu (P20 kalem 6: 5/5 girdide başarısız); "
+        "dönüşümler derin hatta (deep-deobfuscate.mjs)"
+    ),
+}
 
 
 class DeobfuscationManager:
     """Deobfuscation pipeline orkestrasyonu.
 
-    Zincir: beautify -> synchrony -> babel_transforms -> webpack_unpack
+    Zincir: config ``analysis.deobfuscation_chain`` (adımlar: synchrony,
+    webpack_unpack, deep_pipeline)
 
     Her adim:
     1. Onceki adimin ciktisini girdi olarak alir
@@ -90,7 +112,6 @@ class DeobfuscationManager:
     def __init__(self, config: Config) -> None:
         self._config = config
         self._runner = SubprocessRunner(config)
-        self._babel = BabelPipeline(config)
         self._synchrony = SynchronyWrapper(config)
 
     def run_chain(
@@ -121,9 +142,15 @@ class DeobfuscationManager:
         # Zincir adimlarini belirle
         effective_chain = chain or list(self._config.analysis.deobfuscation_chain)
 
-        # Bilinmeyen adimlari filtrele
+        # Silinen adımlar (P20b) atlandı + neden; bilinmeyenler filtrelenir.
+        removed = [s for s in effective_chain if s in _REMOVED_STEPS]
+        for step in removed:
+            if step not in result.steps_skipped:
+                result.steps_skipped.append(step)
+                result.stats.setdefault("skipped_reasons", {})[step] = _REMOVED_STEPS[step]
+                logger.warning("Kaldirilmis deobfuscation adimi kosmayacak: %s", step)
         for step in effective_chain:
-            if step not in _KNOWN_STEPS:
+            if step not in _KNOWN_STEPS and step not in _REMOVED_STEPS:
                 logger.warning("Bilinmeyen deobfuscation adimi atlanacak: %s", step)
         effective_chain = [s for s in effective_chain if s in _KNOWN_STEPS]
 
@@ -212,12 +239,8 @@ class DeobfuscationManager:
         Returns:
             Basarili ise True.
         """
-        if step_name == "beautify":
-            return self._step_beautify(input_file, output_file)
-        elif step_name == "synchrony":
+        if step_name == "synchrony":
             return self._step_synchrony(input_file, output_file)
-        elif step_name == "babel_transforms":
-            return self._step_babel_transforms(input_file, output_file)
         elif step_name == "webpack_unpack":
             return self._step_webpack_unpack(input_file, output_file, work_dir)
         elif step_name == "deep_pipeline":
@@ -226,39 +249,6 @@ class DeobfuscationManager:
             logger.error("Bilinmeyen adim: %s", step_name)
             return False
 
-    def _step_beautify(self, input_file: Path, output_file: Path) -> bool:
-        """js-beautify ile kodu bimlendira.
-
-        scripts/beautify.mjs cagrilir. Script yoksa basit
-        fallback (girdiyi kopyala) uygulanir.
-        """
-        beautify_script = self._config.scripts_dir / "beautify.mjs"
-
-        if not beautify_script.exists():
-            logger.warning(
-                "beautify.mjs bulunamadi (%s), girdi kopyalanarak atlaniyor",
-                beautify_script,
-            )
-            shutil.copy2(input_file, output_file)
-            return True
-
-        try:
-            result = self._runner.run_node_script(
-                beautify_script,
-                args=[str(input_file), str(output_file)],
-                timeout=self._config.timeouts.subprocess,
-            )
-            # Script JSON sonuc dondurmuyorsa da cikti dosyasi olusturulmus olabilir
-            if output_file.exists() and output_file.stat().st_size > 0:
-                return True
-            # JSON sonuc kontrolu
-            return result.get("success", False)
-        except (RuntimeError, FileNotFoundError) as exc:
-            logger.error("beautify hatasi: %s", exc)
-            # Fallback: girdiyi kopyala
-            shutil.copy2(input_file, output_file)
-            return True
-
     def _step_synchrony(self, input_file: Path, output_file: Path) -> bool:
         """synchrony ile deobfuscate et."""
         if not self._synchrony.is_available():
@@ -266,17 +256,6 @@ class DeobfuscationManager:
             return False
 
         return self._synchrony.deobfuscate(input_file, output_file)
-
-    def _step_babel_transforms(
-        self, input_file: Path, output_file: Path,
-    ) -> bool:
-        """Babel AST transform'larini uygula."""
-        if not self._babel.is_available():
-            logger.warning("Babel pipeline mevcut degil, adim atlaniyor")
-            return False
-
-        result = self._babel.transform(input_file, output_file)
-        return result.get("success", False)
 
     def _step_deep_pipeline(
         self,
