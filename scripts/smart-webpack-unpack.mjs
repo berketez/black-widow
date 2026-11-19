@@ -12,6 +12,12 @@
  *   5. Webpack IIFE array:   [function(e,t,n){}, ...]
  *   6. Webpack 5 named:      __webpack_modules__ = { "./src/file.js": ... }
  *   7. Top-level IIFE:       (function() { ... })() -- kapsayici IIFE'leri ayir
+ *   8. Webpack 5 JSONP oebegi: (self.webpackChunkX = ... || []).push([[id], { ... }])
+ *   9. Webpack 5 Node oebegi:  exports.ids = [...]; exports.modules = { ... }
+ *
+ * P20b: 4-6 ve 8-9'da nesne/dizi ancak webpack calisma zamanina bagliysa modul
+ * haritasi sayilir (require islevi, R.m = M, __webpack_* adi, oebek kaydi);
+ * birden cok aday varsa secim ve gerekcesi `module_map_selection`'da.
  *
  * Kullanim:
  *   node --max-old-space-size=8192 smart-webpack-unpack.mjs <input> <output-dir>
@@ -70,23 +76,50 @@ try {
 }
 
 // ---------- Parse ----------
-const errors = [];
-let ast;
-try {
-  ast = parse(source, {
+// P20b: girdi önce düz JS eklentileriyle ayrıştırılır. `typescript` eklentisi
+// geçerli JS'i de bozabiliyor (Electron Fiddle `renderer/main_window/index.js`,
+// webpack 5, 904 modül: "Unexpected token, expected ':'" → 0 modül). TS
+// eklentisi yalnız düz JS ayrıştırması düşerse denenir; kullanılan küme
+// çıktıda (`parser_plugins`) yazılır ve modül sınamasında da o kullanılır.
+const PLUGINS_JS = [
+  "jsx", "decorators-legacy", "classProperties",
+  "classPrivateProperties", "classPrivateMethods", "dynamicImport",
+  "optionalChaining", "nullishCoalescingOperator", "exportDefaultFrom",
+  "exportNamespaceFrom", "topLevelAwait", "importMeta",
+];
+const PLUGINS_TS = ["typescript", ...PLUGINS_JS];
+let parserMode = "js";
+
+function parseWith(code, plugins) {
+  return parse(code, {
     sourceType: "unambiguous",
     allowImportExportEverywhere: true,
     allowReturnOutsideFunction: true,
     allowSuperOutsideMethod: true,
     allowUndeclaredExports: true,
     errorRecovery: true,
-    plugins: [
-      "jsx", "typescript", "decorators-legacy", "classProperties",
-      "classPrivateProperties", "classPrivateMethods", "dynamicImport",
-      "optionalChaining", "nullishCoalescingOperator", "exportDefaultFrom",
-      "exportNamespaceFrom", "topLevelAwait", "importMeta",
-    ],
+    plugins,
   });
+}
+
+// Düz JS, düşerse TS eklentisi. İkisi de düşerse son hata fırlatılır.
+function parseJsThenTs(code) {
+  try {
+    const parsed = parseWith(code, PLUGINS_JS);
+    parserMode = "js";
+    return parsed;
+  } catch (jsErr) {
+    const parsed = parseWith(code, PLUGINS_TS);
+    parserMode = "typescript";
+    errors.push(`Duz JS ayristirmasi basarisiz (${jsErr.message}); typescript eklentisiyle ayristirildi`);
+    return parsed;
+  }
+}
+
+const errors = [];
+let ast;
+try {
+  ast = parseJsThenTs(source);
   if (ast.errors?.length > 0) {
     for (const e of ast.errors.slice(0, 20)) {
       errors.push(`Parse recovered: ${e.message}`);
@@ -104,20 +137,7 @@ try {
         preserve_newlines: true, brace_style: "collapse,preserve-inline",
         wrap_line_length: 120,
       });
-      ast = parse(beautified, {
-        sourceType: "unambiguous",
-        allowImportExportEverywhere: true,
-        allowReturnOutsideFunction: true,
-        allowSuperOutsideMethod: true,
-        allowUndeclaredExports: true,
-        errorRecovery: true,
-        plugins: [
-          "jsx", "typescript", "decorators-legacy", "classProperties",
-          "classPrivateProperties", "classPrivateMethods", "dynamicImport",
-          "optionalChaining", "nullishCoalescingOperator", "exportDefaultFrom",
-          "exportNamespaceFrom", "topLevelAwait", "importMeta",
-        ],
-      });
+      ast = parseJsThenTs(beautified);
       // parse basarili oldu ama beautified kaynak uzerinde calisiyor,
       // bu yuzden generate edilen kod beautified olacak (sorun degil)
       source = beautified;
@@ -158,6 +178,27 @@ try {
 // moduleId -> { node, type, name, deps, exports, requireAlias }
 const detectedModules = new Map();
 let bundleFormat = "unknown";
+
+// P20b: webpack modül haritası adayları (kapsayıcı düğüm -> aday) ve
+// traverse sonrası çözülecek kanıtlar.
+const mapCandidates = new Map();
+const pendingRequireM = [];
+const pendingNodeChunks = [];
+let sawExportsChunkIds = false;
+// Kanıt türleri ve ağırlıkları. Aday ancak en az bir kanıtla harita sayılır.
+const MAP_EVIDENCE_WEIGHT = {
+  // R(id) içinde M[id].call(x, y, z, R) / M[id](y, z, R): __webpack_require__'ın
+  // kendini modül fabrikasına geçirmesi (webpack çalışma zamanının tanımı).
+  runtime_require_call: 3,
+  // __webpack_require__.m = __webpack_modules__ (aynı R ile).
+  require_m_assignment: 2,
+  // (self.webpackChunk<ad> = … || []).push([[öbek], MODÜLLER]) / webpackJsonp.
+  jsonp_chunk_push: 3,
+  // Node öbeği: exports.ids = […]; exports.modules = {…}.
+  node_chunk_exports: 3,
+  "name:__webpack_modules__": 2,
+  "name:__webpack_require__": 1,
+};
 
 // esbuild pattern detection
 // Once U(), Q1(), lb(), X1() gibi helper fonksiyonlari tespit et
@@ -250,6 +291,11 @@ try {
       const init = path.node.init;
       if (!t.isIdentifier(id) || !init) return;
 
+      // P20b: var __webpack_modules__ = ({...}) (küçültülmemiş webpack 5)
+      if (id.name === "__webpack_modules__" && isMapContainer(init)) {
+        mapCandidate(init, "declaration").evidence.add("name:__webpack_modules__");
+      }
+
       // Pattern 1: esbuild CJS wrapper -- var ModuleName = U((exports, module) => { ... })
       if (
         cjsWrapperName &&
@@ -296,42 +342,52 @@ try {
       }
     },
 
-    // Pattern 3: Webpack IIFE object/array
+    // Pattern 3/4 (P20b): webpack modül haritası ADAYLARI. Eskiden her IIFE'nin
+    // nesne / dizi argümanı doğrudan "modül haritası" sayılıyordu; webpack 5
+    // paketinde (Fiddle main/index.js) haritayı değil bir Prisma nesnesinin
+    // özelliklerini (`then`, `catch`, `VERSION` …) modül diye çıkarıyordu.
+    // Artık aday yalnız webpack ÇALIŞMA ZAMANINA bağlıysa harita sayılır;
+    // seçim traverse'ten sonra (selectModuleMap).
     CallExpression(path) {
       const node = path.node;
       const callee = node.callee;
-
-      // IIFE pattern
-      const isIIFE =
-        t.isFunctionExpression(callee) ||
-        t.isArrowFunctionExpression(callee);
-
-      if (!isIIFE) return;
-
-      for (const arg of node.arguments) {
-        if (t.isObjectExpression(arg)) {
-          extractWebpackObjectModules(arg);
-        } else if (t.isArrayExpression(arg)) {
-          extractWebpackArrayModules(arg);
+      if (t.isFunctionExpression(callee) || t.isArrowFunctionExpression(callee)) {
+        for (const arg of node.arguments) {
+          if (isMapContainer(arg)) mapCandidate(arg, "iife_argument");
         }
       }
+      noteRuntimeModuleCall(path);
+      noteJsonpChunk(path);
     },
 
-    // Pattern 4: __webpack_modules__ assignment
     AssignmentExpression(path) {
-      const node = path.node;
+      const { left, right } = path.node;
+      if (t.isIdentifier(left, { name: "__webpack_modules__" }) && isMapContainer(right)) {
+        mapCandidate(right, "assignment").evidence.add("name:__webpack_modules__");
+      }
+      // __webpack_require__.m = __webpack_modules__ (küçültülmüş: o.m = s)
       if (
-        t.isIdentifier(node.left) &&
-        node.left.name === "__webpack_modules__" &&
-        t.isObjectExpression(node.right)
+        t.isMemberExpression(left) && !left.computed &&
+        t.isIdentifier(left.property, { name: "m" }) &&
+        t.isIdentifier(left.object) && t.isIdentifier(right)
       ) {
-        extractWebpackObjectModules(node.right);
+        pendingRequireM.push({ path, req: left.object.name, map: right.name });
+      }
+      // Node öbeği: exports.modules = {...}; exports.ids = [...]
+      if (t.isMemberExpression(left) && !left.computed && t.isIdentifier(left.object, { name: "exports" })) {
+        if (t.isIdentifier(left.property, { name: "modules" }) && isMapContainer(right)) {
+          pendingNodeChunks.push(right);
+        } else if (t.isIdentifier(left.property, { name: "ids" }) || t.isIdentifier(left.property, { name: "id" })) {
+          sawExportsChunkIds = true;
+        }
       }
     },
   });
 } catch (err) {
   errors.push(`Module detection hata: ${err.message}`);
 }
+
+const moduleMapSelection = selectModuleMap();
 
 // Re-export bilgilerini topla
 if (reExportName) {
@@ -591,6 +647,254 @@ function cleanName(varName, fallback) {
   return fallback || varName;
 }
 
+// ---------- Webpack modül haritası: aday, kanıt, seçim (P20b) ----------
+// (Kanıt ağırlıkları MAP_EVIDENCE_WEIGHT: "Module Detection" başında; seçim
+// traverse'ten hemen sonra koştuğu için burada tanımlansa TDZ hatası verirdi.)
+
+function isMapContainer(node) {
+  return t.isObjectExpression(node) || t.isArrayExpression(node);
+}
+
+function mapCandidate(container, source) {
+  let c = mapCandidates.get(container);
+  if (!c) {
+    c = { node: container, sources: new Set(), evidence: new Set(), requireNames: new Set() };
+    mapCandidates.set(container, c);
+  }
+  c.sources.add(source);
+  return c;
+}
+
+// İşlevin adı: bildirim adı, ya da `var R = function…` / `R = function…`.
+function functionName(fnPath) {
+  const n = fnPath.node;
+  if (n.id && t.isIdentifier(n.id)) return n.id.name;
+  const parent = fnPath.parentPath && fnPath.parentPath.node;
+  if (t.isVariableDeclarator(parent) && t.isIdentifier(parent.id)) return parent.id.name;
+  if (t.isAssignmentExpression(parent) && t.isIdentifier(parent.left)) return parent.left.name;
+  return null;
+}
+
+// Bir gövdenin DOĞRUDAN deyimlerinde `name` bildirimi: kapsayıcı başlangıç
+// değeri, kapsayıcı olmayan bildirim için null, bildirim yoksa undefined.
+function findDeclaredContainer(body, name) {
+  const stmts = t.isBlockStatement(body) || t.isProgram(body) ? body.body : null;
+  if (!stmts) return undefined;
+  for (const st of stmts) {
+    if (!t.isVariableDeclaration(st)) continue;
+    for (const d of st.declarations) {
+      if (t.isIdentifier(d.id) && d.id.name === name) {
+        return isMapContainer(d.init) ? d.init : null;
+      }
+    }
+  }
+  return undefined;
+}
+
+// `name`'in bağını sözcüksel olarak yukarı doğru çöz (kapsam nesnesi yok:
+// traverse noScope). İşlev parametresiyse ve işlev hemen çağrılıyorsa (IIFE)
+// karşılık gelen argüman; değişkense başlangıç değeri. Kapsayıcı değilse null.
+function resolveMapContainer(fromPath, name) {
+  let p = fromPath;
+  while (p) {
+    const n = p.node;
+    if (t.isFunction(n)) {
+      const idx = n.params.findIndex((q) => t.isIdentifier(q) && q.name === name);
+      if (idx >= 0) {
+        const call = p.parentPath && p.parentPath.node;
+        if (t.isCallExpression(call) && call.callee === n) {
+          const arg = call.arguments[idx];
+          return isMapContainer(arg) ? arg : null;
+        }
+        return null;
+      }
+      const found = findDeclaredContainer(n.body, name);
+      if (found !== undefined) return found;
+    } else if (t.isProgram(n)) {
+      const found = findDeclaredContainer(n, name);
+      return found === undefined ? null : found;
+    }
+    p = p.parentPath;
+  }
+  return null;
+}
+
+// R(id) { … M[id].call(a, b, c, R) … }  |  R(id) { … M[id](b, c, R) … }
+function noteRuntimeModuleCall(path) {
+  const node = path.node;
+  const callee = node.callee;
+  let member = null;
+  let args = null;
+  if (
+    t.isMemberExpression(callee) && !callee.computed &&
+    t.isIdentifier(callee.property, { name: "call" }) &&
+    t.isMemberExpression(callee.object) && callee.object.computed
+  ) {
+    member = callee.object;
+    args = node.arguments.slice(1);
+  } else if (t.isMemberExpression(callee) && callee.computed) {
+    member = callee;
+    args = node.arguments;
+  }
+  if (!member || !t.isIdentifier(member.object) || !t.isIdentifier(member.property)) return;
+  if (args.length < 2) return;
+  const last = args[args.length - 1];
+  if (!t.isIdentifier(last)) return;
+  const fnPath = path.getFunctionParent();
+  if (!fnPath) return;
+  const reqName = functionName(fnPath);
+  const firstParam = fnPath.node.params[0];
+  if (
+    !reqName || reqName !== last.name ||
+    !t.isIdentifier(firstParam) || firstParam.name !== member.property.name
+  ) return;
+  const container = resolveMapContainer(fnPath, member.object.name);
+  if (!container) return;
+  const c = mapCandidate(container, "runtime_require");
+  c.evidence.add("runtime_require_call");
+  c.requireNames.add(reqName);
+  if (reqName === "__webpack_require__") c.evidence.add("name:__webpack_require__");
+}
+
+// Öbek kaydının hedefi webpack'in öbek dizisi mi (webpackChunk<ad> / webpackJsonp)?
+function isWebpackChunkGlobal(node, depth = 0) {
+  if (!node || depth > 4) return false;
+  const re = /^webpack(Chunk|Jsonp)/;
+  if (t.isIdentifier(node)) return re.test(node.name);
+  if (t.isMemberExpression(node)) {
+    if (!node.computed && t.isIdentifier(node.property)) return re.test(node.property.name);
+    if (node.computed && t.isStringLiteral(node.property)) return re.test(node.property.value);
+    return false;
+  }
+  if (t.isAssignmentExpression(node)) return isWebpackChunkGlobal(node.left, depth + 1);
+  if (t.isLogicalExpression(node)) {
+    return isWebpackChunkGlobal(node.left, depth + 1) || isWebpackChunkGlobal(node.right, depth + 1);
+  }
+  return false;
+}
+
+// (self.webpackChunk<ad> = self.webpackChunk<ad> || []).push([[öbek kimlikleri], MODÜLLER, …])
+function noteJsonpChunk(path) {
+  const { callee } = path.node;
+  const args = path.node.arguments;
+  if (!t.isMemberExpression(callee) || callee.computed) return;
+  if (!t.isIdentifier(callee.property, { name: "push" })) return;
+  if (!isWebpackChunkGlobal(callee.object)) return;
+  const a = args[0];
+  if (!t.isArrayExpression(a) || a.elements.length < 2 || !t.isArrayExpression(a.elements[0])) return;
+  const mods = a.elements[1];
+  if (!isMapContainer(mods)) return;
+  mapCandidate(mods, "jsonp_chunk").evidence.add("jsonp_chunk_push");
+}
+
+function candidateModuleCount(c) {
+  if (t.isArrayExpression(c.node)) return c.node.elements.filter(Boolean).length;
+  return c.node.properties.filter((p) => t.isObjectProperty(p) || t.isObjectMethod(p)).length;
+}
+
+function candidateScore(c) {
+  let s = 0;
+  for (const e of c.evidence) s += MAP_EVIDENCE_WEIGHT[e] || 0;
+  return s;
+}
+
+function describeCandidate(c) {
+  return {
+    sources: [...c.sources].sort(),
+    shape: t.isArrayExpression(c.node) ? "array" : "object",
+    module_count: candidateModuleCount(c),
+    evidence: [...c.evidence].sort(),
+    score: candidateScore(c),
+    line: c.node.loc ? c.node.loc.start.line : null,
+    column: c.node.loc ? c.node.loc.start.column : null,
+  };
+}
+
+// Kanıtları tamamla, iç içe adayları ayıkla, en güçlü kanıtlı dış adayı seç
+// ve modüllerini detectedModules'e aktar. Gerekçe çıktı JSON'una yazılır.
+function selectModuleMap() {
+  // R.m = M yalnız aynı R çalışma zamanı kanıtı taşıyorsa sayılır.
+  for (const { path, req, map } of pendingRequireM) {
+    const container = resolveMapContainer(path, map);
+    const c = container && mapCandidates.get(container);
+    if (c && c.requireNames.has(req)) c.evidence.add("require_m_assignment");
+  }
+  if (sawExportsChunkIds) {
+    for (const container of pendingNodeChunks) {
+      mapCandidate(container, "node_chunk").evidence.add("node_chunk_exports");
+    }
+  }
+
+  const all = [...mapCandidates.values()];
+  const linked = all.filter((c) => c.evidence.size > 0);
+  const rejected = [];
+  for (const c of all) {
+    if (c.evidence.size === 0) {
+      rejected.push({ ...describeCandidate(c), reason: "webpack çalışma zamanına bağı yok" });
+    }
+  }
+  // İç içe: başka bir bağlı adayın kapsayıcısı içinde duran harita, paketlenmiş
+  // bir kütüphanenin kendi çalışma zamanıdır; o kod dış haritanın bir modülünün
+  // içindedir ve kimlikleri dış haritanınkilerle çakışır.
+  const outer = [];
+  for (const c of linked) {
+    const host = linked.find((o) => o !== c && o.node.start <= c.node.start && c.node.end <= o.node.end);
+    if (host) {
+      rejected.push({
+        ...describeCandidate(c),
+        reason: `iç içe: ${host.node.loc ? host.node.loc.start.line + ":" + host.node.loc.start.column : "?"} haritasının bir modülü içinde`,
+      });
+    } else {
+      outer.push(c);
+    }
+  }
+  outer.sort((a, b) =>
+    candidateScore(b) - candidateScore(a) ||
+    candidateModuleCount(b) - candidateModuleCount(a) ||
+    a.node.start - b.node.start);
+  const chosen = outer[0] || null;
+  for (const c of outer.slice(1)) {
+    rejected.push({ ...describeCandidate(c), reason: "daha zayıf kanıtlı dış aday" });
+  }
+
+  let esbuildNestedDropped = 0;
+  if (chosen) {
+    // Seçilen haritanın içinde kalan esbuild sarmalayıcıları o haritanın bir
+    // modülünün parçasıdır; ayrı modül sayılmaz.
+    for (const [id, mod] of [...detectedModules.entries()]) {
+      if (
+        mod.type === "esbuild_cjs" && mod.node &&
+        chosen.node.start <= mod.node.start && mod.node.end <= chosen.node.end
+      ) {
+        detectedModules.delete(id);
+        esbuildNestedDropped += 1;
+      }
+    }
+    if (bundleFormat === "esbuild" && ![...detectedModules.values()].some((m) => m.type === "esbuild_cjs")) {
+      bundleFormat = "unknown";
+    }
+    if (t.isObjectExpression(chosen.node)) extractWebpackObjectModules(chosen.node);
+    else extractWebpackArrayModules(chosen.node);
+    if (chosen.evidence.has("jsonp_chunk_push")) bundleFormat = bundleFormat === "esbuild" ? bundleFormat : "webpack_jsonp_chunk";
+    else if (chosen.evidence.has("node_chunk_exports")) bundleFormat = bundleFormat === "esbuild" ? bundleFormat : "webpack_node_chunk";
+  }
+
+  return {
+    rule:
+      "Aday (nesne/dizi) yalnız webpack çalışma zamanına bağlıysa harita sayılır: " +
+      "R(id) içinde M[id](…, R) çağrısı, aynı R ile R.m = M, __webpack_modules__ / " +
+      "__webpack_require__ adı, webpackChunk/webpackJsonp öbek kaydı ya da " +
+      "exports.ids + exports.modules. Başka bir haritanın içindeki harita iç içe " +
+      "sayılır; dış adaylardan kanıt puanı (eşitlikte modül sayısı) en yüksek olan seçilir.",
+    candidates_total: all.length,
+    candidates_linked: linked.length,
+    chosen: chosen ? describeCandidate(chosen) : null,
+    rejected_total: rejected.length,
+    rejected: rejected.slice(0, 30),
+    esbuild_nested_dropped: esbuildNestedDropped,
+  };
+}
+
 // ---------- Webpack Module Extractors ----------
 function extractWebpackObjectModules(objNode) {
   for (const prop of objNode.properties) {
@@ -804,6 +1108,8 @@ try {
   writeFileSync(graphPath, JSON.stringify({
     bundle_format: bundleFormat,
     total_modules: moduleOutputs.length,
+    module_map_selection: moduleMapSelection,
+    parser_plugins: parserMode,
     helpers: {
       cjs_wrapper: cjsWrapperName,
       esm_interop: esmInteropName,
@@ -868,6 +1174,10 @@ emit({
   modules_parse_ok: parseOkCount,
   modules_parse_failed: parseFailed.length,
   parse_failed_modules: parseFailed.slice(0, 50),
+  // P20b: modül haritası seçiminin gerekçesi (seçilen aday, kanıtları,
+  // reddedilen adaylar ve nedenleri) ve girdinin ayrıştırıldığı eklenti kümesi.
+  module_map_selection: moduleMapSelection,
+  parser_plugins: parserMode,
   file_size: fileSize,
   errors,
 });
@@ -876,15 +1186,10 @@ emit({
 
 // Modül ayrıştırma sınaması: girdi ayrıştırmasıyla aynı eklenti kümesi, ama
 // hata kurtarma KAPALI (kurtarılan hata = eksik AST = ayrıştırılamaz sayılır).
-// (Liste işlev içinde: üst düzey const, modül yazma döngüsü bu satırdan önce
-// koştuğu için TDZ hatası verirdi.)
+// (Eklenti kümeleri dosyanın başında, ayrıştırmadan önce tanımlı; P20b: girdi
+// hangi kümeyle ayrıştıysa modül de onunla sınanır.)
 function checkModuleParses(code) {
-  const MODULE_CHECK_PLUGINS = [
-    "jsx", "typescript", "decorators-legacy", "classProperties",
-    "classPrivateProperties", "classPrivateMethods", "dynamicImport",
-    "optionalChaining", "nullishCoalescingOperator", "exportDefaultFrom",
-    "exportNamespaceFrom", "topLevelAwait", "importMeta",
-  ];
+  const MODULE_CHECK_PLUGINS = parserMode === "typescript" ? PLUGINS_TS : PLUGINS_JS;
   try {
     parse(code, {
       sourceType: "unambiguous",

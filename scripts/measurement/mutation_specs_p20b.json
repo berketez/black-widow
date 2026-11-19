@@ -1,0 +1,77 @@
+{
+  "_comment": "P20b (JS hattı izlemesi) onarımlarının mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı); find metni dosyada tekil. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p20b.json",
+  "mutants": [
+    {
+      "id": "p20b_k1_bagsiz_aday_kabul",
+      "desc": "Kalem 1: çalışma zamanı kanıtı olmayan aday da harita sayılır (eski davranış)",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_unlinked_look_alike_maps_are_not_module_maps",
+      "find": "  const linked = all.filter((c) => c.evidence.size > 0);",
+      "replace": "  const linked = all.filter((c) => c.evidence.size >= 0);"
+    },
+    {
+      "id": "p20b_k1_ic_ice_ayiklanmaz",
+      "desc": "Kalem 1: iç içe harita (paketlenmiş kütüphanenin çalışma zamanı) dış adaylarla yarışır",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_nested_runtime_map_is_not_extracted_as_modules",
+      "find": "    const host = linked.find((o) => o !== c && o.node.start <= c.node.start && c.node.end <= o.node.end);",
+      "replace": "    const host = null && linked.find((o) => o !== c && o.node.start <= c.node.start && c.node.end <= o.node.end);"
+    },
+    {
+      "id": "p20b_k1_require_kendini_gecirmez",
+      "desc": "Kalem 1: M[id](…, X) çağrısında X'in kapsayan işlevin kendisi olması aranmaz (dağıtım tablosu harita olur)",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_unlinked_look_alike_maps_are_not_module_maps",
+      "find": "    !reqName || reqName !== last.name ||",
+      "replace": "    !reqName ||"
+    },
+    {
+      "id": "p20b_k1_jsonp_genel_push",
+      "desc": "Kalem 1: herhangi bir dizinin push([[id], {…}]) çağrısı webpack öbeği sayılır",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_unlinked_look_alike_maps_are_not_module_maps",
+      "find": "  if (!isWebpackChunkGlobal(callee.object)) return;",
+      "replace": "  if (false && !isWebpackChunkGlobal(callee.object)) return;"
+    },
+    {
+      "id": "p20b_k1_node_obegi_ids_gerekmez",
+      "desc": "Kalem 1: exports.ids / exports.id olmadan exports.modules Node öbeği sayılır",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_unlinked_look_alike_maps_are_not_module_maps",
+      "find": "  if (sawExportsChunkIds) {",
+      "replace": "  if (true || sawExportsChunkIds) {"
+    },
+    {
+      "id": "p20b_k1_jsonp_tanimaz",
+      "desc": "Kalem 1: JSONP öbek kaydı kanıt sayılmaz (öbekler tanınmaz)",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_nested_runtime_map_is_not_extracted_as_modules",
+      "find": "  mapCandidate(mods, \"jsonp_chunk\").evidence.add(\"jsonp_chunk_push\");",
+      "replace": "  mapCandidate(mods, \"jsonp_chunk\");"
+    },
+    {
+      "id": "p20b_k1_gerekce_yazilmaz",
+      "desc": "Kalem 1: seçim gerekçesi dependency_graph.json'a yazılmaz",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_selection_reason_is_written",
+      "find": "    module_map_selection: moduleMapSelection,\n    parser_plugins: parserMode,",
+      "replace": "    parser_plugins: parserMode,"
+    },
+    {
+      "id": "p20b_k1_once_typescript",
+      "desc": "Kalem 1: girdi önce typescript eklentisiyle ayrıştırılır (geçerli JS bozulur)",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_valid_js_is_not_broken_by_typescript_plugin",
+      "find": "    const parsed = parseWith(code, PLUGINS_JS);",
+      "replace": "    const parsed = parseWith(code, PLUGINS_TS);"
+    },
+    {
+      "id": "p20b_k1_modul_sinamasi_hep_ts",
+      "desc": "Kalem 1: modül sınaması girdinin kümesi yerine hep typescript eklentisiyle (geçerli modül 'ayrıştırılamaz')",
+      "module": "scripts/smart-webpack-unpack.mjs",
+      "test": "tests/test_p20b_webpack_harita.py::test_valid_js_is_not_broken_by_typescript_plugin",
+      "find": "  const MODULE_CHECK_PLUGINS = parserMode === \"typescript\" ? PLUGINS_TS : PLUGINS_JS;",
+      "replace": "  const MODULE_CHECK_PLUGINS = PLUGINS_TS;"
+    }
+  ]
+}
