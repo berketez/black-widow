@@ -10,4 +10,5 @@
 |---|---|---|---|
 | 1 | Başlık (durum satırı, okuma sırası) + §0 okuma tablosu | bitti | 41ea923 |
 | 2 | §1: iki sütunlu ad tablosu (1.22.1 → a62f15e), ölçüm altyapısı (urun_kos hijyeni, masum kapı setleri, Ghidra'sız yeniden oynatma, toplu BSim, mutasyon düzeni), olumsuz sonuçlar tablosu (16 satır; kaynak DURUM.md) | bitti | 09c728a |
-| 3 | §1.1 onarımın özeti: kapananlar (yanıltan çıktılar, güvenlik, hız), bekletilenler (K-1), açık kalanlar (süren / sıradaki paketler), K-1…K-10 + 2026-11-19 kararları, ölçüm zemininde değişenler | bitti | (bu commit) |
+| 3 | §1.1 onarımın özeti: kapananlar (yanıltan çıktılar, güvenlik, hız), bekletilenler (K-1), açık kalanlar (süren / sıradaki paketler), K-1…K-10 + 2026-11-19 kararları, ölçüm zemininde değişenler | bitti | 4122587 |
+| 4 | §2 K-2 notu; §3 alan listesine "Onarım sonrası"; A1–A6 onarım sonrası satırları; Berke'nin hipotezi A2 (üç kollu ayrım: P08 0,695 → 0,975, P-S3b 732 / 0, P15b FLIRT bekletme → P08b) ve A5 (P11 0 / 208, P15c 19 / 83 ve 5 / 153, P16b 597 → 0); A5 Karar 2 + GTK / GLib aday nüfus; A1 bağı | bitti | (bu commit) |

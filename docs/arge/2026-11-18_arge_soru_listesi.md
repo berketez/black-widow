@@ -143,7 +143,7 @@ Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; bekl
 
 1. **Motor LLM'siz kalır.** Hesaplama ve kanıt deterministiktir. KaradulLM ayrı bir katmandır: analist açar; ad önerisi ayrı köken bölümünde durur, analist onaylamadan ad haritasına girmez. Yayımlanacak iddialar LLM'siz sonuçlardır.
 2. **Başarı ölçütü:** analisti yanıltmamak. Berke amacı doğru anlatan adı başarı sayıyor ("benzerliğe okeyim"; gevşek mod: "seramik duvar" yerine "fayans duvar" başarıdır, "pencere" başarısızlıktır). Ama benzerlik ölçüsü önce tanımlanmalı ve insan yargısıyla doğrulanmalıdır (B3). Tanımsız "benzer" iddiası kabul edilmez.
-3. **Önce kesinlik.** Kapsamı artıran her yöntem yanlış oranını artırmamalı. Hedef: yanlış ≤ %10. Ad vermemek (`FUN_…` bırakmak) yanlış ad vermekten iyidir; ama `FUN_` teslim değil, son çaredir.
+3. **Önce kesinlik.** Kapsamı artıran her yöntem yanlış oranını artırmamalı. Hedef: yanlış ≤ %10. Ad vermemek (`FUN_…` bırakmak) yanlış ad vermekten iyidir; ama `FUN_` teslim değil, son çaredir. K-2: kanal susturulmaz; ölçülmüş kural yoksa ad yerine kanıt satırı yazar (P12b `string_roles`, P13a AD-09, P15c `davranis`).
 4. **Kapsam küçültülmez** (Berke, 2026-11-18). Katman silinmez, onarılır. Onarım evresindeki "yeni özellik yok" kuralı ARGE'de gevşer, ama her yeni yöntem önce bayrak arkasında ve ön kayıtlı ölçümle girer.
 5. **Test seti dokunulmazdır** (`test_seti_kilidi.md`). Ayar, eşik ve sözlük yalnız geliştirme setine göre yapılır. Doğrulama seti ara karar içindir; test seti yalnız planlanan açılışta açılır.
 6. **Bilim düzeni:** hipotez → ölçüt → ön kayıt (değişiklikten önce, commit'li) → ölçüm → olumsuz sonuç da kayda geçer → iddia yalnız ölçülen kadar. Wilson %95 aralığı; tek ikiliden genelleme yok.
@@ -160,6 +160,7 @@ Her sorunun altında aynı alanlar var:
 - **Doğrulayıcı:** sonucun mekanik olarak nasıl sınanacağı.
 - **Aykırı öncül:** denenmesi istenen karşı görüş.
 - **Not:** bilinen tuzak.
+- **Onarım sonrası:** a62f15e itibarıyla: değişmedi / kısmen ele alındı (paket + sayı, kaynak DURUM.md) / gereksizleşti / yeni alt soru.
 
 ### A. Ad sayısı nasıl artar? (kapsam)
 
@@ -168,11 +169,14 @@ Her sorunun altında aynı alanlar var:
 - **Bugün:** doğru ad kapsamı %5,2; kategori kırılımı yok.
 - **Doğrulayıcı:** GT'den (dbgsym) kategori etiketi + kanal başına "kanıt var mı" sayımı. Çıktı bir bütçe tablosudur: kategori × (nüfus, bugün doğru, ulaşılabilir üst sınır).
 - **Aykırı öncül:** "Kapsamın büyük kısmı kitaplık kodudur ve imzayla çözülür" beklentisini sına. Belki darboğaz uygulama kodudur ve imza işi doymuştur.
+- **Onarım sonrası:** değişmedi; bütçe a62f15e tabanından alınır (§1, ⟨ÖLÇÜM: doğru ad kapsamı⟩). Berke'nin hipotezinin (A2, A5, I1) ayrımını bu tablo sayar: ad bekleyen nüfusun ne kadarı kitaplık kopyası (imza yolu, A2), ne kadarı programın kendi kodu (A5). Yeni alt soru: c_namer'ın görmediği fonksiyonlar (14 alanda 697 / 13 832, %5,0; `P12b.md`; onarımı P12c, tabanda yok) bütçede ayrı satır olmalı.
 
 **A2. Kitaplık fonksiyonları: imza, bayt deseni ve benzerlik.**
 - **Soru:** Yeniden kurulan imza veritabanı (K-5), FLIRT türü bayt imzaları ve BSim birlikte statik bağlı kitaplık kodunun yüzde kaçını ≥ %95 kesinlikle adlandırır?
 - **Doğrulayıcı:** A1'in kitaplık kategorisinde kesinlik ve kapsam. Derleyici sürümü / iyileştirme düzeyi tabakalarında ayrı ayrı.
-- **Not:** BSim ortak deposu sembollü kopyaların adlarını sızdırabiliyordu (GHIDRA-02). Ölçüm hijyeni için koşuya özel depo kullanın.
+- **Not:** BSim ortak deposunun sembollü kopyalardan ad sızdırması P16b'de kapandı (soyulmuş Mac htop'ta adlı aday 597 → 0); ölçümde yine koşuya özel `KARADUL_CACHE_DIR`.
+- **Onarım sonrası:** kısmen ele alındı. İmza VT yeniden kuruldu ve veri kökünden devrede (P08, P15b: şema 2, 9 092 473 ad; 6 ikilide uygulanan ad farkı 0); kitaplık iddiası kesinliği 119 ikilide 0,695 → 0,975 (P08; içe aktarım tablosuna karşı, ad kesinliği değil); gnulib kanalı yamalı yeniden oynatmada coreutils'te 732 doğru / 0 yanlış (P-S3b); FLIRT bayt imzaları bekletiliyor, seçici VT ile yeniden açılması P08b'de (sırada); BSim toplu sorgu öntanım (P16c). Kanal başına ad kesinliği: §1 kanal kırılımı (⟨ÖLÇÜM: kanal kırılımı farkı⟩).
+- **Berke'nin hipotezi (2026-11-19):** "Elimizde çok sayıda imzalı kütüphane var; adı bilinmeyen fonksiyonun ne olabileceğini imzalı olanlardan tahmin edip yerine koymak lazım." Ana oturumun ayrımı: (1) fonksiyon gerçekten bir kütüphanenin kopyasıysa (statik bağlı libc, openssl, zlib, gnulib) imza eşleme doğru yoldur; bu soru A2'dir, ölçülmüş kanıtı yukarıdaki P08 / P-S3b / P15b sayıları. (2) Fonksiyon programın kendi koduysa hiçbir kütüphanede yoktur (A5). (3) İkisinin birleşimi araştırma hattıdır (I1). Bekleyen nüfusta (1) ile (2)'nin payını A1 sayar.
 
 **A3. Derleyicinin kendi bıraktığı üst veriden ad: hiç kullanılmayan kaynaklar.**
 - **Soru:** Silinmiş ikilide bile kalan dil çalışma zamanı üst verisi nerede ve ne kadar ad verir?
@@ -182,26 +186,32 @@ Her sorunun altında aynı alanlar var:
   - Objective-C: sınıf ve seçici adları.
   - Swift: tip üst verisi.
   - PDB / DWARF kalıntıları.
-- **Bugün:** PDB / DWARF / Binary Ninja / TRex / Rust / Go / RTTI kanalları yazılmış ama akışa bağlı değil. K-4 kararıyla bağlanıyor; durumu DURUM.md'de. Mac htop'ta ürün 0 ad veriyor.
+- **Bugün (1.22.1):** PDB / DWARF / Binary Ninja / TRex / Rust / Go / RTTI kanalları yazılmış ama akışa bağlı değildi. Mac htop'ta ürün 0 ad veriyordu.
 - **Doğrulayıcı:** Mac uygulamaları ve Go/Rust ikililerinden küçük bir set. Kategori başına ad sayısı ve kesinlik. GT'si olan Mach-O'lar `workspaces/olcum_mac/`'ta.
 - **Aykırı öncül:** "Mac'te ad sorunu aslında çözülmüş bir sorundur; ObjC / Swift üst verisini okumuyoruz, o kadar" önermesini sına.
+- **Onarım sonrası:** kısmen ele alındı (P13b, K-4): kanallar birleştiriciye bağlandı, her biri kendi bayrağıyla (PDB açık, öbür altısı kapalı), aday yalnız Ghidra'nın adsız bıraktığı fonksiyona, güven `null`; `pdb_parser` adres hatası onarıldı (libz3.dll 0 / 771 → 771 / 771); Rust legacy çözülmemiş kaçış 6 102 → 0; RTTI üretici adımı (IMZA-16) yapılmadı; PDB / Go gerçek Ghidra koşusunda ölçülmedi; DWARF yalnız ikili + `.dSYM`. Soyulmuş ELF'te kanallar `veri_yok` (5 ikilide ad haritası bayt bayt aynı) → birleşik tabanda ad etkisi beklenmez. Mac: ⟨ÖLÇÜM: Mac htop / tmux ad sayısı ve doğrusu⟩. Yeni alt sorular: Mach-O'da `main` (I2), üst verinin düşman girdiye dayanıklılığı (I4).
 
 **A4. Başvuru derlemesiyle eşleme (açık kaynak programlar).**
 - **Soru:** Programın adı ve sürümü biliniyorsa, aynı kaynağı sembolle derleyip ya da dağıtımın dbgsym paketini alıp fonksiyon eşlemesi yaparak (BinDiff türü, BSim) adların yüzde kaçı kurtarılır? Derleyici, sürüm ve iyileştirme farkı eşleşmeyi nasıl bozar?
 - **Bugün:** "kaynak eşleme" katmanı (Layer 1.5) var, ağ kapısına bağlı. Gerçek başarısı ölçülmedi.
 - **Doğrulayıcı:** geliştirme setinde başvuru = farklı derleyici / sürüm derlemesi. Ad kesinliği ve kapsamı.
 - **Not:** ağa çıkan her yol `network.enabled` kapısından geçer (P-GÜV). Kurulumun çevrimdışı çalışma sözü bozulmaz.
+- **Onarım sonrası:** değişmedi. Kaynak eşleme artık `network.enabled` da istiyor (P-GÜV); indirip derleyen `allow_reference_download` yalnız açık true (P15a). Başarısı hâlâ ölçülmedi.
 
 **A5. İkilideki kanıttan hesaplamayla ad (uygulamaya özgü kod).**
 - **Soru:** Yalnız ikilideki kanıtla (dizgiler, hata iletileri, çağrılan API'ler, okunan seçenek adları, sabitler) uygulamaya özgü fonksiyonlara ne kadar **yakın** ad üretilebilir? Bu, K-2'nin açık sorusu: `kebap_ad` seçenek adından doğru ada nasıl gider?
-- **Bugün:** N4 fiil tavanı düşük (§1). Seçenek adını doğrudan ad yapmak 0 doğru verdi.
-- **Doğrulayıcı:** B3'te tanımlanan benzerlik ölçüsünün GT'ye karşı dağılımı. Tam eşitlik ayrıca raporlanır.
+- **Bugün (1.22.1):** N4 fiil tavanı düşük (§1). Seçenek adını doğrudan ad yapmak 239 adda 0 doğru verdi.
+- **Doğrulayıcı:** B3'te tanımlanan benzerlik ölçüsünün GT'ye karşı dağılımı. Tam eşitlik ayrıca raporlanır. Kural tmux'ta okunduysa tmux dışı, kör etiketli sette sınanır (`P12b.md` kalem 2).
 - **Aykırı öncül:** "Uygulamaya özgü adların büyük kısmı ikilide hiçbir kanıt taşımaz" önermesini nicel olarak sına: kanıt taşıyan oran nedir, tavan nedir?
+- **Onarım sonrası:** kısmen ele alındı, araştırma açık (P12b). Kebap dizgisinin rolü sınıflandı; kanal ad değil kanıt satırı yazıyor (`string_roles` 0 → 266). 14 ikilide yanlış ad havuzu %44,7 → %21,1, kaybedilen doğru 0 / 441. Ad kuralı kurulamadı (en iyi sınıf 5 / 49). Umut veren iki biçim (`get_<seçenek>` ince alıcı; ikilide tek yayan olay → `<eylem>_<nesne>`) yalnız tmux'ta görüldü; 119'luk sette tmux dışında kebap adı yalnız openssl ve sqlite3'te, toplam 3 ad (`P12b.md`).
+- **Karar 2 (K-2, 2026-11-19):** Berke karar veremedi; ana oturumun önerisi uygulanıyor: kanal şimdilik ad değil kanıt satırı yazar. Ad kuralı araştırması kapanmadı; bu hat olarak Mythos'a gider. K-2 bozulmuyor: kanal kapalı değil, ölçülmüş bir kural bekliyor.
+- **Bağımsız sınama nüfusu için aday (iddia değil, yalnız aday):** GTK / GLib programları. Kebap biçimli GObject özellik adları (`g_object_get(o, "border-width", …)`) ve sinyal adları (`g_signal_connect(w, "button-press-event", cb)`; geri çağrıların adı çoğu kez `on_<öğe>_<sinyal>`). GT kaynağı Debian dbgsym. Bu nüfus AD-02 "rol + öğe" sorusu için de bağımsızdır.
+- **Berke'nin hipotezi burada (A2'deki ayrımın 2. kolu):** programın kendi kodu hiçbir kütüphanede yoktur; `kebap_ad` fonksiyonlarının çoğu tmux'un kendi seçenek işleyicileri. "Benzer imzalı fonksiyonun adını koymak" ölçüldü ve yanlış ad üretiyor: imza VT'nin adsız fonksiyonlara verdiği adlar tam eşitlikte 0 / 208 (P11); gevşek ölçütte `call_pattern` 19 / 83, `string_ref` 5 / 153 (P15c); BSim'deki adlı adaylar aynı programın sembollü kopyasından sızıyordu (597 → 0, P16b). İki bilginin birleşimi I1'de.
 
 **A6. Çağrı grafiği boyunca yayılım.**
 - **Soru:** Yapraklar adlandırılınca (kitaplık + kanıtlı adlar) ebeveynlerin adı ya da rolü hesaplanabilir mi? Aşağıdan yukarı ya da yukarıdan aşağı. Hangi kanıt bileşimi yanlış oranını artırmadan kapsamı büyütür?
-- **Bugün:** parametre adı yayılımı hesaplanıp atılıyordu (BORU-10; onarımı P13b'de).
 - **Doğrulayıcı:** yayılımla eklenen adların ayrı kanal etiketiyle kesinliği.
+- **Onarım sonrası:** kısmen ele alındı: P13b BORU-10 sayacını gerçeğe çekti (61 "yayıldı" → uygulanan 0; adaylar ayrı alanda, `uygulanmadi` + neden); parametre adı yayılımının uygulanması I5'te. Fonksiyon adı / rol yayılımı için P12b'nin adayı: çağıranın modül öneki (`tty_keys_*` → `tty_keys_<rol>`), yalnız çağıran "kesin" etiketliyse (`P12b.md` kalem 5).
 
 ### B. Ad doğruluğu nasıl artar? (kesinlik ve dürüst güven)
 
