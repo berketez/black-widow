@@ -2630,6 +2630,123 @@ def _lm_open(komut) -> dict:
     return {"oturum": s.id}
 
 
+def _lm_query(raw_path: str) -> dict[str, str]:
+    """Sorgu dizgisi → ilk değerler (yüzde kodlaması çözülür)."""
+    qs = raw_path.split("?", 1)[1] if "?" in raw_path else ""
+    return {k: v[0] for k, v in urllib.parse.parse_qs(qs, keep_blank_values=True).items()}
+
+
+def _lm_find(oturum, *, open_only: bool):
+    """İstekteki oturum kimliğinin oturumu ya da hata sözlüğü. ``open_only``: yalnız açık (güncel) oturum; değilse
+    kapanmış son oturum da (kalan olaylarını / sonuçlarını okumak için)."""
+    if not isinstance(oturum, str) or not oturum:
+        return None, {"__code": 400, "hata": "oturum kimliği yok"}
+    cur = lm_session.current_session()
+    if cur is not None and cur.id == oturum:
+        return cur, None
+    last = _LM_LAST
+    if not open_only and last is not None and last.id == oturum:
+        return last, None
+    return None, {"__code": 404, "hata": "böyle bir açık oturum yok"}
+
+
+def _lm_input(body: dict) -> dict:
+    """``POST /api/lm/terminal/girdi``: metin yalnız bu oturumun ``submit``'ine (``repl.parse``'ın kapalı kümesi;
+    G4). Reddedilen satırın iletisi akışa ``satir`` olayı olarak da düşer."""
+    s, err = _lm_find(body.get("oturum"), open_only=True)
+    if err:
+        return err
+    r = s.submit(body.get("metin"))
+    return r if r.get("kabul") else {"__code": 400, **r}
+
+
+def _lm_stop(body: dict) -> dict:
+    """``POST /api/lm/durdur``: süren işi ve kuyruğu durdurur; ``iptal`` olayını oturum yayar."""
+    s, err = _lm_find(body.get("oturum"), open_only=True)
+    if err:
+        return err
+    return {"tamam": True, "durduruldu": bool(s.cancel(lm_session.CANCEL_ANALYST))}
+
+
+def _lm_status() -> dict:
+    """``GET /api/lm/durum``: açık oturumun durumu (``Session.status``); oturum yoksa yalnız model ayarı."""
+    s = lm_session.current_session()
+    if s is not None:
+        return s.status()
+    model = os.environ.get(_LM_ENV_MODEL) or ""
+    return {"oturum": None, "model_ayari": Path(model).name if model else None}
+
+
+def _lm_result(q: dict) -> dict:
+    """``GET /api/lm/sonuc``: araç sonucunun saklı içeriği (arındırılmış; içerik deposundan)."""
+    s, err = _lm_find(q.get("oturum"), open_only=False)
+    if err:
+        return err
+    try:
+        obj = s.result_content(q.get("kimlik", ""))
+    except (ValueError, OSError) as e:
+        return {"__code": 400, "hata": f"sonuç açılamadı: {e}"}
+    if obj is None:
+        return {"__code": 404, "hata": "bu oturumun içerik deposunda böyle bir sonuç yok"}
+    return {"kimlik": q.get("kimlik"), "sonuc": obj}
+
+
+_LM_GUARD_KEYS = ("hukum", "bulgular", "bayraklar", "toplu_kabul", "sinanan", "sinanmayan")
+
+
+def _lm_proposals(q: dict) -> dict:
+    """``GET /api/lm/oneriler``: defterdeki öneriler (bekleyen + karara bağlanmış). Her öneriye arayüz düğüm anahtarı
+    (``fn``; düğümü yoksa ``None``) ve bu oturumun akışındaki denetim ayrıntısı (``denetim``: P21 raporu; başka
+    oturumun önerisinde akış yok → ``None``, uydurulmaz) eklenir."""
+    s, err = _lm_find(q.get("oturum"), open_only=False)
+    if err:
+        return err
+    try:
+        props = s.notebook.proposals()
+    except OSError as e:
+        return {"__code": 500, "hata": f"defter okunamadı: {e}"}
+    audits = {e["nesne"]: {k: e[k] for k in _LM_GUARD_KEYS}
+              for e in s.stream.since(0)["olaylar"] if e["tur"] == "denetim"}
+    out = []
+    for p in props:
+        out.append({**p, "fn": s.workspace.ui_name(p.get("adres")),
+                    "denetim": audits.get(p.get("gorev")) if p.get("oturum") == s.id else None})
+    return {"oneriler": out}
+
+
+def _lm_reject(body: dict) -> dict:
+    """``POST /api/lm/oneri/ret``: yalnız öneri kimliği + neden (zorunlu; girdi kuralı). Reddedilen ad ajanın
+    D10 listesine girer (``Session.decide``)."""
+    s = lm_session.current_session()
+    if s is None:
+        return {"__code": 409, "hata": "açık oturum yok"}
+    r = s.decide(body.get("oneri_kimligi"), lm_session.DECIDE_REJECT, body.get("neden"))
+    return {"tamam": True, "oneri": r["oneri"]} if r["tamam"] else {"__code": 400, "tamam": False, "hata": r["hata"]}
+
+
+def _lm_close(body: dict) -> dict:
+    """``POST /api/lm/terminal/kapat``: oturum ve arka uç kapanır (``oturum_bitti``)."""
+    s, err = _lm_find(body.get("oturum"), open_only=True)
+    if err:
+        return err
+    s.close(lm_session.CLOSE_EXIT)
+    return {"tamam": True}
+
+
+# /api/lm/* yönlendirmesi (hepsi Handler'da _guard'dan SONRA çağrılır: Host + Origin + jeton).
+_LM_GET = {
+    "/api/lm/durum": lambda q: _lm_status(),
+    "/api/lm/sonuc": _lm_result,
+    "/api/lm/oneriler": _lm_proposals,
+}
+_LM_POST = {
+    "/api/lm/terminal/girdi": _lm_input,
+    "/api/lm/durdur": _lm_stop,
+    "/api/lm/oneri/ret": _lm_reject,
+    "/api/lm/terminal/kapat": _lm_close,
+}
+
+
 # ---------------------------------------------------------------------------
 # HTTP
 # ---------------------------------------------------------------------------
@@ -2769,6 +2886,9 @@ class Handler(BaseHTTPRequestHandler):
             # Arka plan indirme ilerlemesi (bytes/total + status). ASLA 500.
             self._json(_safe(_update_dl_snapshot, {"status": "idle",
                        "downloaded": 0, "total": 0, "error": None}))
+        elif path in _LM_GET:
+            result = _LM_GET[path](_lm_query(self.path))
+            self._json(result, result.pop("__code", 200))
         elif path.startswith("/api/decompiled/"):
             addr = urllib.parse.unquote(path.split("/api/decompiled/", 1)[1])
             if not _known_node(addr):
@@ -2831,6 +2951,9 @@ class Handler(BaseHTTPRequestHandler):
                        "error": "ic hata", "downloaded": 0, "total": 0}))
         elif path == "/api/lm/terminal/komut":
             result = _lm_open(_json_object(raw).get("komut"))
+            self._json(result, result.pop("__code", 200))
+        elif path in _LM_POST:
+            result = _LM_POST[path](_json_object(raw))
             self._json(result, result.pop("__code", 200))
         else:
             self._json({"error": "not found"}, 404)
