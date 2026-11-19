@@ -1,24 +1,36 @@
-# Karadul ARGE soru listesi (Mythos için) — 2026-11-18
+# Karadul ARGE soru listesi (Mythos için) — 2026-11-18 / 2026-11-19
 
-- **Yazan:** ana oturum (Opus 5.5), Berke'nin isteğiyle. Onarım dalgaları sürerken yazıldı; onarımın ilk günü bitince (2026-11-18 akşamı, sürüm 1.24.1) §1.1 ve §3.H eklendi.
-- **Durum: ARA SÜRÜM (2026-11-18).** Berke: ARGE soruları bütün düzeltmeler bittikten sonra son hâline getirilir; onarım bitince bu liste birleşik ürün ölçümünün sayılarıyla yeniden güncellenir, Mythos ancak ondan sonra devreye girer. Bu hâliyle Mythos'a verilmez.
-- **Kime:** Mythos, onarım bittikten sonraki ARGE oturumunda.
+- **Yazan:** ana oturum (Opus 5.5), Berke'nin isteğiyle. Onarım dalgaları sürerken yazıldı; onarımın ilk günü bitince (2026-11-18 akşamı, sürüm 1.24.1) §1.1 ve §3.H eklendi; 2026-11-19'da onarımın 40 paketine göre son hâline getirildi (ARGE ajanı; ilerleme `docs/arge/2026-11-18_onarim/ARGE_liste.md`).
+- **Durum: SON SÜRÜM ADAYI (2026-11-19):** birleşik ölçüm sayıları ⟨ÖLÇÜM: …⟩ yer tutucularına girecek; o sayılar girmeden Mythos'a verilmez.
+- **Berke'nin önceki sözü (2026-11-18, ARA SÜRÜM için):** ARGE soruları bütün düzeltmeler bittikten sonra son hâline getirilir; onarım bitince bu liste birleşik ürün ölçümünün sayılarıyla yeniden güncellenir, Mythos ancak ondan sonra devreye girer. **2026-11-19:** Berke "mythosa gelelim hemen" dedi (`gonderim/OTURUM_2026-11-19.md`). Liste, onarımın son paketleri sürerken birleşik ölçüm tabanına (a62f15e) göre kapatıldı; süren paketlerin etkisi o tabanda yok (§6).
+- **Kime:** Mythos, ARGE oturumunda.
 - **Ne bekleniyor:** Mythos bu sorulardan hat seçer ve her hat için ölçülebilir bir plan yazar (§5'teki biçimde). Planları Opus ekibi uygular; ana oturum doğrular.
 - **Ne beklenmiyor:** kod yazmak. Ayrıca "şunu dene" türünden ölçütsüz fikir listesi de istenmiyor.
+
+**Mythos için okuma sırası**
+1. §1 (zemin: 1.22.1 → a62f15e ad tablosu, ölçüm altyapısı, olumsuz sonuçlar) ve §1.1 (onarımın özeti).
+2. `docs/arge/2026-11-19_birlesik_olcum/sonuc.md` ve aynı dizindeki ön kayıt (birleşik 119 ölçümü).
+3. §2 bağlayıcı kurallar.
+4. §3 sorular (A–H; her sorunun "Onarım sonrası" satırı) ve §3.I (onarımdan doğan araştırma soruları).
+5. §4 öncelik önerisi (itiraz edilebilir), §5 plan biçimi, §6 sınırlar.
+6. Ayrıntı gerektiğinde: `DURUM.md`'nin ilgili paket satırı, sonra paket dosyası (`docs/arge/2026-11-18_onarim/P*.md`).
 
 ## 0. Önce bunları oku
 
 | Ne | Nerede |
 |---|---|
-| Onarımın son durumu (hangi kusur kapandı, hangi sayı ne oldu) | `docs/arge/2026-11-18_onarim/DURUM.md` ve paket dosyaları (`P00.md` … ) |
-| Onarımın kalanı (hazır paket metinleri, açık bulgular, onay bekleyen silmeler) | `docs/arge/2026-11-18_onarim/gonderim/OKU.md` |
-| Genel tarama (137 bulgu, temalar, vizyon) | `docs/arge/2026-11-18_genel_tarama/RAPOR.md` (§3 temalar, §7 KaradulLM) |
-| Ürün ad ölçümünün son tabanı | `docs/arge/2026-11-10_n1_adim3/urun_olcumu_fark_yeni_yeni2.md` (+ `urun_olcumu_taban.md`, ön kayıt ekleri) |
+| Birleşik ürün ölçümü (a62f15e, 119 ikili): sonuç ve ön kayıt | `docs/arge/2026-11-19_birlesik_olcum/` (`sonuc.md`; ön kayıt aynı dizinde). Koşu kökü `~/karadul_olcum/runs/urun-onarim-a62f15e`, ağaç `~/karadul_olcum/urun-a62f15e` |
+| Onarımın son durumu: 40 paketin önce / sonra sayıları, K-1…K-10, tam takım ara noktaları | `docs/arge/2026-11-18_onarim/DURUM.md` (a62f15e'deki hâli; son ara nokta 2026-11-18 20:4x) ve paket dosyaları (`P00.md` …, ön kayıtlar `P*_on_kayit.md`) |
+| Onarımın kalanı: DURUŞ, sıra, Berke'nin kararını bekleyenler, atanmamış bulgular | `docs/arge/2026-11-18_onarim/gonderim/OKU.md`; süren / sıradaki paket metinleri aynı dizinde (`P12c.md`, `P16d.md`, `PS4.md`, `P22c.md`, `P02b.md`, `P18.md`, `P10b.md`, `P05c.md`, `P08b.md`, `P03b.md`, `P20b.md`, `P23.md`) |
+| 2026-11-19 oturum notları ve Berke kararları (K-10 silme, eski deobf zinciri, K-2 `kebap_ad`) | `docs/arge/2026-11-18_onarim/gonderim/OTURUM_2026-11-19.md` |
+| Genel tarama (137 bulgu, temalar, vizyon) | `docs/arge/2026-11-18_genel_tarama/RAPOR.md` (§3 temalar, §6.1 ölü kod, §7 KaradulLM) |
+| Ürün ad ölçümünün önceki tabanı (1.22.1; karşılaştırma için) | `docs/arge/2026-11-10_n1_adim3/urun_olcumu_fark_yeni_yeni2.md` (+ `urun_olcumu_taban.md`, ön kayıt ekleri) |
+| KaradulLM v2 tasarımı (iki motor, olay akışı, kipler) | `docs/arge/2026-11-18_karadullm_v2/TASARIM.md` |
 | Literatür taraması | `docs/arge/2026-10-21_literatur/yontem_taramasi.md`, `docs/arge/2026-10-15_makale/tersine_derleme_sinirlari.md`, `derleyici_sentez.md`, `veri_setleri.md` |
 | Kilitli test seti (DOKUNULMAZ) | `docs/arge/test_seti_kilidi.md` (15 program; açılış planı dışında Karadul'la analiz edilmez, çıktısına bakılmaz) |
 | Doğrulama seti | `docs/arge/dogrulama_seti_kilidi.md`, `dogrulama_seti_onkayit.md` |
-| Olumsuz sonuçlar (yinelenmesin) | `docs/arge/2026-11-10_n4/` (fiil tavanı, tablo yuvası), `docs/arge/2026-11-12_yerlesim/`, `docs/arge/2026-11-11_n4_v2/`, `docs/arge/2026-11-11_yeniden_hesapla/` |
-| KaradulLM tasarımı ve Onuncu Adam itirazları | `docs/arge/2026-11-11_karadullm/` |
+| Olumsuz sonuçlar (yinelenmesin) | `docs/arge/2026-11-10_n4/` (fiil tavanı, tablo yuvası), `docs/arge/2026-11-12_yerlesim/`, `docs/arge/2026-11-11_n4_v2/`, `docs/arge/2026-11-11_yeniden_hesapla/`; onarımın tutmayan ön kayıtları §1'deki tabloda |
+| KaradulLM ilk tasarımı ve Onuncu Adam itirazları | `docs/arge/2026-11-11_karadullm/` |
 
 ## 1. Zemin: Karadul bugün
 

@@ -1,0 +1,11 @@
+# ARGE — Mythos soru listesinin son hâli (ilerleme)
+
+- **Görev:** `docs/arge/2026-11-18_arge_soru_listesi.md` ARA SÜRÜM → SON SÜRÜM ADAYI (2026-11-19). Birleşik 119 ölçümünün sayıları `⟨ÖLÇÜM: …⟩` yer tutucularına ana oturum tarafından girecek.
+- **Taban:** worktree `git merge --ff-only main` → `0984090` (a62f15e + oturum notları ve P12c metni; yalnız belge).
+- **Kaynaklar (salt okur):** `DURUM.md` (40 paket satırı, K-1…K-10, ara noktalar), `gonderim/OKU.md` (DURUŞ, atanmamış bulgular), `gonderim/OTURUM_2026-11-19.md`, `docs/arge/2026-11-18_genel_tarama/RAPOR.md`, paket dosyaları `P*.md`, `gonderim/P*.md` (süren / sıradaki paket metinleri).
+- **Ek görev (ana oturum, 2026-11-19 08:2x):** Berke'nin hipotezi ("imzalı kütüphanelerden adı bilinmeyen fonksiyonu tahmin et") A2 ve A5'e üç ayrımla (kütüphane kopyası / programın kendi kodu / birleşim hattı) ve A1 bağıyla yazılacak.
+
+## Adımlar
+| Adım | Bölüm | Durum | Commit |
+|---|---|---|---|
+| 1 | Başlık (durum satırı, okuma sırası) + §0 okuma tablosu | bitti | (bu commit) |
