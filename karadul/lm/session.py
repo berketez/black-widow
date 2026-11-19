@@ -682,7 +682,7 @@ class Session:
         """Keşif sorusunu yürütür; cevabı denetim hükmüyle terminale yazar (model metni, öneri DEĞİL: deftere
         ve ad haritasına hiçbir şey yazılmaz). Kanıtsız cevap ayrı başlıkla ve uyarı düzeyinde gösterilir."""
         assert self.agent is not None
-        r = self.agent.ask(job.metin or "", job.anmalar)
+        r = self.agent.ask(job.metin or "", job.anmalar, session_block=self._notebook_block)
         ans = r.answer or {}
         if r.status == STATUS_DONE and isinstance(ans.get("cevap"), str):
             codes = [f.get("kod") for f in (r.guard or {}).get("bulgular", [])]
@@ -691,6 +691,15 @@ class Session:
             self._line(f"{head} {r.task_id} (model metni · denetim {VERDICT_LABELS.get(r.verdict, r.verdict)} · "
                        f"kanıt {refs}): \"{ans['cevap']}\"", "bilgi" if r.verdict == guard.VERDICT_CLEAR else "uyari")
         self._after(r.status if r.status == "iptal" else None)
+
+    def _notebook_block(self, max_tokens: int) -> str:
+        """Keşif sorusunun oturum bloğu (``Notebook.session_block``; yalnız okuma). Defter okunamazsa blok girmez
+        ve terminal bunu söyler (sessiz eksik yok)."""
+        try:
+            return self.notebook.session_block(max_tokens=max_tokens)
+        except OSError as e:
+            self._line(f"defter okunamadı; oturum bloğu bu soruya girmedi: {e}", "uyari")
+            return ""
 
     def _run_name(self, hedef: str, task_mode: str) -> None:
         assert self.agent is not None

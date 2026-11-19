@@ -320,6 +320,54 @@
    "test": "tests/test_p22h_kesif.py::test_oturum_soru_cevabi_terminale_oneri_yok",
    "find": "\"bilgi\" if r.verdict == guard.VERDICT_CLEAR else \"uyari\")",
    "replace": "\"bilgi\")"
+  },
+  {
+   "id": "ob_blok_yok",
+   "desc": "keşif istemine blok girmez",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_oturum_blogu.py::test_blok_kesif_isteminin_basinda_ve_belirlenimci",
+   "find": "notes = session_block(BUDGET_SESSION_TOKENS) if session_block is not None else \"\"",
+   "replace": "notes = \"\""
+  },
+  {
+   "id": "ob_blok_istem",
+   "desc": "blok kestirime girer ama isteme girmez",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_oturum_blogu.py::test_blok_kesif_isteminin_basinda_ve_belirlenimci",
+   "find": "session_block=notes)}]",
+   "replace": "session_block=\"\")}]"
+  },
+  {
+   "id": "ob_kestirim",
+   "desc": "blok kestirime girmez",
+   "module": "karadul/lm/agent.py",
+   "test": "tests/test_p22h_oturum_blogu.py::test_blok_kesif_isteminin_basinda_ve_belirlenimci",
+   "find": "        est_q += estimate_text_tokens(notes) if notes else 0",
+   "replace": "        est_q += 0"
+  },
+  {
+   "id": "ob_oturum_gecir",
+   "desc": "oturum defter bloğunu ajana vermez",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_oturum_blogu.py::test_hat_gorevleri_blogu_almaz",
+   "find": "session_block=self._notebook_block)",
+   "replace": "session_block=None)"
+  },
+  {
+   "id": "ob_kacis",
+   "desc": "defter metni kaçışsız",
+   "module": "karadul/lm/notebook.py",
+   "test": "tests/test_p22h_oturum_blogu.py::test_defter_metni_kacisli",
+   "find": "return f\"- note {fn}: {escape_json(r.metin)}\"",
+   "replace": "return f\"- note {fn}: {json.dumps(r.metin, ensure_ascii=False)}\""
+  },
+  {
+   "id": "ob_okuma_hatasi",
+   "desc": "defter okuma hatası soruyu düşürür",
+   "module": "karadul/lm/session.py",
+   "test": "tests/test_p22h_oturum_blogu.py::test_defter_okunamazsa_bloksuz_ve_satir",
+   "find": "            return self.notebook.session_block(max_tokens=max_tokens)\n        except OSError as e:",
+   "replace": "            return self.notebook.session_block(max_tokens=max_tokens)\n        except KeyError as e:"
   }
  ]
 }

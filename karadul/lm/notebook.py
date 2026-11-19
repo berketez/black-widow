@@ -30,7 +30,7 @@ from typing import Any, Optional
 
 from karadul.lm import BUDGET_SESSION_TOKENS
 from karadul.lm.audit import _HEX64, _SESSION_ID, now_iso
-from karadul.lm.context import estimate_text_tokens
+from karadul.lm.context import escape_json, estimate_text_tokens
 from karadul.lm.repl import INPUT_MAX_CHARS, InputError, check_text
 
 NOTEBOOK_FILE_NAME = "defter.jsonl"
@@ -228,7 +228,9 @@ class Notebook:
         """Defterin belirlenimci özeti: son ``max_records`` kayıt, eskiden yeniye, satır başına bir kayıt;
         jeton kestirimi ``max_tokens``'ı aşacaksa EN ESKİ satırlar düşer ve ilk satır kaç kaydın
         girmediğini söyler (sessiz kırpma yok). Boş defterde boş dizgi. Metinler JSON dizgisi olarak
-        (tırnaklı, kaçışlı) girer: ikiliden kopyalanmış not talimat gibi okunmasın."""
+        (tırnaklı, kaçışlı) girer: ikiliden kopyalanmış not talimat gibi okunmasın. Kaçış ``context.escape_json``'dır
+        (P22h): ``<``, ``>``, ``&`` ve satır bölen karakterler ``\\uXXXX`` olur; not ``</tool_response>`` ya da sohbet
+        şablonu işareti yazamaz. Blok yalnız keşif sorusunun istemine girer (``Agent.ask``)."""
         recs = self.records()
         total = len(recs)
         lines = [self._line(r) for r in recs[-max_records:]]
@@ -251,14 +253,14 @@ class Notebook:
     def _line(r: NoteRecord) -> str:
         fn = f"FUN_{r.adres}" if r.adres else "-"
         if r.tur == REC_NOTE:
-            return f"- note {fn}: {json.dumps(r.metin, ensure_ascii=False)}"
+            return f"- note {fn}: {escape_json(r.metin)}"
         if r.tur == REC_PROPOSAL:
-            return f"- proposal {r.oneri_kimligi} {r.oneri_turu} {fn}: {json.dumps(r.deger, ensure_ascii=False)}"
+            return f"- proposal {r.oneri_kimligi} {r.oneri_turu} {fn}: {escape_json(r.deger)}"
         if r.tur == REC_ACCEPT:
             return f"- accepted {r.oneri_kimligi}"
         if r.tur == REC_REJECT:
-            return f"- rejected {r.oneri_kimligi}: {json.dumps(r.neden, ensure_ascii=False)}"
-        return f"- manual name {fn}: {json.dumps(r.deger, ensure_ascii=False)}"
+            return f"- rejected {r.oneri_kimligi}: {escape_json(r.neden)}"
+        return f"- manual name {fn}: {escape_json(r.deger)}"
 
 
 __all__ = ["INPUT_MAX_CHARS", "Notebook", "NoteRecord", "NotebookError", "RECORD_TYPES"]

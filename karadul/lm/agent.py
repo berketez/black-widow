@@ -39,7 +39,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Callable, Iterable, Iterator, Mapping, Optional, Sequence
 
 from karadul.lm import (
-    BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, EVENT_TOKEN_MIN_INTERVAL_SEC, EVENT_TOUCHED_MAX,
+    BUDGET_SESSION_TOKENS, BUDGET_TOOL_RESULTS_TOKENS, CONTEXT_TOKENS, CONTEXT_TOKENS_K2, EVENT_TOKEN_MIN_INTERVAL_SEC, EVENT_TOUCHED_MAX,
     MAX_TOKENS_STEP, MODEL_RETRY_MAX, TASK_TIME_BUDGET_FALLBACK_SEC, TIME_BUDGET_FACTOR, guard, protocol,
 )
 from karadul.lm.audit import AuditLog, canonical_json, sha256_text
@@ -469,13 +469,18 @@ class Agent:
         return self._run(mode, addr, abstain_allowed, deadline_sec)
 
     def ask(self, question: str, mentions: Sequence[str] = (), *,
+            session_block: Optional[Callable[[int], str]] = None,
             deadline_sec: Optional[float] = None) -> TaskResult:
         """Keşif sorusu (P22h; tasarım §3.2, §3.4). Paket = anılan her fonksiyonun paketi (kanıt + kod; sunucu
         kurar). Motor: ``enabled_modes``'ta K2 varsa araç döngüsü (keşif kaydının araçları, ≤ 8 çağrı); yoksa
         tek atış (K0; kapılar gerçek modelde geçilene kadar öntanım, tasarım §0 madde 1) ve en az bir anma
         gerekir. Cevap ``{cevap, kanit}``; kanıta bağlı olup olmadığını ``guard.check_answer`` söyler (öneri
         DEĞİLDİR: keşifte öneri açılmaz). Körlük kipinde açılmaz (ölçüm içindir). ``mentions``: ``FUN_<adres>``,
-        en çok ``EXPLORE_MENTIONS_MAX``; soru terminal girdi kuralından geçer (``repl.check_text``)."""
+        en çok ``EXPLORE_MENTIONS_MAX``; soru terminal girdi kuralından geçer (``repl.check_text``).
+
+        ``session_block``: oturum bloğunu veren işlev (``Notebook.session_block``'un ``max_tokens``'ı; P22h kalem 3).
+        Blok YALNIZ keşif sorusunun istemine girer (kullanıcı iletisinin başı, tasarım §4.3 sırası); hat görevleri
+        (ad öner, açıkla, özet alt görevi) onu hiç almaz (KL-0 / KL-1 kilidi, pilot eşitliği)."""
         loop = MODE_K2 in self.enabled_modes
         if not loop and MODE_K0 not in self.enabled_modes:
             raise ModeDisabled("keşif sorusu için K0 ya da K2 etkin olmalı")
@@ -497,7 +502,7 @@ class Agent:
             try:
                 return self._run(MODE_K2 if loop else MODE_K0, named[0] if named else "", True, deadline_sec,
                                  task_type=TASK_QUESTION, locked=True, question=question, mentions=tuple(named),
-                                 loop=loop)
+                                 loop=loop, session_block=session_block)
             finally:
                 self.registry = own_registry
 
@@ -1254,7 +1259,7 @@ class Agent:
     # --- keşif sorusu (P22h; tasarım §3.2 keşif döngüsü, §3.4, §0 madde 1) ------------------------------
 
     def _execute_question(self, task: _Task, mode: str, *, question: str, mentions: tuple[str, ...],
-                          loop: bool) -> None:
+                          loop: bool, session_block: Optional[Callable[[int], str]] = None) -> None:
         """Keşif sorusu görevi. Anmalar çözülür, her birinin paketi sunucu tarafından kurulur (``get_evidence`` +
         ``get_decompiled``, döngü kırpması), soru istemin sonuna JSON dizgisi olarak girer. Döngüde model her
         turda bir araç ya da son cevap yazar (bütçe, tekrar, bağlam ``_execute_loop``'unkiyle aynı kural); tek
@@ -1283,10 +1288,14 @@ class Agent:
         task.prefix = system
         asked = explore_question(question, [f"FUN_{a}" for a in addrs], evidence_ids,
                                  max_chars=EXPLORE_ANSWER_MAX_CHARS, loop=loop)
-        convo = [{"role": "system", "content": system},
-                 {"role": "user", "content": user_message([r.wrapped() for r in task.results], asked)}]
         est_q = (estimate_text_tokens(system) + estimate_text_tokens(asked)
                  + sum(estimate_result_tokens(r.envelope()) for r in task.results))
+        # Oturum bloğu (§3.7; P22h kalem 3): defterin belirlenimci özeti, yalnız bu görev türünde.
+        notes = session_block(BUDGET_SESSION_TOKENS) if session_block is not None else ""
+        est_q += estimate_text_tokens(notes) if notes else 0
+        convo = [{"role": "system", "content": system},
+                 {"role": "user", "content": user_message([r.wrapped() for r in task.results], asked,
+                                                          session_block=notes)}]
         task.result.est_prompt_tokens = est_q
         room = ContextBudget(self.loop_context_tokens if loop else self.context_tokens, MAX_TOKENS_STEP)
         if not room.fits(est_q):
