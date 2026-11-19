@@ -1,0 +1,596 @@
+{
+ "sema": "karadul-arge-olcu-sozluk/1",
+ "kaynak": "ÖLÇÜ hattı ajanı, 2026-11-19; C adlandırma geleneklerinden önsel yazıldı; hiçbir etiket kümesine bakılmadan donduruldu. Literatürdeki karşılığı CodeWordNet (SymLM, Jin+ 2022); indirme yasağı nedeniyle kullanılmadı.",
+ "kisaltma": {
+  "alloc": "allocate",
+  "arg": "argument",
+  "args": "argument",
+  "argv": "argument",
+  "attr": "attribute",
+  "attrs": "attribute",
+  "auth": "authenticate",
+  "buf": "buffer",
+  "buff": "buffer",
+  "calc": "calculate",
+  "cb": "callback",
+  "cert": "certificate",
+  "cfg": "config",
+  "conf": "config",
+  "configuration": "config",
+  "ch": "char",
+  "chr": "char",
+  "character": "char",
+  "clr": "clear",
+  "cmd": "command",
+  "cmp": "compare",
+  "cnt": "count",
+  "col": "column",
+  "cols": "column",
+  "conn": "connection",
+  "connect": "connection",
+  "ctx": "context",
+  "cur": "current",
+  "curr": "current",
+  "db": "database",
+  "dec": "decode",
+  "decr": "decrement",
+  "def": "default",
+  "del": "delete",
+  "desc": "description",
+  "dest": "destination",
+  "dst": "destination",
+  "dev": "device",
+  "dir": "directory",
+  "dirs": "directory",
+  "disp": "display",
+  "doc": "document",
+  "dup": "duplicate",
+  "elem": "element",
+  "enc": "encode",
+  "env": "environment",
+  "environ": "environment",
+  "err": "error",
+  "errs": "error",
+  "eval": "evaluate",
+  "evt": "event",
+  "ev": "event",
+  "exec": "execute",
+  "expr": "expression",
+  "ext": "extension",
+  "fd": "descriptor",
+  "fmt": "format",
+  "fn": "function",
+  "func": "function",
+  "gen": "generate",
+  "hdr": "header",
+  "idx": "index",
+  "img": "image",
+  "impl": "implementation",
+  "inc": "include",
+  "incr": "increment",
+  "info": "information",
+  "init": "initialize",
+  "initialise": "initialize",
+  "ins": "insert",
+  "iter": "iterator",
+  "kbd": "keyboard",
+  "len": "length",
+  "lib": "library",
+  "ln": "line",
+  "loc": "location",
+  "lst": "list",
+  "malloc": "allocate",
+  "calloc": "allocate",
+  "max": "maximum",
+  "mem": "memory",
+  "min": "minimum",
+  "mk": "make",
+  "mod": "module",
+  "msg": "message",
+  "mtx": "mutex",
+  "nam": "name",
+  "nb": "number",
+  "num": "number",
+  "nr": "number",
+  "obj": "object",
+  "op": "operation",
+  "ops": "operation",
+  "opt": "option",
+  "opts": "option",
+  "param": "parameter",
+  "params": "parameter",
+  "pkt": "packet",
+  "pos": "position",
+  "pref": "preference",
+  "prefs": "preference",
+  "prev": "previous",
+  "proc": "process",
+  "prop": "property",
+  "props": "property",
+  "ptr": "pointer",
+  "pwd": "password",
+  "passwd": "password",
+  "rand": "random",
+  "rc": "result",
+  "recv": "receive",
+  "ref": "reference",
+  "refs": "reference",
+  "reg": "register",
+  "regex": "regexp",
+  "rel": "release",
+  "req": "request",
+  "res": "result",
+  "resp": "response",
+  "ret": "return",
+  "rm": "remove",
+  "rd": "read",
+  "wr": "write",
+  "sched": "schedule",
+  "sel": "select",
+  "seq": "sequence",
+  "sess": "session",
+  "sig": "signal",
+  "sock": "socket",
+  "spec": "specification",
+  "src": "source",
+  "stats": "statistics",
+  "std": "standard",
+  "str": "string",
+  "strs": "string",
+  "sym": "symbol",
+  "sync": "synchronize",
+  "sys": "system",
+  "sz": "size",
+  "tbl": "table",
+  "temp": "temporary",
+  "tmp": "temporary",
+  "tok": "token",
+  "tx": "transmit",
+  "rx": "receive",
+  "txt": "text",
+  "usr": "user",
+  "util": "utility",
+  "utils": "utility",
+  "val": "value",
+  "vals": "value",
+  "var": "variable",
+  "vars": "variable",
+  "vec": "vector",
+  "ver": "version",
+  "win": "window",
+  "wnd": "window",
+  "xfer": "transfer",
+  "dbg": "debug",
+  "msgs": "message",
+  "fname": "filename",
+  "addr": "address",
+  "bg": "background",
+  "fg": "foreground",
+  "btn": "button",
+  "kb": "keyboard",
+  "lang": "language",
+  "orig": "original",
+  "cpy": "copy",
+  "concat": "concatenate",
+  "ctl": "control",
+  "ctrl": "control",
+  "cksum": "checksum",
+  "crc": "checksum",
+  "hex": "hexadecimal",
+  "bin": "binary",
+  "exe": "executable",
+  "tm": "time",
+  "tz": "timezone",
+  "pct": "percent",
+  "avg": "average"
+ },
+ "esanlam": [
+  [
+   "get",
+   "fetch",
+   "retrieve",
+   "obtain",
+   "query",
+   "lookup",
+   "peek"
+  ],
+  [
+   "set",
+   "assign",
+   "put",
+   "store"
+  ],
+  [
+   "create",
+   "new",
+   "make",
+   "build",
+   "construct",
+   "allocate",
+   "initialize",
+   "setup",
+   "open",
+   "start",
+   "begin"
+  ],
+  [
+   "destroy",
+   "free",
+   "delete",
+   "release",
+   "dispose",
+   "cleanup",
+   "clear",
+   "close",
+   "finish",
+   "end",
+   "stop",
+   "deinitialize",
+   "teardown",
+   "fini",
+   "kill"
+  ],
+  [
+   "add",
+   "append",
+   "insert",
+   "push",
+   "enqueue",
+   "attach",
+   "register"
+  ],
+  [
+   "remove",
+   "erase",
+   "drop",
+   "pop",
+   "dequeue",
+   "detach",
+   "unregister",
+   "unlink"
+  ],
+  [
+   "find",
+   "search",
+   "locate",
+   "match"
+  ],
+  [
+   "print",
+   "display",
+   "show",
+   "draw",
+   "render",
+   "paint",
+   "output",
+   "dump",
+   "emit"
+  ],
+  [
+   "read",
+   "load",
+   "parse",
+   "scan",
+   "decode",
+   "receive",
+   "input",
+   "import"
+  ],
+  [
+   "write",
+   "save",
+   "send",
+   "encode",
+   "export",
+   "flush",
+   "transmit"
+  ],
+  [
+   "check",
+   "validate",
+   "verify",
+   "test",
+   "is",
+   "has",
+   "can"
+  ],
+  [
+   "compare",
+   "equal",
+   "diff"
+  ],
+  [
+   "update",
+   "refresh",
+   "redraw",
+   "sync",
+   "synchronize",
+   "apply",
+   "change",
+   "modify"
+  ],
+  [
+   "copy",
+   "duplicate",
+   "clone"
+  ],
+  [
+   "convert",
+   "transform",
+   "translate"
+  ],
+  [
+   "compute",
+   "calculate",
+   "evaluate",
+   "count"
+  ],
+  [
+   "error",
+   "fail",
+   "fatal",
+   "die",
+   "warn",
+   "abort"
+  ],
+  [
+   "size",
+   "length",
+   "count",
+   "number"
+  ],
+  [
+   "name",
+   "title",
+   "label"
+  ],
+  [
+   "file",
+   "path",
+   "filename"
+  ],
+  [
+   "string",
+   "text"
+  ],
+  [
+   "config",
+   "option",
+   "setting",
+   "preference"
+  ],
+  [
+   "run",
+   "execute",
+   "exec",
+   "invoke",
+   "call",
+   "dispatch",
+   "do"
+  ],
+  [
+   "wait",
+   "sleep",
+   "delay"
+  ],
+  [
+   "lock",
+   "acquire"
+  ],
+  [
+   "unlock"
+  ],
+  [
+   "enable",
+   "activate"
+  ],
+  [
+   "disable",
+   "deactivate"
+  ],
+  [
+   "resize",
+   "grow",
+   "expand",
+   "shrink"
+  ],
+  [
+   "move",
+   "shift",
+   "scroll"
+  ],
+  [
+   "select",
+   "choose",
+   "pick"
+  ],
+  [
+   "sort",
+   "order"
+  ],
+  [
+   "split",
+   "tokenize"
+  ],
+  [
+   "join",
+   "merge",
+   "concatenate",
+   "combine"
+  ],
+  [
+   "usage",
+   "help"
+  ]
+ ],
+ "zit": [
+  [
+   "get",
+   "set"
+  ],
+  [
+   "create",
+   "destroy"
+  ],
+  [
+   "add",
+   "remove"
+  ],
+  [
+   "read",
+   "write"
+  ],
+  [
+   "lock",
+   "unlock"
+  ],
+  [
+   "enable",
+   "disable"
+  ],
+  [
+   "show",
+   "hide"
+  ],
+  [
+   "push",
+   "pop"
+  ],
+  [
+   "encode",
+   "decode"
+  ],
+  [
+   "compress",
+   "decompress"
+  ],
+  [
+   "encrypt",
+   "decrypt"
+  ],
+  [
+   "increment",
+   "decrement"
+  ],
+  [
+   "attach",
+   "detach"
+  ],
+  [
+   "register",
+   "unregister"
+  ],
+  [
+   "link",
+   "unlink"
+  ],
+  [
+   "load",
+   "save"
+  ],
+  [
+   "send",
+   "receive"
+  ],
+  [
+   "first",
+   "last"
+  ],
+  [
+   "next",
+   "previous"
+  ],
+  [
+   "up",
+   "down"
+  ],
+  [
+   "left",
+   "right"
+  ],
+  [
+   "minimum",
+   "maximum"
+  ],
+  [
+   "input",
+   "output"
+  ],
+  [
+   "import",
+   "export"
+  ],
+  [
+   "source",
+   "destination"
+  ],
+  [
+   "prepare",
+   "execute"
+  ],
+  [
+   "prepare",
+   "run"
+  ],
+  [
+   "serialize",
+   "deserialize"
+  ],
+  [
+   "pack",
+   "unpack"
+  ],
+  [
+   "mount",
+   "unmount"
+  ],
+  [
+   "bind",
+   "unbind"
+  ],
+  [
+   "map",
+   "unmap"
+  ]
+ ],
+ "genel": [
+  "handle",
+  "handler",
+  "process",
+  "do",
+  "run",
+  "helper",
+  "func",
+  "function",
+  "fn",
+  "sub",
+  "impl",
+  "implementation",
+  "internal",
+  "wrapper",
+  "common",
+  "generic",
+  "util",
+  "utility",
+  "misc",
+  "data",
+  "info",
+  "information",
+  "value",
+  "thing",
+  "stuff",
+  "routine",
+  "entry",
+  "default",
+  "base",
+  "core",
+  "ex",
+  "real",
+  "inner",
+  "work",
+  "worker",
+  "callback",
+  "cb",
+  "thunk"
+ ]
+}
