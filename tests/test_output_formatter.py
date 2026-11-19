@@ -459,18 +459,17 @@ class TestOutputFormatterBinary:
     def test_undefined_type_cleaning(
         self, tmp_path: Path, workspace: Workspace, binary_pipeline_result: PipelineResult,
     ) -> None:
-        """C source'taki undefined tipler temizlenmeli."""
+        """P18 Kalem 3: Ghidra'nın undefinedN adları korunur (kanıtsız tamsayı iddiası yok);
+        eski sözcük sınırsız değişim dizgi sabitini de bozuyordu."""
         _populate_binary_workspace(workspace)
         formatter = OutputFormatter(workspace, binary_pipeline_result)
 
-        test_content = "undefined8 var1; undefined4 var2; undefined var3;"
+        test_content = ('undefined8 var1; undefined4 var2; undefined var3; '
+                        'puts("undefined symbol"); int undefined_behavior;')
         cleaned = formatter._clean_c_source(test_content)
 
-        assert "undefined8" not in cleaned
-        assert "undefined4" not in cleaned
-        assert "uint64_t" in cleaned
-        assert "uint32_t" in cleaned
-        assert "uint8_t" in cleaned
+        assert cleaned == test_content
+        assert "uint64_t" not in cleaned
 
 
 # ------------------------------------------------------------------

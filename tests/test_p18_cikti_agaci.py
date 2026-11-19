@@ -195,3 +195,60 @@ def test_ayni_ad_farkli_imza_bir_kez_bildirilir(tmp_path):
     metin = "\n".join(h.read_text() for h in (proje / "include").glob("subsystem_*.h"))
     assert ("// also defined with another signature (not declared twice): "
             "long dup(long param_1);  // @00007000") in metin
+
+
+# ---------------------------------------------------------------------------
+# B-B8 + yedek yol (proje ağacı yokken): types.h tek kez, göreli yol korunur,
+# undefinedN Ghidra adıyla kalır (P18 Kalem 3).
+# ---------------------------------------------------------------------------
+
+def _yedek_yol_cikti(tmp_path: Path) -> Path:
+    from karadul.core.output_formatter import OutputFormatter
+    from karadul.core.result import PipelineResult, StageResult
+    from karadul.core.workspace import Workspace
+
+    ws = Workspace(base_dir=tmp_path / "ws", target_name="deneme")
+    ws.create()
+    rec = ws.get_stage_dir("reconstructed")
+    for alt in ("a", "b", "c"):
+        (rec / "commented" / alt).mkdir(parents=True)
+        (rec / "commented" / alt / "util.c").write_text(
+            f'undefined8 util_{alt}(undefined4 x)\n{{\n  puts("undefined symbol");\n}}\n')
+    (rec / "commented" / "types.h").write_text("/* kaynak dizindeki types.h */\n")
+    (rec / "typed").mkdir()
+    (rec / "typed" / "types.h").write_text(
+        "#ifndef RECOVERED_TYPES_H\n#define RECOVERED_TYPES_H\n"
+        "struct kurtarilan { int a; };\n#endif /* RECOVERED_TYPES_H */\n")
+    sonuc = PipelineResult(target_name="deneme", target_hash="00", workspace_path=ws.path)
+    sonuc.add_stage_result(StageResult(stage_name="identify", success=True,
+                                       duration_seconds=0.1, stats={"language": "c"}))
+    cikti = tmp_path / "out"
+    OutputFormatter(ws, sonuc).format_output(cikti, fmt="clean")
+    return cikti / "src"
+
+
+def test_yedek_yol_ayni_adli_dosyalar_ezilmez(tmp_path):
+    src = _yedek_yol_cikti(tmp_path)
+    kaynaklar = sorted(p.relative_to(src).as_posix() for p in src.rglob("*.c"))
+    assert len(kaynaklar) == 3, kaynaklar
+    metin = "".join((src / k).read_text() for k in kaynaklar)
+    assert all(f"util_{x}" in metin for x in "abc")
+
+
+def test_yedek_yol_types_h_tek_ve_typedefli(tmp_path):
+    src = _yedek_yol_cikti(tmp_path)
+    basliklar = sorted(p.relative_to(src).as_posix() for p in src.rglob("*.h"))
+    assert basliklar == ["types/types.h"]
+    tipler = (src / "types" / "types.h").read_text()
+    assert "typedef uint64_t  undefined8;" in tipler
+    assert "typedef uint8_t   undefined;" in tipler
+    assert "struct kurtarilan { int a; };" in tipler
+    assert "kaynak dizindeki types.h" not in tipler
+
+
+def test_yedek_yol_undefined_ve_dizgi_korunur(tmp_path):
+    src = _yedek_yol_cikti(tmp_path)
+    metin = "".join(p.read_text() for p in src.rglob("*.c"))
+    assert "undefined8 util_" in metin and "(undefined4 x)" in metin
+    assert 'puts("undefined symbol")' in metin
+    assert "uint64_t" not in metin

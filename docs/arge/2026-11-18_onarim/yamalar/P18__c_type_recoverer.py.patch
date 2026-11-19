@@ -1,0 +1,23 @@
+--- a/karadul/reconstruction/c_type_recoverer.py
++++ b/karadul/reconstruction/c_type_recoverer.py
+@@ -1146,14 +1146,12 @@
+     "int *": 8,
+ }
+ 
+-# Ghidra undefined* -> gercek tip haritalamasi (baglam olmadan varsayilan)
+-_UNDEFINED_DEFAULTS: dict[str, str] = {
+-    "undefined1": "uint8_t",
+-    "undefined2": "uint16_t",
+-    "undefined4": "int32_t",
+-    "undefined8": "uint64_t",
+-    "undefined": "uint64_t",
+-}
++# Ghidra undefined* için bağlamsız öntanım YOK (P18, 2026-11-19): ``undefinedN`` "N bayt, türü
++# bilinmiyor" der; kanıtsız ``uint64_t`` ise tamsayı iddiasıdır. DWARF'lı 22 ikilide öntanımın
++# sınanabilen değişimlerinin çoğu yanlıştı (işaretçi parametreye tamsayı); ölçüm
++# docs/arge/2026-11-18_onarim/P18.md Kalem 3. Kanıtlı tip katmanları (2a-2g, XTRIDE) değişmedi;
++# ``include/types.h``'deki typedef'ler yalnız ayrıştırma içindir.
++_UNDEFINED_DEFAULTS: dict[str, str] = {}
+ 
+ # K-1 bekletmesi (Berke, 2026-11-18): koda bağlanmayan yapı adayları
+ # ``types.h``'ye değil bu dosyaya yazılır.  Uzantı bilerek ``.h``/``.c`` değil:

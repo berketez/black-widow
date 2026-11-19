@@ -173,6 +173,22 @@ _MERGED_BANNER = (
     "// ==========================================================\n\n"
 )
 
+# Ghidra'nın `undefinedN` tipleri "N bayt, türü bilinmiyor" der (P18 Kalem 3). Kodda Ghidra'nın
+# adıyla kalırlar; typedef yalnız kodun ayrıştırılabilmesi içindir, tür iddiası değildir.
+# Ghidra'da `undefined` 1 bayttır (eskiden `void*` yazılıyordu: yanlış boyut).
+GHIDRA_TYPEDEF_LINES: tuple[str, ...] = (
+    "// ---- Ghidra undefined type definitions ----",
+    "// undefinedN = N bytes of unknown kind (Ghidra). These typedefs only let the",
+    "// code parse; they are not type claims.",
+    "typedef uint8_t   undefined1;",
+    "typedef uint16_t  undefined2;",
+    "typedef uint32_t  undefined4;",
+    "typedef uint64_t  undefined8;",
+    "typedef uint8_t   undefined;",
+    "typedef void    (*code)(void);",
+    "",
+)
+
 # Ghidra'nın thunk olarak işaretlediği fonksiyonlar (içe aktarım taslakları, başka
 # fonksiyona atlama) programın kendi kodu değildir; raporun fonksiyon sayısı da
 # (`ghidra_function_count`, P16a) onları saymaz. Proje ağacında ayrı ve etiketli
@@ -1530,14 +1546,7 @@ class CProjectBuilder:
             "#include <stddef.h>",
             "#include <stdbool.h>",
             "",
-            "// ---- Ghidra undefined type definitions ----",
-            "typedef uint8_t   undefined1;",
-            "typedef uint16_t  undefined2;",
-            "typedef uint32_t  undefined4;",
-            "typedef uint64_t  undefined8;",
-            "typedef void*     undefined;",
-            "typedef void    (*code)(void);",
-            "",
+            *GHIDRA_TYPEDEF_LINES,
             "// ---- Ghidra pointer-sized types ----",
             "typedef intptr_t  addr;",
             "typedef uintptr_t uaddr;",

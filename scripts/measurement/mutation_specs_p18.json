@@ -64,6 +64,38 @@
       "test": "tests/test_p18_cikti_agaci.py::test_is_thunk_alani_olmayan_eski_liste_bilinmiyor",
       "find": "        return thunks if known else None\n",
       "replace": "        return thunks\n"
+    },
+    {
+      "id": "p18_k3_yedek_yol_tamsayi_ontanimi",
+      "desc": "Yedek yol undefined8'i yine uint64_t'ye çevirir (dizgi sabiti dahil)",
+      "module": "karadul/core/output_formatter.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_yedek_yol_undefined_ve_dizgi_korunur",
+      "find": "        return re.sub(r\"\\n{4,}\", \"\\n\\n\\n\", content)\n",
+      "replace": "        return re.sub(r\"\\n{4,}\", \"\\n\\n\\n\", content).replace(\"undefined8\", \"uint64_t\")\n"
+    },
+    {
+      "id": "p18_k3_undefined_void_isaretci",
+      "desc": "types.h'de Ghidra'nın 1 baytlık undefined'ı yine void* (yanlış boyut)",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_yedek_yol_types_h_tek_ve_typedefli",
+      "find": "    \"typedef uint8_t   undefined;\",\n",
+      "replace": "    \"typedef void* undefined;\",\n"
+    },
+    {
+      "id": "p18_b8_moduller_duzlesir",
+      "desc": "Yedek yol alt dizinleri düzleştirir; aynı adlı dosyalar birbirini ezer",
+      "module": "karadul/core/output_formatter.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_yedek_yol_ayni_adli_dosyalar_ezilmez",
+      "find": "            dest = modules_dir / self._clean_relative_path(f.relative_to(source_dir))\n",
+      "replace": "            dest = modules_dir / self._clean_filename(f.name)\n"
+    },
+    {
+      "id": "p18_b8_types_h_kaynaktan",
+      "desc": "types.h proje kurucusunun içeriği yerine kaynak dizindeki dosyadan (typedef'siz) yazılır",
+      "module": "karadul/core/output_formatter.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_yedek_yol_types_h_tek_ve_typedefli",
+      "find": "            CProjectBuilder(None)._build_types_h(source_dir, self._workspace), encoding=\"utf-8\")\n",
+      "replace": "            (source_dir / \"types.h\").read_text(), encoding=\"utf-8\")\n"
     }
   ]
 }

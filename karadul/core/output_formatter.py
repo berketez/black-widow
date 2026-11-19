@@ -382,29 +382,33 @@ class OutputFormatter:
             (src_dir / "main.c").write_text(content, encoding="utf-8")
             files_written += 1
 
-        # Modul dosyalarini kategorize et
+        # Modül dosyaları: göreli yol korunur (eskiden alt dizinler düzleşiyor, aynı adlı iki
+        # dosya ``modules/<ad>``'da birbirini sessizce eziyordu).
         for f in module_files:
             content = f.read_text(encoding="utf-8", errors="replace")
-            category = self._categorize_c_module(f.name, content)
-            dest_name = self._clean_filename(f.name)
-            content = self._clean_c_source(content)
-            dest = modules_dir / dest_name
-            dest.write_text(content, encoding="utf-8")
+            dest = modules_dir / self._clean_relative_path(f.relative_to(source_dir))
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(self._clean_c_source(content), encoding="utf-8")
             files_written += 1
 
-        # Header dosyalari -> types/
+        # Başlıklar -> types/ (göreli yol korunur). ``types.h`` tek kez ve proje kurucusunun
+        # ürettiğiyle aynı içerikle yazılır (Ghidra typedef'leri + kurtarılan tipler). B-B8:
+        # eskiden kaynak dizindeki ``types.h`` önce yazılıyor, sonra ``reconstructed/types.h``
+        # üstüne yazılıyordu; kod Ghidra'nın ``undefinedN`` adlarını taşıdığı için typedef'ler
+        # de gerekir (P18 Kalem 3).
+        from karadul.reconstruction.c_project_builder import CProjectBuilder
+
         for f in h_files:
-            content = f.read_text(encoding="utf-8", errors="replace")
-            dest_name = self._clean_filename(f.name)
-            (types_dir / dest_name).write_text(content, encoding="utf-8")
+            rel = f.relative_to(source_dir)
+            if rel.as_posix() == "types.h":
+                continue
+            dest = types_dir / self._clean_relative_path(rel)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(f.read_text(encoding="utf-8", errors="replace"), encoding="utf-8")
             files_written += 1
-
-        # types.h kurtarildiysa kontrol et
-        types_header = reconstructed / "types.h"
-        if types_header.exists():
-            content = types_header.read_text(encoding="utf-8", errors="replace")
-            (types_dir / "types.h").write_text(content, encoding="utf-8")
-            files_written += 1
+        (types_dir / "types.h").write_text(
+            CProjectBuilder(None)._build_types_h(source_dir, self._workspace), encoding="utf-8")
+        files_written += 1
 
         # Bos dizinleri temizle
         if not list(modules_dir.iterdir()):
@@ -1308,23 +1312,20 @@ class OutputFormatter:
     # ------------------------------------------------------------------
     @staticmethod
     def _clean_c_source(content: str) -> str:
-        """Decompiled C kodunu temizle ve formatla."""
-        # Fazla bos satirlari azalt (3+ -> 2)
-        content = re.sub(r"\n{4,}", "\n\n\n", content)
+        """Decompile edilmiş C kodunda fazla boş satırları azalt (3+ -> 2).
 
-        # Ghidra'nin undefined degiskenlerini temizle (ama icerik kaybetme)
-        # undefined4 -> uint32_t, undefined8 -> uint64_t vb.
-        type_map = {
-            "undefined8": "uint64_t",
-            "undefined4": "uint32_t",
-            "undefined2": "uint16_t",
-            "undefined1": "uint8_t",
-            "undefined": "uint8_t",
-        }
-        for old, new in type_map.items():
-            content = content.replace(old, new)
+        Tip adlarına dokunulmaz (P18 Kalem 3): Ghidra'nın ``undefinedN``'i "N bayt, türü
+        bilinmiyor" der; eskiden burada sözcük sınırı olmadan ``uint64_t`` vb. yazılıyordu —
+        hem kanıtsız tamsayı iddiası hem dizgi sabitlerini bozan metin değişimi
+        (``"undefined symbol"`` -> ``"uint8_t symbol"``). Ayrıştırma için typedef'ler
+        ``types/types.h``'de.
+        """
+        return re.sub(r"\n{4,}", "\n\n\n", content)
 
-        return content
+    @classmethod
+    def _clean_relative_path(cls, rel: Path) -> Path:
+        """Göreli yolun her parçası :meth:`_clean_filename` ile temizlenir (dizinler korunur)."""
+        return Path(*(cls._clean_filename(part) for part in rel.parts))
 
     @staticmethod
     def _clean_js_source(content: str) -> str:
