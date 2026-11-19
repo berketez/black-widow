@@ -1,0 +1,37 @@
+{
+  "_comment": "P12d mutasyon koruması. D1: susacak agresif aday klasik aşamanın önünü kesmez (erken dönüş susturmayı hesaba katar; işçi süreçler susan kümeyi alır). Her mutant onarımın bir parçasını bozar; ilgili test KIRMIZI olmalı. find metinleri c_namer.py'de tekil; mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p12d.json",
+  "mutants": [
+    {
+      "id": "p12d_d1_erken_donus_susturmaya_bakmaz",
+      "desc": "D1: erken dönüş yine yalnız güvene bakar (susan agresif aday klasik aşamayı keser)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_erken_donus.py::test_susan_agresif_075_klasigi_durdurmaz",
+      "find": "            if conf >= 0.75 and self._string_sub_channel(aggressive_cand) not in getattr(\n                    self, \"_silenced_subchannels\", frozenset()):\n                return\n",
+      "replace": "            if conf >= 0.75:\n                return\n"
+    },
+    {
+      "id": "p12d_d1_erken_donus_hic_yok",
+      "desc": "D1: erken dönüş tümden kalkar (susturma kapalıyken de klasik koşar)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_erken_donus.py::test_susturma_kapaliyken_erken_doner",
+      "find": "            if conf >= 0.75 and self._string_sub_channel(aggressive_cand) not in getattr(\n                    self, \"_silenced_subchannels\", frozenset()):\n                return\n",
+      "replace": "            if conf > 9.0:\n                return\n"
+    },
+    {
+      "id": "p12d_isci_kumesi_bos",
+      "desc": "İşçi süreç susan kümeyi almaz (üretimdeki süreç havuzunda onarım ölü)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_erken_donus.py::test_gercek_havuzda_klasik_ad_verilir",
+      "find": "    namer._silenced_subchannels = frozenset(silenced_subchannels)\n",
+      "replace": "    namer._silenced_subchannels = frozenset()\n"
+    },
+    {
+      "id": "p12d_initargs_kumesiz",
+      "desc": "Ana süreç susan kümeyi işçi başlatıcısına geçirmez",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_p12d_erken_donus.py::test_gercek_havuzda_klasik_ad_verilir",
+      "find": "            getattr(self, \"_silenced_subchannels\", frozenset()),\n        )\n",
+      "replace": "            frozenset(),\n        )\n"
+    }
+  ]
+}

@@ -1857,12 +1857,15 @@ def _init_heuristic_worker(
     functions: dict[str, "_FunctionInfo"],
     func_by_name: dict[str, "_FunctionInfo"],
     strings: list["_StringRef"],
+    silenced_subchannels: frozenset[str] = frozenset(),
 ) -> None:
     """Her worker process'te bir kez calisir, read-only state'i kurar.
 
     CVariableNamer instance'i __new__ ile olusturulur (overhead yok),
     read-only alanlar set edilir.  Her worker kendi candidates dict'ini
     tutar -- shared state YOK, sonuclar ana process'e donduruluyor.
+    ``silenced_subchannels``: ana sürecin susan alt kanalları (P12d: string_context
+    stratejisi okur; aday listesi işçide süzülmez, süzgeç ana süreçte).
     """
     global _worker_namer
     namer = CVariableNamer.__new__(CVariableNamer)
@@ -1877,6 +1880,7 @@ def _init_heuristic_worker(
     namer._functions = functions
     namer._func_by_name = func_by_name
     namer._strings = strings
+    namer._silenced_subchannels = frozenset(silenced_subchannels)
     namer._candidates = {}
     namer._candidates_lock = threading.Lock()
     _worker_namer = namer
@@ -2271,6 +2275,7 @@ class CVariableNamer:
             self._functions,
             self._func_by_name,
             self._strings,
+            getattr(self, "_silenced_subchannels", frozenset()),
         )
 
         # Belirlenimcilik (G9 / OL-7): isci sonuclari bitis (as_completed)
@@ -3504,7 +3509,7 @@ class CVariableNamer:
 
         if best_aggressive:
             name, conf, src_string = best_aggressive
-            self._add_candidate(_NamingCandidate(
+            aggressive_cand = _NamingCandidate(
                 old_name=func_info.name,
                 new_name=name,
                 confidence=conf,
@@ -3515,10 +3520,13 @@ class CVariableNamer:
                 rule=best_aggressive_rule,
                 evidence_origin=_string_evidence_origin(
                     best_aggressive_idx, len(strings)),
-            ), func_name=func_info.name)
+            )
+            self._add_candidate(aggressive_cand, func_name=func_info.name)
             # Agresif match bulduysa klasik'e de devam et (daha iyi isim olabilir)
-            # Ama confidence zaten yuksekse atla
-            if conf >= 0.75:
+            # Ama confidence zaten yuksekse atla. P12d (K-2): aday susacaksa (N0b
+            # susturması, ana süreçte) atlanmaz; susan aday klasik aşamanın önünü kesmez.
+            if conf >= 0.75 and self._string_sub_channel(aggressive_cand) not in getattr(
+                    self, "_silenced_subchannels", frozenset()):
                 return
 
         # --- Asama 2: Klasik keyword extraction ---
