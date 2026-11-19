@@ -468,6 +468,35 @@
     border-bottom:1px dashed var(--border); white-space:nowrap} .updnotes:hover{color:var(--cyan)}
   .updx{cursor:pointer; color:var(--dim); border:1px solid var(--border); border-radius:3px;
     padding:5px 10px; font-size:12px; line-height:1} .updx:hover{border-color:var(--unnamed); color:var(--unnamed)}
+
+  /* ===================== KARADULLM: terminal çekmecesi, ajan imleci, öneri kartı (P22c2) =====================
+     Kural (Berke): sahte veri / sahte animasyon YOK. Bu bölümde hiçbir seçicide süresiz (infinite) ya da kendiliğinden
+     oynayan animasyon yoktur. */
+  .lmdrawer{display:flex; flex-direction:column; border-top:1px solid var(--border); background:var(--panel); z-index:5; min-height:0}
+  .lmdrawer .lmbar{display:flex; align-items:center; gap:12px; padding:5px 14px; font-size:10px; letter-spacing:1.2px;
+    color:var(--dim); background:var(--bg2); cursor:pointer; user-select:none; border-bottom:1px solid var(--border)}
+  .lmdrawer .lmbar b{color:var(--widow); letter-spacing:2px}
+  .lmdrawer .lmbar .lmst{color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1}
+  .lmdrawer .lmbar .lmchev{color:var(--dim)}
+  .lmbtn{padding:2px 9px; background:transparent; color:var(--dim); border:1px solid var(--border); border-radius:2px;
+    cursor:pointer; font-family:inherit; font-size:10px; letter-spacing:1px}
+  .lmbtn:hover{color:var(--cyan); border-color:var(--cyan)} .lmbtn:disabled{opacity:.35; cursor:not-allowed}
+  .lmbtn.ok{color:var(--named); border-color:rgba(56,224,138,.4)} .lmbtn.no{color:var(--unnamed); border-color:rgba(230,58,84,.4)}
+  .lmhide{display:none}
+  .lmbody{display:none; height:34vh; min-height:150px; min-width:0}
+  .lmdrawer.open .lmbody{display:flex}
+  .lmterm{flex:1; display:flex; flex-direction:column; min-width:0}
+  .lmlines{flex:1; overflow-y:auto; padding:8px 12px; font-size:11.5px; line-height:1.55; white-space:pre-wrap;
+    word-break:break-word; background:var(--bg); scrollbar-width:thin; scrollbar-color:var(--faint) transparent}
+  .lml.lm-in{color:var(--cyan)} .lml.lm-hd{color:var(--text)} .lml.lm-dim{color:var(--dim)}
+  .lml.lm-task{color:var(--text)} .lml.lm-tool{color:var(--dim)} .lml.lm-model{color:#c9a8ff}
+  .lml.lm-prop{color:var(--named)} .lml.lm-warn{color:var(--weak)} .lml.lm-err{color:var(--unnamed)}
+  .lml.lm-v-ret,.lml.lm-v-celiski{color:var(--unnamed)} .lml.lm-v-sinandi_celiski_yok{color:var(--named)}
+  .lml.lm-v-sinanamadi{color:var(--weak)}
+  .lmtok{padding:2px 12px; font-size:10px; color:var(--faint); min-height:16px; border-top:1px solid var(--border)}
+  .lmin{display:flex; align-items:center; gap:8px; padding:6px 12px; border-top:1px solid var(--border); background:var(--bg2)}
+  .lmin .lmps{color:var(--widow); font-size:12px; white-space:nowrap}
+  .lmin input{flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:inherit; font-size:12px}
 </style>
 </head>
 <body>
@@ -577,6 +606,25 @@
       </div>
       <pre id="cBody"></pre>
     </section>
+  </div>
+  <!-- KaradulLM terminali: haritanın ve kod panelinin altında açılır çekmece (Berke kararı 4 (a)). Kabuk DEĞİLDİR:
+       sunucu yalnız tam `karadullm` komutunu kabul eder; satırlar yalnız textContent ile basılır. -->
+  <div class="lmdrawer" id="lmDrawer">
+    <div class="lmbar" id="lmBar" title="KaradulLM terminalini aç / kapat">
+      <b>KARADULLM</b><span>TERMİNAL</span><span class="lmst" id="lmStatus">oturum yok · kabuk değildir: yalnız `karadullm`</span>
+      <button class="lmbtn lmhide" id="lmApprove">ONAYLA</button>
+      <button class="lmbtn" id="lmStop" disabled>DURDUR</button>
+      <button class="lmbtn" id="lmEnd" disabled>OTURUMU KAPAT</button>
+      <span class="lmchev" id="lmChev">▸</span>
+    </div>
+    <div class="lmbody">
+      <div class="lmterm">
+        <div class="lmlines" id="lmLines" role="log" aria-live="polite"></div>
+        <div class="lmtok" id="lmTok"></div>
+        <div class="lmin"><span class="lmps" id="lmPs">$</span>
+          <input id="lmIn" spellcheck="false" autocomplete="off" maxlength="2000" placeholder="karadullm yazın (kabuk değildir)"></div>
+      </div>
+    </div>
   </div>
   <footer>
     <span class="live" id="fStatus">HAZIR</span>
@@ -1803,6 +1851,114 @@ function bwPollDownload(){
 window.bwOpenAbout=openAbout;
 window.bwOpenSettings=openSettings;
 window.bwShowUpdate=bwShowUpdate;
+
+/* P22C2-LM-BASLA: KaradulLM terminali, ajan imleci ve öneri kartı — saf mantık (DOM yok; node ile sınanır:
+   tests/test_ui_lm_panel.py). Olaylar sunucuda arındırılmıştır (karadul/lm/events.py); satırlar yine yalnız
+   textContent ile basılır. Satır biçiminin başvurusu karadul/lm/repl.py::render (aynı metinler). Sayılar olaylardaki
+   gerçek değerlerdir; ölçülmemiş değer '?'. */
+const LM_VERDICT={ret:'RET',celiski:'ÇELİŞKİ',sinandi_celiski_yok:'ÇELİŞKİ BULUNMADI (sınandı)',sinanamadi:'SINANAMADI (kanıt yok)'};
+const LM_TASK={acikla:'açıkla',ad_oner:'ad öner',ozet_alt:'özet',soru:'soru',plan:'plan'};
+const LM_LINES_MAX=2000;    // panelde tutulan en çok satır; fazlası en eskiden düşer ve SAYILIR
+function lmHas(o,k){ return !!o&&Object.prototype.hasOwnProperty.call(o,k); }
+function lmV(h){ return lmHas(LM_VERDICT,h)?LM_VERDICT[h]:String(h); }
+function lmNum(v,unit){ return (typeof v==='number'&&isFinite(v))?(v+' '+unit):('? '+unit); }
+function lmCnt(v){ return (typeof v==='number'&&isFinite(v))?String(v):'?'; }
+function lmFn(h){ if(h&&typeof h==='object'){ if(h.fn) return String(h.fn); if(h.adres!=null&&h.adres!=='') return 'adres '+h.adres; } return '-'; }
+/* Bir olayın terminal satırları: [{t: metin, c: sınıf}]. Boş liste: terminalde satırı yok (jeton, model_istegi,
+   arac_basladi; repl.render ile aynı). "Düşünce" satırı yok: gösterilen yalnız modelin yazdığı (niyet, cevap). */
+function lmLines(e){
+  const t=e&&e.tur, g=e&&e.gorev, L=(s,c)=>({t:String(s),c:c||''});
+  if(t==='oturum_basladi') return [
+    L('KaradulLM · '+e.arka_uc+' · model '+(e.model||'bilinmiyor')+' · bağlam '+(e.baglam==null?'-':e.baglam)+' · ağ '+e.ag+' · '+e.kip,'hd'),
+    L(e.hiz?('hız: '+JSON.stringify(e.hiz)):'hız: ölçülmedi  [/hiz ile ölç]','dim')];
+  if(t==='arka_uc_durumu') return [L('arka uç: '+e.durum+(e.bellek_gib!=null?(' · bellek '+e.bellek_gib+' GiB'):''),'dim')];
+  if(t==='gorev_basladi'){ const b=e.butce||{};
+    return [L('● '+g+' '+(lmHas(LM_TASK,e.gorev_turu)?LM_TASK[e.gorev_turu]:e.gorev_turu)+' '+lmFn(e.hedef)+'  bütçe: '+lmCnt(b.arac)+' araç · '+lmCnt(b.jeton)+' jeton · '+lmCnt(b.sure_sn)+' sn','task')]; }
+  if(t==='arac_bitti'){ const d=e.tamam?(e.tur_kind||''):('hata: '+e.hata);
+    return [L('  ⎿ '+e.sonuc+' '+e.arac+'  '+d+' · '+lmNum(e.bayt,'B')+' · '+lmNum(e.sure_ms,'ms')+(e.kirpma?' · kırpıldı':''),e.tamam?'tool':'err')]; }
+  if(t==='model_cevabi'){ const o=[];
+    if(e.niyet) o.push(L('  ⋯ niyet (model metni): '+e.niyet,'model'));
+    if(e.hata) return o.concat([L('  ◆ model: '+e.durum+' · '+e.hata,'err')]);
+    return o.concat([L('  ◆ model: istem '+lmNum(e.istem_jeton,'jeton')+' · üretilen '+lmNum(e.uretim_jeton,'jeton')+' · '+e.durum,'model')]); }
+  if(t==='denetim'){ const o=[L('  denetim: '+lmV(e.hukum),'v-'+e.hukum)];
+    for(const f of (e.bulgular||[])) o.push(L('    '+f.kural+' '+f.kod+' ('+f.etki+')','dim'));
+    if(e.sinanmayan&&e.sinanmayan.length) o.push(L('    sınanmayan: '+e.sinanmayan.slice().sort().join(', '),'dim'));
+    return o; }
+  if(t==='ozet'){ const k=e.kaynak==='model'?'model önerisi':'olgu (modelsiz)'; const kn=(e.kanit||[]).join(' ')||'yok';
+    return [L('● özet '+lmFn(e.hedef)+' ('+k+' · kanıt '+kn+(e.belirsiz?' · belirsiz':'')+'): "'+e.metin+'"','model')]; }
+  if(t==='oneri') return [L('● öneri '+e.oneri_kimligi+' kuyrukta: '+e.oneri_turu+' '+lmFn(e.hedef)+' → "'+e.deger+'" · denetim '+lmV(e.hukum)+' (kabul / ret öneri kartında)','prop')];
+  if(t==='gorev_bitti'){ const s=e.sayaclar||{};
+    return [L('● '+g+' bitti · '+e.durum+' · '+lmCnt(s.tool_calls)+' araç · '+lmCnt(s.model_calls)+' model çağrısı · '+lmNum(e.sure_ms,'ms')+(e.hata?(' · '+e.hata):''),'task')]; }
+  if(t==='iptal') return [L('■ iptal istendi ('+e.kaynak+')','warn')];
+  if(t==='satir'){ const p={uyari:'! ',hata:'✗ '}[e.duzey]||''; return [L(p+e.metin,e.duzey==='hata'?'err':(e.duzey==='uyari'?'warn':''))]; }
+  if(t==='oturum_bitti') return [L('oturum kapandı ('+e.neden+')','hd')];
+  return [];
+}
+/* Durum satırı. Hız ölçülmeden boş ("ölçülmedi"); beklenen süre yalnız ölçülen hızdan ve "beklenen" diye (U-3). */
+function lmStatusText(st){
+  if(!st||!st.oturum) return 'oturum yok · kabuk değildir: yalnız `karadullm`'+(st&&st.model_ayari?(' · model: '+st.model_ayari):' · model yapılandırılmamış');
+  const h=st.hiz, parts=['oturum '+st.oturum,'kip '+st.kip,'arka uç '+(st.arka_uc==null?'yok':st.arka_uc),
+    'model '+(st.model||'-'),'ağ '+st.ag,'takip '+(st.takip?'açık':'kapalı')];
+  parts.push(h&&typeof h.T==='number'?('hız: önek '+lmCnt(h.P)+' · üretim '+lmCnt(h.G)+' jeton/sn · beklenen görev ≈ '+h.T.toFixed(1)+' sn'):'hız: ölçülmedi');
+  if(st.calisan) parts.push('çalışan: '+st.calisan.is+' '+st.calisan.tur);
+  if(st.kuyruk) parts.push('kuyruk '+st.kuyruk);
+  if(st.onay_bekleyen) parts.push('onay bekliyor: '+st.onay_bekleyen.is);
+  return parts.join(' · ');
+}
+/* P22C2-LM-BITIS */
+
+/* ---- KaradulLM: DOM (çekmece) ---- */
+const LM={oturum:null, son:0, follow:true, dropped:0};
+function lmJson(url,body){
+  return fetch(url,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(async r=>{ let j={}; try{ j=await r.json(); }catch(e){} return {ok:r.ok,status:r.status,j:j}; });
+}
+function lmAdd(text,cls){
+  const box=$('lmLines'); const d=document.createElement('div');
+  d.className='lml'+(cls?(' lm-'+cls):''); d.textContent=text; box.appendChild(d);
+  while(box.childElementCount>LM_LINES_MAX){ box.removeChild(box.firstChild); LM.dropped++; }
+  if(LM.dropped) $('lmTok').textContent='panelden düşen eski satır: '+LM.dropped+' (en çok '+LM_LINES_MAX+' tutulur)';
+  box.scrollTop=box.scrollHeight;
+}
+function lmToggle(open){
+  const d=$('lmDrawer'); const on=open===undefined?!d.classList.contains('open'):!!open;
+  d.classList.toggle('open',on); $('lmChev').textContent=on?'▾':'▸';
+  if(on) setTimeout(()=>$('lmIn').focus(),0);
+  if(CENTER) drawRadial(CENTER);   // sahne boyu değişti: harita yeniden yerleşir
+}
+async function lmRefreshStatus(){
+  const r=await lmJson('/api/lm/durum').catch(()=>null); if(!r||!r.ok) return;
+  const st=r.j; $('lmStatus').textContent=lmStatusText(st);
+  if(st.oturum&&st.oturum===LM.oturum){ LM.follow=!!st.takip;
+    $('lmStop').disabled=!(st.calisan||st.kuyruk); $('lmApprove').classList.toggle('lmhide',!st.onay_bekleyen); }
+}
+function lmSetSession(id){
+  LM.oturum=id; LM.son=0; LM.follow=true;
+  $('lmPs').textContent=id?'karadullm>':'$';
+  $('lmIn').placeholder=id?'/yardim · komutlar (kabuk değildir)':'karadullm yazın (kabuk değildir)';
+  $('lmEnd').disabled=!id; if(!id){ $('lmStop').disabled=true; $('lmApprove').classList.add('lmhide'); }
+}
+async function lmSubmit(){
+  const inp=$('lmIn'); const text=inp.value; inp.value='';
+  if(!LM.oturum){
+    lmAdd('$ '+text,'in');
+    const r=await lmJson('/api/lm/terminal/komut',{komut:text}).catch(()=>null);
+    if(!r){ lmAdd('✗ sunucuya ulaşılamadı','err'); return; }
+    if(!r.ok){ lmAdd('✗ '+(r.j.hata||r.j.error||('sunucu reddetti ('+r.status+')')),'err'); if(r.j.satir) lmAdd(r.j.satir,'warn'); return; }
+    lmSetSession(r.j.oturum); return;
+  }
+  lmAdd('karadullm> '+text,'in');
+  const r=await lmJson('/api/lm/terminal/girdi',{oturum:LM.oturum,metin:text}).catch(()=>null);
+  if(!r){ lmAdd('✗ sunucuya ulaşılamadı','err'); return; }
+  // reddedilen satırın iletisi akışa `satir` olarak düşer: burada yinelenmez. Oturum yoksa (404) burada yazılır.
+  if(r.status===404){ lmAdd('✗ '+(r.j.hata||'oturum açık değil'),'err'); lmSetSession(null); }
+}
+$('lmBar').onclick=(ev)=>{ if(ev.target&&ev.target.tagName==='BUTTON') return; lmToggle(); };
+$('lmIn').addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); lmSubmit(); } });
+$('lmStop').onclick=()=>{ if(LM.oturum) lmJson('/api/lm/durdur',{oturum:LM.oturum}).catch(()=>{}); };
+$('lmApprove').onclick=()=>{ if(LM.oturum) lmJson('/api/lm/terminal/girdi',{oturum:LM.oturum,metin:'/onayla'}).catch(()=>{}); };
+$('lmEnd').onclick=()=>{ if(LM.oturum) lmJson('/api/lm/terminal/kapat',{oturum:LM.oturum}).catch(()=>{}); };
+lmRefreshStatus();
 
 init();
 </script>
