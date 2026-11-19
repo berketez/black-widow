@@ -40,6 +40,30 @@
       "test": "tests/test_p18_cikti_agaci.py::test_tanim_imzasi_yorum_dizgi_onislemci_atlanir",
       "find": "    code = _C_PREPROCESSOR_RE.sub(\" \", _C_NONCODE_RE.sub(\" \", content))\n",
       "replace": "    code = _C_NONCODE_RE.sub(\" \", content)\n"
+    },
+    {
+      "id": "p18_k4_thunk_altsisteme_doner",
+      "desc": "Thunk birimleri alt sistem yerleşimine geri döner (program koduyla karışık)",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_thunk_birimleri_ayri_dizinde_ve_readme_program_sayisi",
+      "find": "            if stem in entry_stems or stem in thunk_set:\n",
+      "replace": "            if stem in entry_stems:\n"
+    },
+    {
+      "id": "p18_k4_giris_thunk_sayilmaz",
+      "desc": "Thunk olan giriş noktası thunk sayısına girmez (README program sayısı rapordan 1 fazla)",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_thunk_birimleri_ayri_dizinde_ve_readme_program_sayisi",
+      "find": "            lines.append(f\"- **Program functions:** {c_files_count - thunks - entry_thunks}\")\n",
+      "replace": "            lines.append(f\"- **Program functions:** {c_files_count - thunks}\")\n"
+    },
+    {
+      "id": "p18_k4_thunk_bilgisi_uydurulur",
+      "desc": "Fonksiyon listesi yokken thunk kümesi boş sayılır (bilinmiyor yerine 0)",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_is_thunk_alani_olmayan_eski_liste_bilinmiyor",
+      "find": "        return thunks if known else None\n",
+      "replace": "        return thunks\n"
     }
   ]
 }

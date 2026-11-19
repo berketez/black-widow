@@ -173,6 +173,20 @@ _MERGED_BANNER = (
     "// ==========================================================\n\n"
 )
 
+# Ghidra'nın thunk olarak işaretlediği fonksiyonlar (içe aktarım taslakları, başka
+# fonksiyona atlama) programın kendi kodu değildir; raporun fonksiyon sayısı da
+# (`ghidra_function_count`, P16a) onları saymaz. Proje ağacında ayrı ve etiketli
+# bir dizinde tek dosyada (gerekirse parçalı) toplanırlar (P18).
+_THUNK_DIR = "import_thunks"
+_THUNK_FILE_STEM = "import_thunks"
+_THUNK_BANNER = (
+    "// ==========================================================\n"
+    "// Thunk functions (Ghidra is_thunk): import stubs and jumps to\n"
+    "// another function. Not the program's own code; kept apart so\n"
+    "// the program-function count matches the analysis report.\n"
+    "// ==========================================================\n\n"
+)
+
 # Adres eki bundan uzunsa (beklenmeyen başlık) özet eki kullanılır.
 _MAX_ADDRESS_SUFFIX_LEN = 32
 # Başlıkta adres yoksa kullanılan özet ekinin (sha1, onaltılık) uzunluğu.
@@ -479,6 +493,9 @@ class CProjectBuildResult:
     # yerleşime dönüldüyse nedeni (dönülmediyse boş).
     placement_strategy: str = PLACEMENT_API_COMMUNITY
     placement_fallback_reason: str = ""
+    # Ghidra'nın thunk işaretlediği birimler (`src/import_thunks/`); Ghidra fonksiyon
+    # listesi okunamadıysa None (bilinmiyor; 0 yazılmaz).
+    thunks_separated: int | None = None
 
 
 class _BuildLedger:
@@ -617,13 +634,33 @@ class CProjectBuilder:
         placement = self._plan_address_placement(file_contents, entry_stems, workspace)
         by_address = placement is not None and placement.by_address
 
+        # -- Thunk birimleri (Ghidra is_thunk) ayrı dizine -------------------
+        # Giriş noktası thunk olsa da main.c'de kalır. Thunk bilgisi yoksa (None)
+        # yerleşim eskisi gibidir.
+        thunk_addresses = self._load_thunk_addresses(workspace)
+        thunk_stems: list[str] = []
+        if thunk_addresses is not None:
+            thunk_stems = sorted(
+                stem for stem, content in file_contents.items()
+                if stem not in entry_stems
+                and self._unit_address(content) in thunk_addresses
+            )
+        thunk_set = set(thunk_stems)
+        # Thunk olan giriş noktaları main.c'de kalır ama thunk sayısına girer (rapor
+        # Ghidra'nın is_thunk'ını sayıyor).
+        entry_thunks = (
+            sum(1 for stem in entry_stems
+                if self._unit_address(file_contents[stem]) in thunk_addresses)
+            if thunk_addresses is not None else 0
+        )
+
         # -- Kucuk fonksiyon tespiti ----------------------------------------
         small_funcs: dict[str, list[str]] = defaultdict(list)  # subsystem -> [stem, ...]
         normal_funcs: dict[str, list[str]] = defaultdict(list)  # subsystem -> [stem, ...]
 
         for stem, content in file_contents.items():
-            if stem in entry_stems:
-                continue  # entry point'ler ayri
+            if stem in entry_stems or stem in thunk_set:
+                continue  # entry point'ler ve thunk'lar ayri
             lines = file_lines[stem]
             name = self._unit_name(stem)
             if by_address:
@@ -686,6 +723,15 @@ class CProjectBuilder:
                 functions_merged += len(smalls)
                 self._write_merged_files(subsys_dir, smalls, file_contents, ledger)
 
+        # -- 2b. Thunk'lar: ayrı, etiketli dizinde tek dosya (parçalı olabilir) --
+        if thunk_stems:
+            thunk_dir = src_dir / _THUNK_DIR
+            thunk_dir.mkdir(exist_ok=True)
+            self._write_merged_files(
+                thunk_dir, thunk_stems, file_contents, ledger,
+                file_stem=_THUNK_FILE_STEM, banner=_THUNK_BANNER,
+            )
+
         # -- 3. types.h ------------------------------------------------------
         types_content = self._build_types_h(source_dir, workspace)
         ledger.write(include_dir / "types.h", types_content)
@@ -698,6 +744,11 @@ class CProjectBuilder:
                 file_contents,
             )
             ledger.write(include_dir / f"subsystem_{subsys}.h", header)
+        if thunk_stems:
+            ledger.write(
+                include_dir / f"{_THUNK_DIR}.h",
+                self._build_subsystem_header(_THUNK_DIR, thunk_stems, file_contents),
+            )
 
         # -- 5. IDE dosyalari -------------------------------------------------
         all_c_sources = self._collect_source_paths(src_dir, output_dir)
@@ -763,6 +814,8 @@ class CProjectBuilder:
             functions_merged=functions_merged,
             algorithm_results=algorithm_results,
             placement=placement,
+            thunks=len(thunk_stems) if thunk_addresses is not None else None,
+            entry_thunks=entry_thunks,
         )
         ledger.write(output_dir / "README.md", readme)
 
@@ -798,6 +851,7 @@ class CProjectBuilder:
             placement_fallback_reason=(
                 placement.fallback_reason if placement is not None else ""
             ),
+            thunks_separated=len(thunk_stems) if thunk_addresses is not None else None,
         )
 
     # ------------------------------------------------------------------
@@ -855,6 +909,27 @@ class CProjectBuilder:
                 continue
             sizes[address] = max(size, sizes.get(address, 0))
         return sizes
+
+    def _load_thunk_addresses(self, workspace) -> set[int] | None:
+        """Ghidra fonksiyon listesinde `is_thunk` olan fonksiyonların adresleri.
+
+        Liste yoksa ya da hiçbir kayıtta `is_thunk` alanı yoksa None (thunk bilgisi yok;
+        birimler eskisi gibi yerleşir ve README bunu söyler).
+        """
+        data = self._load_static_json(workspace, _FUNCTIONS_JSON_CANDIDATES)
+        records = data.get("functions") if isinstance(data, dict) else None
+        if not isinstance(records, list):
+            return None
+        known = False
+        thunks: set[int] = set()
+        for record in records:
+            if not isinstance(record, dict) or not isinstance(record.get("is_thunk"), bool):
+                continue
+            known = True
+            address = _parse_hex(record.get("address"))
+            if record["is_thunk"] and address is not None:
+                thunks.add(address)
+        return thunks if known else None
 
     def _load_memory_blocks(self, workspace) -> list[MemoryBlock]:
         """Ghidra'nın bellek blokları (`program_info.memory_blocks`); yoksa boş liste."""
@@ -1397,15 +1472,18 @@ class CProjectBuilder:
     def _write_merged_files(
         self, dest_dir: Path, stems: list[str],
         file_contents: dict[str, str], ledger: _BuildLedger,
+        file_stem: str = _MERGED_FILE_STEM, banner: str = _MERGED_BANNER,
     ) -> None:
         """Küçük fonksiyonları birleştirip `thunks_and_stubs*.c` olarak yaz.
+
+        `file_stem` / `banner`: thunk dizini kendi dosya adını ve başlığını verir.
 
         Birleşik içerik MAX_LINES_PER_FILE satırı aşarsa parçalara ayrılır;
         kesim yalnız iki fonksiyonun arasından yapılır. Eski kod satır sayısına
         göre kesiyor, bir fonksiyonun gövdesini iki dosyaya bölebiliyordu
         (başlıksız `_partN.c` dosyaları).
         """
-        banner_lines = _MERGED_BANNER.count("\n")
+        banner_lines = banner.count("\n")
         parts: list[list[str]] = [[]]
         part_lines = banner_lines
         for stem in sorted(stems):
@@ -1420,16 +1498,17 @@ class CProjectBuilder:
         for idx, part in enumerate(parts):
             suffix = f"_part{idx + 1}" if len(parts) > 1 else ""
             ledger.write(
-                dest_dir / f"{_MERGED_FILE_STEM}{suffix}.c",
-                self._merge_small_functions(part, file_contents),
+                dest_dir / f"{file_stem}{suffix}.c",
+                self._merge_small_functions(part, file_contents, banner),
                 tuple(part),
             )
 
     def _merge_small_functions(
         self, stems: list[str], file_contents: dict[str, str],
+        banner: str = _MERGED_BANNER,
     ) -> str:
         """Kucuk fonksiyonlari tek string'de birlestirilmis content olarak dondur."""
-        parts = [_MERGED_BANNER]
+        parts = [banner]
         for stem in sorted(stems):
             content = file_contents.get(stem, "")
             parts.append(f"// --- {stem} ---\n")
@@ -1841,6 +1920,8 @@ class CProjectBuilder:
         functions_merged: int,
         algorithm_results=None,
         placement: _PlacementPlan | None = None,
+        thunks: int | None = None,
+        entry_thunks: int = 0,
     ) -> str:
         # `placement` None ise (bayrak kapalı) metin eskisiyle bayt bayt aynıdır.
         by_address = placement is not None and placement.by_address
@@ -1853,9 +1934,20 @@ class CProjectBuilder:
             "## Statistics",
             "",
             f"- **Decompiled functions:** {c_files_count}",
+        ]
+        # Raporun fonksiyon sayısı program fonksiyonudur (thunk'lar ayrı, P16a); README
+        # aynı ayrımı yapar. Thunk bilgisi yoksa bilinmiyor yazılır, sayı uydurulmaz.
+        if thunks is None:
+            lines.append("- **Thunks:** unknown (Ghidra function list with is_thunk not found)")
+        else:
+            lines.append(f"- **Program functions:** {c_files_count - thunks - entry_thunks}")
+            note = f" (+{entry_thunks} entry-point thunk in `src/main.c`)" if entry_thunks else ""
+            lines.append(
+                f"- **Thunks (import stubs, `src/{_THUNK_DIR}/`):** {thunks}{note}")
+        lines.extend([
             f"- **Subsystems detected:** {len(subsystems)}",
             f"- **Small functions merged:** {functions_merged}",
-        ]
+        ])
 
         if algorithm_results and hasattr(algorithm_results, "algorithms"):
             high_conf = sum(1 for a in algorithm_results.algorithms if a.confidence >= 0.6)
@@ -1896,6 +1988,8 @@ class CProjectBuilder:
             *group_lines,
             "    <function>.c        -- One function per file",
             "    thunks_and_stubs.c  -- Short functions and thunks, merged",
+            f"  {_THUNK_DIR}/         -- Thunk functions (import stubs), merged into",
+            f"    {_THUNK_FILE_STEM}.c     -- one file; not the program's own code",
             "analysis/",
             "  call_graph.dot  -- Graphviz call graph",
             "  algorithms.md   -- Detected algorithm patterns",

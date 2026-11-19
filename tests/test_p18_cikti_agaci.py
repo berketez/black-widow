@@ -37,7 +37,7 @@ def _kur(tmp_path: Path, birimler: dict[str, str], dugumler: dict[str, str]) -> 
     kaynak.mkdir()
     for ad, icerik in birimler.items():
         (kaynak / f"{ad}.c").write_text(icerik)
-    (tmp_path / "static").mkdir()
+    (tmp_path / "static").mkdir(exist_ok=True)
     (tmp_path / "static" / "ghidra_call_graph.json").write_text(json.dumps({
         "program": "deneme",
         "nodes": {a: {"name": n, "address": a, "callees": [], "callers": []}
@@ -117,6 +117,72 @@ def test_nitelikli_cpp_adi_c_bildirimi_olmaz(tmp_path):
     assert _bildirimler(proje) == []
     metin = "\n".join(h.read_text() for h in (proje / "include").glob("subsystem_*.h"))
     assert metin.count("// qualified C++ name, not a C declaration:") == 2
+
+
+def _fonksiyonlar(tmp_path: Path, kayitlar: list[tuple[str, str, bool]]) -> None:
+    (tmp_path / "static").mkdir(exist_ok=True)
+    (tmp_path / "static" / "ghidra_functions.json").write_text(json.dumps({
+        "functions": [{"name": n, "address": a, "size": 8, "is_thunk": t}
+                      for n, a, t in kayitlar]}))
+
+
+def test_thunk_birimleri_ayri_dizinde_ve_readme_program_sayisi(tmp_path):
+    """Ghidra is_thunk birimleri alt sistemlere değil src/import_thunks/'a; README program
+    fonksiyonu sayısı thunk'sız (rapordaki ``ghidra_function_count`` ile aynı anlam)."""
+    _fonksiyonlar(tmp_path, [
+        ("fclose", "00001000", True), ("malloc", "00002000", True),
+        ("entry", "00003000", True), ("FUN_00004000", "00004000", False),
+        ("FUN_00005000", "00005000", False),
+    ])
+    proje = _kur(tmp_path, {
+        "fclose": _birim("fclose", "00001000", "int fclose(FILE *__stream)", satir=20),
+        "malloc": _birim("malloc", "00002000", "void * malloc(size_t __size)"),
+        "entry": _birim("entry", "00003000", "void entry(void)"),
+        "FUN_00004000": _birim("islev_a", "00004000", "long islev_a(long param_1)"),
+        "FUN_00005000": _birim("islev_b", "00005000", "long islev_b(long param_1)"),
+    }, {"00001000": "fclose", "00002000": "malloc", "00003000": "entry",
+        "00004000": "FUN_00004000", "00005000": "FUN_00005000"})
+    thunk_dosyasi = proje / "src" / "import_thunks" / "import_thunks.c"
+    metin = thunk_dosyasi.read_text()
+    assert "Thunk functions (Ghidra is_thunk)" in metin
+    assert "Address:  00001000" in metin and "Address:  00002000" in metin
+    for c in (proje / "src").rglob("*.c"):
+        if c != thunk_dosyasi:
+            icerik = c.read_text()
+            assert "Address:  00001000" not in icerik and "Address:  00002000" not in icerik
+    # Giriş noktası thunk olsa da main.c'de; thunk sayısına girer.
+    assert "Address:  00003000" in (proje / "src" / "main.c").read_text()
+    readme = (proje / "README.md").read_text()
+    assert "- **Decompiled functions:** 5" in readme
+    assert "- **Program functions:** 2" in readme
+    assert ("- **Thunks (import stubs, `src/import_thunks/`):** 2 "
+            "(+1 entry-point thunk in `src/main.c`)") in readme
+    assert "int fclose(FILE *__stream);  // @00001000" in (
+        proje / "include" / "import_thunks.h").read_text()
+
+
+def test_thunk_bilgisi_yoksa_bilinmiyor_yazilir(tmp_path):
+    """Ghidra fonksiyon listesi yoksa thunk sayısı uydurulmaz; yerleşim eskisi gibi."""
+    proje = _kur(tmp_path, {
+        "fclose": _birim("fclose", "00001000", "int fclose(FILE *__stream)"),
+    }, {"00001000": "fclose"})
+    readme = (proje / "README.md").read_text()
+    assert "- **Thunks:** unknown (Ghidra function list with is_thunk not found)" in readme
+    assert "Program functions" not in readme
+    assert not (proje / "src" / "import_thunks").exists()
+
+
+def test_is_thunk_alani_olmayan_eski_liste_bilinmiyor(tmp_path):
+    """P16a öncesi fonksiyon listesinde ``is_thunk`` yok: thunk sayısı 0 değil, bilinmiyor."""
+    (tmp_path / "static").mkdir()
+    (tmp_path / "static" / "ghidra_functions.json").write_text(json.dumps({
+        "functions": [{"name": "fclose", "address": "00001000", "size": 8}]}))
+    proje = _kur(tmp_path, {
+        "fclose": _birim("fclose", "00001000", "int fclose(FILE *__stream)"),
+    }, {"00001000": "fclose"})
+    readme = (proje / "README.md").read_text()
+    assert "- **Thunks:** unknown (Ghidra function list with is_thunk not found)" in readme
+    assert "Program functions" not in readme
 
 
 def test_ayni_ad_farkli_imza_bir_kez_bildirilir(tmp_path):
