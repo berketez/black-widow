@@ -176,6 +176,14 @@
       "test": "tests/test_ps4_evrensel.py::test_evrensel_ozel_dilim_desteklenmiyor_yazilir",
       "find": "        result.errors.append(f\"Desteklenmiyor: {reason}\")",
       "replace": "        result.errors.extend([])"
+    },
+    {
+      "id": "ps4_k3_atlama_nedeni_yok",
+      "desc": "ana bileşen atlanınca bundle nedensiz düşer",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_app_bundle.py::test_ana_bilesen_atlanirsa_bundle_nedenini_soyler",
+      "find": "            if res.skipped and (res.stats or {}).get(\"skip_reason\"):",
+      "replace": "            if res.skipped and (res.stats or {}).get(\"skip_reason_x\"):"
     }
   ]
 }

@@ -1514,6 +1514,13 @@ class ReconstructionStage(Stage):
             nonlocal main_ok
             stats.update({k: v for k, v in res.stats.items() if k not in stats})
             errors.extend(res.errors)
+            # P-S4: ana bileşenin hattı 'atlandı' ise (ör. Electron JS'inde
+            # deobfuscation çıktısı yok) bundle aşaması nedensiz başarısız görünmesin.
+            if res.skipped and (res.stats or {}).get("skip_reason"):
+                errors.append(
+                    f"Ana bileşen ({stats.get('main_component', '?')}) yeniden "
+                    f"kurulmadı: {res.stats['skip_reason']}"
+                )
             artifacts.update(res.artifacts)
             main_ok = main_ok or bool(res.success)
 

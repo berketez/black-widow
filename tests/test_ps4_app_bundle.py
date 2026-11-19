@@ -122,3 +122,20 @@ def test_electron_ana_bilesende_deobfuscation_bilesen_uzerinde_kosar(tmp_path, m
     assert cagri == [(TargetType.ELECTRON_APP, asar)]
     assert res.skipped is False
     assert res.stats["bundle_main_component_type"] == "electron_app"
+
+
+def test_ana_bilesen_atlanirsa_bundle_nedenini_soyler(tmp_path):
+    """Electron ana bileşeninde JS kaynağı yoksa bundle reconstruct nedensiz düşmez."""
+    asar = tmp_path / "J.app" / "Contents" / "Resources" / "app.asar"
+    asar.parent.mkdir(parents=True)
+    asar.write_bytes(b"\x04\x00\x00\x00asar")
+    main = {"name": "Electron App", "path": str(asar), "type": "electron_app",
+            "success": True, "functions": 0}
+    ctx = _bundle_ctx(tmp_path, main, [main])
+    ctx.results["deobfuscate"] = StageResult(
+        stage_name="deobfuscate", success=False, skipped=True, duration_seconds=0.0,
+        stats={"skip_reason": "app.asar: çıkarılmış JS dosyası yok"},
+    )
+    res = ReconstructionStage().execute(ctx)
+    assert res.success is False
+    assert any(e.startswith("Ana bileşen (Electron App) yeniden kurulmadı") for e in res.errors)
