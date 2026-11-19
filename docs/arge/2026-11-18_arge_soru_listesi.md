@@ -21,7 +21,7 @@
 |---|---|
 | Birleşik ürün ölçümü (a62f15e, 119 ikili): sonuç ve ön kayıt | `docs/arge/2026-11-19_birlesik_olcum/` (`sonuc.md`; ön kayıt aynı dizinde). Koşu kökü `~/karadul_olcum/runs/urun-onarim-a62f15e`, ağaç `~/karadul_olcum/urun-a62f15e` |
 | Onarımın son durumu: 40 paketin önce / sonra sayıları, K-1…K-10, tam takım ara noktaları | `docs/arge/2026-11-18_onarim/DURUM.md` (a62f15e'deki hâli; son ara nokta 2026-11-18 20:4x) ve paket dosyaları (`P00.md` …, ön kayıtlar `P*_on_kayit.md`) |
-| Onarımın kalanı: DURUŞ, sıra, Berke'nin kararını bekleyenler, atanmamış bulgular | `docs/arge/2026-11-18_onarim/gonderim/OKU.md`; süren / sıradaki paket metinleri aynı dizinde (`P12c.md`, `P16d.md`, `PS4.md`, `P22c.md`, `P02b.md`, `P18.md`, `P10b.md`, `P05c.md`, `P08b.md`, `P03b.md`, `P20b.md`, `P23.md`) |
+| Onarımın kalanı: DURUŞ, sıra, Berke'nin kararını bekleyenler, atanmamış bulgular | `docs/arge/2026-11-18_onarim/gonderim/OKU.md`; süren / sıradaki paket metinleri aynı dizinde (`P12c.md`, `P16d.md`, `PS4.md`, `P22c.md`, `P02b.md`, `P18.md`, `P10b.md`, `P05c.md`, `P08b.md`, `P03b.md`, `P20b.md`, `P22h.md`, `P23.md`) |
 | 2026-11-19 oturum notları ve Berke kararları (K-10 silme, eski deobf zinciri, K-2 `kebap_ad`) | `docs/arge/2026-11-18_onarim/gonderim/OTURUM_2026-11-19.md` |
 | Genel tarama (137 bulgu, temalar, vizyon) | `docs/arge/2026-11-18_genel_tarama/RAPOR.md` (§3 temalar, §6.1 ölü kod, §7 KaradulLM) |
 | Ürün ad ölçümünün önceki tabanı (1.22.1; karşılaştırma için) | `docs/arge/2026-11-10_n1_adim3/urun_olcumu_fark_yeni_yeni2.md` (+ `urun_olcumu_taban.md`, ön kayıt ekleri) |
@@ -109,8 +109,8 @@ Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; bekl
 
 **Açık kalanlar** (etkileri a62f15e tabanında YOK; her biri kendi ön kayıtlı ölçümünü taşır):
 - Süren (2026-11-19): **P12c** c_namer çok satırlı imza (14 alanda 697 / 13 832 = %5,0 fonksiyon gövdeye bakan stratejilere görünmez; P12b) + P13a kalanları (c_namer kapalıyken ön ad sabit 0,85; FID `caseD_N`); **P16d** Ghidra döküm sırası (`pcode_high_vars` sırası cat 4–6, tree 7–8, sort 11–16 fonksiyonda koşudan koşuya değişiyor; P16c); **P-S4** `stages.py` 4. tur (native olmayan hatlar, evrensel Mach-O dilimleri, `_collect_all_algorithms` silme); **P22c** KaradulLM arayüzü; **P02b** anti-debug kalanları.
-- Sırada: **P18** çıktı ağacı (`undefined8 → uint64_t` öntanımı: 8 115 değişen parametrenin 4 450'si; P09); **P10b** K-1 yeniden yazım + MaxSMT `CAST` / `PTRSUB`; **P05c** parametre adları (K-2) + n-gram kökeni; **P08b** FLIRT seçici VT (K-2); **P03b** capa; **P20b** JS + eski deobf silme; **P22h** keşif görevinin ajana bağlanması (metni yazılmadı); en son **P23** (test / CI / ölü kod) ve kapanış denetimi.
-- Berke'ye açık (OKU.md): `sigs/ngram_name_db` uygulama paketine girsin mi (uygulamada n-gram `veri_yok`); push.
+- Sırada: **P18** çıktı ağacı (`undefined8 → uint64_t` öntanımı: 8 115 değişen parametrenin 4 450'si; P09); **P10b** K-1 yeniden yazım + MaxSMT `CAST` / `PTRSUB`; **P05c** parametre adları (K-2) + n-gram kökeni; **P08b** FLIRT seçici VT (K-2); **P03b** capa; **P20b** JS + eski deobf silme; **P22h** keşif görevinin ajana bağlanması, oturum bloğu, ad kökeninde rol kanıtı (`gonderim/P22h.md`); en son **P23** (test / CI / ölü kod) ve kapanış denetimi.
+- Berke'ye açık (OKU.md): `sigs/ngram_name_db` uygulama paketine girsin mi (uygulamada n-gram `veri_yok`; kanalın kökeni ve ölçümü P05c'de). Push yapıldı (2026-11-19, d2f205d..a62f15e).
 
 **Kararlar**
 
