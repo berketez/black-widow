@@ -139,6 +139,9 @@ class SemanticName:
     source: str                 # "algorithm_template" | "call_graph_propagation" | "type_heuristic" | "struct_context"
     reason: str                 # Insan-okunur aciklama
     domain: str                 # "structural", "fluid", "generic" vb.
+    # P05c: kanıtsız genel ad (tip sezgisi). Koda yazılmaz; ad kapısı köken kaydının
+    # ``candidates`` listesine aday olarak yazar (K-2: susturma değil, aday kaydı).
+    candidate_only: bool = False
 
 
 @dataclass
@@ -225,8 +228,12 @@ _GHIDRA_GENERATED_NAME = re.compile(
 # ``name_validity.REJECT_REASONS``'tan gelir (yerel ad kuralı: 1-3).
 GATE_BELOW_THRESHOLD = "below_min_confidence"
 GATE_GHIDRA_NAME = "ghidra_generated_name"
+# P05c: tip sezgisinin kanıtsız genel adı (``count`` / ``enabled`` / ``value`` / ``byte_buffer``
+# …); koda yazılmaz, köken kaydının ``candidates`` listesine aday olarak girer.
+GATE_NO_EVIDENCE = "generic_name_without_evidence"
 GATE_REJECT_REASONS = (
     GATE_BELOW_THRESHOLD,
+    GATE_NO_EVIDENCE,
     _name_validity.REASON_NOT_IDENTIFIER,
     _name_validity.REASON_KEYWORD,
     _name_validity.REASON_TYPE_NAME,
@@ -235,7 +242,7 @@ GATE_REJECT_REASONS = (
 
 # Köken kaydındaki bölümün adı ve şeması (``naming_provenance.json`` içinde ayrı bölüm)
 PARAM_PROVENANCE_SECTION = "semantic_params"
-PARAM_PROVENANCE_SCHEMA_VERSION = 1
+PARAM_PROVENANCE_SCHEMA_VERSION = 2  # 2 (P05c): ``candidates`` (kanıtsız genel ad adayları)
 
 # Dizgi, karakter sabiti ve yorum: tanımlayıcı sayımında örtülür
 _NON_CODE_RE = re.compile(
@@ -1592,6 +1599,218 @@ def _pointer_template_evidence(
     return bool(_cast_access_pattern(param_name, _ELEMENT_CAST_TYPES[t]).search(masked))
 
 
+# ---------------------------------------------------------------------------
+# P05c: kanıtsız genel adlar (skaler şablonlar ve ``void *`` ailesi)
+# ---------------------------------------------------------------------------
+# Tip sezgisinin genel adları (``count``, ``enabled``, ``value``, ``byte_buffer``, ``context`` …)
+# yalnız tip uyumuna bakıyordu: DWARF'lı 22 ikilide 3 600'ü aşkın hükümlü adın 20'si doğruydu
+# (P05b; kanalın tabanı ~%6). Ön kayıt ``P05c_on_kayit.md`` §4: her şablon adı ya bir kanıt
+# türüne bağlanır ya da aday kaydına iner (koda yazılmaz; köken kaydında aday olarak durur).
+
+# Boyut / adet argümanının konumları (0 tabanlı). ``_`` önekli Mach-O ve ``__X_chk`` biçimleri
+# aynı konumları kullanır (``__memcpy_chk`` / ``__read_chk`` ilk argümanları değişmez).
+_SIZE_ARG_FUNCS: dict[str, tuple[int, ...]] = {
+    "memcpy": (2,), "memmove": (2,), "memset": (2,), "memcmp": (2,),
+    "strncpy": (2,), "strncmp": (2,), "strncat": (2,), "strndup": (1,),
+    "malloc": (0,), "calloc": (0, 1), "realloc": (1,),
+    "read": (2,), "write": (2,), "send": (2,), "recv": (2,),
+    "fread": (1, 2), "fwrite": (1, 2), "snprintf": (1,), "vsnprintf": (1,), "qsort": (1,),
+}
+# Bayt tamponu argümanının konumları
+_BUFFER_ARG_FUNCS: dict[str, tuple[int, ...]] = {
+    "memcpy": (0, 1), "memmove": (0, 1), "memset": (0,), "memchr": (0,), "memcmp": (0, 1),
+    "read": (1,), "recv": (1,), "write": (1,), "send": (1,), "fread": (0,), "fwrite": (0,),
+}
+_BYTE_POINTER_TYPES = frozenset({
+    "unsigned char *", "uchar *", "byte *", "uint8_t *", "undefined1 *",
+})
+_BOOL_TYPES = frozenset({"bool", "_Bool"})
+
+# Şablon adı → kanıt türü (ön kayıt §4). ``None``: tanımlı kanıt türü yok → ad aday kaydına
+# iner. Kanıtlı şablon da yalnız ``_GENERIC_NAME_KEPT``'teyse (G ölçümünde eşiği geçti) koda
+# yazılır. Kapsam dışı şablonlar (``self``, ``ctx``, ``struct_ptr``, ``index_array``,
+# ``data_ptr``, ``str`` ailesi, matris / vektör) bu tabloda yok.
+_GENERIC_NAME_EVIDENCE: dict[str, str | None] = {
+    "count": "count", "n_size": "count", "buffer_size": "count", "counter": "count",
+    "enabled": "bool",
+    "flags": "flags",
+    "value": None, "status": None, "threshold": None, "scalar": None, "factor": None,
+    "handle": None,
+    "byte_buffer": "bytes",
+    "context": "callback", "userdata": "callback",
+}
+
+
+# Daraltılmış kuralı G'de (ön kayıt §4: kesinlik ≥ %6 ve en az 1 doğru) eşiği geçen şablon
+# adları. Öbürleri kanıt olsa da koda yazılmaz; aday kaydında kanıtın varlığı yazılır.
+_GENERIC_NAME_KEPT: frozenset[str] = frozenset({"flags"})
+
+GATE_REASON_NO_EVIDENCE = "kanıt yok (aday)"
+GATE_REASON_RULE_BELOW = "kanıt var, kural ölçümde eşiğin altında (aday)"
+
+
+def _generic_name_gate(
+    template_name: str, param_type: str, code: str, param_name: str,
+) -> str | None:
+    """Genel şablon adı koda yazılabilir mi (P05c). ``None``: yazılabilir (kapsam dışı ya da
+    ölçümle tutan kural + kanıt); değilse aday kaydının gerekçesi."""
+    evidence = _generic_name_evidence(template_name, param_type, code, param_name)
+    if evidence is None:
+        return None
+    if not evidence:
+        return GATE_REASON_NO_EVIDENCE
+    if template_name not in _GENERIC_NAME_KEPT:
+        return GATE_REASON_RULE_BELOW
+    return None
+
+
+def _generic_candidate(
+    param_name: str, name: str, func_name: str, conf: float, reason: str, domain: str,
+) -> SemanticName:
+    """Kanıtsız genel şablon adı: koda yazılmayan aday (ad kapısı köken kaydına yazar)."""
+    return SemanticName(
+        original_name=param_name,
+        semantic_name=_sanitize_c_name(name),
+        function_name=func_name,
+        confidence=round(conf, 3),
+        source="type_heuristic",
+        reason=reason,
+        domain=domain,
+        candidate_only=True,
+    )
+
+
+def _known_call_arg(
+    masked: str, param_name: str, table: dict[str, tuple[int, ...]],
+) -> bool:
+    """Parametre, ``table``'daki bir işlevin listelenen konumunda çıplak ya da tek cast'le
+    argüman mı (``_`` önekli Mach-O ve ``__X_chk`` biçimleri dahil)."""
+    for m in _CALL_NAME_RE.finditer(masked):
+        fname = m.group(1)
+        positions = table.get(fname)
+        if positions is None and fname.startswith("_"):
+            base = fname.lstrip("_")
+            if base.endswith("_chk"):
+                base = base[:-4]
+            positions = table.get(base)
+        if not positions:
+            continue
+        args = _split_call_args(masked, m.end() - 1)
+        if not args:
+            continue
+        for k in positions:
+            if k < len(args) and _LEADING_POINTER_CAST_RE.sub(
+                "", _LEADING_SCALAR_CAST_RE.sub("", args[k].strip()),
+            ).strip() == param_name:
+                return True
+    return False
+
+
+_LEADING_SCALAR_CAST_RE = re.compile(
+    r"^\(\s*(?:const\s+)?(?:(?:unsigned|signed)\s+)?\w+\s*\)\s*",
+)
+_LOOP_HEAD_RE = re.compile(r"\b(?:for|while)\s*\(")
+_COMPARE_OP_RE = re.compile(r"[<>]=?|[!=]=")
+
+
+def _loop_condition_uses(masked: str, param_name: str) -> bool:
+    """Parametre bir ``for`` / ``while`` başlığının koşulunda karşılaştırılıyor mu."""
+    word = re.compile(rf"\b{re.escape(param_name)}\b")
+    for m in _LOOP_HEAD_RE.finditer(masked):
+        args = _split_call_args(masked, m.end() - 1)
+        if args is None:
+            continue
+        head = ",".join(args)
+        if m.group(0).startswith("for"):
+            parts = head.split(";")
+            head = parts[1] if len(parts) == 3 else ""
+        if word.search(head) and _COMPARE_OP_RE.search(head):
+            return True
+    return False
+
+
+_TRUTH_USE_RE_CACHE: dict[str, tuple[re.Pattern[str], re.Pattern[str]]] = {}
+
+
+def _truth_value_only(masked: str, param_name: str) -> bool:
+    """Parametrenin gövdedeki her kullanımı doğruluk sınaması mı (en az bir kullanım).
+
+    ``masked``: yorumlar örtülü, dizgiler boş, karakter sabitleri yerinde
+    (``_mask_for_string_evidence``; ``p != '\\0'`` sınaması görünsün)."""
+    pats = _TRUTH_USE_RE_CACHE.get(param_name)
+    if pats is None:
+        p = re.escape(param_name)
+        word = re.compile(rf"\b{p}\b")
+        truth = re.compile(
+            rf"(?:\bif\s*\(\s*!?\s*{p}\s*\)"
+            rf"|\b{p}\s*[!=]=\s*(?:(?:\(\w+\)\s*)?0\b|false\b|true\b|'\\0')"
+            rf"|(?:&&|\|\|)\s*!?\s*{p}\b(?!\s*(?:[-+*/%&|^<>=!]|\[|\())"
+            rf"|\b{p}\s*(?:&&|\|\||\?)"
+            rf"|!\s*{p}\b(?!\s*(?:[-+*/%&|^<>=]|\[|\()))"
+        )
+        pats = (word, truth)
+        _TRUTH_USE_RE_CACHE[param_name] = pats
+    word, truth = pats
+    body_start = masked.find("{")
+    body = masked[body_start:] if body_start >= 0 else masked
+    total = len(word.findall(body))
+    if total == 0:
+        return False
+    truth_spans: set[int] = set()
+    for m in truth.finditer(body):
+        w = word.search(body, m.start(), m.end())
+        if w:
+            truth_spans.add(w.start())
+    return len(truth_spans) == total
+
+
+def _indirect_call_arg(masked: str, param_name: str) -> bool:
+    """Parametre işlev göstericisiyle yapılan bir çağrının argümanı mı (geri çağrı verisi)."""
+    p = re.escape(param_name)
+    for m in re.finditer(r"\(\s*\*+[^()]*(?:\([^()]*\)[^()]*)*\)\s*\(", masked):
+        args = _split_call_args(masked, m.end() - 1)
+        if not args:
+            continue
+        for a in args:
+            a = _LEADING_POINTER_CAST_RE.sub("", a.strip()).strip()
+            if re.fullmatch(p, a):
+                return True
+    return False
+
+
+@functools.lru_cache(maxsize=8192)
+def _generic_name_evidence(
+    template_name: str, param_type: str, code: str, param_name: str,
+) -> bool | None:
+    """Genel şablon adının kanıtı (P05c). ``None``: şablon bu kuralın kapsamında değil."""
+    if template_name not in _GENERIC_NAME_EVIDENCE:
+        return None
+    kind = _GENERIC_NAME_EVIDENCE[template_name]
+    if kind is None:
+        return False
+    a = _normalize_type(param_type)
+    masked = _loop_depth_profile(code)[0]
+    if kind == "count":
+        if template_name == "counter" and _usage_patterns(param_name)[4].search(masked):
+            return True
+        return (_loop_condition_uses(masked, param_name)
+                or _known_call_arg(masked, param_name, _SIZE_ARG_FUNCS))
+    if kind == "bool":
+        return a in _BOOL_TYPES or _truth_value_only(_mask_for_string_evidence(code), param_name)
+    if kind == "flags":
+        p = re.escape(param_name)
+        return bool(re.search(rf"\b{p}\s*&(?!&)|[^&]&\s*{p}\b", masked))
+    if kind == "bytes":
+        if a in _BYTE_POINTER_TYPES:
+            return True
+        if _cast_access_pattern(param_name, _ELEMENT_CAST_TYPES["unsigned char *"]).search(masked):
+            return True
+        return _known_call_arg(masked, param_name, _BUFFER_ARG_FUNCS)
+    if kind == "callback":
+        return _indirect_call_arg(masked, param_name)
+    return False
+
+
 # v1.8.0: _MAX_USAGE_BODY esigi KALDIRILDI.  Tum regex pattern'leri
 # satir-bazli calistiriliyor.  Hicbir fonksiyon atlanmaz.
 
@@ -2130,6 +2349,9 @@ def _worker_infer_from_type_and_usage(
         best_name: str | None = None
         best_conf: float = 0.0
         best_reason: str = ""
+        cand_name: str | None = None
+        cand_conf: float = 0.0
+        cand_reason: str = ""
 
         loop_depth = _get_loop_depth_for_param(func_code, param_name)
         usage = _detect_usage_pattern(func_code, param_name)
@@ -2168,6 +2390,17 @@ def _worker_infer_from_type_and_usage(
             elif tup.domain_prefix and "generic" in tup.domain_prefix:
                 suggested = tup.domain_prefix["generic"] + tup.name
 
+            # P05c: genel şablon adı yalnız ölçümle tutan kanıtlı kuralla; değilse aday
+            gate = _generic_name_gate(tup.name, param_type, func_code, param_name)
+            if gate is not None:
+                if conf > cand_conf:
+                    cand_conf, cand_name = conf, suggested
+                    cand_reason = (
+                        f"Type '{param_type}', loop depth {loop_depth}, "
+                        f"usage '{usage}', index '{idx_pattern}'; P05c: {gate}"
+                    )
+                continue
+
             if conf > best_conf:
                 best_conf = conf
                 best_name = suggested
@@ -2189,6 +2422,10 @@ def _worker_infer_from_type_and_usage(
                 source="type_heuristic",
                 reason=best_reason,
                 domain=domain,
+            ))
+        elif cand_name:
+            results.append(_generic_candidate(
+                param_name, cand_name, func_name, cand_conf, cand_reason, domain,
             ))
     return results
 
@@ -2318,6 +2555,7 @@ class SemanticParameterNamer:
         self._gate_accepted: list[dict[str, Any]] = []
         self._gate_rejected: dict[str, dict[str, int]] = {}
         self._gate_unnamed: dict[str, int] = {}
+        self._gate_candidates: list[dict[str, Any]] = []
 
     @staticmethod
     def _local_threshold(config: Any) -> float:
@@ -2333,6 +2571,7 @@ class SemanticParameterNamer:
         self._gate_accepted = []
         self._gate_rejected = {}
         self._gate_unnamed = {}
+        self._gate_candidates = []
 
     def _identifiers_in(self, func_name: str) -> set[str]:
         """Fonksiyonun girdi kodundaki tanımlayıcılar (dizgi ve yorum örtülü; önbellekli)."""
@@ -2396,7 +2635,9 @@ class SemanticParameterNamer:
         ``accepted``: koda yazılan her ad (fonksiyon, eski ad, ad, önerilen ad, kanal, güven,
         gerekçe). ``rejected``: kanal → ret nedeni → aday sayısı (kapıdan geçemeyen adaylar;
         aynı parametrenin sonraki adayı denenir). ``unnamed``: hiçbir adayı geçemediği için
-        adsız kalan parametre sayısı (kazananın kanalına göre).
+        adsız kalan parametre sayısı (kazananın kanalına göre). ``candidates`` (P05c): kanıtsız
+        genel ad olduğu için koda yazılmayan adaylar (fonksiyon, parametre, aday ad, kanal, güven,
+        gerekçe); Ghidra'nın adı kalır.
         """
         return {
             "schema_version": PARAM_PROVENANCE_SCHEMA_VERSION,
@@ -2407,6 +2648,7 @@ class SemanticParameterNamer:
             "accepted": list(self._gate_accepted),
             "rejected": {k: dict(v) for k, v in sorted(self._gate_rejected.items())},
             "unnamed": dict(sorted(self._gate_unnamed.items())),
+            "candidates": list(self._gate_candidates),
         }
 
     # ------------------------------------------------------------------
@@ -3378,6 +3620,9 @@ class SemanticParameterNamer:
             best_name: str | None = None
             best_conf: float = 0.0
             best_reason: str = ""
+            cand_name: str | None = None
+            cand_conf: float = 0.0
+            cand_reason: str = ""
 
             # Kullanim analizleri
             loop_depth = _get_loop_depth_for_param(func_code, param_name)
@@ -3428,6 +3673,17 @@ class SemanticParameterNamer:
                 # Pozisyon-bazli suffix (1. double* = 'a', 2. double* = 'b' vb.)
                 # Ayni isimde cakisma onleme _resolve_conflicts'te yapilir
 
+                # P05c: genel şablon adı yalnız ölçümle tutan kanıtlı kuralla; değilse aday
+                gate = _generic_name_gate(tup.name, param_type, func_code, param_name)
+                if gate is not None:
+                    if conf > cand_conf:
+                        cand_conf, cand_name = conf, suggested
+                        cand_reason = (
+                            f"Type '{param_type}', loop depth {loop_depth}, "
+                            f"usage '{usage}', index '{idx_pattern}'; P05c: {gate}"
+                        )
+                    continue
+
                 if conf > best_conf:
                     best_conf = conf
                     best_name = suggested
@@ -3453,6 +3709,10 @@ class SemanticParameterNamer:
                     source="type_heuristic",
                     reason=best_reason,
                     domain=domain,
+                ))
+            elif cand_name:
+                results.append(_generic_candidate(
+                    param_name, cand_name, func_name, cand_conf, cand_reason, domain,
                 ))
 
         return results
@@ -3605,8 +3865,19 @@ class SemanticParameterNamer:
             winner: SemanticName | None = None
             final_name = ""
             for cand in param_candidates:
-                if cand.confidence < self._min_confidence:
-                    reason: str | None = GATE_BELOW_THRESHOLD
+                if cand.candidate_only:
+                    reason: str | None = GATE_NO_EVIDENCE
+                    self._gate_candidates.append({
+                        "function": func_name,
+                        "param": orig_name,
+                        "name": cand.semantic_name,
+                        "source": cand.source,
+                        "confidence": cand.confidence,
+                        "reason": cand.reason,
+                        "rejected": GATE_NO_EVIDENCE,
+                    })
+                elif cand.confidence < self._min_confidence:
+                    reason = GATE_BELOW_THRESHOLD
                 else:
                     reason = _gate_name_reason(cand.semantic_name)
                 if reason is None:
@@ -3793,6 +4064,8 @@ class SemanticParameterNamer:
         for sn in all_names:
             known[sn.function_name][sn.original_name] = sn.semantic_name
         for sn in current_candidates:
+            if sn.candidate_only:  # P05c: koda yazılmayan aday yayılmaz
+                continue
             known[sn.function_name][sn.original_name] = sn.semantic_name
         return dict(known)
 
