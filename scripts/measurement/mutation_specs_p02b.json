@@ -24,6 +24,30 @@
       "test": "tests/test_p02b_nsis.py::TestSentetik::test_bolum_icindeki_baslik_sayilmaz",
       "find": "for m in re.finditer(re.escape(_NSIS_FIRSTHEADER_SIG), data[start:]):\n        off = start + m.start() - 4",
       "replace": "for m in re.finditer(re.escape(_NSIS_FIRSTHEADER_SIG), data):\n        off = m.start() - 4; start = 0"
+    },
+    {
+      "id": "p02b_k5_etiket_yok",
+      "desc": "Kalem 5: doğrulanmamış desene kanıt satırı eklenmez",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02b_desen_dogrulama.py",
+      "find": "            if note is None and _UNVERIFIED_NOTE not in fp.evidence:\n                fp.evidence.append(_UNVERIFIED_NOTE)",
+      "replace": "            pass"
+    },
+    {
+      "id": "p02b_k5_hepsi_dogrulandi",
+      "desc": "Kalem 5: her paketleyici doğrulanmış sayılır",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02b_desen_dogrulama.py",
+      "find": "fp.pattern_verified = note is not None",
+      "replace": "fp.pattern_verified = True"
+    },
+    {
+      "id": "p02b_k5_tabloya_fsg",
+      "desc": "Kalem 5: FSG doğrulanmış tablosuna girer (gerçek örnek yokken)",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02b_desen_dogrulama.py",
+      "find": "_REAL_SAMPLE_VERIFIED: dict[str, str] = {",
+      "replace": "_REAL_SAMPLE_VERIFIED: dict[str, str] = {\"FSG\": \"x\","
     }
   ]
 }

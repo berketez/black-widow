@@ -74,6 +74,10 @@ class PackerFingerprint:
     category: str = "unknown"
     platform: str = "any"
     layers_matched: int = 0
+    # P02b kalem 5: desenler gercek bir paketlenmis ornekle sinandi mi?
+    # None = detect() henuz isaretlemedi (katman yontemlerinin ham ciktisi).
+    pattern_verified: Optional[bool] = None
+    verification: str = ""
 
     def to_dict(self) -> dict:
         """JSON-serializable dict."""
@@ -85,6 +89,8 @@ class PackerFingerprint:
             "category": self.category,
             "platform": self.platform,
             "layers_matched": self.layers_matched,
+            "pattern_verified": self.pattern_verified,
+            "verification": self.verification,
         }
 
 
@@ -493,6 +499,23 @@ def _installer_payload_evidence(packer: str, data: bytes) -> Optional[str]:
 
 # Kurucu kaniti istenen paketleyiciler: dizgileri derleyicisinde de bulunur.
 _INSTALLER_PAYLOAD_REQUIRED = frozenset({"NSIS"})
+
+# --- Gercek ornekle dogrulanan desenler (P02b kalem 5, K-1) ---
+# Yalniz yerelde gercek paketlenmis bir ornekte tetiklendigi gorulen
+# paketleyiciler. Indirme yasak; FSG / Petite / MPRESS / ASPack / VMProtect
+# (ve tablodaki obur paketleyiciler) icin elde gercek ornek yok, desenleri
+# yalniz sentetik saplamayla sinandi: iddialari "desen dogrulanmadi" etiketi
+# tasir, analiste yalniz ipucudur.
+_REAL_SAMPLE_VERIFIED: dict[str, str] = {
+    "UPX": ("gercek ornekle dogrulandi: UPX 5.3.0 ile paketlenmis PE (x86, x86-64, "
+            "ARM64) ve AArch64 ELF kopyalari (P02 / P00 pozitif seti)"),
+    "NSIS": ("gercek ornekle dogrulandi: NSIS 3.13 dagitimindaki NSIS.exe kurucusu "
+             "(firstheader @0x12c00); derleyici makensis.exe iddiasiz"),
+    "PyInstaller": ("gercek ornekle dogrulandi: yt-dlp.exe ve yt-dlp_macos "
+                    "(PyInstaller dagitimlari, dogrulama_native)"),
+}
+_UNVERIFIED_NOTE = ("desen dogrulanmadi: gercek paketlenmis ornekle sinanmadi "
+                    "(yalniz sentetik saplama); ipucu, hukum degil")
 
 
 def _extract_pe_sections(data: bytes) -> list[str]:
@@ -914,6 +937,12 @@ class PackerFingerprintDetector:
             if fp.layers_matched > 1:
                 extra = (fp.layers_matched - 1) * self.MULTI_LAYER_BOOST
                 fp.confidence = min(self.MAX_CONFIDENCE, fp.confidence + extra)
+            # Desen dogrulama etiketi (P02b kalem 5): kanit listesinde de gorunur.
+            note = _REAL_SAMPLE_VERIFIED.get(fp.packer_name)
+            fp.pattern_verified = note is not None
+            fp.verification = note or _UNVERIFIED_NOTE
+            if note is None and _UNVERIFIED_NOTE not in fp.evidence:
+                fp.evidence.append(_UNVERIFIED_NOTE)
 
         result = list(merged.values())
         result.sort(key=lambda f: (-f.confidence, f.packer_name))
