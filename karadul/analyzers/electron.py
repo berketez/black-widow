@@ -139,6 +139,57 @@ def _copy_exact(src_fh: Any, dest: Path, size: int) -> None:
         raise OSError(f"kaynak erken bitti ({remaining} bayt eksik)")
 
 
+def _count_header_files(header: dict[str, Any]) -> int:
+    """Başlıktaki düzenli dosya girdisi sayısı (dizin ve bağ hariç; derinlik sınırlı)."""
+    count = 0
+    stack: list[tuple[Any, int]] = [(header, 0)]
+    while stack:
+        node, depth = stack.pop()
+        files = node.get("files") if isinstance(node, dict) else None
+        if not isinstance(files, dict) or depth > _ASAR_MAX_DEPTH:
+            continue
+        for entry in files.values():
+            if not isinstance(entry, dict):
+                continue
+            if "files" in entry:
+                stack.append((entry, depth + 1))
+            elif "link" not in entry:
+                count += 1
+    return count
+
+
+def _asar_status(report: dict[str, Any]) -> dict[str, Any]:
+    """Rapora P-S1 durumunu yaz: ``calisti`` / ``kismi`` / ``hata`` + neden.
+
+    ``hata``: hiçbir dosya yazılamadı ama atlanan ya da bütçeden kesilen girdi
+    var (sessiz 0 yok). ``kismi``: bir kısmı yazıldı, bir kısmı atlandı / kesildi.
+    Boş arşiv (girdi yok) ``calisti`` + 0 dosyadır. Atlanan bir dizin girdisi
+    alt ağacını da götürür; bu yüzden neden başlıktaki dosya sayısını da yazar.
+    """
+    skipped = report["skipped"]
+    n_skipped = sum(skipped.values())
+    parts = []
+    if n_skipped:
+        detail = ", ".join(f"{k}: {v}" for k, v in sorted(skipped.items()))
+        parts.append(
+            f"yazılan dosya {report['files_written']} / "
+            f"{report.get('files_in_header', '?')} (başlıktaki); "
+            f"{n_skipped} girdi atlandı ({detail})"
+        )
+    if report["truncated"]:
+        parts.append(f"kesildi: {report['truncate_reason']}")
+    if not parts:
+        report["status"] = "calisti"
+        report["status_reason"] = None
+    elif report["files_written"] == 0:
+        report["status"] = "hata"
+        report["status_reason"] = "hiçbir dosya yazılamadı; " + "; ".join(parts)
+    else:
+        report["status"] = "kismi"
+        report["status_reason"] = "; ".join(parts)
+    return report
+
+
 def extract_asar(
     asar_path: Path,
     output_dir: Path,
@@ -154,12 +205,21 @@ def extract_asar(
 
     Returns:
         Rapor sözlüğü: yazılan dosya/dizin/bayt sayıları, atlanan girdiler
-        (nedenine göre), yeniden adlandırılanlar, bütçe kesilmesi.
+        (nedenine göre), yeniden adlandırılanlar, bütçe kesilmesi ve durum
+        (P-S1 sözlüğü): ``status`` ``calisti`` / ``kismi`` / ``hata`` +
+        ``status_reason``.
 
     Raises:
         AsarFormatError: Başlık geçersizse.
+        NotADirectoryError: ``output_dir`` yoksa ya da dizin değilse (P20b:
+            eskiden her yazma sessizce ``write_failed`` sayılıp
+            ``files_written: 0`` dönüyordu).
         OSError: Arşiv okunamazsa.
     """
+    if not output_dir.is_dir():
+        raise NotADirectoryError(
+            f"ASAR çıktı dizini yok ya da dizin değil: {output_dir}"
+        )
     report: dict[str, Any] = {
         "format": "asar",
         "files_written": 0,
@@ -183,6 +243,7 @@ def extract_asar(
     with open(asar_path, "rb") as fh:
         header, body_start, header_size = _read_asar_header(fh, file_size)
         report["header_size"] = header_size
+        report["files_in_header"] = _count_header_files(header)
         total = 0
         written_entries = 0
         # (json düğümü, hedef dizin, arşiv içi göreli parçalar, derinlik)
@@ -204,7 +265,7 @@ def extract_asar(
                 if written_entries >= max_files:
                     report["truncated"] = True
                     report["truncate_reason"] = f"dosya sayısı bütçesi ({max_files})"
-                    return report
+                    return _asar_status(report)
                 key = unicodedata.normalize("NFC", name).casefold()
                 out_name = name
                 if key in used:
@@ -251,7 +312,7 @@ def extract_asar(
                     report["truncate_reason"] = (
                         f"toplam boyut bütçesi ({max_total_bytes} bayt)"
                     )
-                    return report
+                    return _asar_status(report)
                 if dest.is_symlink():
                     skip("dest_symlink")
                     continue
@@ -305,7 +366,7 @@ def extract_asar(
                 written_entries += 1
                 report["files_written"] += 1
                 report["bytes_written"] = total
-    return report
+    return _asar_status(report)
 
 
 @register_analyzer(TargetType.ELECTRON_APP)
@@ -645,12 +706,14 @@ class ElectronAnalyzer(BaseAnalyzer):
         Returns:
             En az bir dosya cikarildiysa True.
         """
-        output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(
             "ASAR extract baslatiliyor: %s -> %s",
             asar_path.name, output_dir,
         )
         try:
+            # Dizin kurulamazsa (ör. aynı adla dosya var) neden raporlanır;
+            # extract_asar dizin yoksa NotADirectoryError verir (P20b).
+            output_dir.mkdir(parents=True, exist_ok=True)
             report = extract_asar(
                 asar_path, output_dir,
                 max_total_bytes=int(self.config.security.max_archive_extract_size),
@@ -668,7 +731,9 @@ class ElectronAnalyzer(BaseAnalyzer):
                 report["truncate_reason"] or "hayir",
             )
         if report["files_written"] == 0:
-            logger.error("ASAR extract sonrasi dosya yok: %s", output_dir)
+            # Sessiz 0 yok (P20b): neden aşama hatasına gider.
+            report["error"] = report.get("status_reason") or "arşivde yazılacak dosya yok"
+            logger.error("ASAR extract sonrasi dosya yok: %s (%s)", output_dir, report["error"])
             return False
 
         logger.info(

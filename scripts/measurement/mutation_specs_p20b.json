@@ -96,6 +96,38 @@
       "test": "tests/test_p20b_eski_zincir.py::test_electron_path_without_synchrony_is_honest_failure",
       "find": "        if not deob_result.success:",
       "replace": "        if False and not deob_result.success:"
+    },
+    {
+      "id": "p20b_k2_dizin_denetimi_yok",
+      "desc": "Kalem 2: çıktı dizini yokken istisna yok (sessiz write_failed / 0 geri gelir)",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p20b_asar_cikti.py::test_missing_output_dir_is_an_error_not_silent_zero",
+      "find": "    if not output_dir.is_dir():\n",
+      "replace": "    if False and not output_dir.is_dir():\n"
+    },
+    {
+      "id": "p20b_k2_hic_yazilmayan_kismi_sayilir",
+      "desc": "Kalem 2: hiçbir dosya yazılamadığında durum 'hata' değil",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p20b_asar_cikti.py::test_unwritable_dir_reports_hata_with_reason",
+      "find": "    elif report[\"files_written\"] == 0:\n",
+      "replace": "    elif report[\"files_written\"] < 0:\n"
+    },
+    {
+      "id": "p20b_k2_neden_asamaya_gitmez",
+      "desc": "Kalem 2: 0 dosyada neden aşama hatasına yazılmaz",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p20b_asar_cikti.py::test_analyze_static_unwritable_extract_dir_has_reason",
+      "find": "            report[\"error\"] = report.get(\"status_reason\") or \"arşivde yazılacak dosya yok\"\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "p20b_k2_atlanan_durum_disi",
+      "desc": "Kalem 2: atlanan girdi durumu etkilemez (kısmi açılım 'calisti' görünür)",
+      "module": "karadul/analyzers/electron.py",
+      "test": "tests/test_p20b_asar_cikti.py::test_partial_extraction_is_kismi",
+      "find": "    if n_skipped:\n",
+      "replace": "    if False and n_skipped:\n"
     }
   ]
 }
