@@ -252,3 +252,41 @@ def test_yedek_yol_undefined_ve_dizgi_korunur(tmp_path):
     assert "undefined8 util_" in metin and "(undefined4 x)" in metin
     assert 'puts("undefined symbol")' in metin
     assert "uint64_t" not in metin
+
+
+# ---------------------------------------------------------------------------
+# Kalem 5: yapı adayı dosyaları çıktıya girmez; README yerini ve sayısını söyler.
+# ---------------------------------------------------------------------------
+
+def test_aday_dosyalari_ciktiya_girmez_readme_soyler(tmp_path):
+    src = _yedek_yol_cikti(tmp_path)  # adaysız: bölüm yok
+    assert "Unverified Struct Candidates" not in (src.parent / "README.md").read_text()
+
+    from karadul.core.output_formatter import OutputFormatter
+    from karadul.core.result import PipelineResult, StageResult
+    from karadul.core.workspace import Workspace
+
+    ws = Workspace(base_dir=tmp_path / "ws2", target_name="deneme")
+    ws.create()
+    rec = ws.get_stage_dir("reconstructed")
+    (rec / "commented").mkdir(parents=True)
+    (rec / "commented" / "f.c").write_text("int f(void)\n{\n  return 0;\n}\n")
+    (rec / "typed").mkdir()
+    (rec / "typed" / "types_candidates.txt").write_text(
+        "/* doğrulanmamış aday\n * Aday sayısı: 7\n */\nstruct recovered_struct_001 { int a; };\n")
+    (rec / "struct_recovered_candidates").mkdir()
+    (rec / "struct_recovered_candidates" / "struct_candidates.txt").write_text(
+        "/*\n * Aday: 11; uygulama: kapalı\n */\n")
+    sonuc = PipelineResult(target_name="deneme", target_hash="00", workspace_path=ws.path)
+    sonuc.add_stage_result(StageResult(stage_name="identify", success=True,
+                                       duration_seconds=0.1, stats={"language": "c"}))
+    cikti = tmp_path / "out2"
+    OutputFormatter(ws, sonuc).format_output(cikti, fmt="clean")
+    readme = (cikti / "README.md").read_text()
+    assert "## Unverified Struct Candidates (not in this output)" in readme
+    assert "- `<workspace>/reconstructed/typed/types_candidates.txt` (7 candidates)" in readme
+    assert ("- `<workspace>/reconstructed/struct_recovered_candidates/struct_candidates.txt` "
+            "(11 candidates)") in readme
+    assert not [p for p in cikti.rglob("*candidates*")]
+    assert "recovered_struct_001" not in "".join(
+        p.read_text() for p in cikti.rglob("*") if p.is_file() and p.suffix in (".c", ".h"))

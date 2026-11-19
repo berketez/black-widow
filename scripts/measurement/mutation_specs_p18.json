@@ -96,6 +96,14 @@
       "test": "tests/test_p18_cikti_agaci.py::test_yedek_yol_types_h_tek_ve_typedefli",
       "find": "            CProjectBuilder(None)._build_types_h(source_dir, self._workspace), encoding=\"utf-8\")\n",
       "replace": "            (source_dir / \"types.h\").read_text(), encoding=\"utf-8\")\n"
+    },
+    {
+      "id": "p18_k5_aday_bolumu_yok",
+      "desc": "README aday dosyalarının varlığını ve yerini söylemez (adaylar sessizce kaybolur)",
+      "module": "karadul/core/output_formatter.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_aday_dosyalari_ciktiya_girmez_readme_soyler",
+      "find": "        lines.extend(self._unverified_candidates_section())\n",
+      "replace": "        lines.extend([])\n"
     }
   ]
 }

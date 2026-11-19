@@ -84,6 +84,13 @@ _C_TOKEN_RE = re.compile(r"(?<![\w$])[A-Za-z_$][\w$]*")
 _C_SCOPE_RE = re.compile(r"[{};]")
 _C_TRAILING_NAME_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*$")
 
+# Doğrulanmamış yapı adayı dosyaları (çalışma alanında, ``reconstructed/`` altına göre) ve
+# başlıklarındaki aday sayısı (P18 Kalem 5). Çıktıya kopyalanmazlar; README yerlerini söyler.
+_UNVERIFIED_CANDIDATE_FILES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("typed/types_candidates.txt", re.compile(r"Aday sayısı:\s*(\d+)")),
+    ("struct_recovered_candidates/struct_candidates.txt", re.compile(r"\bAday:\s*(\d+)")),
+)
+
 # Genel dalın (C/JS/Swift dışı) kopyaladığı kaynak dosya uzantıları
 _GENERIC_SOURCE_SUFFIXES = frozenset({".c", ".h", ".js", ".ts", ".py", ".swift", ".go", ".java"})
 
@@ -1204,6 +1211,8 @@ class OutputFormatter:
             lines.extend(self._output_tree_lines(output_dir))
             lines.extend(["```", ""])
 
+        lines.extend(self._unverified_candidates_section())
+
         # Pipeline ozeti
         lines.append("## Pipeline Stages")
         lines.append("")
@@ -1253,6 +1262,42 @@ class OutputFormatter:
         ])
 
         return "\n".join(lines)
+
+    def _unverified_candidates_section(self) -> list[str]:
+        """Yapı adayı dosyaları çıktıya girmez; README varlıklarını, sayılarını ve yerini söyler.
+
+        P18 Kalem 5 (K-1): iki üretici (``CTypeRecoverer`` → ``typed/types_candidates.txt``,
+        yapı kurtarma → ``struct_recovered_candidates/struct_candidates.txt``) doğruluğu
+        ölçülmemiş adaylar yazıyor ve aynı değişken için çelişebiliyor (birleşik 119 koşu:
+        iki dosyada da aday olan 6 632 değişkenin 2 467'sinde alan ofsetleri farklı). Bu yüzden
+        aday dosyaları ``src/``'ye kopyalanmaz; gizlenmez de: README yerini gösterir.
+        Dosya yoksa bölüm yazılmaz; sayı başlıktan okunamazsa "count unknown" yazılır.
+        """
+        reconstructed = self._workspace.path / "reconstructed"
+        found: list[str] = []
+        for rel, pattern in _UNVERIFIED_CANDIDATE_FILES:
+            path = reconstructed / rel
+            if not path.is_file():
+                continue
+            try:
+                head = path.read_text(encoding="utf-8", errors="replace")[:4096]
+            except OSError:
+                head = ""
+            m = pattern.search(head)
+            count = f"{m.group(1)} candidates" if m else "count unknown"
+            found.append(f"- `<workspace>/reconstructed/{rel}` ({count})")
+        if not found:
+            return []
+        return [
+            "## Unverified Struct Candidates (not in this output)",
+            "",
+            "Struct layouts inferred from memory-access patterns are kept out of `src/` "
+            "and `types.h`: their accuracy has not been measured, and the two producers "
+            "below can disagree for the same variable. Treat them as unverified hints.",
+            "",
+            *found,
+            "",
+        ]
 
     @staticmethod
     def _count_files(directory: Path) -> int:
