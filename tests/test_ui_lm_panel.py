@@ -244,6 +244,20 @@ def _lm_css_kurallari() -> list[tuple[str, str]]:
     return re.findall(r"([^{}]+)\{([^{}]*)\}", blok)
 
 
+def test_u2_panel_ve_imlec_secicilerinde_animasyon_yok():
+    kurallar = _lm_css_kurallari()
+    assert any(".lmspider" in sec for sec, _ in kurallar) and any(".lmdrawer" in sec for sec, _ in kurallar)
+    for sec, govde in kurallar:
+        assert "infinite" not in govde and "animation" not in govde and "@keyframes" not in sec, sec
+    # imlecin tek geçişi tek seferlik ve kısa (<= 200 ms); azaltılmış hareket tercihinde yok
+    sp = next(g for s_, g in kurallar if s_.strip() == ".lmspider")
+    m = re.search(r"transition:transform \.(\d+)s", sp)
+    assert m and int(m.group(1)) * 10 ** (3 - len(m.group(1))) <= 200
+    assert "@media (prefers-reduced-motion: reduce){ .lmspider{transition:none} }" in _html()
+    # sayfanın her yerinde: lm seçicilerine bağlı @keyframes yok
+    assert not re.search(r"@keyframes\s+lm", _html())
+
+
 @nodeli
 def test_u3_hiz_olculmeden_beklenen_sure_yok(tmp_path):
     out = _run(tmp_path, r"""
@@ -306,3 +320,79 @@ def test_cekmece_haritanin_altinda_ve_tek_komut_ipucu():
     assert "kabuk değildir" in sonuc
 
 
+# --------------------------------------------------------------------------------------------
+# (g) U-1 tarayıcıda (Playwright + yerel Chromium)
+
+_CHROMIUM = next(iter(sorted(Path.home().glob(
+    "Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-*/chrome-headless-shell"))), None)
+try:
+    from playwright.sync_api import sync_playwright  # noqa: E402
+except ImportError:  # pragma: no cover
+    sync_playwright = None
+tarayicili = pytest.mark.skipif(sync_playwright is None or _CHROMIUM is None, reason="Playwright / Chromium yok")
+
+
+@tarayicili
+def test_u1_olay_yokken_imlec_yerinde_ve_animasyonsuz(tmp_path, monkeypatch):
+    """U-1: oturum açık, görev yok → 10 sn içinde imleç konumu ve hesaplanmış stili değişmez, animasyon yok.
+    Ardından gerçek bir olay (sahte arka uçla ad görevi) imleci yerleştirir; olay bitince yine durur."""
+    from tests.test_lm_session import AdArka
+    from tests.test_ui_lm_api import _load, _ws
+    import threading
+    from http.server import ThreadingHTTPServer
+    from karadul.core import overrides
+    from karadul.lm import session as S
+
+    for k in ("KARADUL_LLAMA_SERVER", "KARADUL_LM_MODEL", "KARADUL_LM_SABLON"):
+        monkeypatch.delenv(k, raising=False)
+    mod = _load("bw_ui_server_lm_panel")
+    ov = tmp_path / "ov"
+    ov.mkdir()
+    monkeypatch.setattr(overrides, "overrides_dir", lambda: ov)
+    mod._LM_STORE_ROOT = tmp_path / "lm"
+    mod.activate_workspace(str(_ws(tmp_path)))
+    mod._lm_make_backend = lambda root, sha, sid: AdArka(n=5)
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), mod.Handler)
+    mod._PORT = httpd.server_address[1]
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    hatalar = []
+    try:
+        with sync_playwright() as p:
+            b = p.chromium.launch(executable_path=str(_CHROMIUM))
+            pg = b.new_page(viewport={"width": 1400, "height": 900})
+            pg.on("console", lambda m: hatalar.append(m.text) if m.type == "error" else None)
+            pg.on("pageerror", lambda e: hatalar.append(str(e)))
+            pg.goto(f"http://127.0.0.1:{mod._PORT}/")
+            pg.wait_for_selector("#result.on .fn")
+            pg.click("#lmBar")
+            pg.fill("#lmIn", "karadullm")
+            pg.press("#lmIn", "Enter")
+            # CSP 'unsafe-eval' yasağı Playwright'ın dizgi değerlendiren beklemesini de engeller: seçiciyle beklenir
+            pg.locator("#lmLines").get_by_text("KaradulLM ·").first.wait_for()
+            durum = ("(()=>{const s=document.getElementById('lmSpider'),c=getComputedStyle(s);"
+                     "return {on:s.classList.contains('on'),tr:c.transform,an:c.animationName,ad:c.animationDuration,"
+                     "disp:c.display,n:document.getElementById('lmLines').childElementCount}})()")
+            once = pg.evaluate(durum)
+            pg.wait_for_timeout(10_000)
+            sonra = pg.evaluate(durum)
+            assert once == sonra and once["an"] == "none" and once["on"] is False      # olay yok → hareket yok
+            # gerçek olay: ad görevi → imleç görev hedefine yerleşir (takip açık: harita odaklanır)
+            pg.fill("#lmIn", "/kip adlandir")
+            pg.press("#lmIn", "Enter")
+            pg.fill("#lmIn", "/ad FUN_00001000")
+            pg.press("#lmIn", "Enter")
+            pg.locator("#lmLines").get_by_text("öneri p1 kuyrukta").first.wait_for()
+            pg.wait_for_timeout(400)
+            olaydan = pg.evaluate(durum)
+            assert olaydan["on"] is True and olaydan["an"] == "none" and olaydan["tr"] != once["tr"]
+            pg.wait_for_timeout(3_000)
+            assert pg.evaluate(durum)["tr"] == olaydan["tr"]                  # olay bitti → yine yerinde
+            b.close()
+    finally:
+        s = S.current_session()
+        if s is not None:
+            s.close()
+        mod.activate_workspace(None)
+        httpd.shutdown()
+        httpd.server_close()
+    assert not [h for h in hatalar if "Content Security Policy" in h or "Refused" in h], hatalar

@@ -1,0 +1,189 @@
+{
+  "_comment": "P22c2 (2026-11-19) KaradulLM paneli (ui/index.html) mutasyon koruması: p1 terminal paneli + satır biçimi, p2 uzun yoklama istemcisi, p3 ajan imleci (yalnız olayla), p4 öneri kartı + model adı katmanı, p5 CSP, p6 U-2 (animasyon yok). Betik mutantı betiğin karmasını da değiştirdiği için her mutant yalnız kendi davranışını sınayan test işlevine bağlıdır. Mutant metinleri özgününden farklı uzunlukta. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ui_lm_panel.json",
+  "mutants": [
+    {
+      "id": "p2_kayip_cift_sayilir",
+      "desc": "kaçırılan olay iki yoldan toplanır (yineleme)",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_yoklama_kacan_olay_tek_satir_dogru_sayi",
+      "find": "const lost=Math.max(resp.tasma?(resp.kacan||0):0,gap);",
+      "replace": "const lost=(resp.tasma?(resp.kacan||0):0)+gap;"
+    },
+    {
+      "id": "p2_kayip_gizlenir",
+      "desc": "kaçırılan olay satırı yazılmaz",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_yoklama_kacan_olay_tek_satir_dogru_sayi",
+      "find": "return {pre:lost>0?[{t:'! '+lost+' olay kaçırıldı',c:'warn'}]:[],",
+      "replace": "return {pre:[],"
+    },
+    {
+      "id": "p2_kapali_durmaz",
+      "desc": "oturum kapanınca yoklama durmaz",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_yoklama_kacan_olay_tek_satir_dogru_sayi",
+      "find": "stop:!!resp.kapali,",
+      "replace": "stop:false,"
+    },
+    {
+      "id": "p3_dugumsuz_hedef_odaklanir",
+      "desc": "modelde olmayan düğümde imleç yer değiştirir",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_imlec_yalniz_olayla_ve_dugum_yoksa_yer_degistirmez",
+      "find": "    if(!fn||!lmHas(byaddr,fn))\n",
+      "replace": "    if(!fn)\n"
+    },
+    {
+      "id": "p3_takip_yok_sayilir",
+      "desc": "takip kapalıyken de harita odaklanır",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_imlec_yalniz_olayla_ve_dugum_yoksa_yer_degistirmez",
+      "find": "    if(follow) return {act:'focus',fn:fn};",
+      "replace": "    if(1) return {act:'focus',fn:fn};"
+    },
+    {
+      "id": "p3_dokunulan_suzulmez",
+      "desc": "dokunulan listesi modelde olmayanı da vurgular",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_imlec_yalniz_olayla_ve_dugum_yoksa_yer_degistirmez",
+      "find": "list:(e.dokunulan||[]).filter(a=>lmHas(byaddr,a))}",
+      "replace": "list:(e.dokunulan||[])}"
+    },
+    {
+      "id": "p3_zamanlayici_imlec",
+      "desc": "imleç zamanlayıcıyla yeniden yerleşir (sahte hareket)",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_imlec_yalniz_olay_isleyicisinden_cagrilir",
+      "find": "lmRefreshStatus();\n\ninit();",
+      "replace": "lmRefreshStatus();\nsetInterval(()=>lmReanchor(),1000);\n\ninit();"
+    },
+    {
+      "id": "p3_imlec_baska_yerden",
+      "desc": "imleç olay dışında da yerleştirilir",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_imlec_yalniz_olay_isleyicisinden_cagrilir",
+      "find": "function lmToggle(open){\n",
+      "replace": "function lmToggle(open){\n  if(LM.spFn) lmPlace(LM.spFn);\n"
+    },
+    {
+      "id": "p4_ret_kabul_dugmesi",
+      "desc": "RET hükmünde kabul düğmesi çıkar",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_oneri_karti_dugmeler_ve_denetim_satirlari",
+      "find": "canAccept:pend&&v!=='ret'&&",
+      "replace": "canAccept:pend&&"
+    },
+    {
+      "id": "p4_denetim_yok_sessiz",
+      "desc": "denetim ayrıntısı yokken bu söylenmez",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_oneri_karti_dugmeler_ve_denetim_satirlari",
+      "find": "  } else rows.push('  denetim ayrıntısı bu oturumun akışında yok (yalnız defterdeki hüküm)');",
+      "replace": "  }"
+    },
+    {
+      "id": "p4_sinanmayan_gizli",
+      "desc": "koşmayan kurallar kartta görünmez",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_oneri_karti_dugmeler_ve_denetim_satirlari",
+      "find": "if(d.sinanmayan&&d.sinanmayan.length) rows.push('  bu kurallar koşmadı: '",
+      "replace": "if(false) rows.push('  bu kurallar koşmadı: '"
+    },
+    {
+      "id": "p4_model_adi_gosterilmez",
+      "desc": "kabul edilen model adı gösterilmez",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_model_adi_ayri_katman_gosterimi",
+      "find": "function lmShownName(f,mn){ return (mn&&f&&lmHas(mn,f.addr)&&mn[f.addr]&&mn[f.addr].name)?String(mn[f.addr].name):shownName(f); }",
+      "replace": "function lmShownName(f,mn){ return shownName(f); }"
+    },
+    {
+      "id": "p1_niyet_etiketsiz",
+      "desc": "niyet satırı model metni diye işaretlenmez",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_satirlar_repl_render_ile_ayni",
+      "find": "'  ⋯ niyet (model metni): '",
+      "replace": "'  ⋯ '"
+    },
+    {
+      "id": "p1_hukum_etiketi",
+      "desc": "SINANAMADI temiz gibi yazılır",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_satirlar_repl_render_ile_ayni",
+      "find": "sinanamadi:'SINANAMADI (kanıt yok)'};",
+      "replace": "sinanamadi:'ÇELİŞKİ BULUNMADI'};"
+    },
+    {
+      "id": "p1_satir_html",
+      "desc": "terminal satırı HTML olarak yorumlanır",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_panel_metni_yalniz_textcontent",
+      "find": "d.className='lml'+(cls?(' lm-'+cls):''); d.textContent=text;",
+      "replace": "d.className='lml'+(cls?(' lm-'+cls):''); d.innerHTML=text;"
+    },
+    {
+      "id": "p1_hizsiz_beklenen",
+      "desc": "hız ölçülmeden beklenen süre yazılır (U-3)",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_u3_hiz_olculmeden_beklenen_sure_yok",
+      "find": "parts.push(h&&typeof h.T==='number'?",
+      "replace": "parts.push(h?"
+    },
+    {
+      "id": "p6_imlec_sonsuz_animasyon",
+      "desc": "imleçte süresiz animasyon (U-2)",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_u2_panel_ve_imlec_secicilerinde_animasyon_yok",
+      "find": "  .lmspider.on{display:block}",
+      "replace": "  .lmspider.on{display:block; animation:pulse 2.4s ease-in-out infinite}"
+    },
+    {
+      "id": "p6_imlec_uzun_gecis",
+      "desc": "imleç geçişi 200 ms'yi aşar",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_u2_panel_ve_imlec_secicilerinde_animasyon_yok",
+      "find": "transition:transform .18s ease-out}",
+      "replace": "transition:transform .9s ease-out}"
+    },
+    {
+      "id": "p6_azaltilmis_hareket_yok",
+      "desc": "azaltılmış hareket tercihinde geçiş sürer",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_u2_panel_ve_imlec_secicilerinde_animasyon_yok",
+      "find": "  @media (prefers-reduced-motion: reduce){ .lmspider{transition:none} }\n",
+      "replace": ""
+    },
+    {
+      "id": "p6_satir_animasyonu",
+      "desc": "terminal satırları kendiliğinden oynar",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_u2_panel_ve_imlec_secicilerinde_animasyon_yok",
+      "find": "  .lml.lm-in{color:var(--cyan)}",
+      "replace": "  .lml.lm-in{color:var(--cyan); animation:blink 1.4s steps(1) infinite}"
+    },
+    {
+      "id": "p5_csp_unsafe_inline",
+      "desc": "CSP satır içi betiğe izin verir",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_csp_betik_karmasi_ve_kisitlar",
+      "find": "script-src 'sha256-",
+      "replace": "script-src 'unsafe-inline' 'sha256-"
+    },
+    {
+      "id": "p5_csp_her_yere_istek",
+      "desc": "CSP her kökene isteğe izin verir",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_csp_betik_karmasi_ve_kisitlar",
+      "find": "connect-src 'self';",
+      "replace": "connect-src *;"
+    },
+    {
+      "id": "p1_cekmece_yeri",
+      "desc": "çekmece haritanın üstüne (yanlış yer) taşınır",
+      "module": "ui/index.html",
+      "test": "tests/test_ui_lm_panel.py::test_cekmece_haritanin_altinda_ve_tek_komut_ipucu",
+      "find": "  <div class=\"rmain\">\n",
+      "replace": "  <div class=\"lmdrawer\" id=\"lmDrawer\"></div>\n  <div class=\"rmain\">\n"
+    }
+  ]
+}
