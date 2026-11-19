@@ -404,3 +404,130 @@ def test_olaylar_uzun_yoklama_olayla_hemen_doner_olaysiz_bekler(srv, monkeypatch
         b = yokla(srv, o, b["son"], bekle=2)[1]
         hepsi += b["olaylar"]
     assert hepsi[-1]["tur"] == "oturum_bitti" and hepsi[-1]["neden"] == "cik"
+
+
+# --------------------------------------------------------------------------------------------
+# (4) yaşam döngüsü: arayüz kapanınca oturum ve model sunucusu kapanır; yetim toplama; boşta kapatma
+
+import signal  # noqa: E402
+import subprocess  # noqa: E402
+
+
+def _bitti(s, bekle=10.0):
+    son = time.monotonic() + bekle
+    while time.monotonic() < son:
+        e = s.stream.since(0)["olaylar"]
+        if e and e[-1]["tur"] == "oturum_bitti":
+            return e[-1]
+        time.sleep(0.02)
+    raise AssertionError("oturum_bitti gelmedi")
+
+
+def test_kill_jobs_ve_ebeveyn_bekcisi_oturumu_ve_arka_ucu_kapatir(srv, monkeypatch):
+    arka = B.FakeBackend([])
+    ac(srv, monkeypatch, arka)
+    s = S.current_session()
+    srv._kill_jobs()
+    assert S.current_session() is None and _bitti(s)["neden"] == "arayuz_kapandi"
+    assert arka.stops[0] == "cikis"                                        # arka uç oturumdan önce durur
+    # SIGTERM / SIGINT işleyicisi: aynı yol, sonra çıkış
+    arka2 = B.FakeBackend([])
+    ac(srv, monkeypatch, arka2)
+    s2 = S.current_session()
+    with pytest.raises(SystemExit):
+        srv._terminate_jobs(signal.SIGTERM, None)
+    assert _bitti(s2)["neden"] == "arayuz_kapandi" and "cikis" in arka2.stops
+    # ebeveyn öldü (ppid 1): bekçi oturumu kapatıp süreci bitirir
+    arka3 = B.FakeBackend([])
+    ac(srv, monkeypatch, arka3)
+    s3 = S.current_session()
+
+    class Cikis(Exception):
+        pass
+
+    monkeypatch.setattr(srv.os, "getppid", lambda: 1)
+    monkeypatch.setattr(srv.os, "_exit", lambda code: (_ for _ in ()).throw(Cikis(code)))
+    with pytest.raises(Cikis):
+        srv._parent_watchdog()
+    assert _bitti(s3)["neden"] == "arayuz_kapandi" and "cikis" in arka3.stops
+
+
+def test_calisma_alani_degisince_oturum_kapanir_ayni_alan_kapatmaz(srv, monkeypatch, tmp_path):
+    ac(srv, monkeypatch)
+    s = S.current_session()
+    srv.activate_workspace(str(srv._ws_path))                              # aynı alan: önbellek tazeleme
+    assert S.current_session() is s and not s.closed
+    srv.activate_workspace(str(_ws(tmp_path / "baska")))
+    assert S.current_session() is None and _bitti(s)["neden"] == "calisma_alani_degisti"
+
+
+def test_bosta_kapatma_ve_durum_olayi(srv, monkeypatch):
+    class Bosta(B.FakeBackend):
+        def stop_if_idle(self):
+            self.stop("bosta")
+            return True
+
+    assert srv._lm_idle_tick() is False                                    # oturum yok
+    ac(srv, monkeypatch)                                                    # modelsiz: arka uç yok
+    assert srv._lm_idle_tick() is False
+    S.current_session().close()
+    arka = Bosta([])
+    arka.start()
+    o = ac(srv, monkeypatch, arka)
+    s = S.current_session()
+    s._backend_state_event()
+    assert srv._lm_idle_tick() is True and arka.stops == ["bosta"]
+    durumlar = [e["durum"] for e in olaylar(o) if e["tur"] == "arka_uc_durumu"]
+    assert durumlar[-1] != "hazir" and len(durumlar) >= 2
+
+
+class _Ps:
+    """Sahte ``ps``: ``pid`` → (ppid, args). ``kill`` çağrısında süreç kaybolur."""
+
+    def __init__(self, procs):
+        self.procs = dict(procs)
+        self.kills = []
+
+    def run(self, cmd, **kw):
+        pid = int(cmd[-1])
+        ppid, args = self.procs.get(pid, ("", ""))
+        out = ppid if cmd[2] == "ppid=" else args
+        return subprocess.CompletedProcess(cmd, 0, stdout=out + "\n" if out else "", stderr="")
+
+    def kill(self, pid, sig):
+        self.kills.append((pid, sig))
+        self.procs.pop(pid, None)
+
+
+def test_acilista_yetim_model_sunucusu_toplanir(srv, tmp_path):
+    durum = srv._LM_STORE_ROOT / "sunucu"
+    pidf = durum / "llama_server.pid"
+    ikili = "/opt/llama/bin/llama-server"
+    args = f"{ikili} -m /m.gguf --port 4321 --host 127.0.0.1"
+    assert srv._lm_reap_orphan(run=_Ps({}).run, kill=_Ps({}).kill) == "kayıt yok"
+    durum.mkdir(parents=True)
+
+    def kayit(ikili_=ikili, pid=777, port=4321):
+        pidf.write_text(json.dumps({"pid": pid, "port": port, "ikili": ikili_}), encoding="utf-8")
+
+    # kayıttaki ikili llama-server değil: dokunulmaz
+    kayit("/bin/bash")
+    ps = _Ps({777: ("1", "/bin/bash")})
+    assert "dokunulmadı" in srv._lm_reap_orphan(run=ps.run, kill=ps.kill) and ps.kills == [] and pidf.exists()
+    # ebeveyni yaşıyor (ör. açık bir CLI oturumu): dokunulmaz
+    kayit()
+    ps = _Ps({777: ("4242", args)})
+    assert srv._lm_reap_orphan(run=ps.run, kill=ps.kill) == "ebeveyni yaşıyor: dokunulmadı"
+    assert ps.kills == [] and pidf.exists()
+    # yetim (ppid 1) ve satır eşleşiyor: SIGTERM, kayıt silinir
+    ps = _Ps({777: ("1", args)})
+    assert srv._lm_reap_orphan(run=ps.run, kill=ps.kill, sleep=lambda s: None) == "yetim sunucu kapatıldı"
+    assert ps.kills == [(777, signal.SIGTERM)] and not pidf.exists()
+    # PID başka bir sürece geçmiş (satır eşleşmiyor): öldürülmez, bayat kayıt silinir
+    kayit()
+    ps = _Ps({777: ("1", "/usr/bin/vim notlar.txt")})
+    assert "eşleşmedi" in srv._lm_reap_orphan(run=ps.run, kill=ps.kill) and ps.kills == [] and not pidf.exists()
+    # süreç yok: bayat kayıt silinir
+    kayit()
+    ps = _Ps({})
+    assert "eşleşmedi" in srv._lm_reap_orphan(run=ps.run, kill=ps.kill) and ps.kills == [] and not pidf.exists()

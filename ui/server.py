@@ -449,9 +449,14 @@ def build_model() -> dict | None:
 def activate_workspace(ws: str) -> None:
     global WS
     with _CACHE_LOCK:
+        changed = ws != WS
         WS = ws
         _CACHE.pop("model", None)
         _CACHE.pop("ws", None)
+    # Çalışma alanı DEĞİŞTİYSE açık KaradulLM oturumu kapanır (P22c1; tasarım §4.6): oturumun okuduğu veri
+    # artık arayüzün gösterdiği değil. Aynı alanın önbellek tazelemesi (ad düzeltme) oturumu kapatmaz.
+    if changed:
+        _lm_close_current(lm_session.CLOSE_WORKSPACE, wait=None)
 
 
 # ---------------------------------------------------------------------------
@@ -2757,6 +2762,74 @@ def _lm_close(body: dict) -> dict:
     return {"tamam": True}
 
 
+# --- Yaşam döngüsü (tasarım §4.3 G7; P21 LM-05): arayüz kapanınca oturum ve yerel model sunucusu da kapanır ---
+# Süreç kapanırken oturumun kapanmasını en çok bu kadar bekle (sn) [bu iş]: arka uç önce durdurulduğu için süren
+# istek hemen hata ile biter; ``Session.close``'un kendi tavanı (30 sn) sinyal işleyicisini bekletmesin.
+_LM_SHUTDOWN_JOIN_SEC = 5.0
+
+
+def _lm_close_current(reason: str, *, wait: float | None) -> bool:
+    """Açık oturumu kapatır (``oturum_bitti.neden = reason``); oturum yoksa ``False``. ``wait`` verilirse (süreç
+    kapanışı) önce yerel model sunucusu durdurulur (``backend.stop("cikis")``, P21 notu: bekçinin 1 sn'lik
+    yoklamasını beklemeden), sonra kapanış en çok ``wait`` sn beklenir. ``wait=None``: kapanış arka planda
+    (istek iş parçacığı bekletilmez; ``current_session()`` kapanış başlar başlamaz ``None`` olur)."""
+    s = lm_session.current_session()
+    if s is None:
+        return False
+    if wait is not None and s.backend is not None:
+        try:
+            s.backend.stop("cikis")
+        except Exception:  # noqa: BLE001 — kapanışta son çare; oturum yine kapanır
+            pass
+    t = threading.Thread(target=s.close, args=(reason,), name="karadullm-kapanis", daemon=True)
+    t.start()
+    if wait is not None:
+        t.join(wait)
+    return True
+
+
+def _lm_idle_tick() -> bool:
+    """Boşta ``IDLE_SHUTDOWN_SEC``'ten (600 sn) uzun duran yerel model sunucusunu durdurur (G7;
+    ``backend.stop_if_idle``). Durduysa oturum ``arka_uc_durumu`` olayını yayar. ``_parent_watchdog`` her turda
+    çağırır."""
+    s = lm_session.current_session()
+    b = s.backend if s is not None else None
+    if b is None or not hasattr(b, "stop_if_idle"):
+        return False
+    try:
+        stopped = bool(b.stop_if_idle())
+    except Exception:  # noqa: BLE001 — boşta kapatma denetimi bekçiyi düşürmesin
+        return False
+    if stopped:
+        s._backend_state_event()   # oturumun yalnız durum değişince yayan yolu (yineleme yok)
+    return stopped
+
+
+def _lm_reap_orphan(*, run=subprocess.run, kill=os.kill, sleep=time.sleep) -> str:
+    """Açılışta yetim yerel model sunucusunu toplar (G7; P21 LM-05 bekçisinin kaçırdığı durum: bekçi de öldüyse).
+    Kapatılan süreç PID dosyasındakidir ve (a) kayıtlı ikilinin adı ``llama-server``, (b) ebeveyni ölmüş (ppid 1:
+    yaşayan bir CLI oturumunun sunucusuna dokunulmaz), (c) ``ps`` satırında kayıtlı ikili ve kapı var
+    (``reap_recorded``; PID yeniden kullanımı). Okunur bir sonuç iletisi döndürür."""
+    state = _lm_base() / "sunucu"
+    pidf = LlamaServerBackend(Path("llama-server"), Path(os.devnull), state, watchdog=None).pid_file
+    try:
+        rec = json.loads(pidf.read_text(encoding="utf-8"))
+        pid, binary = int(rec["pid"]), Path(str(rec["ikili"]))
+    except (OSError, ValueError, KeyError, TypeError):
+        return "kayıt yok"
+    if binary.name != "llama-server":
+        return "kayıttaki ikili llama-server değil: dokunulmadı"
+    try:
+        r = run(["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True, timeout=5)
+        ppid = (r.stdout or "").strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return "ps okunamadı: dokunulmadı"
+    if ppid and ppid != "1":
+        return "ebeveyni yaşıyor: dokunulmadı"
+    b = LlamaServerBackend(binary, Path(os.devnull), state, run=run, kill=kill, sleep=sleep, watchdog=None)
+    return "yetim sunucu kapatıldı" if b.reap_recorded() else "kayıtlı süreç yok ya da eşleşmedi: kayıt silindi"
+
+
 # /api/lm/* yönlendirmesi (hepsi Handler'da _guard'dan SONRA çağrılır: Host + Origin + jeton).
 _LM_GET = {
     "/api/lm/olaylar": _lm_events,
@@ -2985,13 +3058,15 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def _kill_jobs():
-    """Çalışan analizleri (ve altlarındaki Ghidra JVM'i) sonlandır."""
+    """Çalışan analizleri (ve altlarındaki Ghidra JVM'i) sonlandır; açık KaradulLM oturumunu ve yerel model
+    sunucusunu kapat (P22c1; G7: arayüz kapanınca süreç ölür)."""
     with _JOBS_LOCK:
         for j in _JOBS.values():
             proc = j.get("proc")
             if proc is None or proc.poll() is not None:
                 continue
             _kill_proc(proc)
+    _lm_close_current(lm_session.CLOSE_UI, wait=_LM_SHUTDOWN_JOIN_SEC)
 
 
 def _terminate_jobs(signum=None, frame=None):  # noqa: ANN001, ARG001
@@ -3011,6 +3086,7 @@ def _parent_watchdog():
             _kill_jobs()
             sys.stderr.flush()
             os._exit(0)
+        _lm_idle_tick()
         time.sleep(2)
 
 
@@ -3020,5 +3096,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, _terminate_jobs)
     signal.signal(signal.SIGINT, _terminate_jobs)
     threading.Thread(target=_parent_watchdog, daemon=True).start()
+    # Önceki çökmeden kalmış yetim model sunucusu (bekleme sunucuyu geciktirmesin: arka planda)
+    threading.Thread(target=lambda: print(f"KaradulLM sunucu kaydı: {_lm_reap_orphan()}", file=sys.stderr),
+                     daemon=True).start()
     print(f"Black Widow konsolu  ->  http://127.0.0.1:{_PORT}   {where}")
     ThreadingHTTPServer(("127.0.0.1", _PORT), Handler).serve_forever()
