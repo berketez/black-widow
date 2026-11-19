@@ -143,6 +143,18 @@ _DOT_RUN_RE = re.compile(r'\.{2,}')
 # dosya adlarını ayırt eden ek buradan alınır.
 _ADDRESS_HEADER_RE = re.compile(r"^// Address:\s+(\S+)\s*$", re.MULTILINE)
 
+# Alt sistem başlığındaki bildirimler tanımdan kurulur (B-B1, P18): birimin
+# yorum, dizgi ve önişlemci satırı atılmış metninde dosya kapsamında açılan
+# `{`'den önceki başlık `... ad(parametreler)` ile bitiyorsa bir tanımdır.
+_C_NONCODE_RE = re.compile(
+    r"//[^\n]*|/\*.*?\*/|\"(?:\\.|[^\"\\\n])*\"|'(?:\\.|[^'\\\n])*'", re.S)
+_C_PREPROCESSOR_RE = re.compile(r"^[ \t]*#[^\n]*", re.MULTILINE)
+_C_SCOPE_RE = re.compile(r"[{};]")
+_C_TRAILING_NAME_RE = re.compile(r"([A-Za-z_$][\w$]*)\s*$")
+_C_IDENTIFIER_RE = re.compile(r"[A-Za-z_]\w*")
+# Tanım başlığı sayılmayan denetim sözcükleri (dengesiz ayraçtan sonra `if (...) {`).
+_C_CONTROL_WORDS = frozenset({"if", "for", "while", "switch", "do", "else", "return", "sizeof"})
+
 # Dosya adı gövdesinin (uzantısız) en çok uzunluğu. Dosya sistemi sınırı 255
 # bayt; adres eki, sıra eki ve `.c` için pay kalır. ghidra/headless.py
 # fonksiyon adını aynı uzunlukta keser.
@@ -289,6 +301,57 @@ def _parse_hex(value: Any) -> int | None:
         return int(value, 16)
     except ValueError:
         return None
+
+
+def definition_signatures(content: str) -> list[tuple[str, str]]:
+    """Kaynak metinde dosya kapsamında tanımlanan fonksiyonlar: (ad, imza).
+
+    İmza, tanımın `{`'den önceki başlığıdır (yorumlar atılmış, boşluklar tek boşluğa
+    indirgenmiş): `int fclose(FILE *__stream)`. Son `)`'nin eşi olan `(` geriye doğru
+    sayılarak bulunur (parametrede işlev göstericisi olabilir). Ad geçerli bir C
+    tanımlayıcısı değilse ya da denetim sözcüğüyse tanım sayılmaz.
+    """
+    code = _C_PREPROCESSOR_RE.sub(" ", _C_NONCODE_RE.sub(" ", content))
+    found: list[tuple[str, str]] = []
+    depth = 0
+    boundary = 0
+    for match in _C_SCOPE_RE.finditer(code):
+        ch = match.group()
+        if ch == "{":
+            if depth == 0:
+                header = " ".join(code[boundary:match.start()].split())
+                name = _definition_header_name(header)
+                if name is not None:
+                    found.append((name, header))
+            depth += 1
+        elif ch == "}":
+            depth = max(depth - 1, 0)
+            if depth == 0:
+                boundary = match.end()
+        elif depth == 0:
+            boundary = match.end()
+    return found
+
+
+def _definition_header_name(header: str) -> str | None:
+    """`... ad(parametreler)` biçiminde biten başlıktaki `ad`; değilse None."""
+    if not header.endswith(")"):
+        return None
+    depth = 0
+    for i in range(len(header) - 1, -1, -1):
+        if header[i] == ")":
+            depth += 1
+        elif header[i] == "(":
+            depth -= 1
+            if depth == 0:
+                match = _C_TRAILING_NAME_RE.search(header, 0, i)
+                if match is None:
+                    return None
+                name = match.group(1)
+                if not _C_IDENTIFIER_RE.fullmatch(name) or name in _C_CONTROL_WORDS:
+                    return None
+                return name
+    return None
 
 
 def _block_index(address: int, blocks: list[MemoryBlock]) -> int | None:
@@ -631,11 +694,8 @@ class CProjectBuilder:
         for subsys in sorted(active_subsystems):
             header = self._build_subsystem_header(
                 subsys,
-                [
-                    self._unit_name(stem)
-                    for stem in normal_funcs.get(subsys, []) + small_funcs.get(subsys, [])
-                ],
-                nodes,
+                normal_funcs.get(subsys, []) + small_funcs.get(subsys, []),
+                file_contents,
             )
             ledger.write(include_dir / f"subsystem_{subsys}.h", header)
 
@@ -1436,10 +1496,19 @@ class CProjectBuilder:
     # ------------------------------------------------------------------
 
     def _build_subsystem_header(
-        self, subsystem: str, func_stems: list[str],
-        nodes: dict[str, dict],
+        self, subsystem: str, unit_keys: list[str],
+        file_contents: dict[str, str],
     ) -> str:
-        """Subsystem icin forward declaration header'i."""
+        """Alt sistemin bildirim başlığı: her bildirim, alt sistemdeki tanımın kendisidir.
+
+        B-B1 (P18): eski başlık bildirimi çağrı grafındaki Ghidra adından ya da dosya
+        gövdesinden `void ad(void);` diye kuruyordu. Yeniden adlandırılan fonksiyonda
+        başlık eski adı (`FUN_x`), C++ adında geçersiz C adı (`operator.new`), her
+        fonksiyonda tanımdan farklı bir imza söylüyordu. Şimdi ad ve imza birimin
+        tanımından kopyalanır; tanımı okunamayan birim bildirilmez, yorumla yazılır.
+        Aynı ad farklı imzayla ikinci kez tanımlanmışsa ikinci bildirim yazılmaz
+        (C'de çelişen bildirim), yorum olarak gösterilir.
+        """
         guard = f"_SUBSYSTEM_{subsystem.upper()}_H_"
         lines = [
             f"#ifndef {guard}",
@@ -1448,22 +1517,38 @@ class CProjectBuilder:
             '#include "types.h"',
             "",
             f"// Forward declarations for subsystem: {subsystem}",
+            "// Each declaration is copied from its definition in src/ (name and signature).",
             "",
         ]
 
-        # Call graph'tan fonksiyon imzalarini cikar (adres sırasıyla)
-        declared: set[str] = set()
-        wanted = set(func_stems)
-        for addr, node in sorted(nodes.items(), key=lambda item: item[0]):
-            name = node.get("name", "")
-            if name in wanted and name not in declared:
-                lines.append(f"void {name}(void);  // @{node.get('address', '?')}")
-                declared.add(name)
+        def order(key: str) -> tuple[int, int, str]:
+            address = self._unit_address(file_contents.get(key, ""))
+            return (address is None, address or 0, key)
 
-        # Call graph'ta olmayan stem'ler
-        for stem in sorted(func_stems):
-            if stem not in declared:
-                lines.append(f"void {stem}(void);")
+        declared: dict[str, str] = {}
+        for key in sorted(unit_keys, key=order):
+            content = file_contents.get(key, "")
+            match = _ADDRESS_HEADER_RE.search(content)
+            where = f"  // @{match.group(1)}" if match else ""
+            signatures = definition_signatures(content)
+            if not signatures:
+                lines.append(
+                    f"// {key}: no C-declarable function definition found in source; not declared")
+                continue
+            for name, signature in signatures:
+                if re.search(r"(?:::|~)\s*%s\s*\(" % re.escape(name), signature):
+                    # Ghidra C++ adını nitelikli basıyor (`std::x`, `A::~A`): C bildirimi olamaz.
+                    lines.append(
+                        f"// qualified C++ name, not a C declaration: {signature};{where}")
+                    continue
+                if name not in declared:
+                    declared[name] = signature
+                    lines.append(f"{signature};{where}")
+                elif declared[name] != signature:
+                    lines.append(
+                        f"// also defined with another signature (not declared twice): "
+                        f"{signature};{where}"
+                    )
 
         lines.extend(["", f"#endif // {guard}", ""])
         return "\n".join(lines)

@@ -1,0 +1,45 @@
+{
+  "_comment": "P18 (çıktı ağacı) mutasyon koruması. Her mutant bir onarımı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p18.json",
+  "mutants": [
+    {
+      "id": "p18_k2_eski_void_bildirim",
+      "desc": "Başlık bildirimi tanım imzası yerine eski 'void ad(void)' kalıbıyla yazılır",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_baslik_bildirimi_tanimin_adi_ve_imzasi",
+      "find": "                    lines.append(f\"{signature};{where}\")\n",
+      "replace": "                    lines.append(f\"void {name}(void);{where}\")\n"
+    },
+    {
+      "id": "p18_k2_nitelikli_ad_bildirilir",
+      "desc": "Nitelikli C++ adı (std::x, A::~A) C bildirimi olarak yazılır",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_nitelikli_cpp_adi_c_bildirimi_olmaz",
+      "find": "                if re.search(r\"(?:::|~)\\s*%s\\s*\\(\" % re.escape(name), signature):\n",
+      "replace": "                if re.search(r\"::\\s*%s\\s*\\(\" % re.escape(name), signature):\n"
+    },
+    {
+      "id": "p18_k2_cift_bildirim",
+      "desc": "Aynı ad farklı imzayla ikinci kez bildirilir (çelişen bildirim)",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_ayni_ad_farkli_imza_bir_kez_bildirilir",
+      "find": "                if name not in declared:\n                    declared[name] = signature\n",
+      "replace": "                if name not in declared or True:\n                    declared[name] = signature\n"
+    },
+    {
+      "id": "p18_k2_yorum_dizgi_kalir",
+      "desc": "Tanım imzası çıkarılırken yorum ve dizgi atılmaz (ayraç sayımı bozulur)",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_tanim_imzasi_yorum_dizgi_onislemci_atlanir",
+      "find": "    code = _C_PREPROCESSOR_RE.sub(\" \", _C_NONCODE_RE.sub(\" \", content))\n",
+      "replace": "    code = _C_PREPROCESSOR_RE.sub(\" \", content)\n"
+    },
+    {
+      "id": "p18_k2_onislemci_kalir",
+      "desc": "Önişlemci satırı imzaya karışır (#include tanım başlığına girer)",
+      "module": "karadul/reconstruction/c_project_builder.py",
+      "test": "tests/test_p18_cikti_agaci.py::test_tanim_imzasi_yorum_dizgi_onislemci_atlanir",
+      "find": "    code = _C_PREPROCESSOR_RE.sub(\" \", _C_NONCODE_RE.sub(\" \", content))\n",
+      "replace": "    code = _C_NONCODE_RE.sub(\" \", content)\n"
+    }
+  ]
+}
