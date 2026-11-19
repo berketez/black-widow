@@ -137,7 +137,7 @@ KARŞI'nın sayımıyla 74 iş paketi. Tahmin: 4–5 tam Opus günü ve 2–3 ge
 | ÖL-10 tasarım turunu kim yapsın | öneri: tek bir Mythos ajanı (tasarım işi); istemezsen Opus mimar ajanı |
 | ARGE verisinin silinmesi (yaklaşık 4,6 GB) | bitiş çizgisine kadar durması önerilir (kanıt) |
 | Karşı görüş (Astra) | KARŞI hattı Mythos ile yapıldı; ayrı model ailesinden görüş kota açılınca isteğe bağlı |
-| Avast dışlama denemesi (`hiz/PLAN.md` §6 K-HZ-1) | Bu makinede var olan dosyayı açmak 0,6–0,9 ms, yeni dosya yazmak 0,04 ms; Avast etkin ve tablo erişimde taramayla tutarlı, ama nedeni kanıtlanmadı. Karadul'un çalışma dizinlerini Avast'ta dışlayıp ölçmek Berke'nin kararı (güvenlik ayarı; ajan değiştirmez) |
+| Avast dışlama denemesi (`hiz/PLAN.md` §6 K-HZ-1) | Bu makinede var olan dosyayı açmak 0,6–0,9 ms, yeni dosya yazmak 0,04 ms; Avast etkin ve tablo erişimde taramayla tutarlı, ama nedeni kanıtlanmadı. Karadul'un çalışma dizinlerini Avast'ta dışlayıp ölçmek Berke'nin kararı (güvenlik ayarı; ajan değiştirmez). **Berke (2026-11-19 13:5x): "bir dahaki oturum yaparız"** → HZ-0'dan önce Berke dışlamayı yapar, HZ-0 iki kolla ölçer (dışlamalı / dışlamasız) |
 | HIZ planı KARŞI tarafından denetlenmedi | `hiz/PLAN.md` KARŞI bitirirken yarımdı; Dalga 0'da HZ-0 koşmadan önce ana oturum dosya yollarını ve kabul ölçütlerini bir kez denetlesin |
 
 ## 6. Belge dizini
