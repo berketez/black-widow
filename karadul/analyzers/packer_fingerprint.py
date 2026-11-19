@@ -227,7 +227,9 @@ _STRING_RULES: tuple[_StringRule, ...] = (
     _StringRule(rb"Obsidium\s+Software", "Obsidium", "protector", 0.90, 0, "pe"),
     # Petite
     _StringRule(rb"Petite\s+v?([\d\.]+)", "Petite", "compressor", 0.88, 1, "pe"),
-    # NSIS installer
+    # NSIS installer. Iki dizgi de NSIS derleyicisinin (makensis.exe) kendisinde
+    # de vardir (kurucu saplamasini veri olarak tasir); kurucu iddiasi icin ek
+    # veri bolumundeki firstheader sarttir (P02b, _installer_payload_evidence).
     _StringRule(rb"Nullsoft\.NSIS\.exehead", "NSIS", "installer", 0.92, 0, "pe"),
     _StringRule(rb"NSIS Error", "NSIS", "installer", 0.78, 0, "pe"),
     # Inno Setup
@@ -435,6 +437,62 @@ def parse_pe_layout(data: bytes) -> Optional[PELayout]:
     except (struct.error, IndexError) as exc:
         logger.debug("PE baslik parse hatasi: %s", exc)
         return None
+
+
+# --- Kurucu ek verisi (P02b kalem 4) ---
+# NSIS kurucusu = exehead saplamasi + ek veri (overlay). Ek verinin basi
+# "firstheader": flags(4) + siginfo 0xDEADBEEF + "NullsoftInst" + uzunluklar;
+# exehead onu 512 bayta hizali ofsetlerde arar (NSIS kaynagi fileform.h,
+# FH_SIG / FH_INT1..3). Derleyici makensis.exe saplamayi veri olarak tasidigi
+# icin "Nullsoft.NSIS.exehead" / "NSIS Error" dizgileri onda da var; ek veri
+# basligi ise yalniz derlenmis kurucuda bulunur.
+_NSIS_FIRSTHEADER_SIG = b"\xef\xbe\xad\xdeNullsoftInst"
+_NSIS_FIRSTHEADER_ALIGN = 512
+
+
+def pe_overlay_start(data: bytes) -> Optional[int]:
+    """PE'de bolumlerin ham verisinin bittigi ofset (ek veri bolumu buradan baslar)."""
+    layout = parse_pe_layout(data)
+    if layout is None:
+        return None
+    end = 0
+    for sec in layout.sections:
+        if sec.raw_ptr and sec.raw_size:
+            end = max(end, sec.raw_ptr + sec.raw_size)
+    return end or None
+
+
+def nsis_firstheader_offset(data: bytes) -> Optional[int]:
+    """NSIS firstheader'in dosya ofseti: ek veri bolumunde, 512'ye hizali.
+
+    Bulunamazsa None (ikili bir NSIS kurucusu degil; or. derleyicinin kendisi).
+    """
+    start = pe_overlay_start(data)
+    if start is None:
+        return None
+    for m in re.finditer(re.escape(_NSIS_FIRSTHEADER_SIG), data[start:]):
+        off = start + m.start() - 4  # flags alani imzadan once
+        if off >= start and off % _NSIS_FIRSTHEADER_ALIGN == 0:
+            return off
+    return None
+
+
+def _installer_payload_evidence(packer: str, data: bytes) -> Optional[str]:
+    """Kurucu iddiasi icin ek veri kaniti; kanit yoksa None (iddia kurulmaz).
+
+    Yalniz bu tabloda adi gecen kurucular icin cagrilir.
+    """
+    if packer == "NSIS":
+        off = nsis_firstheader_offset(data)
+        if off is None:
+            return None
+        return (f"NSIS firstheader (0xDEADBEEF + 'NullsoftInst') ek veri bolumunde "
+                f"@0x{off:x}")
+    return None
+
+
+# Kurucu kaniti istenen paketleyiciler: dizgileri derleyicisinde de bulunur.
+_INSTALLER_PAYLOAD_REQUIRED = frozenset({"NSIS"})
 
 
 def _extract_pe_sections(data: bytes) -> list[str]:
@@ -700,10 +758,17 @@ class PackerFingerprintDetector:
 
         findings: list[PackerFingerprint] = []
         seen: set[tuple[str, str]] = set()  # (packer, evidence) dedup
+        # Kurucu ek veri kaniti (paketleyici basina bir kez hesaplanir).
+        payload: dict[str, Optional[str]] = {}
 
         for rule in _STRING_RULES:
             if rule.platform != "any" and plat != "unknown" and rule.platform != plat:
                 continue
+            if rule.packer in _INSTALLER_PAYLOAD_REQUIRED:
+                if rule.packer not in payload:
+                    payload[rule.packer] = _installer_payload_evidence(rule.packer, data)
+                if payload[rule.packer] is None:
+                    continue  # derleyici / saplama: kurucu verisi yok, iddia yok
             try:
                 m = re.search(rule.pattern, scan_buf)
             except re.error as exc:
@@ -723,12 +788,15 @@ class PackerFingerprintDetector:
             if key in seen:
                 continue
             seen.add(key)
+            evidence = [ev_text]
+            if payload.get(rule.packer):
+                evidence.append(payload[rule.packer])
 
             findings.append(PackerFingerprint(
                 packer_name=rule.packer,
                 version=version,
                 confidence=rule.confidence,
-                evidence=[ev_text],
+                evidence=evidence,
                 category=rule.category,
                 platform=plat if plat != "unknown" else rule.platform,
                 layers_matched=1,

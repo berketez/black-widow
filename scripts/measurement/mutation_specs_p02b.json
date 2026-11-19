@@ -1,0 +1,29 @@
+{
+  "_comment": "P02b (anti-debug + paketleyici kalan kanıt açıkları, 2026-11-19) mutasyon koruması. Her mutant bir düzeltmeyi bozar; ilgili test KIRMIZI olmalı (killed). Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p02b.json",
+  "mutants": [
+    {
+      "id": "p02b_k4_kurucu_sarti",
+      "desc": "Kalem 4: kurucu ek verisi şartı kalkar (derleyici yine NSIS sanılır)",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02b_nsis.py::TestSentetik::test_ek_verisiz_saplama_nsis_degil",
+      "find": "                    continue  # derleyici / saplama: kurucu verisi yok, iddia yok",
+      "replace": "                    pass"
+    },
+    {
+      "id": "p02b_k4_hiza",
+      "desc": "Kalem 4: firstheader 512 hizası denetlenmez",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02b_nsis.py::TestSentetik::test_hizasiz_baslik_sayilmaz",
+      "find": "if off >= start and off % _NSIS_FIRSTHEADER_ALIGN == 0:",
+      "replace": "if off >= start:"
+    },
+    {
+      "id": "p02b_k4_ek_veri",
+      "desc": "Kalem 4: imza ek veri bölümü yerine dosyanın başından aranır",
+      "module": "karadul/analyzers/packer_fingerprint.py",
+      "test": "tests/test_p02b_nsis.py::TestSentetik::test_bolum_icindeki_baslik_sayilmaz",
+      "find": "for m in re.finditer(re.escape(_NSIS_FIRSTHEADER_SIG), data[start:]):\n        off = start + m.start() - 4",
+      "replace": "for m in re.finditer(re.escape(_NSIS_FIRSTHEADER_SIG), data):\n        off = m.start() - 4; start = 0"
+    }
+  ]
+}
