@@ -111,8 +111,10 @@ def test_bos_proje_agaci_yerine_dolu_asamaya_dusulur(tmp_path):
     src = tmp_path / "out" / "src"
     src.mkdir(parents=True)
     yazilan, hatalar = bic._format_binary_sources(src)
-    assert yazilan == 3 and hatalar == []
+    # 3 kaynak + types/types.h (P18: yedek yolda da Ghidra typedef'leriyle her zaman yazılır)
+    assert yazilan == 4 and hatalar == []
     assert len(list(src.rglob("*.c"))) == 3
+    assert (src / "types" / "types.h").is_file()
     assert any("boş" in u for u in bic._warnings)
 
 
@@ -151,7 +153,8 @@ def test_uyari_sonuca_ve_komut_satirina_tasinir(tmp_path, monkeypatch):
     (rec / "project").mkdir(parents=True)
     _c_yaz(rec / "typed", n=2)
     sonuc = bic._format_clean(tmp_path / "out")
-    assert sonuc.success is True and sonuc.src_files == 2
+    # 2 kaynak + types/types.h (P18)
+    assert sonuc.success is True and sonuc.src_files == 3
     assert len(sonuc.warnings) == 1 and "boş" in sonuc.warnings[0]
     # dolu proje ağacında uyarı yok; ikinci çağrı öncekinin uyarısını taşımaz
     ws2, bic2 = _bicimlendirici(tmp_path / "b")
