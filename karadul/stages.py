@@ -93,6 +93,32 @@ def unsupported_target_reason(target: Any) -> str:
     )
 
 
+_UNIVERSAL_SPECIAL_SLICES = (
+    ("go_slice", "go", "Go analizcisi (GOPCLNTAB / modül adları)"),
+    ("bun_slice", "bun", "Bun gömülü JS çıkarıcısı (__BUN)"),
+)
+
+
+def _note_universal_special_slices(target: Any, result: StageResult) -> None:
+    """Evrensel ikilide tanınan ama hattı olmayan dilimleri kayda geçir (BICIM-10).
+
+    P19 ``core/target.py`` dilim başına Go / Bun işaretini ``metadata``'ya yazar,
+    tür UNIVERSAL_BINARY kalır (analizcileri şişman dosyayı açmıyor). Eskiden bu bilgi
+    hiçbir aşamada görünmüyordu: analist Go adlarının neden kurtarılmadığını bilemezdi.
+    """
+    meta = getattr(target, "metadata", None) or {}
+    for key, kind, hat in _UNIVERSAL_SPECIAL_SLICES:
+        if not meta.get(key):
+            continue
+        reason = (
+            f"evrensel ikilide {kind} dilimi tanındı ama {hat} şişman dosyayı açmıyor; "
+            "yalnız yerel hat (seçilen dilim) koştu"
+        )
+        result.stats[f"{kind}_hatti_status"] = "desteklenmiyor"
+        result.stats[f"{kind}_hatti_reason"] = reason
+        result.errors.append(f"Desteklenmiyor: {reason}")
+
+
 # Not (K-10, 2026-11-19): ``_collect_all_algorithms`` buradan silindi. Çağıranı yoktu
 # (AST'de ad / nitelik atfı yalnız testte, dinamik ``getattr`` yok); adımlar
 # (semantic_naming, struct_recovery, deep_tracing) kendi kopyalarını kullanıyor.
@@ -534,6 +560,12 @@ class StaticAnalysisStage(Stage):
                 logger.debug("BUN: MachOAnalyzer import edilemedi")
             except Exception as exc:
                 logger.warning("BUN JS extraction hatasi (atlaniyor): %s", exc)
+
+        # BICIM-10 (P-S4): evrensel dosyada Go / Bun dilimi tanındı (P19 işareti) ama
+        # bu hatların analizcileri şişman dosyayı açmıyor; yerel hat seçilen dilimde
+        # koştu. Sessiz kalmasın: hat 'desteklenmiyor' + neden, aşama kısmi.
+        if target.target_type == TargetType.UNIVERSAL_BINARY:
+            _note_universal_special_slices(target, result)
 
         # YARA taramasi -- yerlesik kurallar (P03 + P-S1: durum her kosulda,
         # isabetler yapilandirilmis ``yara_hits`` olarak da yazilir).

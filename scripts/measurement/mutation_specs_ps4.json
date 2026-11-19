@@ -160,6 +160,22 @@
       "test": "tests/test_ps4_app_bundle.py::test_electron_paketinde_ana_bilesen_uygulamanin_js_i",
       "find": "            \"main_selection_reason\": self.main_selection_reason,",
       "replace": "            \"main_selection_reason\": \"\","
+    },
+    {
+      "id": "ps4_k4_not_cagrilmaz",
+      "desc": "evrensel ikilide özel dilim notu yazılmaz",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_evrensel.py::test_evrensel_ozel_dilim_desteklenmiyor_yazilir",
+      "find": "            _note_universal_special_slices(target, result)",
+      "replace": "            pass  # _note_universal_special_slices(target, result)"
+    },
+    {
+      "id": "ps4_k4_hata_satiri_yok",
+      "desc": "özel dilim aşamayı kısmi yapmaz (hata satırı yok)",
+      "module": "karadul/stages.py",
+      "test": "tests/test_ps4_evrensel.py::test_evrensel_ozel_dilim_desteklenmiyor_yazilir",
+      "find": "        result.errors.append(f\"Desteklenmiyor: {reason}\")",
+      "replace": "        result.errors.extend([])"
     }
   ]
 }
