@@ -723,6 +723,245 @@ def code_layout(data: bytes) -> CodeLayout:
     return _UNKNOWN_LAYOUT
 
 
+# ---------------------------------------------------------------------------
+# Cagri yeri katmani (P02b kalem 1-2): Ghidra ciktisi
+# ---------------------------------------------------------------------------
+# Ithal tablosu yalniz "ikili bu API'yi baglar" der. Hukum icin API'nin
+# cagrildigi (ve arguman sabite bagliysa argumanin) gorulmesi gerekir. Kaynak:
+# Ghidra'nin cagri cizgesi (call_graph.json) ve decompile metni
+# (decompiled/<fonksiyon>.c). Bu veri yoksa (Ghidra kosmadi) katman
+# "desteklenmiyor" yazar ve ithal tabanli bulgular eskisi gibi kalir.
+
+# Derleyici calisma zamani / baslangic kodu: yalniz bunlarin cagirdigi API
+# kullanici kodunun davranisi degildir.
+_CRT_CALLER_NAMES = frozenset({
+    "entry", "_start", "start", "_init", "_fini", "__libc_csu_init",
+    "__libc_csu_fini", "frame_dummy", "register_tm_clones",
+    "__do_global_dtors_aux", "deregister_tm_clones", "__security_init_cookie",
+    "__report_gsfailure", "__raise_securityfailure", "__scrt_fastfail",
+    "_RTC_Initialize", "_RTC_Terminate", "pre_c_init", "pre_cpp_init",
+    "mainCRTStartup", "wmainCRTStartup", "WinMainCRTStartup", "wWinMainCRTStartup",
+    "_DllMainCRTStartup", "DllMainCRTStartup", "__tmainCRTStartup",
+})
+_CRT_CALLER_PREFIXES = ("__scrt_", "__security_", "__acrt_", "__vcrt_", "__crt_",
+                        "_CRT_", "__report_", "__isa_", "__dyld_")
+
+# Arguman tablolari (sabitler: sys/ptrace.h, linux/prctl.h, sys/sysctl.h)
+_MACOS_PT_DENY_ATTACH = 31
+_LINUX_PTRACE_TRACEME = 0
+_PR_SET_DUMPABLE = 4
+_CTL_KERN = 1
+_KERN_PROC = 14
+_KERN_PROC_PID = 1
+_P_TRACED_TEST_RE = re.compile(r"&\s*0x800\b|0x800\s*&|>>\s*0xb\s*&\s*1\b")
+_PTRACE_TECHNIQUES = frozenset({"ptrace_pt_deny_attach", "ptrace_traceme"})
+_CALLSITE_INFO_CONFIDENCE = 0.10
+_CALLSITE_UNREAD_CONFIDENCE = 0.30   # cagri var, arguman okunamadi: zayif
+_PRCTL_DUMPABLE_CONFIDENCE = 0.30    # coreutils timeout da yapar: zayif
+_SYSCTL_PTRACED_CONFIDENCE = 0.55
+
+_DROP = object()  # arguman denetimi iddiayi curuttu: bulgu kurulmaz
+
+_INT_TOKEN_RE = re.compile(r"^-?(0x[0-9a-fA-F]+|\d+)[uUlL]*$")
+_CAST_PREFIX_RE = re.compile(r"^\(\s*[A-Za-z_][\w\s\*]*\)\s*")
+_STACK_VAR_RE = re.compile(r"^(?:local|[a-z]*Stack)_([0-9a-f]+)$")
+
+
+def _api_norm(name: str) -> str:
+    """Ithal adini karsilastirma bicimine indir (Mach-O / thunk alt cizgileri)."""
+    name = name.strip()
+    if name.startswith("__imp_"):
+        name = name[len("__imp_"):]
+    return name.lstrip("_")
+
+
+def _is_crt_caller(name: str) -> bool:
+    return name in _CRT_CALLER_NAMES or name.startswith(_CRT_CALLER_PREFIXES)
+
+
+def _split_call_args(text: str, open_idx: int) -> Optional[list[str]]:
+    """``text[open_idx] == '('``: ust duzeydeki virgullerle ayrilmis argumanlar."""
+    depth = 0
+    args: list[str] = []
+    cur: list[str] = []
+    for ch in text[open_idx:]:
+        if ch == "(":
+            depth += 1
+            if depth == 1:
+                continue
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                args.append("".join(cur).strip())
+                return [a for a in args if a] if args != [""] else []
+        elif ch == "," and depth == 1:
+            args.append("".join(cur).strip())
+            cur = []
+            continue
+        cur.append(ch)
+    return None
+
+
+def _int_arg(tok: Optional[str]) -> Optional[int]:
+    """Decompile argumanindan tamsayi sabit (tur donusumleri atlanir); degilse None."""
+    if tok is None:
+        return None
+    t = tok.strip()
+    while True:
+        m = _CAST_PREFIX_RE.match(t)
+        if not m or m.end() == len(t):
+            break
+        t = t[m.end():].strip()
+    m = _INT_TOKEN_RE.match(t)
+    return int(m.group(0).rstrip("uUlL"), 0) if m else None
+
+
+@dataclass(frozen=True)
+class CallSite:
+    """Bir ithal API'nin decompile metnindeki tek cagrisi."""
+    caller: str
+    caller_addr: str
+    args: Optional[tuple[str, ...]]   # None: metin yok / cagri satiri bulunamadi
+    text: str = ""                    # cagri ifadesi (kisaltilmis)
+    pos: int = -1                     # fonksiyon metnindeki konum
+
+
+class GhidraCallSites:
+    """Ghidra cagri cizgesi + decompile metninden ithal API cagri yerleri."""
+
+    def __init__(self, call_graph: dict[str, Any], decompiled_dir: Optional[Path]) -> None:
+        self._callers: dict[str, dict[str, str]] = defaultdict(dict)
+        nodes = call_graph.get("nodes") or {}
+        for node in (nodes.values() if isinstance(nodes, dict) else nodes):
+            api = _api_norm(str(node.get("name", "")))
+            if not api:
+                continue
+            for c in node.get("callers") or []:
+                cname = str(c.get("name", ""))
+                if _api_norm(cname) == api:   # thunk -> EXTERNAL zinciri
+                    continue
+                self._callers[api].setdefault(cname, str(c.get("address", "")))
+        self.decompiled_dir = Path(decompiled_dir) if decompiled_dir else None
+        self._text_cache: dict[str, Optional[str]] = {}
+
+    @classmethod
+    def from_ghidra_output(cls, ghidra_dir: Path) -> Optional["GhidraCallSites"]:
+        """``static/ghidra_output`` dizininden; cagri cizgesi yoksa None."""
+        import json
+        cg = Path(ghidra_dir) / "call_graph.json"
+        try:
+            data = json.loads(cg.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        dec = Path(ghidra_dir) / "decompiled"
+        return cls(data, dec if dec.is_dir() else None)
+
+    def callers(self, symbol: str) -> dict[str, str]:
+        """``symbol``'u cagiran fonksiyonlar: ad -> adres (thunk haric)."""
+        return dict(self._callers.get(_api_norm(symbol), {}))
+
+    def function_text(self, name: str) -> Optional[str]:
+        if name not in self._text_cache:
+            text = None
+            if self.decompiled_dir is not None and "/" not in name:
+                try:
+                    text = (self.decompiled_dir / f"{name}.c").read_text(
+                        encoding="utf-8", errors="replace")
+                except OSError:
+                    text = None
+            self._text_cache[name] = text
+        return self._text_cache[name]
+
+    def call_sites(self, symbol: str) -> list[CallSite]:
+        """Her cagiran fonksiyondaki her cagri (metin yoksa args=None tek kayit)."""
+        api = _api_norm(symbol)
+        call_re = re.compile(r"(?<![A-Za-z0-9_])_*" + re.escape(api) + r"\s*\(")
+        sites: list[CallSite] = []
+        for caller, addr in sorted(self.callers(symbol).items()):
+            text = self.function_text(caller)
+            found = False
+            for m in (call_re.finditer(text) if text else ()):
+                line_start = text.rfind("\n", 0, m.start()) + 1
+                if text[line_start:m.start()].lstrip().startswith(("//", "/*", "*")):
+                    continue
+                args = _split_call_args(text, m.end() - 1)
+                sites.append(CallSite(caller, addr, tuple(args) if args is not None else None,
+                                      text[m.start():m.end() + 60].split("\n", 1)[0][:90],
+                                      m.start()))
+                found = True
+            if not found:
+                sites.append(CallSite(caller, addr, None))
+        return sites
+
+
+def _stack_values_before(text: str, end: int) -> dict[int, Any]:
+    """Fonksiyon metninde ``end``'den onceki yigin atamalari: ofset -> deger.
+
+    Ghidra yerelleri yigin ofsetini adinda tasir (``local_68``: -0x68). 4 bayt
+    ogeli dizi: ``local_80[1] = 0xe`` -> -0x80+4. 64-bit paket atama
+    (``local_68 = 0x800000001``) ve ``CONCAT44(hi, lo)`` iki 32-bit ogeye
+    bolunur. ``getpid()`` sonucu (dogrudan ya da bir degiskenden) "getpid" olur.
+    """
+    vals: dict[int, Any] = {}
+    pid_vars: set[str] = set()
+    pid_call = re.compile(r"^_*getpid\s*\(\s*\)$")
+    for line in text[:end].splitlines():
+        s = line.strip()
+        m = re.match(r"^(\w+)\s*=\s*(.+?);$", s) or re.match(r"^(\w+)\[(\d+)\]\s*=\s*(.+?);$", s)
+        if not m:
+            continue
+        if len(m.groups()) == 2:
+            var, idx, rhs = m.group(1), None, m.group(2)
+        else:
+            var, idx, rhs = m.group(1), int(m.group(2)), m.group(3)
+        rhs = rhs.strip()
+        val: Any = None
+        if pid_call.match(rhs) or rhs in pid_vars:
+            val = "getpid"
+            if idx is None and not _STACK_VAR_RE.match(var):
+                pid_vars.add(var)
+                continue
+        sm = _STACK_VAR_RE.match(var)
+        if not sm:
+            if idx is None:
+                pid_vars.discard(var)  # yeniden atandi: artik getpid() degil
+            continue
+        off = int(sm.group(1), 16)
+        if idx is not None:
+            off -= 4 * idx
+        if val is None:
+            cm = re.match(r"^CONCAT44\((.+),(.+)\)$", rhs)
+            if cm and idx is None:
+                hi, lo = cm.group(1).strip(), cm.group(2).strip()
+                vals[off] = ("getpid" if lo in pid_vars or pid_call.match(lo)
+                             else _int_arg(lo))
+                vals[off - 4] = ("getpid" if hi in pid_vars or pid_call.match(hi)
+                                 else _int_arg(hi))
+                continue
+            val = _int_arg(rhs)
+            if val is not None and idx is None and val > 0xFFFFFFFF:
+                vals[off] = val & 0xFFFFFFFF
+                vals[off - 4] = val >> 32
+                continue
+        vals[off] = val
+    return vals
+
+
+def _sysctl_mib(site: CallSite, text: str) -> Optional[list[Any]]:
+    """``sysctl(mib, n, ...)`` cagrisinin mib ogeleri (okunamazsa None)."""
+    if not site.args or len(site.args) < 2:
+        return None
+    n = _int_arg(site.args[1])
+    tok = site.args[0].replace("&", " ").strip()
+    tok = _CAST_PREFIX_RE.sub("", tok).strip()
+    sm = _STACK_VAR_RE.match(tok)
+    if n is None or not sm or not (1 <= n <= 12):
+        return None
+    base = int(sm.group(1), 16)
+    vals = _stack_values_before(text, site.pos)
+    return [vals.get(base - 4 * k) for k in range(n)]
+
+
 @dataclass
 class X86CodeScan:
     """x86 kod bolgelerinin komut duzeyindeki tarama sonucu."""
@@ -862,6 +1101,7 @@ class AntiDebugDetector:
         target: Optional[Any] = None,
         binary_path: Optional[Path] = None,
         max_bytes_scan: int = 50 * 1024 * 1024,  # 50 MB
+        callsites: Optional[GhidraCallSites] = None,
     ) -> None:
         """Detector'u baslat.
 
@@ -872,7 +1112,10 @@ class AntiDebugDetector:
                 zorunlu.
             max_bytes_scan: String + byte tarama icin maksimum dosya
                 boyutu (default 50 MB).
+            callsites: Ghidra cagri cizgesi + decompile metni (P02b). Verilirse
+                ithal tabanli bulgular cagri yerine ve argumana baglanir.
         """
+        self.callsites = callsites
         self._target = target
         if binary_path is None and target is not None:
             tgt_path = getattr(target, "path", None)
@@ -931,12 +1174,30 @@ class AntiDebugDetector:
             if scope:
                 layers["bytes"] = {"status": SCAN_STATUS_UNSUPPORTED, "reason": scope}
 
+        # Cagri yeri katmani (P02b kalem 1-2): ek katman; durumu cekirdek uc
+        # katmanin hata sayimina girmez.
+        if self.callsites is None:
+            layers["callsites"] = {
+                "status": SCAN_STATUS_UNSUPPORTED,
+                "reason": ("Ghidra cagri cizgesi / decompile metni verilmedi; ithal "
+                           "tabanli bulgularin cagri yeri ve argumani denetlenmedi"),
+            }
+        else:
+            try:
+                all_findings = self._apply_callsites(all_findings)
+                layers["callsites"] = {"status": SCAN_STATUS_RAN, "reason": ""}
+            except Exception as exc:
+                logger.warning("anti-debug cagri yeri katmani hatasi: %s", exc)
+                layers["callsites"] = {"status": SCAN_STATUS_ERROR,
+                                       "reason": f"{type(exc).__name__}: {exc}"}
+
         # Multi-layer boost: ayni technique birden fazla kategoride varsa
         boosted = self._apply_multilayer_boost(all_findings)
         # Confidence azalan sirada
         boosted.sort(key=lambda f: (-f.confidence, f.technique))
 
         scanned = min(file_size, self.max_bytes_scan)
+        core = {n for n, _ in SCAN_LAYERS}
         failed = [(n, s["reason"]) for n, s in layers.items()
                   if s["status"] == SCAN_STATUS_ERROR]
         layer_errors = [f"{n} katmani: {r}" for n, r in failed]
@@ -946,7 +1207,7 @@ class AntiDebugDetector:
                 f"dizgi ve bayt katmanlari dosyanin ilk {scanned} baytini taradi "
                 f"(dosya {file_size} bayt)",
             )
-        if len(failed) == len(layers):
+        if len([n for n, _ in failed if n in core]) == len(core):
             status = SCAN_STATUS_ERROR
         elif reasons:
             status = SCAN_STATUS_PARTIAL
@@ -1175,6 +1436,138 @@ class AntiDebugDetector:
             explained |= _CRT_FASTFAIL_EXPLAINED
             parts.append(f"__report_gsfailure: IsDebuggerPresent + {_CRT_FASTFAIL_PAIR}")
         return frozenset(explained), "MSVC CRT ithal kumesi; " + "; ".join(parts)
+
+    # ------------------------------------------------------------------
+    # Cagri yeri katmani (P02b kalem 1-2)
+    # ------------------------------------------------------------------
+
+    def _apply_callsites(self, findings: list[AntiDebugFinding]) -> list[AntiDebugFinding]:
+        """Ithal tabanli bulgulari Ghidra cagri yerine (ve argumanina) bagla.
+
+        - Hic cagrilmayan ya da yalniz derleyici calisma zamanindan cagrilan
+          API hukum uretmez: bilgi (0,10), kanitta "cagri yeri yok".
+        - Cagrilan API'nin kanitina cagiran fonksiyon + adres eklenir.
+        - Argumani sabite bagli tekniklerde arguman okunur (kalem 1):
+          ptrace istegi (PT_DENY_ATTACH / PTRACE_TRACEME), prctl secenegi
+          (PR_SET_DUMPABLE, 0), sysctl mib'i (CTL_KERN, KERN_PROC,
+          KERN_PROC_PID, getpid()) + P_TRACED (& 0x800) denetimi.
+        """
+        cs = self.callsites
+        out: list[AntiDebugFinding] = []
+        for f in findings:
+            m = re.match(r"import: (\S+)", f.evidence)
+            if cs is None or m is None or f.category == "compiler_runtime":
+                out.append(f)
+                continue
+            symbol = m.group(1)
+            callers = cs.callers(symbol)
+            user = {n: a for n, a in callers.items() if not _is_crt_caller(n)}
+            if not user:
+                why = ("cagri yeri yok (Ghidra cagri cizgesi: 0 cagiran)" if not callers
+                       else "yalniz derleyici calisma zamani cagiriyor: "
+                       + ", ".join(sorted(callers)[:3]))
+                out.append(self._callsite_finding(
+                    f, min(f.confidence, _CALLSITE_INFO_CONFIDENCE), f"{f.evidence}; {why}",
+                    "ithal edilmis ama kullanici kodundan cagrilmiyor; hukum degil"))
+                continue
+            sites = [s for s in cs.call_sites(symbol) if s.caller in user]
+            judged = self._judge_arguments(f, symbol, sites)
+            if judged is not None:
+                if judged is not _DROP:
+                    out.append(judged)
+                continue
+            where = ", ".join(f"{n}@0x{a}" for n, a in sorted(user.items())[:3])
+            more = f" (+{len(user) - 3})" if len(user) > 3 else ""
+            out.append(self._callsite_finding(
+                f, f.confidence, f"{f.evidence}; cagri: {where}{more}", f.description))
+        return out
+
+    @staticmethod
+    def _callsite_finding(f: AntiDebugFinding, conf: float, evidence: str,
+                          description: str, technique: Optional[str] = None
+                          ) -> AntiDebugFinding:
+        return AntiDebugFinding(
+            technique=technique or f.technique, category=f.category,
+            confidence=round(conf, 3), evidence=evidence, platform=f.platform,
+            description=description)
+
+    def _judge_arguments(self, f: AntiDebugFinding, symbol: str,
+                         sites: list[CallSite]) -> Any:
+        """Argumani sabite bagli teknikte hukum; diger tekniklerde None.
+
+        Doner: yeni bulgu, ``_DROP`` (cagrilarin hicbiri anti-debug kalibi
+        degil; iddia kurulmaz) ya da None (arguman denetimi bu teknikte yok).
+        """
+        api = _api_norm(symbol)
+        if f.technique in _PTRACE_TECHNIQUES and api == "ptrace":
+            want = (_MACOS_PT_DENY_ATTACH if f.platform == "macos"
+                    else _LINUX_PTRACE_TRACEME)
+            want_name = "PT_DENY_ATTACH" if f.platform == "macos" else "PTRACE_TRACEME"
+            reqs = [(s, _int_arg(s.args[0]) if s.args else None) for s in sites]
+            hit = next((s for s, r in reqs if r == want), None)
+            if hit is not None:
+                return self._callsite_finding(
+                    f, f.confidence,
+                    f"{f.evidence}; arguman dogrulandi: ptrace({want_name}={want}) "
+                    f"@ {hit.caller}@0x{hit.caller_addr}: {hit.text}", f.description)
+            known = [r for _, r in reqs if r is not None]
+            if reqs and len(known) == len(reqs):
+                return self._callsite_finding(
+                    f, _CALLSITE_INFO_CONFIDENCE,
+                    f"{f.evidence}; ptrace istekleri {sorted(set(known))} "
+                    f"({len(reqs)} cagri); {want_name} degil",
+                    "ptrace cagriliyor ama anti-debug istegiyle degil (izleyici / "
+                    "hata ayiklayici davranisi olabilir); hukum degil")
+            return self._callsite_finding(
+                f, _CALLSITE_UNREAD_CONFIDENCE,
+                f"{f.evidence}; {len(reqs)} cagri, istek argumani okunamadi",
+                "ptrace cagriliyor; istek argumani okunamadi (zayif)")
+        if f.technique == "prctl_import" and api == "prctl":
+            opts = [(s, _int_arg(s.args[0]) if s.args else None,
+                     _int_arg(s.args[1]) if s.args and len(s.args) > 1 else None)
+                    for s in sites]
+            hit = next((s for s, o, v in opts if o == _PR_SET_DUMPABLE and v == 0), None)
+            if hit is not None:
+                return self._callsite_finding(
+                    f, _PRCTL_DUMPABLE_CONFIDENCE,
+                    f"{f.evidence}; arguman dogrulandi: prctl(PR_SET_DUMPABLE=4, 0) "
+                    f"@ {hit.caller}@0x{hit.caller_addr}: {hit.text}",
+                    "prctl(PR_SET_DUMPABLE, 0): cekirdek dokumunu ve ayni kullanicinin "
+                    "ptrace baglanmasini kapatir; masum araclar da yapar (coreutils "
+                    "timeout) — zayif, tek basina hukum degil",
+                    technique="prctl_set_dumpable")
+            if opts and all(o is not None for _, o, _ in opts):
+                return _DROP
+            return None
+        if f.technique == "sysctl_import" and api == "sysctl":
+            mibs = []
+            for s in sites:
+                text = self.callsites.function_text(s.caller) if self.callsites else None
+                mibs.append((s, _sysctl_mib(s, text) if text else None, text))
+            for s, mib, text in mibs:
+                if (mib and len(mib) >= 4 and mib[0] == _CTL_KERN and mib[1] == _KERN_PROC
+                        and mib[2] == _KERN_PROC_PID and mib[3] == "getpid"
+                        and _P_TRACED_TEST_RE.search(text or "")):
+                    return self._callsite_finding(
+                        f, _SYSCTL_PTRACED_CONFIDENCE,
+                        f"{f.evidence}; arguman dogrulandi: sysctl(CTL_KERN, KERN_PROC, "
+                        f"KERN_PROC_PID, getpid()) + P_TRACED (& 0x800) denetimi @ "
+                        f"{s.caller}@0x{s.caller_addr}",
+                        "Kendi surecinin kinfo_proc'unu okuyup P_TRACED bitini "
+                        "denetliyor (hata ayiklayici altinda mi?)",
+                        technique="sysctl_kinfo_proc")
+            readable = [mib for _, mib, _ in mibs if mib is not None]
+            if mibs and len(readable) == len(mibs) and not any(
+                    len(m) >= 2 and m[0] == _CTL_KERN and m[1] == _KERN_PROC
+                    for m in readable):
+                return _DROP
+            selfpid = sum(1 for m in readable if len(m) >= 4 and m[1] == _KERN_PROC
+                          and m[2] == _KERN_PROC_PID and m[3] == "getpid")
+            note = (f"{len(mibs)} cagri; mib okunamadi: {len(mibs) - len(readable)}; "
+                    f"KERN_PROC_PID + getpid(): {selfpid}; P_TRACED denetimi gorulmedi")
+            return self._callsite_finding(f, f.confidence, f"{f.evidence}; {note}",
+                                          f.description)
+        return None
 
     @staticmethod
     def _import_evidence(symbol: str, technique: str) -> str:

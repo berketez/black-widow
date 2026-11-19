@@ -84,6 +84,24 @@ def probe_readable(path: Path) -> tuple[int | None, str]:
     return size, ""
 
 
+def _load_callsites(ctx: StepContext) -> Any:
+    """ghidra_metadata'nin cagri cizgesi + decompiled_dir -> GhidraCallSites (yoksa None)."""
+    import json
+
+    cg_path = ctx.artifacts.get("call_graph_json_path")
+    if not isinstance(cg_path, Path) or not cg_path.is_file():
+        return None
+    try:
+        data = json.loads(cg_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        logger.debug("anti_debug: cagri cizgesi okunamadi: %s", exc)
+        return None
+    from karadul.analyzers.anti_debug_detector import GhidraCallSites
+
+    dec = ctx.artifacts.get("decompiled_dir")
+    return GhidraCallSites(data, dec if isinstance(dec, Path) and dec.is_dir() else None)
+
+
 @register_step(
     name="anti_debug",
     requires=[
@@ -217,7 +235,11 @@ class AntiDebugStep(Step):
             return [], {}
 
         try:
-            detector = AntiDebugDetector(target=pc.target, binary_path=binary_path)
+            # Cagri yeri katmani (P02b): Ghidra cagri cizgesi + decompile metni
+            # varsa ithal tabanli bulgular cagri yerine / argumana baglanir.
+            callsites = _load_callsites(ctx)
+            extra = {"callsites": callsites} if callsites is not None else {}
+            detector = AntiDebugDetector(target=pc.target, binary_path=binary_path, **extra)
             result = detector.scan()
         except Exception as exc:
             logger.warning("Anti-debug tarama hatasi (atlaniyor): %s", exc)

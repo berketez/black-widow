@@ -80,6 +80,86 @@
       "test": "tests/test_p02b_durum.py::test_adim_dedektor_durumunu_yazar",
       "find": "        record.update(result.record())",
       "replace": "        record.update({})"
+    },
+    {
+      "id": "p02b_k2_cagrilmayan_hukum",
+      "desc": "Kalem 2: hiç çağrılmayan ithal hüküm olarak kalır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestCagriYeri::test_cagrilmayan_ithal_hukum_degil",
+      "find": "f, min(f.confidence, _CALLSITE_INFO_CONFIDENCE), f\"{f.evidence}; {why}\",",
+      "replace": "f, f.confidence, f\"{f.evidence}; {why}\","
+    },
+    {
+      "id": "p02b_k2_crt_kullanici_sayilir",
+      "desc": "Kalem 2: CRT başlangıç fonksiyonu kullanıcı çağıranı sayılır",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestCagriYeri::test_yalniz_crt_cagiriyor",
+      "find": "user = {n: a for n, a in callers.items() if not _is_crt_caller(n)}",
+      "replace": "user = dict(callers)"
+    },
+    {
+      "id": "p02b_k2_thunk_cagiran",
+      "desc": "Kalem 2: thunk → EXTERNAL zinciri çağıran sayılır (çağrılmayan ithal çağrılmış görünür)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestCagriYeri::test_cagrilmayan_ithal_hukum_degil",
+      "find": "                if _api_norm(cname) == api:   # thunk -> EXTERNAL zinciri\n                    continue",
+      "replace": "                pass"
+    },
+    {
+      "id": "p02b_k1_ptrace_istek",
+      "desc": "Kalem 1: ptrace isteği denetlenmez (izleyici PT_CONTINUE hüküm kalır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestArguman::test_izleyici_ptrace_hukum_degil",
+      "find": "            if reqs and len(known) == len(reqs):",
+      "replace": "            if reqs and len(known) == len(reqs) and False:"
+    },
+    {
+      "id": "p02b_k1_p_traced_sarti",
+      "desc": "Kalem 1: sysctl hükmü P_TRACED denetimini istemez",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestArguman::test_sysctl_p_traced_denetimi_yoksa_bilgi",
+      "find": "                        and _P_TRACED_TEST_RE.search(text or \"\")):",
+      "replace": "                        ):"
+    },
+    {
+      "id": "p02b_k1_getpid_sarti",
+      "desc": "Kalem 1: sysctl hükmü kendi pid'ini (getpid) istemez (ps biçimi hüküm alır)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestArguman::test_sysctl_baska_pid_hukum_degil",
+      "find": "and mib[2] == _KERN_PROC_PID and mib[3] == \"getpid\"\n",
+      "replace": "and mib[2] == _KERN_PROC_PID\n"
+    },
+    {
+      "id": "p02b_k1_paket_atama",
+      "desc": "Kalem 1: 64-bit paket mib ataması iki ögeye bölünmez",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestArguman::test_sysctl_paket_atama_ve_dizi",
+      "find": "            if val is not None and idx is None and val > 0xFFFFFFFF:",
+      "replace": "            if val is not None and idx is None and val > 0xFFFFFFFFFFFFFFFF:"
+    },
+    {
+      "id": "p02b_k1_prctl_dumpable_hukum",
+      "desc": "Kalem 1: prctl(PR_SET_DUMPABLE, 0) hüküm düzeyine çıkar (coreutils timeout MED)",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestGercekGhidraCiktisi::test_coreutils_timeout_set_dumpable_zayif",
+      "find": "_PRCTL_DUMPABLE_CONFIDENCE = 0.30",
+      "replace": "_PRCTL_DUMPABLE_CONFIDENCE = 0.550"
+    },
+    {
+      "id": "p02b_k1_prctl_curutme",
+      "desc": "Kalem 1: anti-debug olmayan prctl seçenekleri iddiayı çürütmez",
+      "module": "karadul/analyzers/anti_debug_detector.py",
+      "test": "tests/test_p02b_cagri_yeri.py::TestArguman::test_prctl_set_name_iddia_yok",
+      "find": "            if opts and all(o is not None for _, o, _ in opts):\n                return _DROP",
+      "replace": "            if opts and all(o is not None for _, o, _ in opts):\n                return None"
+    },
+    {
+      "id": "p02b_k12_adim_baglamaz",
+      "desc": "Kalem 1-2: adım Ghidra çıktısını dedektöre vermez",
+      "module": "karadul/pipeline/steps/anti_debug.py",
+      "test": "tests/test_p02b_cagri_yeri.py::test_adim_ghidra_ciktisini_dedektore_verir",
+      "find": "            callsites = _load_callsites(ctx)",
+      "replace": "            callsites = None  # bagli degil"
     }
   ]
 }

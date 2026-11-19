@@ -1,6 +1,6 @@
 --- a/scripts/measurement/mutation_specs_ps1.json
 +++ b/scripts/measurement/mutation_specs_ps1.json
-@@ -12,15 +12,15 @@
+@@ -12,23 +12,23 @@
      {
        "id": "ad_katman_hatasi_sayilmaz",
        "desc": "anti-debug: yutulan katman istisnası duruma yansımaz (eski davranış)",
@@ -18,9 +18,11 @@
 -      "module": "karadul/pipeline/steps/anti_debug.py",
 +      "module": "karadul/analyzers/anti_debug_detector.py",
        "test": "tests/test_ps1_tarama_durumu.py::TestAntiDebugStatus::test_all_layers_error_is_error",
-       "find": "if len(failed) == len(layers):",
-       "replace": "if len(failed) > len(layers):"
-@@ -28,7 +28,7 @@
+-      "find": "if len(failed) == len(layers):",
+-      "replace": "if len(failed) > len(layers):"
++      "find": "if len([n for n, _ in failed if n in core]) == len(core):",
++      "replace": "if len([n for n, _ in failed if n in core]) > len(core):"
+     },
      {
        "id": "ad_kirpma_gorunmez",
        "desc": "anti-debug: 50 MB sınırıyla kırpılan tarama 'calisti' görünür",
