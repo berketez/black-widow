@@ -1858,6 +1858,8 @@ window.bwShowUpdate=bwShowUpdate;
    gerçek değerlerdir; ölçülmemiş değer '?'. */
 const LM_VERDICT={ret:'RET',celiski:'ÇELİŞKİ',sinandi_celiski_yok:'ÇELİŞKİ BULUNMADI (sınandı)',sinanamadi:'SINANAMADI (kanıt yok)'};
 const LM_TASK={acikla:'açıkla',ad_oner:'ad öner',ozet_alt:'özet',soru:'soru',plan:'plan'};
+const LM_POLL_WAIT=25;      // uzun yoklama bekleme tavanı (sn; sunucunun _LM_POLL_MAX_SEC'i ile aynı)
+const LM_POLL_FAIL_MAX=5;   // üst üste ağ hatası: yoklama durur, neden yazılır (P17 pollStep kuralı)
 const LM_LINES_MAX=2000;    // panelde tutulan en çok satır; fazlası en eskiden düşer ve SAYILIR
 function lmHas(o,k){ return !!o&&Object.prototype.hasOwnProperty.call(o,k); }
 function lmV(h){ return lmHas(LM_VERDICT,h)?LM_VERDICT[h]:String(h); }
@@ -1894,6 +1896,15 @@ function lmLines(e){
   if(t==='oturum_bitti') return [L('oturum kapandı ('+e.neden+')','hd')];
   return [];
 }
+/* Uzun yoklama cevabı → {pre: [kayıp satırı], events, son, stop, lost}. Kayıp iki yoldan görülür: sunucunun saydığı
+   `kacan` ve `seq` boşluğu. İkisi aynı kaybı anlatır; büyüğü BİR KEZ yazılır (yineleme yok, gizleme yok). */
+function lmPollApply(prevSeq,resp){
+  let last=prevSeq, gap=0;
+  for(const e of (resp.olaylar||[])){ if(typeof e.seq==='number'){ if(e.seq>last+1) gap+=e.seq-last-1; if(e.seq>last) last=e.seq; } }
+  const lost=Math.max(resp.tasma?(resp.kacan||0):0,gap);
+  return {pre:lost>0?[{t:'! '+lost+' olay kaçırıldı',c:'warn'}]:[], events:resp.olaylar||[],
+    son:(typeof resp.son==='number')?resp.son:last, stop:!!resp.kapali, lost:lost};
+}
 /* Durum satırı. Hız ölçülmeden boş ("ölçülmedi"); beklenen süre yalnız ölçülen hızdan ve "beklenen" diye (U-3). */
 function lmStatusText(st){
   if(!st||!st.oturum) return 'oturum yok · kabuk değildir: yalnız `karadullm`'+(st&&st.model_ayari?(' · model: '+st.model_ayari):' · model yapılandırılmamış');
@@ -1907,8 +1918,8 @@ function lmStatusText(st){
 }
 /* P22C2-LM-BITIS */
 
-/* ---- KaradulLM: DOM (çekmece) ---- */
-const LM={oturum:null, son:0, follow:true, dropped:0};
+/* ---- KaradulLM: DOM (çekmece, uzun yoklama) ---- */
+const LM={oturum:null, son:0, follow:true, polling:false, fails:0, dropped:0};
 function lmJson(url,body){
   return fetch(url,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(async r=>{ let j={}; try{ j=await r.json(); }catch(e){} return {ok:r.ok,status:r.status,j:j}; });
@@ -1933,7 +1944,7 @@ async function lmRefreshStatus(){
     $('lmStop').disabled=!(st.calisan||st.kuyruk); $('lmApprove').classList.toggle('lmhide',!st.onay_bekleyen); }
 }
 function lmSetSession(id){
-  LM.oturum=id; LM.son=0; LM.follow=true;
+  LM.oturum=id; LM.son=0; LM.fails=0; LM.follow=true;
   $('lmPs').textContent=id?'karadullm>':'$';
   $('lmIn').placeholder=id?'/yardim · komutlar (kabuk değildir)':'karadullm yazın (kabuk değildir)';
   $('lmEnd').disabled=!id; if(!id){ $('lmStop').disabled=true; $('lmApprove').classList.add('lmhide'); }
@@ -1945,13 +1956,38 @@ async function lmSubmit(){
     const r=await lmJson('/api/lm/terminal/komut',{komut:text}).catch(()=>null);
     if(!r){ lmAdd('✗ sunucuya ulaşılamadı','err'); return; }
     if(!r.ok){ lmAdd('✗ '+(r.j.hata||r.j.error||('sunucu reddetti ('+r.status+')')),'err'); if(r.j.satir) lmAdd(r.j.satir,'warn'); return; }
-    lmSetSession(r.j.oturum); return;
+    lmSetSession(r.j.oturum); lmPoll(); return;
   }
   lmAdd('karadullm> '+text,'in');
   const r=await lmJson('/api/lm/terminal/girdi',{oturum:LM.oturum,metin:text}).catch(()=>null);
   if(!r){ lmAdd('✗ sunucuya ulaşılamadı','err'); return; }
   // reddedilen satırın iletisi akışa `satir` olarak düşer: burada yinelenmez. Oturum yoksa (404) burada yazılır.
   if(r.status===404){ lmAdd('✗ '+(r.j.hata||'oturum açık değil'),'err'); lmSetSession(null); }
+}
+async function lmPoll(){
+  if(LM.polling) return; LM.polling=true; const oid=LM.oturum;
+  while(LM.oturum===oid){
+    let r=null;
+    try{ r=await lmJson('/api/lm/olaylar?oturum='+encodeURIComponent(oid)+'&sonra='+LM.son+'&bekle='+LM_POLL_WAIT); }catch(e){ r=null; }
+    if(!r){ LM.fails++;
+      if(LM.fails>=LM_POLL_FAIL_MAX){ lmAdd('✗ sunucuya ulaşılamıyor ('+LM_POLL_FAIL_MAX+' deneme üst üste): olay akışı durdu','err'); break; }
+      await new Promise(res=>setTimeout(res,1000)); continue; }
+    if(!r.ok){ lmAdd('✗ olay akışı: '+(r.j.hata||r.j.error||r.status),'err'); break; }
+    LM.fails=0;
+    const a=lmPollApply(LM.son,r.j);
+    a.pre.forEach(l=>lmAdd(l.t,l.c));
+    let refresh=false;
+    for(const e of a.events){ lmHandle(e); if(e.tur!=='jeton') refresh=true; }
+    LM.son=a.son;
+    if(refresh) lmRefreshStatus();
+    if(a.stop){ if(LM.oturum===oid) lmSetSession(null); break; }
+  }
+  LM.polling=false;
+}
+function lmHandle(e){
+  for(const l of lmLines(e)) lmAdd(l.t,l.c);
+  if(e.tur==='jeton') $('lmTok').textContent='akış: '+lmCnt(e.parca)+' parça · '+lmCnt(e.karakter)+' karakter (jeton sayısı değil; gerçek sayı model satırında)';
+  else if(e.tur==='gorev_basladi') $('lmTok').textContent='';
 }
 $('lmBar').onclick=(ev)=>{ if(ev.target&&ev.target.tagName==='BUTTON') return; lmToggle(); };
 $('lmIn').addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); lmSubmit(); } });

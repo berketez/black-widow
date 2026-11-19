@@ -134,6 +134,22 @@ def test_satirlar_repl_render_ile_ayni(tmp_path):
 # (b) uzun yoklama istemcisi
 
 
+@nodeli
+def test_yoklama_kacan_olay_tek_satir_dogru_sayi(tmp_path):
+    out = _run(tmp_path, r"""
+const ev=n=>({seq:n,tur:'satir',metin:'x',duzey:'bilgi'});
+const r1=lmPollApply(0,{olaylar:[ev(1),ev(2)],son:2,tasma:false,kacan:0,kapali:false});
+const r2=lmPollApply(2,{olaylar:[ev(10),ev(11)],son:11,tasma:true,kacan:7,kapali:false});   // sunucu sayar + boşluk 7
+const r3=lmPollApply(11,{olaylar:[ev(12),ev(15)],son:15,tasma:false,kacan:0,kapali:false}); // yalnız boşluk 2
+const r4=lmPollApply(15,{olaylar:[],son:15,tasma:false,kacan:0,kapali:true});
+console.log(JSON.stringify({r1:[r1.pre,r1.son,r1.stop],r2:[r2.pre,r2.son,r2.lost],r3:[r3.pre,r3.lost],r4:[r4.pre,r4.son,r4.stop]}));
+""")
+    assert out["r1"] == [[], 2, False]
+    assert out["r2"] == [[{"t": "! 7 olay kaçırıldı", "c": "warn"}], 11, 7]
+    assert out["r3"] == [[{"t": "! 2 olay kaçırıldı", "c": "warn"}], 2]
+    assert out["r4"] == [[], 15, True]
+
+
 # --------------------------------------------------------------------------------------------
 # (c) imleç
 
