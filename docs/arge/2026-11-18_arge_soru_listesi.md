@@ -217,11 +217,13 @@ Her sorunun altında aynı alanlar var:
 
 **B1. 672 yanlış ad nereden geliyor?**
 - **Soru:** Yanlış adların kanal, alt kanal, boyut tabakası ve program bazında kırılımı nedir? Her kanalın ölçülmüş kesinliği nedir; hangileri bir kapıyla düzeltilir, hangileri yöntem değişikliği ister?
-- **Doğrulayıcı:** `urun_olc.py` kanal kırılımı. Onarım sonrası taban DURUM.md'deki birleşik ölçümden alınır.
+- **Doğrulayıcı:** `urun_olc.py` kanal kırılımı, a62f15e tabanında (`docs/arge/2026-11-19_birlesik_olcum/sonuc.md`).
+- **Onarım sonrası:** kırılım ⟨ÖLÇÜM: kanal kırılımı farkı⟩ (§1). Onarımın kapattığı yanlış ad sınıfları (alt küme ölçümleri): kebap 239 (P12b), gnulib coreutils 217 → 1 (P-S3), rol adı 70 → 0 (P12a), `exact_multi` 42 → 0 (P13a). Yeni alt soru: kalan yanlışların kaçı süren / sıradaki paketlerin (P12c, P08b) kapsamına düşüyor?
 
 **B2. Güven = ölçülmüş kesinlik (kalibrasyon).**
 - **Soru:** Her ada yazılan güven değeri, o kanal ve kanıt türünün geliştirme setinde ölçülmüş kesinliğine eşit olabilir mi? Doğrulama setinde de tutar mı (kalibrasyon eğrisi, Brier / ECE)?
-- **Bugün:** ön adlara sabit 0,95 yazılıyordu (AD-07). Mühendislik paketinin "kalibrasyonu" hiçbir karara girmiyordu (MUH-05). Onarım durumu DURUM.md'de.
+- **Bugün (1.22.1):** ön adlara sabit 0,95 yazılıyordu (AD-07). Mühendislik paketinin "kalibrasyonu" hiçbir karara girmiyordu (MUH-05).
+- **Onarım sonrası:** kısmen ele alındı: ön ad güveni kanalın ölçülmüş kesinliğinin Wilson alt sınırı (P12a AD-07; gnulib 0,706, ELF önyükü 0,992, `main` 0,966, `ks1:func_kalibi` 0,916; ölçülmemiş kanalda `null`, 14 ikilide 398 / 398); füzyon (P11) ve imza VT davranış iddiası (P15c) aynı kuralla; sahte kalibrasyon değerleri kaldırıldı (P04b); birleştiricinin 0,70 uydurması kalktı (P13a). Açık: gnulib satırı bayat (G4); c_namer kapalıyken ön ad sabit 0,85 (→ P12c); doğrulama setinde kalibrasyon (Brier / ECE) hiç ölçülmedi.
 
 **B3. "Benzer ad" ölçüsü: tanım ve insan doğrulaması.**
 - **Soru:** Berke benzerliği kabul ediyor. Hangi ölçü insanın "amaç doğru" yargısıyla en iyi uyuşur?
@@ -229,89 +231,103 @@ Her sorunun altında aynı alanlar var:
   - Aday ölçünün eşiği nerede?
 - **Doğrulayıcı:** kör iki değerlendirici (`etiket_protokolu_v2.md`). Değerlendiriciler arası uyum (kappa), ölçü ile insan yargısının uyumu (ROC / AUC), eşik doğrulama setinde.
 - **Not:** bu ölçü tanımlanmadan A5 / A6 / F'nin hiçbir "benzer ad" iddiası kabul edilmez.
+- **Onarım sonrası:** kısmen: tek etiketçili gevşek rubrik iki pakette kullanıldı (P15c rubrik v2, gerçek ad gösterilerek, etiketler koddan önce sha256'lı; P12b N0b kör L1 etiketleri); iki değerlendirici, kappa ve ölçü ↔ insan uyumu hâlâ yok. A5 ve I1'in bütün "yakın ad" iddiaları buna bağlı.
 
 **B4. Ad vermeme kararı (çekimserlik) için maliyet modeli.**
 - **Soru:** Analist için yanlış adın maliyeti eksik addan kaç kat yüksek? Bu oran verildiğinde kanal başına en iyi eşik nedir?
 - **Doğrulayıcı:** kesinlik / kapsam eğrisinde seçilen işletim noktası, doğrulama setinde.
+- **Onarım sonrası:** yeni alt soru: K-2 çekimserliğin biçimini değiştirdi; ölçülmüş kuralı olmayan kanal ad yerine kanıt satırı yazar (§2 kural 3). Maliyet modeli üç seçeneği (ad / kanıt satırı / hiçbir şey) karşılaştırmalı.
 
 **B5. Kanallar arası çatışma.**
 - **Soru:** İki kanal farklı ad verdiğinde hangisinin doğru olduğu ölçülmüş kesinliklerden belirlenimci bir kuralla seçilebilir mi? Bugünkü birleştirici etkisizdi (AD-04 / 05).
 - **Doğrulayıcı:** çatışan çiftlerde seçilen adın kesinliği.
+- **Onarım sonrası:** kısmen (P13a AD-04 / 05 / 11): birleştirici aynı kanıtı iki kez saymıyor, c_namer'ın reddettiğini geri getirmiyor, kararı köken kaydında (`name_merger`); `exact_multi` 42 → 0; elle ad, BinDiff ve KS-1 önceliği sabit. Ölçülmüş kesinliklerden kurulan seçim kuralı hâlâ yok; birleştirici kaydı 8 / 10 ikilide (H6 tutmadı).
 
 ### C. Daha kaliteli tersine mühendislik (tip, yapı, ilişki, okunurluk)
 
 **C1. Tip: Ghidra'dan daha iyi nerede?**
 - **Soru:** Karadul'un yazdığı tip, DWARF'a Ghidra'nın tipinden daha mı yakın? Hangi değişken türlerinde (parametre, yerel, global, dönüş) değer katıyor, hangilerinde bozuyor?
 - **Doğrulayıcı:** `dwarf_tip.py` + `ghidra_tip_tabani.py`. "Ghidra'dan daha kötü tip yazma" oranı kapıdır (P09'un ön kaydı ve sonucu DURUM.md'de).
+- **Onarım sonrası:** kısmen (P09): Ghidra'nın somut tipini ezen 781 → 0, genişlik bozan değişim 533 → 0; DWARF'a göre yanlış tip +3. Açık: "Ghidra'dan kötü" tiplerin çoğu `undefined8 → uint64_t` öntanımından (8 115 değişen parametrenin 4 450'si) → P18 (sırada, ölçerek karar); `pcode_high_vars` sırası tip sonucunu değiştirebiliyor → P16d (süren).
 
 **C2. Yapı yerleşimi.**
-- **Soru:** İşaretçi aritmetiğinden (`(fonksiyon, değişken)` anahtarıyla, ölçekli ofsetle) ve fonksiyonlar arası birleştirmeden kurtarılan yapıların alan ofsetleri ve boyutları DWARF'la ne kadar uyuşuyor? MaxSMT birleştirmesi (P11'de onarılıyor) ne katıyor?
+- **Soru:** İşaretçi aritmetiğinden (`(fonksiyon, değişken)` anahtarıyla, ölçekli ofsetle) ve fonksiyonlar arası birleştirmeden kurtarılan yapıların alan ofsetleri ve boyutları DWARF'la ne kadar uyuşuyor? MaxSMT birleştirmesi ne katıyor?
 - **Doğrulayıcı:** yapı başına alan ofseti kesinlik / duyarlılık. Koda bağlanan yapı oranı.
+- **Onarım sonrası:** kısmen: (fonksiyon, değişken) anahtarı + ölçek + tip uyumu, ezilen Ghidra alan adı 4 722 → 0 (P10); MaxSMT ofseti DWARF'ta B1 0,997 / B2 0,852, kapsam 727 / 9 295 (P11, H5); yeniden yazım K-1 ile kapalı, açılma ölçümü P10b'de (sırada). Yeni alt soru: önerilen alan adları zayıf (`size_1`, `flags_2`; P10) → I7.
 
 **C3. Modül ve dosya sınırları (yerleşim) derleyiciler arası genelleşir mi?**
 - **Soru:** Adres sırası sinyali GCC 14 / AArch64'e özgü çıktı. GCC 12 / 13, clang, MSVC, LTO'lu derlemelerde kaynak dosya sınırını hangi sinyaller öngörür? Hizalama dolgusu, çağrı yerelliği, dizgi tablosu sırası ve hata ayıklama kalıntıları birlikte ne verir?
 - **Doğrulayıcı:** `harita_olc.py` ARI, derleyici tabakalarında ayrı ayrı. Yerleşim ön kaydının taslağı `263ae4a`'da.
 - **Aykırı öncül:** "0,705 araç zincirinin sonucudur, genelleşmez" (ön kayıt taslağındaki aykırı öncül) burada sınanır.
+- **Onarım sonrası:** değişmedi (yerleşim bayrağı kapalı).
 
 **C4. Okunurluk ve kod kalitesi.**
 - **Soru:** Ghidra çıktısının okunurluğunu ölçen nesnel vekil ölçüler nelerdir? Adaylar: KLOC başına `goto`, `switch` kurtarma oranı, satır içi fonksiyon tespiti, ölü değişken. Karadul'un dönüşümleri bunları nasıl değiştiriyor?
 - **Doğrulayıcı:** vekil ölçüler + küçük bir kör insan okunurluk değerlendirmesi. Vekiller insanla uyuşmuyorsa vekil atılır.
+- **Onarım sonrası:** değişmedi. "Decompiler Switch Analysis" kapatılınca `.c` değişiyor (P16c): `switch` kurtarma vekili bu ayara bağlı (E2). Çıktı ağacı kusurları (başlık ↔ tanım farkı, thunk `.c`) P18'de (sırada).
 
 **C5. Satıcı / kitaplık kodunu ayırmak.**
 - **Soru:** Statik bağlı kitaplık kodunu (gnulib, zlib, OpenSSL) güvenle işaretleyip analistin önünden çekmek, uygulama koduna odaklanmayı ne kadar kolaylaştırır? Yanlış işaretleme zararlı bir modülü "vendor" diye gizler mi (BICIM-11 benzeri risk)?
 - **Doğrulayıcı:** işaretleme kesinliği (yanlış "kitaplık" oranı ≤ kabul sınırı) ve kapsam.
+- **Onarım sonrası:** kısmen: JS `vendor/` işaretlemesi yol kanıtına bağlandı (zararlı / masum `vendor/` 5 / 5 → 0 / 5; yol kanıtlı gerçek paket 8 / 9 vendor kalır; P20, BICIM-11); gnulib adayları raporda (P-S3b); native kodda kitaplık işaretleme yok. capa'da CRT kodu kullanıcı kodu gibi görünüyor (capa'nın FLIRT kitaplık imzaları pip kurulumunda yok) → P03b (sırada); imzasız CRT / çalışma zamanı ayrımı bu sorunun alt sorusudur.
 
 ### D. Kodun neredeyse tamamını çıkarmak (eksiksizlik)
 
 **D1. Decompile kapsamı: hiçbir fonksiyon ve gövde kaybolmasın.**
 - **Soru:** İkilideki fonksiyonların ve komutların yüzde kaçı çıktı ağacına eksiksiz ulaşıyor?
-- **Bugün:**
-  - `decompiled.json` 500 fonksiyonla sınırlıydı (GHIDRA-05).
-  - Gövdeler 5 000 karakterde kırpılıyordu (11 ikilide 13 664 kayıt).
-  - Zaman aşımına düşen fonksiyonlar vardı.
-  - Onarım durumu P16a'da.
+- **Bugün (1.23.1):** `decompiled.json` 500 fonksiyonla sınırlı, kırpma yazılmıyordu (11 ikilide 13 664 kayıt; GHIDRA-05, B-B4); zaman aşımına düşen fonksiyonlar vardı.
 - **Doğrulayıcı:** "kayıp sayacı" (fonksiyon / gövde / dizgi; neden). Hedef: kayıp 0, kalan kayıp nedenleriyle listelenmiş.
+- **Onarım sonrası:** kısmen (P16a): kayıp sayacı dosyada (`losses`: kırpma, düşen parça, atlanan; `strings_raw` 10 000 kesmesi yazılı); 500 sınırı sürüyor ama kayıtlı (8 ikilide 1 872; tam liste `pcode.jsonl`'de); "gövde 5 000 karakterde kırpılıyor" PyGhidra yolunda yokmuş; otomatik analiz süre sınırı (P16c). Yeni alt soru: decompile edilip ad stratejilerine görünmeyen fonksiyonlar (c_namer çok satırlı imza, %5,0; P12c süren).
 
 **D2. Fonksiyon sınırı ve ayrıştırma kapsamı.**
 - **Soru:** Ghidra'nın fonksiyon sınırı tespiti GT fonksiyon listesine göre ne kadar doğru? Kaçan fonksiyonlar, dönmeyen fonksiyonlar, atlama tabloları ve kod içi veri nerede hata yapıyor? Karadul düzeltebilir mi?
 - **Doğrulayıcı:** GT (DWARF / simge) fonksiyon başlangıçlarına karşı duyarlılık / kesinlik, mimari ve derleyici tabakalarında.
+- **Onarım sonrası:** değişmedi. Sayaç düzeldi (program fonksiyonu ve thunk ayrı; P16a GHIDRA-10); evrensel Mach-O'da arm64e dilimi analiz ediliyor (P16a). Sınır doğruluğu GT'ye karşı ölçülmedi.
 
 **D3. Yeniden derlenebilirlik.**
 - **Soru:** Çıktı ağacındaki dosyaların yüzde kaçı (taslak başlıklarla) derleniyor? Hangi hata sınıfları baskın? Derlenebilir oran nasıl yükselir?
 - **Doğrulayıcı:** dosya başına ve proje başına derleme oranı, hata sınıfı histogramı.
+- **Onarım sonrası:** değişmedi; çıktı ağacı (başlık ↔ tanım farkı, `undefined8` typedef'i) P18'de (sırada).
 
 **D4. Davranışça eşdeğer çıktı (en güçlü "kod çıktı" ölçütü).**
 - **Soru:** Küçük açık kaynak programlarda (coreutils'ten birkaçı) yeniden derlenen çıktı özgün programın kendi test takımından yüzde kaç geçiyor?
 - **Doğrulayıcı:** geçen test oranı. "Neredeyse tamamı çıktı" iddiası ancak bu ölçütle kurulabilir.
 - **Not:** bu, bugünkü hedefin çok ötesinde olabilir. Fizibilite önce 1–2 programda denenir; olumsuz sonuç da değerlidir.
+- **Onarım sonrası:** değişmedi.
 
 **D5. Native olmayan hatların eksiksizliği.**
 - **Soru:** JS / Electron, JAR / APK, .NET, PyInstaller örneklerinde (`~/karadul_olcum/dogrulama_native/`) kurtarılan modül, sınıf ve fonksiyon oranı nedir? jadx, ILSpy ve dotnet bu makinede yok; hangi araç zinciri seçilmeli?
 - **Doğrulayıcı:** hat başına kurtarılan / toplam (sınıf, metot, modül), ayrıştırılabilir çıktı oranı.
+- **Onarım sonrası:** kısmen: güvenlik ve tanıma P19'da (ASAR Python'da, Fiddle 104 / 104 sha256; masum PE'de .NET iddiası 2 / 42 → 0); JS hattı P20'de (bozuk webpack modülü 3 / 3 → 0, `node --check`); akış P-S4'te (süren); webpack 5 modül çıkarma P20b'de (sırada; Fiddle `main`'de başka nesnenin özellikleri "modül" sayılıyor). Açık: iki gerçek APK'da paket adı, 11 gerçek DLL'de AssemblyRef okunamıyor (P19); jadx / ilspycmd / dotnet yok (`arac_yok`).
 
 ### E. Daha hızlı ve daha az kaynakla çalışmak
 
 **E1. Kritik yol.**
 - **Soru:** Geliştirme setinde aşama başına süre ve tepe bellek nedir? Kritik yol hangi aşamalardan geçiyor?
-- **Bugün:** eski ölçümde (2026-07-28) Ghidra toplam sürenin ~%56'sıydı. Mühendislik paketi %5,4. Yeniden ölçülmeli.
+- **Bugün (2026-07-28):** Ghidra toplam sürenin ~%56'sıydı. Mühendislik paketi %5,4.
 - **Doğrulayıcı:** boş makinede tekrarlı ölçüm (üç tekrar, medyan), ikili boyutuna göre ölçekleme eğrisi.
+- **Onarım sonrası:** kısmen (P16c, 8 ikili, yük altında): Ghidra ürün süresinin %77'si, Ghidra köprüsünün %73–87'si BSim sorgusuydu → toplu BSim öntanım (köprü 2,8×–6,7×); otomatik analiz %3–10. a62f15e'de 119 ikili: ⟨ÖLÇÜM: süre — toplam; varsa ikili başına medyan⟩. Boş makinede tekrarlı ölçüm ve decompile işçi sayısı (6 / 9 / 12, dinamik parça) hâlâ yok (P16c'de yük ortalaması 13–30).
 
 **E2. Ghidra analiz seçenekleri: süre ↔ kalite eğrisi.**
 - **Soru:** Hangi Ghidra çözümleyicileri kapatılınca ad, tip ve fonksiyon sınırı kalitesi ölçülebilir biçimde düşmüyor? Süre ne kadar kısalıyor?
 - **Doğrulayıcı:** seçenek kümesi başına (süre, ad ölçümü, D2 duyarlılığı). Pareto cephesi.
+- **Onarım sonrası:** kısmen (P16c): "Decompiler Switch Analysis" otomatik analizin %55'i; kapatınca `.c` / JSON değişiyor → bayt eşitliği ölçütünü geçmedi, yalnız ayar (`analysis.ghidra_disabled_analyzers`). Yeni alt soru: bu değişiklik ad / tip / okunurluk ölçüsünü (C4) gerçekten düşürüyor mu? Karar bayt eşitliğiyle değil kalite ölçüsüyle verilmeli.
 
 **E3. Önbellek ve artımlı analiz.**
 - **Soru:** Ghidra projesini ve aşama çıktılarını sha256 anahtarıyla saklamak yeniden analiz süresini ne kadar düşürür?
-- **Bugün:** Ghidra projesi siliniyordu (B-C4). Bu, KaradulLM'in "yeniden hesapla" aracını da engelliyor. Disk maliyeti nedir?
+- **Bugün:** Ghidra projesi siliniyor (B-C4). Bu, KaradulLM'in "yeniden hesapla" aracını da engelliyor. Disk maliyeti nedir?
 - **Doğrulayıcı:** ikinci koşu süresi / ilk koşu süresi, disk kullanımı.
+- **Onarım sonrası:** değişmedi: B-C4 kayda geçti, davranış aynı; saklama kararı açık (P16a).
 
 **E4. Büyük ikililer.**
 - **Soru:** 30–40 MB'lık bir ikilide (v1.20.5 hedefi) süre ve bellek nasıl ölçekleniyor? Hangi aşama süperdoğrusal?
 - **Doğrulayıcı:** boyut tabakalarında süre / bellek eğrisi.
+- **Onarım sonrası:** değişmedi.
 
 **E5. BSim.**
 - **Soru:** Yerel (native) ve lite kipleri arasında süre ve ad katkısı farkı nedir? Koşuya özel depo, eşzamanlı koşuda kilitlenmeyi (GHIDRA-01) ve sızıntıyı (GHIDRA-02) ne maliyetle çözer?
 - **Doğrulayıcı:** BSim kaynaklı adların kesinliği ve kapsamı, süre.
+- **Onarım sonrası:** kısmen: kilit (asıl neden Ghidra H2 bağlantı havuzu; paralel 3'te lite'a düşüş 2 / 4 → 0 / 4) ve sızıntı (GT adı 585 → 0) P16b'de, toplu sorgu P16c'de; P16b'nin alt kümesinde adlar değişmedi. Yerel ↔ lite ad katkısı farkı ölçülmedi; a62f15e'de BSim kanalının kesinliği §1 kanal kırılımından.
 
 ### F. KaradulLM (isteğe bağlı yerel model katmanı)
 
@@ -319,31 +335,43 @@ Her sorunun altında aynı alanlar var:
 - **Soru:** Fonksiyon paketine komşu fonksiyonların aşağıdan yukarı özetleri eklenince çekimser oranı ve yanlış ad oranı nasıl değişir?
 - **Bugün:** K0 5/5 çekimser. htop'ta çağrılanların 419/419'u adsız (LM-08).
 - **Doğrulayıcı:** GT'li küçük sette çekimser oranı, yanlış ad oranı (B3 ölçüsüyle).
+- **Onarım sonrası:** altyapı hazır, soru açık: aşağıdan yukarı özet (`Agent.explain`, SCC katman sıralayıcı, anahtarlı özet deposu; D0 kısa yolu Mac htop'ta 597 fonksiyonun 102'sinde model çağırmıyor) ve körlük (ölçüm kipinde aday adlar istemde 0) P22b'de. Gerçek modelle koşulmadı.
 
 **F2. Araç kullanım hatası.**
 - **Soru:** Araç döngüsü (K1 / K2) gerçek modelde hiç koşmadı. Yanlış araç, yanlış argüman ve boşa çağrı oranı nedir? Hangi araçlar eksik?
 - **Doğrulayıcı:** içerikli araç izi kaydı; hata sınıfı oranları.
+- **Onarım sonrası:** kısmen: denetim D0–D14 (D4 / D5 kodlanmadı), enjeksiyon 6 / 6 → 0 / 6 (P21); araç kaydı v2, keşifte 10 araç (P22d); oturum, kipler, izin tablosu, repl (P22e). Araç döngüsü gerçek modelde hâlâ hiç koşmadı; keşif önek bütçesi 2 108 / 2 200 jeton (gerçek jetonlayıcıyla ölçülmedi); keşif sorusu görevi ajana bağlı değil → P22h (sırada). Gerçek model duman listeleri: `P21.md`, `P22b.md`, `P22e.md`.
 
 **F3. İnce ayar gerekli mi?**
 - **Soru:** Ancak F2'de araç hatası yüksek çıkarsa: toplanan izlerle küçük bir modelde (≤ 14B) ince ayar araç hatasını düşürür mü? Bu makinede (36 GiB) bellek sığar mı?
 - **Doğrulayıcı:** önce / sonra araç hata oranı, tepe bellek.
+- **Onarım sonrası:** değişmedi (F2'nin gerçek model sonucuna bağlı).
 
 **F4. Model boyutu, hız ve bağlam.**
 - **Soru:** Boş makinede 27B Q4 modelin 16K bağlamda hızı nedir? Daha küçük modelle kalite ne kadar düşer?
 - **Doğrulayıcı:** jeton / sn, F1 ölçüleri.
+- **Onarım sonrası:** değişmedi. Jeton kestirimi 5 gerçek sayıda gerçek / kestirim 1,03–1,07 (P21 LM-04; n küçük); `llama-server`'ın `LLAMA_API_KEY`'i okuduğu gerçek ikiliyle doğrulanmadı (P21).
 
 ### G. Ölçmenin kendisi (genelleme ve adil karşılaştırma)
 
 **G1. Geliştirme seti yanlılığı.**
 - **Soru:** Geliştirme setinin 117 / 119'u Debian 13 AArch64 GCC 14. x86-64, clang, MSVC, macOS, -O3 / LTO ve PE tabakalarında sayılar ne kadar kayıyor?
 - **Doğrulayıcı:** tabakalı bir doğrulama setinde (derleyici × mimari × iyileştirme) aynı ölçüler. Test setine dokunmadan.
+- **Onarım sonrası:** değişmedi. Onarımda küçük kabul setleri kullanıldı (P-S3b: 5 Mach-O gnulib programı; P15c: 105 ikili; masum PE 21); tabakalı doğrulama setinin yerine geçmez. Yeni yanlılık örneği: P12b'nin umut veren biçimleri yalnız tmux'ta (A5).
 
 **G2. Adil karşılaştırma tabanları.**
 - **Soru:** Aynı sette çıplak Ghidra, Karadul ve LLM tabanlı yöntemler (ölçüm tanımı aynı olacak biçimde) nasıl karşılaştırılır? Literatürün cömert ölçüleriyle bizimkini eşitlemeden karşılaştırma yapılmaz.
 - **Doğrulayıcı:** ortak ölçü tanımı, aynı GT ve aynı nüfus.
+- **Onarım sonrası:** değişmedi.
 
 **G3. İnsan değerlendirmesinin maliyeti.**
 - **Soru:** B3 ve C4 için kaç örnek, kaç değerlendirici, ne kadar süre gerekir ki aralıklar karar vermeye yetecek kadar dar olsun?
+- **Onarım sonrası:** değişmedi; P15c'nin tek etiketçili 236 kaydı süre için bir ölçek verir.
+
+**G4. Ölçüm zemininin kararlılığı: belirlenimcilik ve bayatlayan güven tablosu.**
+- **Soru:** Aynı kod ve aynı girdi, Ghidra dahil, bayt bayt aynı çıktıyı veriyor mu? Ölçülmüş güven tablosu (`MEASURED_PRE_NAME_PRECISION`) kanal değiştikçe nasıl yenilenir; hangi değişiklik hangi satırı bayatlatır?
+- **Doğrulayıcı:** ayrı önbellekli iki koşuda Ghidra dökümlerinin ve ad haritasının bayt eşitliği; güven satırı başına "son ölçüm commit'i ↔ kanalı değiştiren son commit" denetimi.
+- **Onarım sonrası:** kısmen: ad haritası tohumdan bağımsız (P12a; Ghidra dahil htop, tree, expr bayt bayt aynı); decompile sırası (P16a), veri akışı (P-S3), eşzamanlı yarış 12 / 12 aynı (P14). Açık: `pcode_high_vars` sırası `PYTHONHASHSEED=0` ile bile koşudan koşuya değişiyor (cat 4–6, tree 7–8, sort 11–16 fonksiyon), `c_type_recoverer`'da son kazanıyor → P16d (süren); gnulib güveni 0,706, P-S3 / P-S3b'den sonra bayat (yamalı yeniden oynatmada 732 / 732) → ⟨ÖLÇÜM: gnulib ön ad kanalının yeni kesinliği⟩.
 
 ### H. Onarımda ortaya çıkan sorular
 
@@ -351,26 +379,32 @@ Her sorunun altında aynı alanlar var:
 - **Soru:** K-1 ile bekletilen her katman (bileşim şablonu, yapı yeniden yazımı, capa kod beslemesi, füzyon ad kanalı) hangi ölçüm tutunca öntanımda açılır? Ortak bir "doğrulama kapısı" tanımı: masum ikili kapısında yanlış iddia 0, GT'li sette kesinliğin Wilson alt sınırı ≥ eşik, doğrulama setinde tekrar.
 - **Bugün:** her katman kendi paketinde ölçüldü ama açılma ölçütü tek tek yazılmadı.
 - **Doğrulayıcı:** katman başına ön kayıtlı kapı + `masum_kapi.py` + GT ölçümü.
+- **Onarım sonrası:** değişmedi; ilk açılma ölçümü yapı yeniden yazımı için P10b'de (sırada). Ortak kapı tanımı yazılmadı.
 
 **H2. İmza veritabanının adsız fonksiyonlara verdiği adlar.**
 - **Soru:** `call_pattern` ve `string_ref` yöntemleri adsız fonksiyonlara betimleyici tahmin üretiyor (`read_env_var`, `verify_certificate`); 12 Debian ikilisinde **0 / 208 doğru** (P11 ölçümü). Bu yöntemler kimlik değil, rol tahmini üretiyor. K-2'ye göre susturulmaz: rol tahmini doğru ada (ya da doğru rol etiketine) nasıl yaklaştırılır, gevşek ölçüyle (B3) ne kadarı "amacı doğru" sayılır?
 - **Doğrulayıcı:** GT'ye karşı tam eşitlik ve B3 benzerlik ölçüsü; kanal başına kesinlik.
+- **Onarım sonrası:** kısmen (P15c): kayıtlar `claim` = `kimlik` / `davranis`, davranış güveni ölçülmüş kesinliğin Wilson alt sınırı; yanlış kimlik iddiası 236 → 0 (kabul setinde 123 → 0); gevşek ölçütte `call_pattern` 19 / 83, `string_ref` 5 / 153. Yeni alt sorular: GHIDRA-16 dizgi bağı geldiği için kanıt daraltma ön kayıtla yeniden denenebilir (sözcük sınırı yanlışı 134 → 50, doğru 5 → 2); ikilinin kendi tanımladığı simgelere verilen kitaplık iddiası (502) ve Mach-O iki düzeyli bağlama ele alınmadı. Rol tahmininden ada: I1.
 
 **H3. CFG-iso: ikizler ve banka genellemesi.**
 - **Soru:** Gerçek koddan kurulan şablon bankası (cat → ls / sort / expr) ham 0,882 kesinlik verdi; kalan yanlışların hepsi `quotearg_*` ↔ `*_mem` ikizleri: CFG ve komut histogramı aynı, yalnız işlenenler farklı. İşlenen bilgisi (sabitler, çağrılan fonksiyon kimliği) eklemek ikizleri ayırır mı? Banka derleyici sürümleri ve mimariler arasında genelleşir mi (GCC 12 / 13 / 14, clang, x86-64)?
 - **Bugün:** çift başına Wilson alt sınırı 0,76–0,78; füzyonun kabul eşiği 0,90 → banka ürüne alınmadı.
 - **Doğrulayıcı:** derleyici tabakalarında kesinlik / duyarlılık; ikiz çiftlerde ayırma oranı.
+- **Onarım sonrası:** değişmedi (banka K-1 ile ürün dışında).
 
 **H4. Parametre adları: kanıtın tavanı.**
 - **Soru:** Anlamsal parametre adlandırıcısının kesinliği DWARF'a göre %2,7 (5 100 hükümlü addan 136 doğru); skaler genel adlar (`count` 5 199, `enabled` 1 165, `value` 573) baskın. Hangi kanıt türleri (çağrı yerindeki API argüman adı, assert dizgisi, yapı alanı) parametre adını gerçekten belirler; tavan nedir?
 - **Doğrulayıcı:** `p09_olc.py` + `parametre_hizala.py`; kural başına kesinlik, kanıt türü başına kapsam.
+- **Onarım sonrası:** kısmen: kanıtsız genel adlar (`void *`'a `byte_buffer` 332, `context` 50; skaler adlar) P05c'de (sırada, K-2). "Adlı küresel argüman" kuralı %47 kesinlik (taban ~%6) ama yanlış ekliyor; ayrı ön kayıtla, geliştirme seti dışında denenmeli (`P05b.md`).
 
 **H5. MaxSMT yapı kurtarmanın kapsamı.**
 - **Soru:** Ofset onarıldı (B1 0,997, B2 0,852) ama kapsam düşük: 9 295 yapı işaretçisi parametresinin 727'si. Erişimlerin %37'si P-code dökümüne yazılmayan `CAST` / `PTRSUB` / `MULTIEQUAL` ile tanımlanıyor. Bunları dökmek kapsamı ne kadar artırır, P-code'u okuyan öbür adımları (fonksiyon sınıflaması → ad adayları) nasıl etkiler?
 - **Doğrulayıcı:** DWARF yapı alanı kesinlik / duyarlılık, ad haritası farkı (ön kayıtlı).
+- **Onarım sonrası:** P10b'de (sırada), ön kayıtlı ölçümle; `pcode_selective_ops` P-code'un öbür tüketicilerini de etkiler (OKU.md).
 
 **H6. Hız: BSim ve Ghidra'nın payı (E1, E2, E5'e veri).**
-- **Bugün:** BSim fonksiyon başına ayrı sorgu (0,04–0,22 sn / fonksiyon; Mac htop 597 fonksiyonda 133 sn) ve oturumlar süreçler arası sıraya giriyor. Ghidra'nın otomatik analizi hâlâ süre sınırsız. Hızlandırma paketi (P16c) hazır, sonraki oturumda.
+- **Bugün (2026-11-18 öğlen):** BSim fonksiyon başına ayrı sorgu (Mac htop 597 fonksiyonda 133 sn); otomatik analiz süre sınırsız.
+- **Onarım sonrası:** büyük ölçüde ele alındı (P16c): toplu BSim öntanım; otomatik analiz süre sınırı (aşılırsa `analysis.status=timeout` → kısmi). Kalanlar E1 ve E2'de.
 
 ## 4. Ana oturumun öncelik önerisi (yalnız bir görüş; Mythos itiraz edebilir)
 
