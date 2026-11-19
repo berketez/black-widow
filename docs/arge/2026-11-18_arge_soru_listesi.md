@@ -95,15 +95,49 @@ Paketlerin kendi alt küme ölçümleri birleşik sayının yerine geçmez; bekl
 - **Hesaplama füzyonu** artık ad kanalı olarak kapalı (`computation.enable_fusion_naming`, P11); güveni ölçülmüş kesinliğin Wilson alt sınırı, ölçülmemiş kaynak çekimser.
 - **İmza veritabanı:** yeniden kuruldu (K-5; şema 2, 9 092 473 ad; PyPI kaynağı dışlandı). Kitaplık iddiası kesinliği 0,695 → 0,975 — bu ölçü ikilinin kendi içe aktarım tablosuna karşıdır, ad kesinliği değildir (P08). Kalan 711 yanlışın 616'sı iki sınıftı (`__cxa_*`, `acl_*`); P15c kitaplık iddiasını ikilinin bağlanma kanıtına (ELF sürüm gereksinimi + `DT_NEEDED`) bağladı, 6 742 kaydın iddiası düzeldi.
 
-### 1.1 Onarımdan sonra (2026-11-18 akşamı, sürüm 1.24.1)
+### 1.1 Onarımın özeti (2026-11-18/19, 40 paket)
 
-Genel taramanın onarımı bir günde büyük ölçüde ilerledi; durum ve her paketin önce / sonra sayıları `docs/arge/2026-11-18_onarim/DURUM.md`'de. ARGE'yi doğrudan ilgilendirenler:
+İş emri genel taramadır (`RAPOR.md`, 137 bulgu). a62f15e'de 40 paket main'de; tam takım 10 042 geçti / 11 atlandı / 0 kaldı (DURUM, 2026-11-18 20:4x ara noktası). Her pakette ajanın mutasyon sınaması ve ana oturumun main koduyla bağımsız yeniden koşusu var. Paket başına önce / sonra sayıları DURUM.md'de; aşağıdaki bütün sayılar oradandır.
 
-- **Ölçüm zemini değişti:** ad haritası artık `PYTHONHASHSEED`'den bağımsız (aynı girdi, iki tohum: ad haritası ve `out/src` bayt bayt aynı). Ön adların güveni sabit 0,95 değil, kanalın ölçülmüş kesinliğinin Wilson alt sınırı. Yerel adlar fonksiyon başına numaralanıyor.
-- **Birleşik ürün ölçümü (119 ikili) henüz koşulmadı.** §1'deki ad tablosu 1.22.1'in sayısıdır; onarım sonrası taban sonraki oturumun ilk işi olarak alınacak. Mythos'un planları bu yeni tabana göre yazılmalı; o ölçüm gelmeden "iyileşme" iddiası kurulmaz.
-- **Kapanan analisti yanıltan çıktılar:** sahte istihbarat / anti-debug / YARA / paketleyici iddiaları, uydurma algoritma ve güvenlik yorumları, kanıtsız `types.h` yapıları, kodda geçersiz parametre adları, rol adının fonksiyon adı yapılması, raporların birbirini tutmayan sayaçları.
-- **Bekletilen katmanlar (K-1; öntanımda kapalı, kanıt üretmeye devam ediyorlar):** bileşim şablonları (103 aday), yapı kurtarmanın koda yeniden yazımı (`APPLY_REWRITES`; önkoşulu P14'te onarıldı, ad kaynağı ölçümü bekliyor), capa'nın koda beslemesi, hesaplama füzyonunun ad kanalı.
-- **Açık kalan ad kanalları:** `kebap_ad` (AD-01) ve geri çağrı rolünden "rol + öğe" adı (AD-02'nin ad üreten yarısı) — ikisi de K-2 araştırması (P12b). Ad yan yolları (Faz 1 çıkarıcı, birleştirici, BinDiff / RefDiff, elle adın zorlanması) P13a'da; bağlı olmayan kanallar (PDB, DWARF, RTTI, Rust / Go) P13b'de.
+**Kapanan: analisti yanıltan çıktılar**
+- Tespit katmanları: ikili istihbarat iddiaları 2 267 → 646, Bluetooth / OpenGL 119 → 0 (P01; kalıntılar P01b'de); anti-debug MED/HIGH geliştirme 8 → 0, masum PE FSG 30 → 0 (P02); YARA yanlış geliştirme 70 / macos 127 / pe 71 → 0, capa ilk kez çalışıyor (P03); yapısal algoritma etiketi 216 → 2, güvenlik anahtar etiketi 894 → 16 (P06).
+- Mühendislik paketi: raporlanan bileşim şablonu 533 → 0 (P04a); kapı açıkken API dışı tespit 307 448 → 6 (P04b); `types.h` kanıtsız yapı 4 109 → 0, Ghidra'nın somut tipini ezen 781 → 0 (P09); `rewritten_files` 40 016 → 0, ezilen Ghidra alan adı 4 722 → 0 (P10).
+- Adlar: kodda geçersiz parametre adı 2 249 → 0 (P05), işaretçiye skaler ad 656 → 0 (P05b); rol adı fonksiyon adı olarak 70 → 0 (P12a); gnulib kanalı kanıta bağlı (P-S3, P-S3b); dizgi kaynaklı Faz 1 önerisi ön ad değil kanıt satırı (P13a AD-09); kebap adı 239 → 0, yerine `string_roles` kanıt satırı 0 → 266 (P12b); imza VT'nin yanlış kimlik iddiası geliştirme 236 → 0, kabul 123 → 0 (P15c); kitaplık iddiası kesinliği 0,695 → 0,975 (P08); `pdb_parser` her PDB adresini yanlış okuyordu, libz3.dll'de 0 / 771 → 771 / 771 (P13b).
+- Rapor, arayüz, akış: uydurma sayaç 42 → 0, dört rapor üreticisi tek veri katmanından (P07); arayüzde eski "F1 ~0.45" yerine yeni2 künyesi, ad düzeltmesi doğru ikiliye 0 / 14 → 14 / 14 (P17); tarama durumları dürüst (`calisti / kismi / hata / arac_yok / desteklenmiyor / kapali`, P-S1); belirlenimci hata aşamayı 4 kez → 1 kez koşturuyor, 8 eşzamanlı çalışma alanı 1 → 8 ayrı dizin (P14).
+- Belirlenimcilik: ad haritası `PYTHONHASHSEED`'den bağımsız (P12a; Ghidra dahil 3 ikilide bayt bayt aynı); decompile sırası (P16a); veri akışı birleştirme sırası (P-S3).
+- KaradulLM: kanıtsız ad kabulü 4 / 4 → 0 / 4, enjeksiyon 6 / 6 → 0 / 6, masum 8 324 fonksiyonda yanlış alarm 0 (P21).
+
+**Kapanan: güvenlik**
+- P-GÜV: hedef çalıştırma ve ağ (GHIDRA-07, 11, 13, MEK-03), 4 / 4; kaynak eşleme artık `network.enabled` da istiyor.
+- P19: native olmayan hatlarda düşman girdi 11 + 3 → 0, içe aktarma 2 / 5 → 0.
+- P15a: `clean . --yes` bütün çalışma alanlarını siliyordu → reddediliyor; `allow_reference_download` yalnız açık true.
+- P16b: BSim sızıntısı (soyulmuş Mac htop'ta sembollü kopyadan adlı aday 597 → 0, GT adı 585 → 0) ve süreçler arası kilit.
+- P17 / K-6: ayarsız ilk açılışta giden güncelleme isteği 1 → 0; yeni uçlarda jeton / Host / Origin / yol geçişi 403.
+
+**Hız:** toplu BSim (Ghidra köprüsü 2,8×–6,7×) ve otomatik analiz süre sınırı (P16c); istihbarat taraması 196 ikilide 208 sn → 14 sn (P01b).
+
+**Bekletilenler (K-1: koşar, iddiası koda / rapora yazılmaz):** bileşim şablonları (103 aday, `pending_compositions`; P04a); yapı yeniden yazımı `StructRecoveryEngine.APPLY_REWRITES = False` (önkoşulu P14'te kapandı; ad kaynağı ölçümü P10b'de); capa kod beslemesi `enable_capa_code_feed` (P-S1); füzyon ad kanalı `computation.enable_fusion_naming` ve CFG-iso gerçek kod bankası (P11). Aynı düzende bayrak arkasında: K-4 kanalları (PDB açık; DWARF / BN / TRex / Rust / Go / RTTI kapalı; P13b), FLIRT bayt imzaları (P15b'den beri her girişte bekletiliyor → P08b), JS `analysis.deep_synchrony_prepass` (P20), yerleşim bayrağı (2026-11-12).
+
+**Açık kalanlar** (etkileri a62f15e tabanında YOK; her biri kendi ön kayıtlı ölçümünü taşır):
+- Süren (2026-11-19): **P12c** c_namer çok satırlı imza (14 alanda 697 / 13 832 = %5,0 fonksiyon gövdeye bakan stratejilere görünmez; P12b) + P13a kalanları (c_namer kapalıyken ön ad sabit 0,85; FID `caseD_N`); **P16d** Ghidra döküm sırası (`pcode_high_vars` sırası cat 4–6, tree 7–8, sort 11–16 fonksiyonda koşudan koşuya değişiyor; P16c); **P-S4** `stages.py` 4. tur (native olmayan hatlar, evrensel Mach-O dilimleri, `_collect_all_algorithms` silme); **P22c** KaradulLM arayüzü; **P02b** anti-debug kalanları.
+- Sırada: **P18** çıktı ağacı (`undefined8 → uint64_t` öntanımı: 8 115 değişen parametrenin 4 450'si; P09); **P10b** K-1 yeniden yazım + MaxSMT `CAST` / `PTRSUB`; **P05c** parametre adları (K-2) + n-gram kökeni; **P08b** FLIRT seçici VT (K-2); **P03b** capa; **P20b** JS + eski deobf silme; **P22h** keşif görevinin ajana bağlanması (metni yazılmadı); en son **P23** (test / CI / ölü kod) ve kapanış denetimi.
+- Berke'ye açık (OKU.md): `sigs/ngram_name_db` uygulama paketine girsin mi (uygulamada n-gram `veri_yok`); push.
+
+**Kararlar**
+
+| No | Özet (tam metin DURUM.md "Kararlar", 2026-11-19 kararları `OTURUM_2026-11-19.md`) |
+|---|---|
+| K-1 | Beklet: uzun onarım isteyen katmanlar koşar; onarılıp masum kapıdan geçene kadar iddiası rapora / koda yazılmaz (silme değil). |
+| K-2 | Susturma yok, düzelt: ad kanalları hesaplamayla doğru ada yaklaştırılır. 2026-11-19: `kebap_ad` için Berke karar veremedi; ana oturum önerisi uygulanıyor — kanal ölçülmüş kural gelene kadar ad değil kanıt satırı yazar; ad kuralı Mythos'a hat olarak gider (A5, I1). |
+| K-3 | Ölü kod silme (A listesi: `stages.py` monoliti, Ghidra `legacy/`, `confidence_calibration.py`, paralel ad koşucusu); B türü (bağlanabilir) silinmez. |
+| K-4 | B türü ad kanalları (PDB, DWARF, BN, TRex, Rust / Go, RTTI) bağlanır; ad üretenler bayrak arkasında ve ölçülerek açılır. |
+| K-5 | Yeniden kurulan imza VT uygulama paketine gömülür. |
+| K-6 | Açılıştaki güncelleme sorgusu öntanımlı kapalı (uygulandı; açık onay alınmadı). |
+| K-7 | Güvenlik bulgularını içeren rapor, güvenlik onarımlarından sonra push edilir (uygulandı; main a62f15e push edildi). |
+| K-8 | Native olmayan hatlar için 11 dosyalık örnek seti (`~/karadul_olcum/dogrulama_native/`); hiçbiri çalıştırılmaz. |
+| K-9 / K-10 | Ölçüm kopyalarının ve onaylı ölü kodun silinmesi; 2026-11-19'da K-10 onaylandı (eski füzyon, VF2 süreç yolu → P23; `_collect_all_algorithms` → P-S4), eski deobf zincirinin `beautify` / `babel_transforms` adımları silinecek (P20b). |
+
+**Ölçüm zemininde değişenler (planlar bunu bilmeli):** ön ad güveni kanal başına ölçülmüş kesinliğin Wilson alt sınırı (`karadul/core/naming_labels.py` `MEASURED_PRE_NAME_PRECISION`; ölçülmemiş kanalda `null`); gnulib satırı (0,706) P-S3 / P-S3b'den sonra bayat → ⟨ÖLÇÜM: gnulib ön ad kanalının yeni kesinliği⟩; yerel adlar fonksiyon başına tekil; `ghidra_function_count` artık program fonksiyonunu sayıyor, thunk ayrı (eski koşularla kıyas yarıya iner; P16a) — ad nüfusu GT'den geldiği için etkilenmez; imza VT şema 2 veri kökünden açılıyor (P15b); ad haritasında kaynak `signature_db:kimlik` / `signature_db:davranis` (P15c).
 
 ## 2. Bağlayıcı kurallar
 

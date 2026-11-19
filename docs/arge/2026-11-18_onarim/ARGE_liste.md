@@ -9,4 +9,5 @@
 | Adım | Bölüm | Durum | Commit |
 |---|---|---|---|
 | 1 | Başlık (durum satırı, okuma sırası) + §0 okuma tablosu | bitti | 41ea923 |
-| 2 | §1: iki sütunlu ad tablosu (1.22.1 → a62f15e), ölçüm altyapısı (urun_kos hijyeni, masum kapı setleri, Ghidra'sız yeniden oynatma, toplu BSim, mutasyon düzeni), olumsuz sonuçlar tablosu (16 satır; kaynak DURUM.md) | bitti | (bu commit) |
+| 2 | §1: iki sütunlu ad tablosu (1.22.1 → a62f15e), ölçüm altyapısı (urun_kos hijyeni, masum kapı setleri, Ghidra'sız yeniden oynatma, toplu BSim, mutasyon düzeni), olumsuz sonuçlar tablosu (16 satır; kaynak DURUM.md) | bitti | 09c728a |
+| 3 | §1.1 onarımın özeti: kapananlar (yanıltan çıktılar, güvenlik, hız), bekletilenler (K-1), açık kalanlar (süren / sıradaki paketler), K-1…K-10 + 2026-11-19 kararları, ölçüm zemininde değişenler | bitti | (bu commit) |
