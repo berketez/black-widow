@@ -1,0 +1,125 @@
+{
+  "_comment": "ÖK-5 ölçüm betiği (scripts/measurement/ozkod_olc.py) mutasyon koruması (OK5, Dalga 0, 2026-11-20). Her mutant bir ölçüm kuralını bozar: kör / ayar karışması, birim listesi, Wilson, ön kayıtlı eşik karşılaştırmaları, çapa kipleri (A / C), G1 kapısı, K1 karakter eki oylaması, dönüşüm dondurma eşiği, dondurulmuş betik denetimi. İlgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ozkod_olc.json",
+  "mutants": [
+    {
+      "id": "ok5_kor_ayar_karismasi_birim",
+      "desc": "bütün paketler kör tarafa yazılır (ayar paketi kör sayımına girer)",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_nufus_birimleri_taraf_ayrimi_ve_olculmeyen_disarida",
+      "find": "            out[r[\"taraf\"]].append(f\"debian/{r['paket']}\")",
+      "replace": "            out[KOR].append(f\"debian/{r['paket']}\")"
+    },
+    {
+      "id": "ok5_kor_ayar_karismasi_etkin",
+      "desc": "kör tarafı görünür kılınca ayar birimleri de listeye girer",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_etkin_yalniz_gorunur_taraf_ve_geri_yukleme",
+      "find": "    sinama = v.sinama if \"sinama\" in gorunur else ()",
+      "replace": "    sinama = v.sinama + v.kesif if \"sinama\" in gorunur else ()"
+    },
+    {
+      "id": "ok5_birim_listesi_olculmeyen",
+      "desc": "ölçülecek ELF'i olmayan (C++ / GT'siz) paket birim listesine girer",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_nufus_birimleri_taraf_ayrimi_ve_olculmeyen_disarida",
+      "find": "        if r.get(\"olculur\"):",
+      "replace": "        if r.get(\"secilen\", 0):"
+    },
+    {
+      "id": "ok5_wilson_alt_sinir",
+      "desc": "Wilson alt sınırı yerine üst sınır kullanılır",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_oran_wilson",
+      "find": "\"alt\": None if o[\"aralik\"] is None else round(o[\"aralik\"][0], 6),",
+      "replace": "\"alt\": None if o[\"aralik\"] is None else round(o[\"aralik\"][-1], 6),"
+    },
+    {
+      "id": "ok5_esik_k1a_kesinlik",
+      "desc": "K1-a kesinlik eşiği dahil değil (≥ yerine >)",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_k1a_esik_sinirinda_tutar",
+      "find": "    tuttu = (kes is not None and kes >= e[\"kesinlik\"] and o[\"alt\"] >= e[\"wilson_alt\"]",
+      "replace": "    tuttu = (kes is not None and kes > e[\"kesinlik\"] and o[\"alt\"] >= e[\"wilson_alt\"]"
+    },
+    {
+      "id": "ok5_esik_k1a_paket",
+      "desc": "K1-a'nın 'en az 5 pakette ≥ 10 ad' şartı düşer",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_k1a_paket_sarti",
+      "find": "and t[\"kahin_ad\"] >= e[\"ad\"] and paket10 >= e[\"paket\"])",
+      "replace": "and t[\"kahin_ad\"] >= e[\"ad\"])"
+    },
+    {
+      "id": "ok5_esik_k1b_yarisi",
+      "desc": "K1-b 'paketlerin en az yarısı' kesin fazlalığa döner",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_k1b_yarisi_ve_payda",
+      "find": "    tuttu = bool(tanimli) and gecen >= e[\"paket_payi\"] * len(tanimli)",
+      "replace": "    tuttu = bool(tanimli) and gecen > e[\"paket_payi\"] * len(tanimli)"
+    },
+    {
+      "id": "ok5_esik_k1c_n",
+      "desc": "K1-c'de n ≥ 30 şartı düşer (küçük örnek hükme girer)",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_k1c_n_kucukse_hukme_girmez",
+      "find": "    hukme = t[\"ad\"] >= e[\"n\"]",
+      "replace": "    hukme = t[\"ad\"] >= 0"
+    },
+    {
+      "id": "ok5_esik_g1b_ad",
+      "desc": "G1-b'nin 'ad ≥ 50' şartı düşer",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_g1_esikleri",
+      "find": "           and t[\"kapili_ad\"] >= eb[\"ad\"])",
+      "replace": "           and t[\"kapili_ad\"] >= 0)"
+    },
+    {
+      "id": "ok5_kip_a_oz_ad",
+      "desc": "kip A çapalarına oz_ad (string_context) adları girer",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_capa_kipleri",
+      "find": "        if r[\"kanal\"].startswith((\"on_ad:\", \"ks1:\")):",
+      "replace": "        if r[\"kanal\"].startswith((\"on_ad:\", \"ks1:\", \"string_context\")):"
+    },
+    {
+      "id": "ok5_kip_c_g1_kip_a_ya",
+      "desc": "G1 adları kip C yerine kip A'ya yazılır",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_capa_kipleri",
+      "find": "        kaynak[\"C\"].setdefault(a, [s])",
+      "replace": "        kaynak[\"A\"].setdefault(a, [s, s])"
+    },
+    {
+      "id": "ok5_g1_kapisi_ve",
+      "desc": "G1 kapısı 'ya da' yerine 've' (KS-1 çapası VE assert)",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_g1_kapisi",
+      "find": "    return (n is not None and n >= 1) or assert_ice_aktarimi(d)",
+      "replace": "    return (n is not None and n >= 1) and assert_ice_aktarimi(d)"
+    },
+    {
+      "id": "ok5_karakter_tek_oy",
+      "desc": "K1 karakter eki tek çapanın desteğiyle yazılır (MIN_DESTEK yok sayılır)",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_karakter_eki_tek_destekli_yuzey_yazilmaz",
+      "find": "        if n1 < E.MIN_DESTEK or (kalan and kalan[0][1] == n1):",
+      "replace": "        if n1 < 1 or (kalan and kalan[0][1] == n1):"
+    },
+    {
+      "id": "ok5_donusum_dondurma_esigi",
+      "desc": "dönüşüm dondurma kuralının en az ad şartı 5 yerine 50",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_donusum_dondurma_kurali",
+      "find": "DONUSUM_ESIGI_N = 5 ",
+      "replace": "DONUSUM_ESIGI_N = 50 "
+    },
+    {
+      "id": "ok5_dondurulmus_denetim",
+      "desc": "dondurulmuş betiğin sha256 sapması yakalanmaz",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_dondurulmus_denetle_sapmayi_yakalar",
+      "find": "        if gercek != h:",
+      "replace": "        if gercek != h and False:"
+    }
+  ]
+}

@@ -279,6 +279,15 @@ def test_karakter_eki_sonek():
     assert kar == "SwapMeter_display"
 
 
+def test_karakter_eki_tek_destekli_yuzey_yazilmaz():
+    # norm kararı iki çapayla ad veriyor; yüzey biçimini yalnız bir çapa destekliyor → norm adı yazılır
+    gruplar, g = _grup([(1, "next"), (2, "cursorRight"), (3, "pairs")])
+    kaynak = {1: ["luaB_next"], 2: ["luaB_cursor_Right"]}
+    norm, kar, _ = Z.karakter_adi(3, [(g, "pairs")], gruplar, kaynak, tuple(Z.DONUSUM_ADAYLARI))
+    assert norm == "lua_b_pairs"
+    assert kar is None
+
+
 def test_karakter_eki_tek_capa_ogrenmez():
     # norm kararı da tek çapayla ad vermez (MIN_DESTEK = 2): K1'in kararı değişmez
     gruplar, g = _grup([(1, "next"), (3, "pairs")])

@@ -63,6 +63,25 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
   10 / 10 aynı; zorunlu iki satır tuttu. Kaynak: DEFTER §3–§14, BULGULAR §1.2, §2.1; `tavan.json` ve `ek_kurali_capa.txt` (araştırma turu çıktıları, salt okur).
 - Testler: `tests/test_ozkod_olc.py` 25 test (dondurma denetimi, taraf ayrımı ve geri yükleme, Wilson, ön kayıtlı eşiklerin sınırları, kip A / C / C-kapılı / D, G1 kapısı, K1 karakter eki, körlük temizliği) — 25 geçti.
 
+## 4. Ön kayıt
+
+- `docs/arge/2026-11-19_mythos/ozkod/on_kayit_OK5.md`, commit **`c5a57ea`** (ayar okumasından ve kör sayımdan önce; kör tarafta önbellek bile kurulmamıştı). Planın metni aynen + İ-1/3 satırı + uygulama tanımları + K1 karakter ekinin dondurma kuralı + hüküm dışı ek raporlama.
+
+## 8. Hedef erişimi (KARŞI İ-1 düzeltme 3) — Ollama, gösteri koşusu (salt okur)
+
+- Komut: `PYTHONDONTWRITEBYTECODE=1 python scripts/measurement/ozkod_olc.py hedef` → `~/karadul_olcum/runs/dalga0-2026-11-20/OK5/hedef/hedef.json`. Girdi `~/karadul_olcum/runs/gosteri-2026-11-19/ollama/girdi/Ollama` (sha256 `233793c7cab5afa4…`, 0.40.3, universal); analiz edilen arm64 dilimi (Karadul'un `raw/Ollama_arm64`'ü, sha256 `7d5b1e847e1b1e93…`). Ürün çıktısı gösteri koşusununki (1.23.x, 2026-11-19); Ghidra koşulmadı.
+- Veri katmanı `ozkod_veri.ikili_kur` aynen; yalnız iki uyarlama (`ozkod_olc._gtsiz_erisim`, bağlam içinde): GT yok (`gt_mac` boş GT verir; erişim sayımı ad hükmü gerektirmez) ve ölçüm nüfusunun C++ süzgeci uygulanmaz (Ollama C++ içeriyor). Dilim yolu, `ks1_olc.mac_elfleri` yerleşiminde bir bağ dizinindeki `raw/target_info.json` ile verildi (`static`, `reconstructed` gösteri koşusuna sembolik bağ).
+- Go / Go dışı kümeleri ÜST VERİ `butce.py`'nin tanımlarıyla (`LC_FUNCTION_STARTS`, `pclntab`, ObjC IMP, sembol tablosu): nüfus 12 952, Go 10 600, **Go dışı 2 352, kalan 1 676** — ÜST VERİ BULGULAR §7 ile aynı (bağımsız yeniden sayım).
+
+| küme | fonksiyon | Ghidra'da | V ∪ C (K1-b tanımı) | K1 aday grubu (T / N / C) | G1 düz | G1 kapılı | `oz_ad` adı | R1 |
+|---|---:|---:|---|---|---:|---:|---:|---:|
+| Go dışı | 2 352 | 2 344 | 125 (%5,3) | 219 (%9,3; Wilson %8,2–%10,5); T 196, N 12, C 12 | 7 (%0,3) | 7 | 9 | 2 |
+| Go dışı, üst veri ve sembolden sonra kalan | 1 676 | 1 668 | 125 (%7,5) | 173 (%10,3; %9,0–%11,9) | 7 | 7 | 9 | 2 |
+| Go | 10 600 | 10 572 | 0 | 0 | 0 | 0 | 0 | 0 |
+
+- Payda "fonksiyon"; Wilson %95. G1 kapısı Ollama'da açık (KS-1 çapası 0, `__assert_rtn` içe aktarımı var). 9 `oz_ad` adı gösteri koşusunun 9 `string_context/oz_ad` adıyla aynı sayı (KARŞI İ-1 kanıtı).
+- **Okuma (eşik yok):** K1'in hedefteki erişimi Go dışı kodun yaklaşık onda biri (aday grubu) ya da yirmide biri (K1-b tanımı); G1 ve R1 neredeyse hiç (7 ve 2 fonksiyon). Go kodunda kayıt çifti yok (Go adları zaten `pclntab`'da).
+
 ## Kalemler
 
 | # | kalem | durum |

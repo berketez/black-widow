@@ -1053,12 +1053,165 @@ def main(argv: Optional[list[str]] = None) -> int:
     return 1
 
 
+# --------------------------------------------------------------------------------------------
+# İ-1/3: hedef setinde erişim (gösteri koşusu, Ollama arm64; salt okur, GT yok)
+
+GOSTERI_CALISMA = GOSTERI / "ws" / "workspaces" / "Ollama" / "20261119_081103"
+USTVERI = REPO / "scripts" / "arge" / "ustveri"
+HEDEF_CIKTI = D0_CIKTI / "hedef"
+
+
+@contextlib.contextmanager
+def _gtsiz_erisim() -> Iterator[None]:
+    """Erişim sayımı GT gerektirmez ve C++ kodu da sayar. Yalnız iki şey değişir, bağlamın içinde:
+    ``ks1_olc.gt_mac`` boş GT döndürür (ad hükmü yok, nüfus boş) ve ``ks1_olc.cpp_ikili_mi`` (ölçüm
+    nüfusunun C++ süzgeci) hayır der. Veri katmanının geri kalanı (``ozkod_veri.ikili_kur``) aynen."""
+    k = kurallar()["V"].ks1()
+    eski = (k.gt_mac, k.cpp_ikili_mi)
+    k.gt_mac = lambda e, mac_veri: k.GtBirimi({}, set(), set(), {"gt": "yok (hedef erişimi)"})
+    k.cpp_ikili_mi = lambda fonksiyonlar, platform_=None: False
+    try:
+        yield
+    finally:
+        k.gt_mac, k.cpp_ikili_mi = eski
+
+
+def hedef_kok_kur(cikti: Path = HEDEF_CIKTI, calisma: Path = GOSTERI_CALISMA) -> tuple[Path, Path]:
+    """``ks1_olc.mac_elfleri`` yerleşimi: ``<kök>/mac/Ollama/ws/workspaces/Ollama/<zaman>/`` altında
+    ``static`` ve ``reconstructed`` gösteri koşusuna sembolik bağ; ``raw/target_info.json`` analiz edilen
+    arm64 dilimini (``raw/Ollama_arm64``, Karadul'un çıkardığı) gösterir (N4 okuyucusu tek mimari ister)."""
+    kok = cikti / "kok"
+    z = kok / "mac" / "Ollama" / "ws" / "workspaces" / "Ollama" / calisma.name
+    (z / "raw").mkdir(parents=True, exist_ok=True)
+    (kok / "debian").mkdir(parents=True, exist_ok=True)
+    for alt in ("static", "reconstructed"):
+        if not (z / alt).is_symlink():
+            (z / alt).symlink_to(calisma / alt)
+    dilim = calisma / "raw" / "Ollama_arm64"
+    asil = json.loads((calisma / "raw" / "target_info.json").read_text(encoding="utf-8"))
+    (z / "raw" / "target_info.json").write_text(json.dumps({
+        "path": str(dilim), "name": "Ollama", "file_hash": sha256_dosya(dilim),
+        "kaynak_target_info": str(calisma / "raw" / "target_info.json"),
+        "kaynak_file_hash": asil.get("file_hash"),
+        "not": "OK5 hedef erişimi: analiz edilen arm64 dilimi (universal_slice.json 'selected')"},
+        ensure_ascii=False, indent=1), encoding="utf-8")
+    return kok, dilim
+
+
+def go_kumeleri(fat: Path, dilim: str = "arm64") -> dict[str, set[int]]:
+    """ÜST VERİ ``butce.py``'nin tanımları: nüfus = LC_FUNCTION_STARTS, Go = pclntab girişleri,
+    ObjC = yöntem IMP'leri, sembol = metin bölümündeki tanımlı simgeler."""
+    for p in (str(USTVERI),):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import macho as MO
+    import go_pclntab as GP
+    import objc_meta as OM
+    m = MO.load(fat, dilim)
+    go = {f.entry for f in GP.PclnTab(m).funcs() if f.name} if m.secs_named("__gopclntab") else set()
+    fs = set(m.function_starts() or ())
+    objc = set()
+    if m.secs_named("__objc_classlist") or m.secs_named("__objc_catlist"):
+        *_x, satirlar = OM.yontemler(m)
+        objc = {s["imp"] for s in satirlar if s["imp"] and s["sinif"] and s["secici"]}
+    tsec = {t.index for t in m.text_sections()}
+    sembol = {s.value for s in m.defined_symbols() if s.n_sect in tsec}
+    go_disi = fs - go
+    return {"nufus": fs, "go": go & fs, "go_disi": go_disi, "kalan": go_disi - objc - sembol}
+
+
 def komut_hedef() -> int:
-    raise SystemExit("hedef: henüz yazılmadı")
+    kok, dilim = hedef_kok_kur()
+    v = Veri("hedef", kok, HEDEF_CIKTI / "indir_yok", HEDEF_CIKTI / "mac_yok", HEDEF_CIKTI,
+             kesif=(), sinama=("mac/Ollama",), olgu=HEDEF_CIKTI / "olgu_bos.jsonl.gz")
+    kume = go_kumeleri(GOSTERI / "girdi" / "Ollama")
+    sonuc: dict[str, Any] = {"girdi_sha256": sha256_dosya(GOSTERI / "girdi" / "Ollama"),
+                             "dilim_sha256": sha256_dosya(dilim), "betikler": betik_kunyesi(),
+                             "kume": {k_: len(s) for k_, s in kume.items()}}
+    with etkin(v, ("sinama",)) as m, _gtsiz_erisim():
+        V, E, G, O, K = m["V"], m["E"], m["G"], m["O"], m["K"]
+        d = next(V.hepsi(taraf_="sinama"))
+        fonk = {a for a, f in d["fonk"].items() if not f["thunk"] and not f["dis"]}
+        ad = E.adaylar(d)
+        # K1-b'nin tanımı (``kayit_cifti.say``: V kaydı ya da C çağrı çifti; dizginin ad biçimi aranmaz)
+        vc = {fa for fa, k_ in K.ikili_ciftleri(d).items() if k_["V"] or k_["C"]}
+        g1 = G.g1(d)
+        kapi = g1_kapisi(d)
+        oz = [o for o in O.ozellikler("sinama")]
+        oz_adres = {o["adres"] for o in oz}
+        r1_adres = {o["adres"] for o in oz if O.kural_tut(o)}
+        sonuc["ghidra_ic_fonksiyon"] = len(fonk)
+        sonuc["g1_kapisi"] = kapi
+        sonuc["ks1_capa"] = ks1_capa_sayisi(d)
+        for kume_adi in ("nufus", "go_disi", "kalan", "go"):
+            s = kume[kume_adi]
+            ghidrada = s & set(d["fonk"])
+            tur = Counter()
+            for fa in ghidrada:
+                for g_ in {g[0] for g, _s in ad.get(fa, ())}:
+                    tur[g_] += 1
+            sonuc[kume_adi] = {
+                "fonksiyon": len(s), "ghidrada": len(ghidrada), "vc": len(ghidrada & vc),
+                "kayit_cifti": len(ghidrada & set(ad)), "kayit_cifti_tur": dict(tur),
+                "g1_duz": len(ghidrada & set(g1)), "g1_kapili": len(ghidrada & set(g1)) if kapi else 0,
+                "oz_ad": len(ghidrada & oz_adres), "r1": len(ghidrada & r1_adres)}
+    _yaz(HEDEF_CIKTI / "hedef.json", sonuc)
+    print(f"Ollama arm64: nüfus {sonuc['kume']['nufus']}, Go {sonuc['kume']['go']}, Go dışı "
+          f"{sonuc['kume']['go_disi']}, kalan {sonuc['kume']['kalan']}; Ghidra iç fonksiyon "
+          f"{sonuc['ghidra_ic_fonksiyon']}; G1 kapısı {sonuc['g1_kapisi']} (KS-1 çapa {sonuc['ks1_capa']})")
+    print("| küme | fonksiyon | Ghidra'da | V ∪ C (K1-b tanımı) | K1 aday grubu | tür | G1 düz | G1 kapılı | oz_ad | R1 |")
+    print("|---|---:|---:|---:|---:|---|---:|---:|---:|---:|")
+    for k_ in ("go_disi", "kalan", "go", "nufus"):
+        x = sonuc[k_]
+        print(f"| {k_} | {x['fonksiyon']} | {x['ghidrada']} | {x['vc']} | {x['kayit_cifti']} | {x['kayit_cifti_tur']} | "
+              f"{x['g1_duz']} | {x['g1_kapili']} | {x['oz_ad']} | {x['r1']} |")
+    return 0
+
+
+# --------------------------------------------------------------------------------------------
+# PLAN ÖK-5 adım 7: yanlışların dökümü (ölçümden ve OK5.md commit'inden SONRA; depoya girmez)
+
+DOKUM_YOLU = NUFUS_KOK / "runs" / "ok5_dokum" / "yanlislar.json"
 
 
 def komut_dokum() -> int:
-    raise SystemExit("dokum: henüz yazılmadı")
+    """Kör tarafta K1 (kâhin, norm), G1 (düz / kapılı) ve K1 kip A'nın yanlış adları: (paket, ikili,
+    adres, GT adları, hesaplanan ad, kanal). Yalnız ``~/karadul_olcum/ozkod_nufus/runs/ok5_dokum/``
+    altına yazılır; ekrana yalnız satır sayısı basılır. Ad düzensizliği / gerçek yanlış ayrımı yapılmaz."""
+    v = _veri("nufus")
+    satirlar = []
+    with etkin(v, ("sinama",)) as m:
+        V, K, E, G = m["V"], m["K"], m["E"], m["G"]
+        k = V.ks1()
+        for d in V.hepsi(taraf_="sinama"):
+            ad = E.adaylar(d)
+            gruplar = defaultdict(list)
+            for fa, liste in ad.items():
+                for grup, s in liste:
+                    gruplar[grup].append((fa, s))
+            kahin = {x: list(y) for x, y in d["gt_adlar"].items()}
+            kaynak = _capa_kaynaklari(d)
+            kapi = g1_kapisi(d)
+            for fa in sorted(d["nufus"]):
+                gt = d["gt_adlar"][fa]
+                if fa in ad:
+                    t, _ = E.tahmin(fa, ad[fa], gruplar, kahin, E.MIN_DESTEK)
+                    if t is not None and not K.gt_esit(t, gt):
+                        satirlar.append({"olcu": "K1_kahin", "birim": d["birim"], "ikili": d["ad"], "adres": fa,
+                                         "gt": gt, "ad": t})
+                    if fa not in kaynak["A"]:
+                        t, _ = E.tahmin(fa, ad[fa], gruplar, kaynak["A"], E.MIN_DESTEK)
+                        if t is not None and not K.gt_esit(t, gt):
+                            satirlar.append({"olcu": "K1_kip_A", "birim": d["birim"], "ikili": d["ad"],
+                                             "adres": fa, "gt": gt, "ad": t})
+            for fa, s in G.g1(d).items():
+                if fa in d["nufus"] and k.capa_degerlendir(s, d["gt_adlar"][fa], k.PLATFORM_DEBIAN)["durum"] != "dogru":
+                    satirlar.append({"olcu": "G1_kapili" if kapi else "G1_duz", "birim": d["birim"], "ikili": d["ad"],
+                                     "adres": fa, "gt": d["gt_adlar"][fa], "ad": s})
+    DOKUM_YOLU.parent.mkdir(parents=True, exist_ok=True)
+    _yaz(DOKUM_YOLU, {"zaman": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "satirlar": satirlar})
+    print(f"yanlış dökümü: {len(satirlar)} satır ({Counter(s['olcu'] for s in satirlar)}) → {DOKUM_YOLU}")
+    return 0
 
 
 if __name__ == "__main__":
