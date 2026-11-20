@@ -94,3 +94,9 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
 - **Hata: `p05_k2_kanit_yok_paralel`, `p05_k2_kanit_yok_dizisel`** (MUH-02: `double *` şablonu kayan noktalı kanıt istemez). Kodu değiştiren commit: `711119b` (P05b K2): satır içi `tup.c_type == "double *" and not float_ok` denetimi `_pointer_template_evidence(…, float_ok)`'a taşındı (iki yol aynı işlevi çağırıyor). Mutant her yolun kendi çağrı yerinde `float_ok` yerine `True` verir (yalnız o yolu bozar; işlevin içini bozmak iki yolu birden bozardı). Test parametreli (`dizisel` / `paralel`), aynı. İkisi de öldü.
 - **Aynı uzunluk düzeltmesi:** `p05_k1_adim_ilk_yineleme` (`max(` → `min(`; şimdi `sorted(…)[0][1]`, eşdeğer, kararlı sıralama eşitlikte ilkini verir), `p05_k1_adim_yazmaz` (`data.pop(…, None)` → `data.pop(…, {})`). İkisi de öldü.
 - Kaldırılan mutant yok; yeni test yok.
+
+### adim3_ui — önce 27 öldü / 0 hayatta / 3 hata → sonra 30 / 0 / 0 (30 mutant)
+
+- **Hata: `ui8_bayat_liste_korumasiz`, `ui8_label_listeye_gecmez`, `ui8_label_alani_listede_yok`** (`ui/server.py` fonksiyon listesindeki etiket). Kodu değiştiren commit: `2be7e90` (ARAYUZ-11): Ghidra adlı fonksiyona etiket vermeyen koşul eklendi; ifade `"label": (_record_label(_name_record(cmap, addr, name))\n … if cls != "ghidra" else None)})` biçiminde iki satır oldu. Üç mutantın niyeti ve testi aynı; `find`'lar yeni iki satırlık ifadeye göre (birincisi yalnız ilk satırı, öbür ikisi bütün ifadeyi değiştirir). Üçü de öldü.
+- `ui8_js_sozluk_yazimi` (`ui/index.html`): karakter sayısı aynı ama bayt uzunluğu farklı (`ğ`, `ı` iki bayt); HTML derlenmez, `.pyc` tuzağı yok → değiştirilmedi.
+- Kaldırılan mutant yok; yeni test yok.

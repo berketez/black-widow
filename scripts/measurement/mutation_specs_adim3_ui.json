@@ -11,11 +11,11 @@
     },
     {
       "id": "ui8_bayat_liste_korumasiz",
-      "desc": "Liste etiketi bayat kayıt korumasından geçmeden kayıttan okunur",
+      "desc": "Liste etiketi bayat kayıt korumasından geçmeden kayıttan okunur (MUTBAKIM 2026-11-20: 2be7e90 / ARAYUZ-11 Ghidra adlı fonksiyona etiket vermeyen koşulu ekledi, satır ikiye bölündü)",
       "module": "ui/server.py",
       "test": "tests/test_ui_etiket.py::test_elle_degisen_adda_koken_elle_ve_etiket_yok",
-      "find": "\"label\": _record_label(_name_record(cmap, addr, name))})",
-      "replace": "\"label\": _record_label(cmap.get(addr))})"
+      "find": "\"label\": (_record_label(_name_record(cmap, addr, name))\n",
+      "replace": "\"label\": (_record_label(cmap.get(addr))\n"
     },
     {
       "id": "ui8_bayat_koken_elle_degil",
@@ -75,18 +75,18 @@
     },
     {
       "id": "ui8_label_listeye_gecmez",
-      "desc": "Etiket fonksiyon listesine geçmez (alan hep None)",
+      "desc": "Etiket fonksiyon listesine geçmez (alan hep None) (MUTBAKIM 2026-11-20: 2be7e90 / ARAYUZ-11 sonrası ifade iki satır)",
       "module": "ui/server.py",
       "test": "tests/test_ui_etiket.py::test_listede_her_fonksiyonun_label_alani_var",
-      "find": "\"label\": _record_label(_name_record(cmap, addr, name))})",
+      "find": "\"label\": (_record_label(_name_record(cmap, addr, name))\n                                if cls != \"ghidra\" else None)})",
       "replace": "\"label\": None})"
     },
     {
       "id": "ui8_label_alani_listede_yok",
-      "desc": "Fonksiyon listesindeki kayıtlar label alanını hiç taşımaz",
+      "desc": "Fonksiyon listesindeki kayıtlar label alanını hiç taşımaz (MUTBAKIM 2026-11-20: 2be7e90 / ARAYUZ-11 sonrası ifade iki satır)",
       "module": "ui/server.py",
       "test": "tests/test_ui_etiket.py::test_listede_her_fonksiyonun_label_alani_var",
-      "find": "\"in\": indeg.get(addr, 0),\n                      \"label\": _record_label(_name_record(cmap, addr, name))})",
+      "find": "\"in\": indeg.get(addr, 0),\n                      \"label\": (_record_label(_name_record(cmap, addr, name))\n                                if cls != \"ghidra\" else None)})",
       "replace": "\"in\": indeg.get(addr, 0)})"
     },
     {
