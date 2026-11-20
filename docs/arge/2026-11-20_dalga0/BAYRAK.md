@@ -337,5 +337,55 @@ Koşum: `PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scrip
 
 ## 8. Tam takım
 
-- Şu an tam takım koşuyor (worktree kökünden `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`);
-  başlangıç 2026-11-20 08:39, yük altında; TAHMİN bitiş 10–25 dk sonra.
+- Komut: worktree kökünden `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`.
+- Sonuç (2026-11-20 08:44–08:51, yük altında: `uptime` 12,08 / 10,66 / 8,89; 398 sn): **7 kaldı, 10 337 geçti,
+  81 atlandı, 152 seçilmedi** (`pytest.ini` / `addopts` seçimi).
+- 7 kalan testin hepsi worktree'de git'in izlemediği çalışma verisinin olmamasından:
+  `test_deobfuscator.py::TestExtractModules` ×2, `test_pipeline.py::...::test_identify_and_static`,
+  `test_project_reconstructor.py::...::test_reconstruct_with_explicit_modules_dir` (Node `@babel/parser` yok:
+  `scripts/node_modules`); `test_ps3b_full_write.py`, `test_ps3b_gnulib_varlik.py`, `test_ps3b_ic_ad.py` (yok:
+  `vendor/gnulib-ref`). ORTAK_D0 §2'deki symlink'ler kurulup yalnız bu 7 test yeniden koşuldu: **7 / 7 geçti**;
+  symlink'ler sonra kaldırıldı (`git status` temiz). Aynı 7 test, bu paketin değişikliğini taşımayan başka bir
+  worktree'nin (agent-a6926ad…) tam takımında da kalmıştı. → Bu paketten kaynaklanan kalan test: **0**.
+- Atlanan 81 (main'in boş makine koşusunda 11): fark aynı nedenle (çalışma verisi yokken atlanan testler).
+- İlk tam takım denemesi geçersiz: günlüğü ortak scratchpad'te `tam_takim.log` adıyla yazdım; başka bir alt ajan da
+  aynı adı kullanıyordu (scratchpad alt ajanlar arasında paylaşılıyor). Kendi koşumu durdurup benzersiz dizinle
+  (`scratchpad/bayrak-a9659944-tam/`) yeniden koştum. Not: durdurulan koşumun kabuğu o ortak dosyanın sonuna
+  `CIKIS 143` satırını ekledi (satır 715); öbür ajan o dosyadan sonuç okuyorsa bu satır ona ait değil.
+
+## 9. Riskler ve ana oturuma notlar
+
+1. **Bağlama zinciri:** bağlayan paket iki satırı birlikte değiştirmeli (INERT satırı + alandaki `# ETKİSİZ` yorumu);
+   biri kalırsa `tests/test_bayrak_on_paketi.py` kırmızı. Öntanım değişikliği (ör. ÖL-1 600, ÖL-2 3 600, plan "açık"
+   bayraklar) bağlayan paketin ölçümüyle aynı yamada; bu dosyanın tür / öntanım kilidi bağlanan alan için kendiliğinden
+   kalkar.
+2. **ÜST VERİ aralığı:** P-ÜV1–3 bayrağı `getattr` ile okuyunca `test_p15a` INERT satırını sildirir; adımlar Faz 1'e
+   P-ÜV6'da girer. Arada alan etkisizdir ama uyarı vermez (§3). P-ÜV4 ve var olan `enable_rtti_recovery` için de aynı.
+3. **Ad değişikliği:** planın `onbellek.ghidra` alanı `onbellek.ghidra_kosusu` oldu (§1.3-1). ÖL-9 gönderim metni bu adı
+   kullanmalı.
+4. **"0 = sınırsız" sözleşmesi:** `timeouts.ghidra_adim`, `paket.toplam_butce_sn`, `paket.bilesen_butce_sn` için planda
+   0 anlamı yoktu; burada sınırsız. ÖL-2 / ÖL-5a bağlarken bu anlamı uygulamalı (ya da yamada değiştirmeli).
+5. **Alınmayanlar:** HZ-5 donanım künyesi ve formül sabitleri bu pakette yok (gönderim metni: var olan davranışı
+   değiştiren iş). HZ-5 yine `config.py` yaması bırakacak. ÖL-10'un alanları tasarım turundan (OL10) sonra değişebilir.
+6. Kalem 2-3 tek commit (ara commit'te `test_p15a` kırmızı kalmasın diye).
+7. Commit kategorisi: alan ekleme commit'lerine (`2bdbed0`, `1f7a68f`) "Ölçüm:" yazıldı; ölçüm değil altyapı. İçerik
+   aynı; ana oturum isterse main'e alırken başlığı düzeltir.
+8. Yama bırakılmadı: başka dosyada değişiklik gerekmedi. Alan listesini ayrıca tutan örnek ayar dosyası / ayar belgesi /
+   şema yok (`docker/measurement/karadul.yaml` yalnız 4 anahtar ezer; `config show` yalnız 7 düğme gösterir).
+9. `scripts/arge/ustveri/tablo.py:186` eşiği `0.909` diye yazıyor (kesir değil): alt sınırı tam 0,909 olan kanalı
+   "evet" sayar, `AD_ESIGI` saymaz. Araştırma betiği; ÜST VERİ hattı `AD_ESIGI`'yi içe aktarmalı.
+
+## Commit'ler
+
+| Hash | Başlık |
+|---|---|
+| `78b7f5d` | Belge: BAYRAK kalem 1 — bayrak ön paketinin alan envanteri |
+| `2bdbed0` | Ölçüm: BAYRAK kalem 2-3 — 49 okunmayan ayar alanı ve INERT_SETTINGS kaydı (A-19 a) |
+| `1f7a68f` | Ölçüm: BAYRAK kalem 4 — ad eşiği tek yerde: MALIYET_ORANI_L ve AD_ESIGI (A-13) |
+| `6605852` | Test: BAYRAK kalem 5 — bayrak ön paketi alanları ve AD_ESIGI kilidi |
+| `d3b4717` | Belge: BAYRAK kalem 6 — davranış değişmedi kanıtı |
+| `eac6cdb` | Test: BAYRAK kalem 7 — bayrak ön paketi mutasyonları (14 / 14 öldü) |
+| `fd95730` | Belge: BAYRAK — tam takım koşuyor (bekleme satırı) |
+| (bu commit) | Belge: BAYRAK — tam takım sonucu, riskler; PAKET BİTTİ |
+
+## PAKET BİTTİ
