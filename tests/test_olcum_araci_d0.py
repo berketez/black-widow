@@ -203,3 +203,66 @@ def test_sarif_yara_kurali_alani(tmp_path):
     kayitlar = {"pozitif": [k]}
     mk.hukumle(kayitlar, mk.esik_yukle(mk.ESIK_DOSYASI))
     assert {i["hukum"] for i in k["katmanlar"]["sarif"]["iddialar"]} == {"pozitif_set"}
+
+
+# --------------------------------------------------------------------------------------------
+# Kalem 5 — function_f1.read_elf_info: BuildID yalnız sahibi "GNU" olan nottan
+
+f1 = _yukle("function_f1_d0_under_test", "function_f1.py")
+
+
+def _not(ad: bytes, tur: int, govde: bytes) -> bytes:
+    import struct
+
+    def hiza(b):
+        return b + b"\0" * (-len(b) % 4)
+    return struct.pack("<III", len(ad), len(govde), tur) + hiza(ad) + hiza(govde)
+
+
+def _iki_notlu_elf(yol: Path, notlar: list) -> Path:
+    """En küçük ELF64 (AArch64, ET_DYN): her not ayrı SHT_NOTE bölümünde, sonra .shstrtab."""
+    import struct
+    adlar = b"\0" + b"".join(ad + b"\0" for ad, _ in notlar) + b".shstrtab\0"
+    govde, bolumler, ofset, ad_ofs = b"", [], 64, 1
+    for ad, veri in notlar:
+        bolumler.append((ad_ofs, 7, 2, ofset, len(veri), 4))          # SHT_NOTE, SHF_ALLOC
+        govde += veri
+        ofset += len(veri)
+        ad_ofs += len(ad) + 1
+    bolumler.append((ad_ofs, 3, 0, ofset, len(adlar), 1))             # SHT_STRTAB
+    govde += adlar
+    ofset += len(adlar)
+    pad = -ofset % 8
+    govde += b"\0" * pad
+    shoff = ofset + pad
+    shnum = len(bolumler) + 1
+    ident = b"\x7fELF" + bytes([2, 1, 1, 0]) + b"\0" * 8
+    baslik = ident + struct.pack("<HHIQQQIHHHHHH", 3, 183, 1, 0x1000, 0, shoff, 0, 64, 56, 0, 64,
+                                 shnum, shnum - 1)
+    sh = b"\0" * 64 + b"".join(struct.pack("<IIQQQQIIQQ", n, t, fl, 0, o, s, 0, 0, a, 0)
+                               for n, t, fl, o, s, a in bolumler)
+    yol.write_bytes(baslik + govde + sh)
+    return yol
+
+
+GNU_BUILD_ID = bytes(range(0xA0, 0xB4))                    # 20 bayt
+STAPSDT = (b"\x10\x20\x30\x40\0\0\0\0" + b"\0" * 16 + b"saglayici\0sonda\0-4@x0\0")
+
+
+def test_read_elf_info_stapsdt_notu_build_id_sanilmaz(tmp_path):
+    """SystemTap notu (sahibi ``stapsdt``, tür 3) GNU BuildID notundan SONRA gelirse eski kod onun
+    baytlarını BuildID diye alıyordu (postgresql-17, python3.13-minimal)."""
+    yol = _iki_notlu_elf(tmp_path / "iki_not.elf", [
+        (b".note.gnu.build-id", _not(b"GNU\0", 3, GNU_BUILD_ID)),
+        (b".note.stapsdt", _not(b"stapsdt\0", 3, STAPSDT))])
+    bilgi = f1.read_elf_info(yol)
+    assert bilgi["build_id"] == GNU_BUILD_ID.hex()
+    assert (bilgi["machine"], bilgi["elf_type"]) == ("EM_AARCH64", "ET_DYN")
+    # sıra ters (önce stapsdt) olduğunda da GNU notu
+    ters = _iki_notlu_elf(tmp_path / "ters.elf", [
+        (b".note.stapsdt", _not(b"stapsdt\0", 3, STAPSDT)),
+        (b".note.gnu.build-id", _not(b"GNU\0", 3, GNU_BUILD_ID))])
+    assert f1.read_elf_info(ters)["build_id"] == GNU_BUILD_ID.hex()
+    # yalnız stapsdt notu varsa BuildID yok (uydurulmaz)
+    tek = _iki_notlu_elf(tmp_path / "tek.elf", [(b".note.stapsdt", _not(b"stapsdt\0", 3, STAPSDT))])
+    assert f1.read_elf_info(tek)["build_id"] is None

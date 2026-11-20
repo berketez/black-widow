@@ -120,6 +120,14 @@
    "test": "tests/test_saglamlik_denetle.py::test_turkce_yazildi_satiri_okunur",
    "find": "dosya yaz[ıi]ld[ıi] \\((\\d+) kaynak",
    "replace": "dosya yazıldı \\((\\d+) kaynak"
+  },
+  {
+   "id": "k5_not_sahibi_bakilmaz",
+   "desc": "kalem 5: BuildID notunun sahibine bakılmaz (SystemTap notu BuildID sanılır)",
+   "module": "scripts/measurement/function_f1.py",
+   "test": "tests/test_olcum_araci_d0.py::test_read_elf_info_stapsdt_notu_build_id_sanilmaz",
+   "find": "if note[\"n_type\"] == \"NT_GNU_BUILD_ID\" and note[\"n_name\"] == \"GNU\":",
+   "replace": "if note[\"n_type\"] == \"NT_GNU_BUILD_ID\":"
   }
  ]
 }

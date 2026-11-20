@@ -207,7 +207,10 @@ def read_elf_info(path: Path) -> dict[str, Any]:
         for sec in elf.iter_sections():
             if isinstance(sec, NoteSection):
                 for note in sec.iter_notes():
-                    if note["n_type"] == "NT_GNU_BUILD_ID":
+                    # Yalnız sahibi "GNU" olan not: pyelftools SystemTap notlarını (sahibi
+                    # ``stapsdt``) da tür numarası 3 olduğu için NT_GNU_BUILD_ID diye etiketliyor
+                    # (ozkod/NUFUS.md §8 not 3; postgresql-17, python3.13-minimal).
+                    if note["n_type"] == "NT_GNU_BUILD_ID" and note["n_name"] == "GNU":
                         build_id = note["n_desc"]
             if sec.name == ".symtab":
                 has_symtab = True
