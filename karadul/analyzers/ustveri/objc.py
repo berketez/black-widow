@@ -36,6 +36,15 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Optional
 
+from karadul.analyzers.ustveri.goruntu import (
+    BICIM_MACHO,
+    CSTR_AZAMI,
+    DURUM_CALISTI,
+    DURUM_DESTEKLENMIYOR,
+    DURUM_HATA,
+    DURUM_VERI_YOK,
+)
+
 logger = logging.getLogger(__name__)
 
 # --- biçim sabitleri (objc4 runtime/objc-runtime-new.h) ----------------------------------------
@@ -67,10 +76,9 @@ PROTO_METHOD_LISTS = (24, 32, 40, 48)
 MAX_METHODS_PER_LIST = 100_000
 MAX_PROTOCOLS_PER_LIST = 10_000
 MAX_SUPER_CHAIN = 4_096
-CSTR_MAX = 4_096
+CSTR_MAX = CSTR_AZAMI
 
 POINTER_SIZE = 8
-BICIM_MACHO = "macho"  # goruntu.BICIM_MACHO (P-ÜV0 main'e girince oradan alınır)
 
 # --- bölüm adları ------------------------------------------------------------------------------
 CLASS_SECTIONS = ("__objc_classlist", "__objc_nlclslist")
@@ -81,13 +89,10 @@ OBJC_SECTIONS = CLASS_SECTIONS + CATEGORY_SECTIONS + PROTOCOL_SECTIONS
 # dış sınıf bağının ad önekleri (Mach-O C öneki `_` olan ve olmayan yazım)
 CLASS_BIND_PREFIXES = ("_OBJC_CLASS_$_", "OBJC_CLASS_$_", "_OBJC_METACLASS_$_", "OBJC_METACLASS_$_")
 
-# --- durumlar (P-ÜV1 ile aynı sözlük) ------------------------------------------------------------
-DURUM_CALISTI = "calisti"
-DURUM_VERI_YOK = "veri_yok"
-DURUM_DESTEKLENMIYOR = "desteklenmiyor"
+# --- durumlar: ortak dördü goruntu'dan (calisti / veri_yok / desteklenmiyor / hata); okuyucu ve
+# üretici adıma özgü ikisi (P-ÜV1 ile aynı adlar) burada ------------------------------------------
 DURUM_TUTARSIZ = "tutarsiz"
 DURUM_KAPALI = "kapali"
-DURUM_HATA = "hata"
 
 # --- yöntem türleri ve kaynakları ----------------------------------------------------------------
 TUR_ORNEK = "-"

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import struct
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 from unittest.mock import MagicMock
@@ -18,89 +17,12 @@ from unittest.mock import MagicMock
 import pytest
 
 from karadul.analyzers.ustveri import objc
+from karadul.analyzers.ustveri.goruntu import Bag, BellekGoruntu, GoruntuHatasi
 from karadul.config import BinaryReconstructionConfig, Config
 from karadul.pipeline.context import StepContext
 from karadul.pipeline.registry import get_step
 from karadul.pipeline.steps import objc_metadata_recovery as adim_mod
 from karadul.pipeline.steps.objc_metadata_recovery import ObjcMetadataRecoveryStep
-
-try:  # P-ÜV0 main'e girene kadar geçici (rebase'te kalkar)
-    from karadul.analyzers.ustveri.goruntu import Bag, BellekGoruntu
-except ImportError:  # pragma: no cover - geçici yedek: BellekGoruntu'nun imzasıyla aynı
-
-    @dataclass(frozen=True)
-    class Bag:  # type: ignore[no-redef]
-        ad: str
-        ek: int = 0
-
-    @dataclass(frozen=True)
-    class _Bolum:
-        ad: str
-        adres: int
-        boyut: int
-        kod: bool
-        bolut: str = ""
-
-        def icerir(self, adres: int) -> bool:
-            return self.adres <= adres < self.adres + self.boyut
-
-    class BellekGoruntu:  # type: ignore[no-redef]
-        def __init__(self, bolumler, *, bicim="macho", mimari="arm64", gosterici_boyutu=8,
-                     giris_adresi=None, semboller=(), fonksiyon_baslangiclari=None,
-                     yeniden_konumlamalar=None, baglar=None, kaynak="bellek"):
-            self.bicim, self.mimari, self.gosterici_boyutu = bicim, mimari, gosterici_boyutu
-            self._v = [(int(t[1]), bytes(t[2])) for t in bolumler]
-            self.bolumler = [_Bolum(t[0], int(t[1]), len(t[2]), bool(t[3]) if len(t) > 3 else False,
-                                    str(t[4]) if len(t) > 4 else "") for t in bolumler]
-            self._fb = sorted(set(fonksiyon_baslangiclari)) if fonksiyon_baslangiclari is not None else None
-            self._rk = dict(yeniden_konumlamalar or {})
-            self._bag = dict(baglar or {})
-
-        @property
-        def kod_bolumleri(self):
-            return [b for b in self.bolumler if b.kod]
-
-        def bolumler_adli(self, ad):
-            return [b for b in self.bolumler if b.ad == ad]
-
-        def oku(self, adres, n):
-            for bas, veri in self._v:
-                if bas <= adres < bas + len(veri):
-                    return veri[adres - bas:adres - bas + n] if adres + n <= bas + len(veri) else None
-            return None
-
-        def _s(self, f, a):
-            b = self.oku(a, struct.calcsize(f))
-            return None if b is None else struct.unpack("<" + f, b)[0]
-
-        def u32(self, a):
-            return self._s("I", a)
-
-        def i32(self, a):
-            return self._s("i", a)
-
-        def u64(self, a):
-            return self._s("Q", a)
-
-        def cstr(self, a, azami=4096):
-            for bas, veri in self._v:
-                if bas <= a < bas + len(veri):
-                    b = veri[a - bas:a - bas + azami]
-                    j = b.find(b"\0")
-                    return None if j < 0 else b[:j].decode("utf-8", "replace")
-            return None
-
-        def gosterici(self, a):
-            if a in self._bag:
-                return self._bag[a]
-            if a in self._rk:
-                return self._rk[a]
-            v = self.u64(a)
-            return v if v else None
-
-        def fonksiyon_baslangiclari(self):
-            return list(self._fb) if self._fb is not None else None
-
 
 # =============================================================================================
 # Sentetik görüntü kurucusu
@@ -637,13 +559,19 @@ class TestAdim:
         assert ctx.errors and "objc_metadata_recovery" in ctx.errors[0]
 
     def test_goruntu_bicimi_desteklenmiyor(self, tmp_path: Path, sahte_ac) -> None:
-        class GoruntuHatasi(Exception):
-            def __init__(self) -> None:
-                super().__init__("biçim tanınmadı")
-                self.neden, self.durum = "biçim tanınmadı", objc.DURUM_DESTEKLENMIYOR
-
-        sahte_ac(hata=GoruntuHatasi())
+        sahte_ac(hata=GoruntuHatasi("biçim tanınmadı", objc.DURUM_DESTEKLENMIYOR))
         ctx = _ctx(tmp_path)
         out = ObjcMetadataRecoveryStep().run(ctx)
         assert out["objc_status"]["durum"] == objc.DURUM_DESTEKLENMIYOR
+        assert "biçim tanınmadı" in out["objc_status"]["neden"]
         assert ctx.errors == []
+
+    def test_gercek_ac_tanimsiz_bicim(self, tmp_path: Path) -> None:
+        # sahte açıcı yok: gerçek goruntu.ac, metin dosyası → GoruntuHatasi (istisna adımdan sızmaz)
+        ikili = tmp_path / "metin.txt"
+        ctx = _ctx(tmp_path, ikili=ikili)
+        ikili.write_bytes(b"merhaba dunya\n" * 8)
+        out = ObjcMetadataRecoveryStep().run(ctx)
+        assert out["objc_status"]["durum"] in (objc.DURUM_DESTEKLENMIYOR, objc.DURUM_HATA)
+        assert out["objc_status"]["neden"].startswith("görüntü açılamadı")
+        assert out["objc_methods"] == []
