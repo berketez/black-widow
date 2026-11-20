@@ -1,0 +1,29 @@
+{
+  "_comment": "KİMLİK Dalga 0 (PK-6 / PK-11): scripts/measurement/kimlik_ciftler.py kilit süzgeci ve veri-yok kapısının mutasyon koruması. PLAN PK-6 'Mutant: süzgeç boş → kırmızı' (m1) + iki ek. Mutantların uzunluğu özgününden farklı (.pyc tuzağı); find metinleri dosyada tekil. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_kimlik_ciftler.json",
+  "mutants": [
+    {
+      "id": "kimlik_kilit_suzgeci_bos",
+      "desc": "kilit süzgeci hep boş liste döner (kilitli program gruba girer)",
+      "module": "scripts/measurement/kimlik_ciftler.py",
+      "test": "tests/test_kimlik_ciftler.py::test_kilit_suzgeci_kilitli_adi_yakalar",
+      "find": "    return sorted({a for a in adlar if a.lower() in k})",
+      "replace": "    return []"
+    },
+    {
+      "id": "kimlik_kilit_denetimi_gecirir",
+      "desc": "kesişim bulunsa da grup hata vermeden döner",
+      "module": "scripts/measurement/kimlik_ciftler.py",
+      "test": "tests/test_kimlik_ciftler.py::test_kilit_denetimi_kesisimde_durur",
+      "find": "    if kesisim:",
+      "replace": "    if False and kesisim:"
+    },
+    {
+      "id": "kimlik_veri_yok_sessiz_bos",
+      "desc": "veri yok grubu (iyilestirme) hata yerine boş liste döner (sessiz 0)",
+      "module": "scripts/measurement/kimlik_ciftler.py",
+      "test": "tests/test_kimlik_ciftler.py::test_veri_yok_grubu_sessiz_bos_donmez",
+      "find": "        raise LookupError(f\"{ad}: veri yok — {VERI_YOK[ad]}\")",
+      "replace": "        return []"
+    }
+  ]
+}
