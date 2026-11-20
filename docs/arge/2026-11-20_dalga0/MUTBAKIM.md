@@ -76,3 +76,13 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
   - `cn_ek_var_olani_atlamaz`: ikili kapsamlı dalda `existing_functions` → `()`. Öldü.
   - `cn_ek_yerelde_de_atlar`: yerel dala `existing_functions` eklenir. Öldü.
 - Kaldırılan mutant yok; yeni test yok.
+
+### adim3_c_namer — önce 19 öldü / 1 hayatta / 1 hata → sonra 21 / 0 / 0 (21 mutant)
+
+- **Hayatta: `cn_tam_ad_bicim_denetimsiz` — karar: GERÇEK TEST AÇIĞI (test iddiası zayıf kaldı).**
+  - Mutant (`c_namer` ön ad yolu): `and re.fullmatch(EXACT_NAME_PATTERN, new_name)):` → `and new_name):`; tam ad iddialı (`exact`) ama geçerli tanımlayıcı olmayan ön ad temizlenmeden kalır.
+  - Kanıt: `93a2956` (ad geçerliliği) ön ad yoluna `name_validity.reject_reason` koydu. Mutantla `"iki sozcuk"` artık koda yazılmıyor, `invalid_c_identifier` diye reddediliyor; anahtar başka bir adaydan ad alıyor. Hedef test `test_tam_ad_gecerli_tanimlayici_degilse_temizlenir` yalnız "adda boşluk yok ve ad ham metin değil" diyor → iki durumu ayırmıyor, geçiyor. Bugünkü davranış (temizle → `iki_sozcuk` → ön ad olarak ver) ile mutant davranışı (ön adı düşür) analistin gördüğü adı değiştiriyor: elle verilen ad kaybolur. Mutantın eski açıklaması ("olduğu gibi yazılır") artık olamıyor, açıklama güncellendi.
+  - Yeni kilit: `tests/test_mutbakim_adim3_c_namer.py::test_gecersiz_tam_ad_temizlenip_on_ad_olarak_verilir` — ad `iki_sozcuk`, köken `pre_names`, `pre_name_kind == "elle"`, `invalid_c_identifier` reddi yok. Bugünkü kodda yeşil, mutantla kırmızı. Tanımın testi buna çevrildi.
+- **Hata: `cn_ks1_stratejisi_yazilmaz`** (KS-1 ön adının stratejisi `binary_extract` yazılır). Kodu değiştiren commit: `07d81e8`: satır içi `STRATEGY_KS1 if kind == … else "binary_extract"` `pre_name_strategy(meta)` işlevine taşındı. Mutant ön ad yolundaki çağrı yerinde (`strategy = pre_name_strategy(meta)` → `strategy = "binary_extract"`); güven hesabı (`measured_pre_name_confidence`) etkilenmez, yalnız yazılan strateji bozulur. Öldü.
+- **Çoklu eşleşme: `cn_hepsi_sustu_sayilmaz`.** `if not kept and prov is not None:` dosyada 2 kez (ikincisi `93a2956`'nın ad geçerliliği süzgecinde); probe ilkini (susturma süzgeci, doğru yer) değiştiriyordu. `find` sayaç adıyla (`"all_candidates_silenced"`) genişletilip tekilleştirildi. Öldü.
+- Kaldırılan mutant yok.

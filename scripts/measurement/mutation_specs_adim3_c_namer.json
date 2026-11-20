@@ -35,11 +35,11 @@
   },
   {
    "id": "cn_hepsi_sustu_sayilmaz",
-   "desc": "bütün adayları susan anahtar eleme sayımına girmez",
+   "desc": "bütün adayları susan anahtar eleme sayımına girmez (MUTBAKIM 2026-11-20: 93a2956 aynı satırı ad geçerliliği süzgecine de ekledi; find tekil olsun diye sayaç adıyla genişletildi)",
    "module": "karadul/reconstruction/c_namer.py",
    "test": "tests/test_c_namer_susturma.py::test_susan_dizginin_yerine_sonraki_dizgiye_gecilmez",
-   "find": "            if not kept and prov is not None:\n",
-   "replace": "            if not cands and prov is not None:\n"
+   "find": "            if not kept and prov is not None:\n                ordered = sorted(cands, key=lambda c: c.confidence, reverse=True)\n                prov.count_eliminated(\"all_candidates_silenced\"",
+   "replace": "            if not cands and prov is not None:\n                ordered = sorted(cands, key=lambda c: c.confidence, reverse=True)\n                prov.count_eliminated(\"all_candidates_silenced\""
   },
   {
    "id": "cn_suzgec_cagrilmaz",
@@ -91,9 +91,9 @@
   },
   {
    "id": "cn_tam_ad_bicim_denetimsiz",
-   "desc": "geçerli tanımlayıcı olmayan tam ad olduğu gibi yazılır",
+   "desc": "geçerli tanımlayıcı olmayan tam ad temizlenmez (MUTBAKIM 2026-11-20: 93a2956 sonrası ham ad yazılmıyor, ad geçerliliğinde reddediliyor; temizlenip ön ad olarak verilmesi yerine düşer; eski test bunu ayırmıyordu, kilit yeni dosyada)",
    "module": "karadul/reconstruction/c_namer.py",
-   "test": "tests/test_c_namer_susturma.py::test_tam_ad_gecerli_tanimlayici_degilse_temizlenir",
+   "test": "tests/test_mutbakim_adim3_c_namer.py::test_gecersiz_tam_ad_temizlenip_on_ad_olarak_verilir",
    "find": "                        and re.fullmatch(EXACT_NAME_PATTERN, new_name)):\n",
    "replace": "                        and new_name):\n"
   },
@@ -123,11 +123,11 @@
   },
   {
    "id": "cn_ks1_stratejisi_yazilmaz",
-   "desc": "KS-1 ön adının stratejisi binary_extract yazılır",
+   "desc": "KS-1 ön adının stratejisi binary_extract yazılır (MUTBAKIM 2026-11-20: 07d81e8 kuralı pre_name_strategy(meta)'ya taşıdı; mutant ön ad yolundaki çağrı yerinde)",
    "module": "karadul/reconstruction/c_namer.py",
    "test": "tests/test_c_namer_susturma.py::test_ks1_on_adi_tam_yazilir_ve_kesin_etiketi_tasir",
-   "find": "                    strategy = STRATEGY_KS1 if kind == _baglama.KIND_KS1 else \"binary_extract\"\n",
-   "replace": "                    strategy = \"binary_extract\"\n"
+   "find": "                strategy = pre_name_strategy(meta)\n",
+   "replace": "                strategy = \"binary_extract\"\n"
   },
   {
    "id": "cn_dusen_on_ad_sayilmaz",
