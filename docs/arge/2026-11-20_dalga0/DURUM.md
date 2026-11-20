@@ -28,7 +28,7 @@ Yaşayan kayıt: hangi paket kimde, ne main'e girdi, hangi karar verildi. Oturum
 
 | Paket | Ajan | Durum | Not |
 |---|---|---|---|
-| BAYRAK | a9659944b32ed01ff | **bitti 08:52; main'de** (`6e0181f..6551f2f`, 8 commit, cherry-pick) | 49 alan (36 var olan bölümlerde + 5 yeni bölümde 13), hepsi etkisiz ve INERT'te; `AD_ESIGI` / `MALIYET_ORANI_L`; 160 test, mutant 14/14; ajanın tam takımı 10 337 geçti, 7 kırmızı yalnız eksik çalışma verisi (bağla geçti). Bağımsız doğrulama: aşağıda |
+| BAYRAK | a9659944b32ed01ff | **bitti 08:52; main'de** (`6e0181f..6551f2f`, 8 commit, cherry-pick) | 49 alan (36 var olan bölümlerde + 5 yeni bölümde 13), hepsi etkisiz ve INERT'te; `AD_ESIGI` / `MALIYET_ORANI_L`; 160 test, mutant 14/14; ajanın tam takımı 10 337 geçti, 7 kırmızı yalnız eksik çalışma verisi (bağla geçti). **Bağımsız doğrulama (ana oturum, main `6551f2f`, `dogrulama-d0`): 8 test dosyası 262 / 0; mutasyon 14 / 14 öldü** (`~/karadul_olcum/runs/dalga0-2026-11-20/dogrulama/BAYRAK/`) |
 | OLCUM | af4cea2568cbc91f4 | çalışıyor (08:13) | |
 | OK5 | a6b44e6ccb8e6088a | çalışıyor (08:13) | Ghidra kuyruğu uzun (86 ELF) |
 | OLCEK | a22f2a2142be019e1 | çalışıyor (08:13) | |
