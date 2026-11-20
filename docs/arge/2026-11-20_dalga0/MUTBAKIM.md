@@ -69,3 +69,10 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
 
 - **Hata: `p12a_kanal_turu_yok`** (AD-07: kanal anahtarına ön ad türü verilmez). Kodu değiştiren commit: `07d81e8` (ön ad güveni tek kuraldan): `{"strategy": strategy, "pre_name_kind": kind, …}` sözlüğü `c_namer.measured_pre_name_confidence(meta)`'ya taşındı, strateji `pre_name_strategy(meta)`. Niyet aynı (`pre_name_kind` → `None`); eski `replace` özgünüyle aynı uzunluktaydı (`kind` / `None`), şimdi `(None)`. c_namer'ın ön ad yolu (`pre_conf = measured_pre_name_confidence(meta)`) bu işlevi kullanıyor; test aynı. Öldü.
 - Kaldırılan mutant yok; yeni test yok.
+
+### ad_gecerliligi — önce 51 öldü / 0 hayatta / 2 hata → sonra 53 / 0 / 0 (53 mutant)
+
+- **Hata: `cn_ek_var_olani_atlamaz`, `cn_ek_yerelde_de_atlar`** (çakışma eki ve var olan fonksiyon adları). Kodu değiştiren commit: `99df577` (AD-08: yerel adlar fonksiyon başına tekilleştiriliyor). Tek satırlık `() if self._is_local_name_key(key) else existing_functions,` iki dala ayrıldı: yerel dal `unique_name(best.new_name, _UsedNames(func_used, used_new_names))`, ikili kapsamlı dal `unique_name(best.new_name, used_new_names, existing_functions)`.
+  - `cn_ek_var_olani_atlamaz`: ikili kapsamlı dalda `existing_functions` → `()`. Öldü.
+  - `cn_ek_yerelde_de_atlar`: yerel dala `existing_functions` eklenir. Öldü.
+- Kaldırılan mutant yok; yeni test yok.

@@ -395,19 +395,19 @@
   },
   {
    "id": "cn_ek_var_olani_atlamaz",
-   "desc": "çakışma eki var olan fonksiyon adını atlamaz",
+   "desc": "çakışma eki var olan fonksiyon adını atlamaz (MUTBAKIM 2026-11-20: 99df577 / AD-08 ek seçimini yerel ve ikili kapsamlı iki dala ayırdı; mutant ikili kapsamlı dalda)",
    "module": "karadul/reconstruction/c_namer.py",
    "test": "tests/test_ad_gecerliligi.py::test_ayni_adi_isteyen_iki_fonksiyon",
-   "find": "                () if self._is_local_name_key(key) else existing_functions,",
-   "replace": "                (),"
+   "find": "best.new_name, used_new_names, existing_functions,",
+   "replace": "best.new_name, used_new_names, (),"
   },
   {
    "id": "cn_ek_yerelde_de_atlar",
-   "desc": "yerel adın eki de var olan fonksiyon adını atlar",
+   "desc": "yerel adın eki de var olan fonksiyon adını atlar (MUTBAKIM 2026-11-20: 99df577 / AD-08 sonrası yerel dal fonksiyon başına kümeyle; mutant oraya existing_functions ekler)",
    "module": "karadul/reconstruction/c_namer.py",
    "test": "tests/test_ad_gecerliligi.py::test_yerel_adin_eki_fonksiyon_adina_bakmaz",
-   "find": "                () if self._is_local_name_key(key) else existing_functions,",
-   "replace": "                existing_functions,"
+   "find": "best.new_name, _UsedNames(func_used, used_new_names),",
+   "replace": "best.new_name, _UsedNames(func_used, used_new_names), existing_functions,"
   },
   {
    "id": "cn_sonuc_sayaci_yok",
