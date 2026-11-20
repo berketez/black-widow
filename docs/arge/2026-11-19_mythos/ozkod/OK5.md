@@ -42,6 +42,8 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
 **Bekleme (08:2x):** şu an `kos-hepsi` arka planda; önce ayar (9), sonra kör (76). TAHMİNİ bitiş: kuyrukta başka paket yoksa 10:15–12:35 arası; başka paketler sıraya girdikçe kayar. Beklerken `ozkod_olc.py`, testler ve ön kayıt yazılıyor.
 
 **Sayaç (08:42):** ayar 6 / 9 bitti (6 tamam; toplam 649 sn, yük altında), kör 0 / 76. Kuyrukta HZ1 ve OLCEK paketleri de var (işler aralanıyor). Disk: 742,5 GB kullanılan (başta 739,6); koşu kökü 1,2 GB.
+**Sayaç (09:33):** postgresql-17 hâlâ koşuyor (28 dk; yük 9–14); ayar 8 / 9, kör 0 / 76. Önbellek ayar tarafında 8 ELF için kuruldu (hata 0).
+
 **Bekleme (09:06):** ayar 8 / 9 bitti (8 tamam; neomutt 528 sn, yük ≈ 16). postgresql-17 09:05:41'de başladı (kuyrukta ANA, HZ1, OLCEK işleri arasında); TAHMİNİ bitiş 09:45–10:05 (sınır 10:05:41; yük yüksek, zaman aşımı olasılığı var — olursa kayda geçer, ayar dondurması kalan 8 ELF'le yapılır). Kör tarafın 76 işi ardından; kuyruk paylaşıldığı için TAHMİNİ kör bitişi 12:30–14:30.
 
 **Ortak scratchpad uyarısı (08:5x, ana oturum):** bu paketin geçici betikleri `<scratchpad>/OK5/` alt dizinine taşındı (`bekle.py`, `duman_gelistirme.py`, `nufus_yapi.py`, `sure_model.py`, `tekil_denetle.py`; hepsi yalnız betik, kör tarafa ait içerik yok — denetlendi). Ölçüm çıktıları baştan beri yalnız `~/karadul_olcum/runs/dalga0-2026-11-20/OK5/` ve `~/karadul_olcum/ozkod_nufus/runs/` altında; ortak adlı bir dosyadan sonuç okunmadı.
