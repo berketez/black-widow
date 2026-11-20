@@ -11,11 +11,11 @@ Geçici dosyalar: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/`.
 | Ön kayıt (`on_kayit_PUV1.md`) | yazıldı | d8814e5 (rebase öncesi 42fdd11) |
 | 1–4, 6 okuyucu + yapı denetimleri + karar + satır içi sayaç | yazıldı | 699c97f, 0f18f64, cb1cac4, 564163e, 2594bde |
 | 5 üretici adım | yazıldı | b00fae8, 2594bde |
-| Mutasyon (≥ 10) | 19 / 19 öldü | a6af752 + (bu commit) |
+| Mutasyon (≥ 10) | 19 / 19 öldü | a6af752, 29fce0f |
 | Yama `PUV1__config.py.patch` | yazıldı; yamalı kopyada kayıt testleri yeşil | b00fae8 |
-| Rebase (main 8844a08) + 11 dilim kabulü + docker-cli GT | yapıldı: 11 / 11 satır farkı 0; docker-cli 35 048 / 35 048 | (bu commit) |
-| Okuyucu dondurma + docker-compose SINAMA GT | bekliyor | — |
-| 7 süre ve bellek | ölçüldü (yük altında) | (bu commit) |
+| Rebase (main 8844a08) + 11 dilim kabulü + docker-cli GT | yapıldı: 11 / 11 satır farkı 0; docker-cli 35 048 / 35 048 | 29fce0f |
+| Okuyucu dondurma + docker-compose SINAMA GT | dondurma 29fce0f; SINAMA 90 077 / 90 077 | (bu commit) |
+| 7 süre ve bellek | ölçüldü (yük altında) | 29fce0f |
 | Tam takım | bekliyor | — |
 
 ## Kalem 1–4, 6: okuyucu (`karadul/analyzers/ustveri/go_pclntab.py`)
@@ -221,3 +221,12 @@ Dondurulan dosyalar (bu commit'ten sonra SINAMA ölçümüne dek değişmez):
 `karadul/analyzers/ustveri/go_pclntab.py` sha256 `8b1d38ff4dc1…`, `karadul/pipeline/steps/go_metadata_recovery.py`
 sha256 `804250083dcb…` (dondurma commit'i: bu commit). SINAMA (docker-compose) GT'sine bu commit'ten
 sonra bir kez bakılır.
+
+### H2 (SINAMA yarısı) — docker-compose ad = sembol → TUTTU; H2 bütünü TUTTU
+
+Dondurma commit'i `29fce0f`'dan sonra, okuyucu sha256 `8b1d38ff4dc1…` değişmeden, bir kez:
+`kabul.py gt docker-compose` (soyulmuş kopya sha256 `9f39c9662989`). Adlı giriş 90 077 / 90 078;
+doğru 90 077, yanlış 0, GT'siz 0; yazım: birebir 89 699, `.abi0` eki 360, orta nokta 18; Wilson
+%95 alt sınırı 0,999957 ≥ 0,999. Bütün yapı denetimlerinde ihlal 0. Okuma 0,88 sn (yük altında).
+
+**H2: 125 125 / 125 125** (docker-cli 35 048 + docker-compose 90 077) → TUTTU.
