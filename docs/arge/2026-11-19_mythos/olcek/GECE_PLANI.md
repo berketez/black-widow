@@ -9,11 +9,11 @@
 | # | Kalem | Durum | Commit |
 |---|---|---|---|
 | 1 | ÖLÇ-A `olcek_kos.py` + testler + mutantlar | bitti | `45ac0f2` |
-| 2 | Uçtan uca duman (cat) | bitti (09:04:59–09:05:41, `gece_kosusu --yalniz duman` üstünden); künye eksiksiz; 3 bulgu düzeltildi (aşağıda) | (bu commit) |
+| 2 | Uçtan uca duman (cat) | bitti (09:04:59–09:05:41, `gece_kosusu --yalniz duman` üstünden); künye eksiksiz; 3 bulgu düzeltildi (aşağıda) | `6c87fe4` |
 | 3 | ÖLÇ-0 (`gosteri_son.json`, `OLC0.md`) | bitti | `ac8ac3f` |
-| 4a, 4b | Ön kayıtlar `olcek/on_kayit_olc1.md`, `hiz/on_kayit_hz0.md` | bitti (koşudan önce); H0-f ve H0-d ölçüm yolu koşudan önce netleştirildi | `5f260d9`, `fe9744c`, (bu commit) |
+| 4a, 4b | Ön kayıtlar `olcek/on_kayit_olc1.md`, `hiz/on_kayit_hz0.md` | bitti (koşudan önce); H0-f ve H0-d ölçüm yolu koşudan önce netleştirildi | `5f260d9`, `fe9744c`, `6c87fe4` |
 | 4c–4e | `hz0_ek.py`, `gece_kosusu.py`, `zaman_cizelgesi.py` eki, bu belge | bitti | `20acaec` |
-| 5 | Testler ve mutasyon (`gece_kosusu` dahil) | sürüyor | — |
+| 5 | Testler ve mutasyon (`gece_kosusu` dahil) | bitti: 36 test, mutant 17 / 17, tam takım 10 325 geçti / 0 kaldı | (bu commit) |
 
 ## Kalem 2 — uçtan uca duman (tek Ghidra koşusu; yük altında)
 
@@ -56,6 +56,7 @@
 - Disk: koşu öncesi boş alan < 40 GB ise kuyruk durur (silme yok).
 - `scripts/arge/hiz/hz0_ek.py` (HZ-0 adım 2): koşunun karadul sürecini 30 sn'de bir `ps -M` ile izler (iş parçacığı işlemci süreleri; ayrıştırma `is_parcacigi._sn`), başta ve sonda `acma_gecikmesi.py --n 1000` (başvuru: `urun-onarim-a62f15e/mac/tmux` `decompiled/`; sonda ayrıca koşunun kendi `decompiled/`'ı) ve donanım künyesi (`hiz/PLAN.md` §1 alanları: çip, perflevel'ler, bellek, `sw_vers`, JPype / pyghidra / JDK / Ghidra sürümü, `systemextensionsctl list`, yük). Çıktı `<koşu kökü>/hz0_ek.json`.
 - `scripts/arge/hiz/zaman_cizelgesi.py` eki: `BASLADI` yoksa başlangıcı `kunye.json`'dan alır (`basladi_kaynagi`).
+- JVM günlükleri: GC `<koşu kökü>/gc_<pid>.log` (ana JVM = karadul süreci; künyede `gc`), JFR (`b_jfr`) `<koşu kökü>/jfr_repo/<zaman>_<pid>/*.jfr` (künyede `java_ek_dosyalari.jfr_depo`); ayrıntı kalem 2.
 
 ### Kuyruk ve TAHMİNİ süreler
 
@@ -120,3 +121,12 @@ Gece 1'i başlatmadan hemen önce Avast'ın ayarlarındaki istisnalar (hariç tu
 - **Avast dışlamasının gerçekten etkin olduğu** araçla doğrulanamıyor (güvenlik ayarı okunmaz); hüküm biçimindeki denetim dizini (dışlanmayan başvuru dizini) farkın dışlamaya özgü olup olmadığını gösterir.
 - `p16c_sure.py` girdileri öntanım tabanlardan (`~/karadul_olcum/n1_debian13`, `workspaces/olcum_mac/runs/ol7-c-b7faeac`; ikisi de var).
 - Element.app'in lisansı koşudan önce paket içindeki lisans dosyasından doğrulanmalı (`olcek/PLAN.md` ÖLÇ-1 tablosu).
+- Worktree'de `sigs`, `vendor`, `scripts/node_modules` bağları `git status`'ta izlenmeyen olarak görünüyor (`.gitignore` bağı kapsamıyor); commit'lenmedi.
+
+## Kalem 5 — testler, mutasyon, tam takım
+
+- `tests/test_olcek_kos.py`: 36 test (koşucu 17, gece kuyruğu 17, `hz0_ek` 1, `zaman_cizelgesi` eki 1); hepsi Ghidra'sız. Koşucu testleri gerçek alt süreçle ve gerçek `/usr/bin/time -l` ile; gece kuyruğu testleri sahte çalıştırıcı ve sahte yük okuyucusuyla.
+- Mutasyon `scripts/measurement/mutation_specs_olcek_kos.json`: **17 / 17 öldü** (koşucu 7: duvar eşiği, SIGKILL, SIGTERM'in hedefi, tepe RSS, ağaç RSS'i, adım kaynağı önceliği, ana JVM GC seçimi; gece kuyruğu 10: boş makine 4 — eşik kesinliği, başlangıç eşiği, bitiş sönümü, ön bekleme; sürdürme 3 — BITTI atlama, `kesildi`, yineleme sayısı; yayılım eşiği; `--java-ek` belirteci; JFR deposunun saklanması). İlk koşuda `gece_java_ek_ayri_belirtec` hayatta kaldı (boşluklu değeri argparse kabul ediyor; test yalnız boşluklu değerleri deniyordu) → boşluksuz değer eklendi, yeniden koşuda öldü. Günlük `~/karadul_olcum/runs/dalga0-2026-11-20/OLCEK/mutasyon.log`; `git diff` temiz.
+- Tam takım (worktree kökü, `6c87fe4`, 09:19–09:29, yük altında): **10 325 geçti / 11 atlandı / 0 kaldı** (574 sn). Main `b6aceb9` 10 289 + bu paketin 36 testi. İlk tam takım denemesinde (09:00, `daf299a`) 8 hata: 7'si worktree'de çalışma verisi bağı yoktu (`vendor/gnulib-ref`, `scripts/node_modules`; bağ kurulunca 7 / 7 geçti), 1'i bu paketin `hz0_ek` testi yük altında tek örnekle bitiyordu (`9c63a73` ile kararlı). Günlükler `~/karadul_olcum/runs/dalga0-2026-11-20/OLCEK/tam_takim/`.
+
+## PAKET BİTTİ
