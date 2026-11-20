@@ -8,8 +8,8 @@
 ## Durum
 
 - [x] 1. Envanter
-- [ ] 2. Alanları ekle
-- [ ] 3. `INERT_SETTINGS` + bağlama tablosu
+- [x] 2. Alanları ekle
+- [x] 3. `INERT_SETTINGS` + bağlama tablosu
 - [ ] 4. `naming_labels.py` sabitleri
 - [ ] 5. Testler
 - [ ] 6. Davranış değişmedi kanıtı
@@ -143,3 +143,96 @@ sınıf adı yok, bölüm adından).
   `naming_labels.AD_ESIGI`'yi içe aktarmalı (sahibi ÜST VERİ hattı; bu pakette değiştirilmedi).
 - `scripts/run_mock_benchmark.py:36,48,51` — `0.909` / `0.9091` bir F1 değeri; eşikle ilgisi yok.
 - `karadul/` altında eşiği tanımlayan kod yok.
+
+## 2. Alanlar eklendi (`karadul/config.py`)
+
+- Var olan bölümlerin sonuna tek blok (`# --- Bayrak ön paketi (KARARLAR A-19 a) ...` başlığıyla): `timeouts` 1,
+  `analysis` 7, `binary_reconstruction` 18, `bsim` 3, `perf` 7 alan.
+- Yeni bölümler (dataclass + `Config` alanı): `paket` (`PaketConfig`, 5), `kaynak` (`KaynakConfig`, 3), `reconstruct`
+  (`ReconstructConfig`, 1), `onbellek` (`OnbellekConfig`, 2), `buyuk_ikili` (`BuyukIkiliConfig`, 2). YAML yükleyici
+  bölümleri `Config`'in dataclass alanlarından türettiği için (`_config_sections`) yükleme, tür denetimi ve bilinmeyen
+  anahtar hatası yeni bölümlerde ek kod olmadan çalışıyor.
+- Her alan: üstte tek satır Türkçe açıklama, satırda `# ETKİSİZ: <paket> bağlayacak (INERT_SETTINGS)`.
+- Toplam 49 alan (envanterle aynı; denetim: işaretli alan 49, bekleyen INERT kaydı 49, ad kümeleri eşit).
+- Kalem 2 ve 3 tek commit: alanlar INERT kaydı olmadan eklenirse `test_p15a_etkisiz::test_every_unread_field_is_registered`
+  kırmızı kalırdı (ara commit kırık olmasın diye).
+
+## 3. `INERT_SETTINGS` ve bağlama tablosu
+
+- Yardımcı `_pending_binding(paket)` gerekçe metnini üretir: "henüz hiçbir kod okumuyor: alan önceden eklendi (bayrak ön
+  paketi), <paket> bağlayacak". YAML'da yazılırsa `config validate` ve `analyze` bunu "etkisiz" uyarısı olarak basar.
+- `INERT_SETTINGS`'in sonunda tek blok; **alan başına tek satır**, bağlayan pakete göre gruplu (her grubun üstünde
+  `# <paket> (Dalga N)` yorum satırı: paketlerin silme yamaları birbirine bitişmesin diye).
+- Bağlayan paket **iki satır** değiştirir, ikisi de `config.py`'de, ikisi de tek satır (yamayı ana oturum uygular):
+  1. aşağıdaki tablodaki INERT satırını siler;
+  2. alan satırındaki `# ETKİSİZ: <paket> bağlayacak (INERT_SETTINGS)` yorumunu kaldırır (gerekirse öntanımı plan
+     değerine çeker — §1.1 "Plan öntanımı" sütunu; öntanım değişikliği bağlayan paketin ölçümüyle).
+  `tests/test_bayrak_on_paketi.py` bu iki satırın birlikte değiştiğini denetler (biri kalırsa kırmızı); bağlanan alanın
+  öntanım / tür kilidi kalkar, bağlayan paket kendi testinde kilitler. `tests/test_p15a_etkisiz.py` ise alan okunmaya
+  başlayınca INERT satırının silinmesini zorlar (`test_inert_registry_is_accurate`; `getattr(…, "<ad>")` dizgisi de
+  okuma sayılır).
+- **Not (ÜST VERİ):** P-ÜV1 / P-ÜV2 / P-ÜV3 üretici adımları bayrağı `getattr` ile okuyacak (plan ustveri 146) →
+  `test_p15a` o pakette INERT satırını sildirir; ama adımlar Faz 1 listesine ancak P-ÜV6'da girer. P-ÜV1–3 ile P-ÜV6
+  arasında alan "okunuyor" görünür ama ürün akışında etkisizdir ve YAML uyarısı da çıkmaz. Ana oturum bu aralığı kısa
+  tutmalı ya da P-ÜV1–3'ün adım dosyası Faz 1'e girene kadar ayrı dalda beklemeli.
+- **Not (P-ÜV4):** var olan `binary_reconstruction.enable_rtti_recovery` (INERT'te) için aynı durum: P-ÜV4'ün
+  `rtti_recovery` adımı bayrağı okursa satırı P-ÜV6 değil P-ÜV4 silmek zorunda kalır (plan "P-ÜV6'da kaldırılır" diyor).
+- Koşullu alanlar (`perf.jvm_cds` HZ-5 adım 8, `binary_reconstruction.pipeline_tek_tur_kosulu` HZ-7c,
+  `analysis.dokum_java_yardimci` HZ-4b): paket açılmaz ya da "tutmadı" diye kapanırsa alan INERT'te kalır (silinmez:
+  kapsam küçültülmez; uyarı gerçeği söyler).
+
+### 3.1 Bağlama tablosu (alan → bağlayacak paket → dalga → silinecek INERT satırı)
+
+Tablo `config.py`'den betikle üretildi (49 satır). Dalga `SONRAKI_OTURUM.md` §3'ten; "—" = koşullu, dalgası yok.
+
+| Alan | Bağlayacak | Dalga | Silinecek INERT satırı |
+|---|---|---|---|
+| `binary_reconstruction.oz_ad_verbatim` | ÖK-1 | 1 | `"binary_reconstruction.oz_ad_verbatim": _pending_binding("ÖK-1"),` |
+| `binary_reconstruction.enable_macho_entry_main` | P-ÜV5 | 1 | `"binary_reconstruction.enable_macho_entry_main": _pending_binding("P-ÜV5"),` |
+| `analysis.cozumleyici_takilma_sn` | ÖL-1 | 1 | `"analysis.cozumleyici_takilma_sn": _pending_binding("ÖL-1"),` |
+| `analysis.bekci_aralik_sn` | ÖL-1 | 1 | `"analysis.bekci_aralik_sn": _pending_binding("ÖL-1"),` |
+| `binary_reconstruction.oz_ad_uniqueness_gate` | ÖK-2 | 2 | `"binary_reconstruction.oz_ad_uniqueness_gate": _pending_binding("ÖK-2"),` |
+| `binary_reconstruction.enable_go_metadata_recovery` | P-ÜV1 | 2 | `"binary_reconstruction.enable_go_metadata_recovery": _pending_binding("P-ÜV1"),` |
+| `binary_reconstruction.enable_objc_metadata_recovery` | P-ÜV2 | 2 | `"binary_reconstruction.enable_objc_metadata_recovery": _pending_binding("P-ÜV2"),` |
+| `binary_reconstruction.enable_swift_metadata_recovery` | P-ÜV3 | 2 | `"binary_reconstruction.enable_swift_metadata_recovery": _pending_binding("P-ÜV3"),` |
+| `timeouts.ghidra_adim` | ÖL-2 | 2 | `"timeouts.ghidra_adim": _pending_binding("ÖL-2"),` |
+| `bsim.bos_depoda_sorgu_atla` | ÖL-2 | 2 | `"bsim.bos_depoda_sorgu_atla": _pending_binding("ÖL-2"),` |
+| `bsim.ingest_butcesi_sn` | ÖL-2 | 2 | `"bsim.ingest_butcesi_sn": _pending_binding("ÖL-2"),` |
+| `bsim.paralel_tarama` | HZ-2 | 2 | `"bsim.paralel_tarama": _pending_binding("HZ-2"),` |
+| `analysis.akis_yazimi` | ÖL-3 | 2 | `"analysis.akis_yazimi": _pending_binding("ÖL-3"),` |
+| `analysis.dokum_tek_gecis` | HZ-4a | 2 | `"analysis.dokum_tek_gecis": _pending_binding("HZ-4a"),` |
+| `analysis.decompile_parti_boyu` | HZ-3 | 2 | `"analysis.decompile_parti_boyu": _pending_binding("HZ-3"),` |
+| `analysis.istihbarat_butcesi_sn` | ÖL-3b | 2 | `"analysis.istihbarat_butcesi_sn": _pending_binding("ÖL-3b"),` |
+| `paket.yonetici` | ÖL-5a | 2 | `"paket.yonetici": _pending_binding("ÖL-5a"),` |
+| `paket.genis_kapsam` | ÖL-5a | 2 | `"paket.genis_kapsam": _pending_binding("ÖL-5a"),` |
+| `paket.toplam_butce_sn` | ÖL-5a | 2 | `"paket.toplam_butce_sn": _pending_binding("ÖL-5a"),` |
+| `paket.bilesen_butce_sn` | ÖL-5a | 2 | `"paket.bilesen_butce_sn": _pending_binding("ÖL-5a"),` |
+| `kaynak.disk_on_denetim` | ÖL-6 | 2 | `"kaynak.disk_on_denetim": _pending_binding("ÖL-6"),` |
+| `kaynak.disk_guvenlik_carpani` | ÖL-6 | 2 | `"kaynak.disk_guvenlik_carpani": _pending_binding("ÖL-6"),` |
+| `kaynak.azami_bellek_orani` | ÖL-6 | 2 | `"kaynak.azami_bellek_orani": _pending_binding("ÖL-6"),` |
+| `binary_reconstruction.enable_separate_debug_naming` | PK-5 | 3 | `"binary_reconstruction.enable_separate_debug_naming": _pending_binding("PK-5"),` |
+| `binary_reconstruction.debug_file_dirs` | PK-5 | 3 | `"binary_reconstruction.debug_file_dirs": _pending_binding("PK-5"),` |
+| `binary_reconstruction.enable_go_pclntab_naming` | P-ÜV6 | 3 | `"binary_reconstruction.enable_go_pclntab_naming": _pending_binding("P-ÜV6"),` |
+| `binary_reconstruction.enable_objc_metadata_naming` | P-ÜV6 | 3 | `"binary_reconstruction.enable_objc_metadata_naming": _pending_binding("P-ÜV6"),` |
+| `binary_reconstruction.enable_swift_metadata_naming` | P-ÜV6 | 3 | `"binary_reconstruction.enable_swift_metadata_naming": _pending_binding("P-ÜV6"),` |
+| `binary_reconstruction.enable_go_metadata_integrity` | P-ÜV6 | 3 | `"binary_reconstruction.enable_go_metadata_integrity": _pending_binding("P-ÜV6"),` |
+| `binary_reconstruction.enable_anchored_reference_matching` | PK-4 | 3 | `"binary_reconstruction.enable_anchored_reference_matching": _pending_binding("PK-4"),` |
+| `binary_reconstruction.anchored_reference_witness_gate` | PK-7 | 3 | `"binary_reconstruction.anchored_reference_witness_gate": _pending_binding("PK-7"),` |
+| `binary_reconstruction.enable_record_affix_names` | ÖK-4b | 3 | `"binary_reconstruction.enable_record_affix_names": _pending_binding("ÖK-4b"),` |
+| `binary_reconstruction.enable_unique_identifier_names` | ÖK-3 | 3 | `"binary_reconstruction.enable_unique_identifier_names": _pending_binding("ÖK-3"),` |
+| `binary_reconstruction.enable_module_prefix_evidence` | ÖK-6 | 3 | `"binary_reconstruction.enable_module_prefix_evidence": _pending_binding("ÖK-6"),` |
+| `onbellek.ghidra_kosusu` | ÖL-9 | 3 | `"onbellek.ghidra_kosusu": _pending_binding("ÖL-9"),` |
+| `onbellek.azami_gb` | ÖL-9 | 3 | `"onbellek.azami_gb": _pending_binding("ÖL-9"),` |
+| `perf.ayrilmis_bellek_mb` | HZ-5 | 3 | `"perf.ayrilmis_bellek_mb": _pending_binding("HZ-5"),` |
+| `perf.decompile_verim_cekirdegi` | HZ-5 | 3 | `"perf.decompile_verim_cekirdegi": _pending_binding("HZ-5"),` |
+| `perf.jvm_cds` | HZ-5 | 3 | `"perf.jvm_cds": _pending_binding("HZ-5"),` |
+| `buyuk_ikili.tembel` | ÖL-10 | 4 | `"buyuk_ikili.tembel": _pending_binding("ÖL-10"),` |
+| `buyuk_ikili.esik_mb` | ÖL-10 | 4 | `"buyuk_ikili.esik_mb": _pending_binding("ÖL-10"),` |
+| `reconstruct.ara_kopyalar` | ÖL-7 | 4 | `"reconstruct.ara_kopyalar": _pending_binding("ÖL-7"),` |
+| `paket.bilinen_bilesen` | ÖL-11 | 4 | `"paket.bilinen_bilesen": _pending_binding("ÖL-11"),` |
+| `perf.desen_onbellegi_ust_sinir` | HZ-7a | 4 | `"perf.desen_onbellegi_ust_sinir": _pending_binding("HZ-7a"),` |
+| `perf.metin_onbellegi_mb` | HZ-7b | 4 | `"perf.metin_onbellegi_mb": _pending_binding("HZ-7b"),` |
+| `binary_reconstruction.pipeline_tek_tur_kosulu` | HZ-7c | 4 | `"binary_reconstruction.pipeline_tek_tur_kosulu": _pending_binding("HZ-7c"),` |
+| `perf.ortak_havuz` | HZ-7d | 4 | `"perf.ortak_havuz": _pending_binding("HZ-7d"),` |
+| `perf.forkserver` | HZ-7d | 4 | `"perf.forkserver": _pending_binding("HZ-7d"),` |
+| `analysis.dokum_java_yardimci` | HZ-4b | — | `"analysis.dokum_java_yardimci": _pending_binding("HZ-4b"),` |

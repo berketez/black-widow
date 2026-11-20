@@ -348,6 +348,9 @@ class Timeouts:
     subprocess: int = 7200  # buyuk binary strings/nm icin
     babel_parse: int = 60
     synchrony: int = 120
+    # --- Bayrak ön paketi (KARARLAR A-19 a): okunmuyor; bağlayan paket INERT satırını siler ---
+    # ÖL-2: Ghidra köprüsünün her çıkarım adımına süre bütçesi (sn; 0 = sınırsız).
+    ghidra_adim: int = 0  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)
 
 
 @dataclass
@@ -387,6 +390,21 @@ class AnalysisConfig:
     deep_synchrony_prepass: bool = False
     # NOT (2026-05-13): LLM-Assisted Variable Naming kaldirildi.
     # Berke kalici karari: feedback_no_llm.md — deterministic, CPU-only.
+    # --- Bayrak ön paketi (KARARLAR A-19 a): okunmuyor; bağlayan paket INERT satırını siler ---
+    # ÖL-1: aynı Ghidra çözümleyicisi bu kadar sn tepedeyse kapatılıp sürdürülür (0 = kapalı).
+    cozumleyici_takilma_sn: int = 0  # ETKİSİZ: ÖL-1 bağlayacak (INERT_SETTINGS)
+    # ÖL-1: çözümleyici bekçisinin okuma aralığı (sn).
+    bekci_aralik_sn: int = 15  # ETKİSİZ: ÖL-1 bağlayacak (INERT_SETTINGS)
+    # ÖL-3: büyük Ghidra çıktıları akış biçiminde dosyaya yazılır (kapalı = bugünkü yol).
+    akis_yazimi: bool = False  # ETKİSİZ: ÖL-3 bağlayacak (INERT_SETTINGS)
+    # ÖL-3b: ikili istihbarat aşamasının süre bütçesi (sn; 0 = sınırsız).
+    istihbarat_butcesi_sn: int = 0  # ETKİSİZ: ÖL-3b bağlayacak (INERT_SETTINGS)
+    # HZ-3: dinamik decompile dağıtımında parti boyu (0 = bugünkü statik parçalama).
+    decompile_parti_boyu: int = 0  # ETKİSİZ: HZ-3 bağlayacak (INERT_SETTINGS)
+    # HZ-4a: çağrı grafı / xref / CFG dökümünde tek başvuru geçişi (kapalı = bugünkü döngüler).
+    dokum_tek_gecis: bool = False  # ETKİSİZ: HZ-4a bağlayacak (INERT_SETTINGS)
+    # HZ-4b (koşullu paket): döküm Java yardımcı sınıfıyla üretilir.
+    dokum_java_yardimci: bool = False  # ETKİSİZ: HZ-4b bağlayacak (INERT_SETTINGS)
 
 
 @dataclass
@@ -720,6 +738,43 @@ class BinaryReconstructionConfig:
     # üretiyordu. Okuyan: pipeline/steps/capa_annotation.capa_code_feed_enabled (yalnız
     # gerçek True açar). `capa_scan.json` bayraktan bağımsız her zaman yazılır.
     enable_capa_code_feed: bool = False
+    # --- Bayrak ön paketi (KARARLAR A-19 a): okunmuyor; bağlayan paket INERT satırını siler ---
+    # KİMLİK. PK-4: başvuru verilince adlar BinaryDiffer yerine çapalı eşleyiciden gelir.
+    enable_anchored_reference_matching: bool = False  # ETKİSİZ: PK-4 bağlayacak (INERT_SETTINGS)
+    # PK-5: GNU build-id'si eşleşen ayrık .debug dosyasından fonksiyon adı okunur.
+    enable_separate_debug_naming: bool = False  # ETKİSİZ: PK-5 bağlayacak (INERT_SETTINGS)
+    # PK-5: ayrık hata ayıklama dosyalarının aranacağı dizinler (analistin verdiği).
+    debug_file_dirs: list[str] = field(default_factory=list)  # ETKİSİZ: PK-5 bağlayacak (INERT_SETTINGS)
+    # PK-7: satır içi tanığı olan başvuru eşlemesi ad değil kanıt satırı yazar.
+    anchored_reference_witness_gate: bool = False  # ETKİSİZ: PK-7 bağlayacak (INERT_SETTINGS)
+    # ÖZ KOD. ÖK-1: kanıt dizgisi tek tanımlayıcıysa ad dönüştürülmeden yazılır.
+    oz_ad_verbatim: bool = False  # ETKİSİZ: ÖK-1 bağlayacak (INERT_SETTINGS)
+    # ÖK-2: R1 teklik kapısı; tutmayan oz_ad adayı ad değil kanıt satırı olur.
+    oz_ad_uniqueness_gate: bool = False  # ETKİSİZ: ÖK-2 bağlayacak (INERT_SETTINGS)
+    # ÖK-3: G1; fonksiyonun tek başına andığı tanımlayıcı dizgi ad olur.
+    enable_unique_identifier_names: bool = False  # ETKİSİZ: ÖK-3 bağlayacak (INERT_SETTINGS)
+    # ÖK-4b: K1; kayıt tablosundaki dizginin ekinden ön ad üretilir.
+    enable_record_affix_names: bool = False  # ETKİSİZ: ÖK-4b bağlayacak (INERT_SETTINGS)
+    # ÖK-6: komşu adlı fonksiyonlardan modül öneki kanıt satırı (ad vermez).
+    enable_module_prefix_evidence: bool = False  # ETKİSİZ: ÖK-6 bağlayacak (INERT_SETTINGS)
+    # ÜST VERİ. P-ÜV1: Go pclntab üretici adımı (Faz 1 listesine P-ÜV6 ekler).
+    enable_go_metadata_recovery: bool = False  # ETKİSİZ: P-ÜV1 bağlayacak (INERT_SETTINGS)
+    # P-ÜV2: Objective-C yöntem listesi üretici adımı.
+    enable_objc_metadata_recovery: bool = False  # ETKİSİZ: P-ÜV2 bağlayacak (INERT_SETTINGS)
+    # P-ÜV3: Swift tip üst verisi üretici adımı.
+    enable_swift_metadata_recovery: bool = False  # ETKİSİZ: P-ÜV3 bağlayacak (INERT_SETTINGS)
+    # P-ÜV6: Go pclntab ad kanalı.
+    enable_go_pclntab_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
+    # P-ÜV6: Objective-C yöntem ad kanalı.
+    enable_objc_metadata_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
+    # P-ÜV6: Swift erişim fonksiyonu ad kanalı.
+    enable_swift_metadata_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
+    # P-ÜV5: Mach-O LC_MAIN girişindeki fonksiyona main adı verilir.
+    enable_macho_entry_main: bool = False  # ETKİSİZ: P-ÜV5 bağlayacak (INERT_SETTINGS)
+    # P-ÜV6 (P-ÜV7'nin denetimi): Go adlarına tutarlılık damgası.
+    enable_go_metadata_integrity: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
+    # HIZ. HZ-7c (koşullu paket): ölçülmüş koşulda ikinci feedback_loop turu atlanır.
+    pipeline_tek_tur_kosulu: bool = False  # ETKİSİZ: HZ-7c bağlayacak (INERT_SETTINGS)
 
 
 @dataclass
@@ -751,6 +806,13 @@ class BSimConfig:
     # P16c: native sorgu tek GenSignatures + tek QueryNearest ile (eşleşme kümesi
     # fonksiyon başına yolla aynı; Mac htop 142 sn -> birkaç sn). False = eski yol.
     batch_query: bool = True
+    # --- Bayrak ön paketi (KARARLAR A-19 a): okunmuyor; bağlayan paket INERT satırını siler ---
+    # ÖL-2: depoda bu programdan başka kayıt yoksa sorgu atlanır (kendi kendine eşleşirdi).
+    bos_depoda_sorgu_atla: bool = False  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)
+    # ÖL-2: BSim ingest süre bütçesi (sn; 0 = sınırsız).
+    ingest_butcesi_sn: int = 0  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)
+    # HZ-2: ingest ve sorguda Ghidra'nın paralel taraması (kapalı = bugünkü tekli yol).
+    paralel_tarama: bool = False  # ETKİSİZ: HZ-2 bağlayacak (INERT_SETTINGS)
 
 
 @dataclass
@@ -926,6 +988,21 @@ class PerfConfig:
     # Faz 1 kapsami: function_lister.py (Faz 2'de string_extractor,
     # type_recovery; Faz 3'te kalan 7 script).
     use_legacy_jython_scripts: bool = False
+    # --- Bayrak ön paketi (KARARLAR A-19 a): okunmuyor; bağlayan paket INERT satırını siler ---
+    # HZ-5: aynı belleği paylaşan başka süreç (ör. yerel model) için ayrılan bellek (MB).
+    ayrilmis_bellek_mb: int = 0  # ETKİSİZ: HZ-5 bağlayacak (INERT_SETTINGS)
+    # HZ-5: decompile iş parçacığı sayısına verim çekirdekleri de katılır.
+    decompile_verim_cekirdegi: bool = False  # ETKİSİZ: HZ-5 bağlayacak (INERT_SETTINGS)
+    # HZ-5 adım 8 (koşullu): JVM AppCDS arşivi.
+    jvm_cds: bool = False  # ETKİSİZ: HZ-5 bağlayacak (INERT_SETTINGS)
+    # HZ-7a: düzenli ifade deseni önbelleğinin girdi üst sınırı (dolunca temizlenir).
+    desen_onbellegi_ust_sinir: int = 200_000  # ETKİSİZ: HZ-7a bağlayacak (INERT_SETTINGS)
+    # HZ-7b: .c metni önbelleğinin bayt sınırı (MB; 0 = kapalı).
+    metin_onbellegi_mb: int = 0  # ETKİSİZ: HZ-7b bağlayacak (INERT_SETTINGS)
+    # HZ-7d: koşu boyunca tek süreç havuzu.
+    ortak_havuz: bool = False  # ETKİSİZ: HZ-7d bağlayacak (INERT_SETTINGS)
+    # HZ-7d: süreç havuzunda forkserver başlatma yöntemi.
+    forkserver: bool = False  # ETKİSİZ: HZ-7d bağlayacak (INERT_SETTINGS)
 
 
 @dataclass
@@ -1071,6 +1148,65 @@ class DecompilersConfig:
 
 
 # ---------------------------------------------------------------------------
+# Bayrak ön paketi (KARARLAR A-19 a, 2026-11-20): ÖLÇEK planının yeni bölümleri
+# ---------------------------------------------------------------------------
+# Bölüm adları planın adlarıdır (olcek/PLAN.md). Alanların hiçbiri henüz okunmuyor
+# (INERT_SETTINGS); öntanımlar bugünkü davranışı korur. Alan listesi, bağlayan paket ve
+# silinecek INERT satırı: docs/arge/2026-11-20_dalga0/BAYRAK.md.
+
+
+@dataclass
+class PaketConfig:
+    """`.app` paket analizi (ÖL-5a paket yöneticisi, ÖL-11 bilinen bileşen)."""
+    # ÖL-5a: paket yöneticisi (yineleme ayıklama, öncelik, bütçe, kalıcı kuyruk); kapalı = bugünkü sıralı döngü.
+    yonetici: bool = False  # ETKİSİZ: ÖL-5a bağlayacak (INERT_SETTINGS)
+    # ÖL-5a: Resources / Helpers / PlugIns / Frameworks altındaki Mach-O'lar da analiz kuyruğuna girer.
+    genis_kapsam: bool = False  # ETKİSİZ: ÖL-5a bağlayacak (INERT_SETTINGS)
+    # ÖL-5a: paket analizinin toplam süre bütçesi (sn; 0 = sınırsız).
+    toplam_butce_sn: int = 0  # ETKİSİZ: ÖL-5a bağlayacak (INERT_SETTINGS)
+    # ÖL-5a: bileşen başına süre bütçesi (sn; 0 = sınırsız).
+    bilesen_butce_sn: int = 0  # ETKİSİZ: ÖL-5a bağlayacak (INERT_SETTINGS)
+    # ÖL-11: üçüncü taraf çalışma zamanı yol adından değil kimlikten tanınıp sıra sonuna alınır.
+    bilinen_bilesen: bool = False  # ETKİSİZ: ÖL-11 bağlayacak (INERT_SETTINGS)
+
+
+@dataclass
+class KaynakConfig:
+    """Disk ve bellek bekçisi (ÖL-6)."""
+    # ÖL-6: koşudan önce disk tahmini; boş alan yetmezse koşu başlamaz.
+    disk_on_denetim: bool = False  # ETKİSİZ: ÖL-6 bağlayacak (INERT_SETTINGS)
+    # ÖL-6: boş alan < tahmin × bu çarpan ise ret.
+    disk_guvenlik_carpani: float = 1.5  # ETKİSİZ: ÖL-6 bağlayacak (INERT_SETTINGS)
+    # ÖL-6: süreç tepe belleği RAM'in bu oranını aşarsa kısmi bitiş (0 = kapalı).
+    azami_bellek_orani: float = 0.0  # ETKİSİZ: ÖL-6 bağlayacak (INERT_SETTINGS)
+
+
+@dataclass
+class ReconstructConfig:
+    """Yeniden kurma aşamasının ara çıktıları (ÖL-7)."""
+    # ÖL-7: okuyucusu olmayan ara .c kopyaları da yazılır (True = bugünkü davranış).
+    ara_kopyalar: bool = True  # ETKİSİZ: ÖL-7 bağlayacak (INERT_SETTINGS)
+
+
+@dataclass
+class OnbellekConfig:
+    """sha256 anahtarlı Ghidra önbelleği (ÖL-9)."""
+    # ÖL-9: Ghidra projesi + ghidra_output önbellekten okunur (planda `onbellek.ghidra`; ad çakışması, BAYRAK.md §1.3).
+    ghidra_kosusu: bool = False  # ETKİSİZ: ÖL-9 bağlayacak (INERT_SETTINGS)
+    # ÖL-9: önbelleğin disk sınırı (GB; 0 = sınır yok, önbellek kapalıyken okunmaz).
+    azami_gb: float = 0.0  # ETKİSİZ: ÖL-9 bağlayacak (INERT_SETTINGS)
+
+
+@dataclass
+class BuyukIkiliConfig:
+    """Büyük ikili kipi / tembel derinlik (ÖL-10; tasarım turu A-18)."""
+    # ÖL-10: decompile ve ad hattı yalnız seçilen fonksiyonlarda.
+    tembel: bool = False  # ETKİSİZ: ÖL-10 bağlayacak (INERT_SETTINGS)
+    # ÖL-10: kipin devreye girdiği kod baytı eşiği (MB; 0 = eşik yok, kip devreye girmez).
+    esik_mb: int = 0  # ETKİSİZ: ÖL-10 bağlayacak (INERT_SETTINGS)
+
+
+# ---------------------------------------------------------------------------
 # P15a / MEK-05 (2026-11-18): etkisiz ayarlar
 # ---------------------------------------------------------------------------
 # Bu alanlar ayar dosyasında yazılabilir ama analiz kodunda HİÇBİR yerde okunmuyor:
@@ -1080,6 +1216,13 @@ class DecompilersConfig:
 # tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate kaydı koda karşı denetler
 # (bağlanan alan kayıtta kalırsa test kırmızı olur; okunmayan alan kayıtta yoksa da).
 _THRESHOLD_IN_CODE = "eşik kodda ayrıca sabit yazılı; merkezî tablo değeri okunmuyor"
+
+
+def _pending_binding(package: str) -> str:
+    """Bayrak ön paketinin eklediği, henüz bağlanmamış alanın etkisizlik gerekçesi."""
+    return f"henüz hiçbir kod okumuyor: alan önceden eklendi (bayrak ön paketi), {package} bağlayacak"
+
+
 INERT_SETTINGS: dict[str, str] = {
     "tools.ghidra_run": "Ghidra yalnız tools.ghidra_headless üstünden çağrılıyor",
     "tools.radare2": "radare2 hiçbir yerde çağrılmıyor",
@@ -1169,6 +1312,86 @@ INERT_SETTINGS: dict[str, str] = {
     "perf.naming_max_workers": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
     "perf.naming_chunk_size": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
     "perf.naming_chunk_timeout": "paralel ad koşucusu silindi (P13a); hiçbir kod okumuyor",
+    # --- Bayrak ön paketi (KARARLAR A-19 a, 2026-11-20) ----------------------------------
+    # Alan başına TEK satır, bağlayan pakete göre gruplu. Bağlayan paket alanı okumaya
+    # başladığında yalnız kendi satırlarını siler ve alan satırındaki `# ETKİSİZ:` yorumunu
+    # kaldırır (yama; ana oturum uygular). Tablo: docs/arge/2026-11-20_dalga0/BAYRAK.md.
+    # ÖK-1 (Dalga 1)
+    "binary_reconstruction.oz_ad_verbatim": _pending_binding("ÖK-1"),
+    # P-ÜV5 (Dalga 1)
+    "binary_reconstruction.enable_macho_entry_main": _pending_binding("P-ÜV5"),
+    # ÖL-1 (Dalga 1)
+    "analysis.cozumleyici_takilma_sn": _pending_binding("ÖL-1"),
+    "analysis.bekci_aralik_sn": _pending_binding("ÖL-1"),
+    # ÖK-2 (Dalga 2)
+    "binary_reconstruction.oz_ad_uniqueness_gate": _pending_binding("ÖK-2"),
+    # P-ÜV1 / P-ÜV2 / P-ÜV3 (Dalga 2; üretici adımı okuyan ilk kod; Faz 1 listesine P-ÜV6 ekler)
+    "binary_reconstruction.enable_go_metadata_recovery": _pending_binding("P-ÜV1"),
+    "binary_reconstruction.enable_objc_metadata_recovery": _pending_binding("P-ÜV2"),
+    "binary_reconstruction.enable_swift_metadata_recovery": _pending_binding("P-ÜV3"),
+    # ÖL-2 (Dalga 2)
+    "timeouts.ghidra_adim": _pending_binding("ÖL-2"),
+    "bsim.bos_depoda_sorgu_atla": _pending_binding("ÖL-2"),
+    "bsim.ingest_butcesi_sn": _pending_binding("ÖL-2"),
+    # HZ-2 (Dalga 2)
+    "bsim.paralel_tarama": _pending_binding("HZ-2"),
+    # ÖL-3 (Dalga 2)
+    "analysis.akis_yazimi": _pending_binding("ÖL-3"),
+    # HZ-4a (Dalga 2)
+    "analysis.dokum_tek_gecis": _pending_binding("HZ-4a"),
+    # HZ-3 (Dalga 2)
+    "analysis.decompile_parti_boyu": _pending_binding("HZ-3"),
+    # ÖL-3b (Dalga 2)
+    "analysis.istihbarat_butcesi_sn": _pending_binding("ÖL-3b"),
+    # ÖL-5a (Dalga 2)
+    "paket.yonetici": _pending_binding("ÖL-5a"),
+    "paket.genis_kapsam": _pending_binding("ÖL-5a"),
+    "paket.toplam_butce_sn": _pending_binding("ÖL-5a"),
+    "paket.bilesen_butce_sn": _pending_binding("ÖL-5a"),
+    # ÖL-6 (Dalga 2)
+    "kaynak.disk_on_denetim": _pending_binding("ÖL-6"),
+    "kaynak.disk_guvenlik_carpani": _pending_binding("ÖL-6"),
+    "kaynak.azami_bellek_orani": _pending_binding("ÖL-6"),
+    # PK-5 (Dalga 3)
+    "binary_reconstruction.enable_separate_debug_naming": _pending_binding("PK-5"),
+    "binary_reconstruction.debug_file_dirs": _pending_binding("PK-5"),
+    # P-ÜV6 (Dalga 3)
+    "binary_reconstruction.enable_go_pclntab_naming": _pending_binding("P-ÜV6"),
+    "binary_reconstruction.enable_objc_metadata_naming": _pending_binding("P-ÜV6"),
+    "binary_reconstruction.enable_swift_metadata_naming": _pending_binding("P-ÜV6"),
+    "binary_reconstruction.enable_go_metadata_integrity": _pending_binding("P-ÜV6"),
+    # PK-4 (Dalga 3)
+    "binary_reconstruction.enable_anchored_reference_matching": _pending_binding("PK-4"),
+    # PK-7 (Dalga 3)
+    "binary_reconstruction.anchored_reference_witness_gate": _pending_binding("PK-7"),
+    # ÖK-4b (Dalga 3)
+    "binary_reconstruction.enable_record_affix_names": _pending_binding("ÖK-4b"),
+    # ÖK-3 (Dalga 3)
+    "binary_reconstruction.enable_unique_identifier_names": _pending_binding("ÖK-3"),
+    # ÖK-6 (Dalga 3)
+    "binary_reconstruction.enable_module_prefix_evidence": _pending_binding("ÖK-6"),
+    # ÖL-9 (Dalga 3)
+    "onbellek.ghidra_kosusu": _pending_binding("ÖL-9"),
+    "onbellek.azami_gb": _pending_binding("ÖL-9"),
+    # HZ-5 (Dalga 3; jvm_cds yalnız adım 8 açılırsa)
+    "perf.ayrilmis_bellek_mb": _pending_binding("HZ-5"),
+    "perf.decompile_verim_cekirdegi": _pending_binding("HZ-5"),
+    "perf.jvm_cds": _pending_binding("HZ-5"),
+    # ÖL-10 (Dalga 4; tasarım turu A-18)
+    "buyuk_ikili.tembel": _pending_binding("ÖL-10"),
+    "buyuk_ikili.esik_mb": _pending_binding("ÖL-10"),
+    # ÖL-7 (Dalga 4)
+    "reconstruct.ara_kopyalar": _pending_binding("ÖL-7"),
+    # ÖL-11 (Dalga 4)
+    "paket.bilinen_bilesen": _pending_binding("ÖL-11"),
+    # HZ-7a / HZ-7b / HZ-7c / HZ-7d (Dalga 4; HZ-7c koşullu)
+    "perf.desen_onbellegi_ust_sinir": _pending_binding("HZ-7a"),
+    "perf.metin_onbellegi_mb": _pending_binding("HZ-7b"),
+    "binary_reconstruction.pipeline_tek_tur_kosulu": _pending_binding("HZ-7c"),
+    "perf.ortak_havuz": _pending_binding("HZ-7d"),
+    "perf.forkserver": _pending_binding("HZ-7d"),
+    # HZ-4b (koşullu paket; dalga belirlenmedi)
+    "analysis.dokum_java_yardimci": _pending_binding("HZ-4b"),
 }
 
 
@@ -1389,6 +1612,12 @@ class Config:
     perf: PerfConfig = field(default_factory=PerfConfig)
     decompilers: DecompilersConfig = field(default_factory=DecompilersConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
+    # Bayrak ön paketi (KARARLAR A-19 a): ÖLÇEK planının yeni bölümleri; alanları henüz okunmuyor.
+    paket: PaketConfig = field(default_factory=PaketConfig)
+    kaynak: KaynakConfig = field(default_factory=KaynakConfig)
+    reconstruct: ReconstructConfig = field(default_factory=ReconstructConfig)
+    onbellek: OnbellekConfig = field(default_factory=OnbellekConfig)
+    buyuk_ikili: BuyukIkiliConfig = field(default_factory=BuyukIkiliConfig)
     # GHIDRA-14 (P15b): YALNIZ çıktı kökü (``workspaces/`` bunun altında; ``--output-dir``
     # bunu değiştirir). Veri okumak için kullanılmaz: başvuru verisi ``data_root``'ta.
     project_root: Path = field(default_factory=lambda: Path.cwd())
