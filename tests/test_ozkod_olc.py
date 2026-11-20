@@ -92,6 +92,19 @@ def test_etkin_bilinmeyen_taraf(tmp_path):
             pass
 
 
+def test_gnu_buildid_baglami(monkeypatch):
+    f1 = Z.kurallar()["V"].ks1()._f1()
+    monkeypatch.setattr(f1, "read_elf_info", lambda path: {"build_id": b"\x03stapsdt", "elf_type": "ET_DYN"})
+    monkeypatch.setattr(Z, "gnu_buildid", lambda yol: "ab12cd")
+    with Z._gnu_buildid_baglami(True):
+        r = f1.read_elf_info("x")
+        assert r == {"build_id": "ab12cd", "elf_type": "ET_DYN"}
+    assert f1.read_elf_info("x")["build_id"] == b"\x03stapsdt"           # geri yüklendi
+    with Z._gnu_buildid_baglami(False):
+        assert f1.read_elf_info("x")["build_id"] == b"\x03stapsdt"
+    assert Z.nufus_verisi.__defaults__ is not None
+
+
 def test_kaynak_grubu():
     assert Z.kaynak_grubu("debian/libtcl8.6") == "tcl8.6"
     assert Z.kaynak_grubu("debian/libpython3.13-stdlib") == "python3.13-minimal"

@@ -154,6 +154,7 @@ class Veri:
     atla: frozenset = frozenset()     # (birim, ikili): sayılmaz (aynı dosya / GT kurulamadı)
     olgu: Optional[Path] = None       # tavan.OLGU (kaynak sınıfı); yoksa boş tablo
     taraf_adi: dict = field(default_factory=lambda: {"kesif": "kesif", "sinama": "sinama"})
+    gnu_buildid: bool = False         # BuildID yalnız sahibi GNU olan nottan (NUFUS.md §8 not 3)
 
 
 def gelistirme_verisi(cikti: Optional[Path] = None) -> Veri:
@@ -179,11 +180,48 @@ def nufus_verisi(nufus_kok: Path = NUFUS_KOK, kosu_kok: Path = NUFUS_KOSU, cikti
     b = nufus_birimleri(nufus)
     return Veri("nufus", kosu_kok, cikti / "gt_bag", cikti / "mac_yok", cikti,
                 kesif=b[AYAR], sinama=b[KOR], atla=frozenset(atla), olgu=cikti / "olgu_bos.jsonl.gz",
-                taraf_adi={"kesif": AYAR, "sinama": KOR})
+                taraf_adi={"kesif": AYAR, "sinama": KOR}, gnu_buildid=True)
+
+
+def gnu_buildid(yol: Path) -> Optional[str]:
+    """Yalnız sahibi ``GNU`` olan ``NT_GNU_BUILD_ID`` notu (``tabaka_indir.elf_bilgisi``)."""
+    ti_ = _modul("tabaka_indir", REPO / "scripts" / "arge" / "olcu" / "tabaka_indir.py")
+    return (ti_.elf_bilgisi(Path(yol)) or {}).get("build_id")
+
+
+@contextlib.contextmanager
+def _gnu_buildid_baglami(acik: bool) -> Iterator[None]:
+    """NUFUS.md §8 not 3: ``function_f1.read_elf_info`` SystemTap (``stapsdt``) notunu da BuildID sanıyor
+    (ÖK-V'de iki ELF; ``build_id`` bayt dizisi döner ve ``ks1_olc.gt_elf`` hata ayıklama dosyasını
+    bulamaz). Gönderim metninin yolu: BuildID ``tabaka_indir.elf_bilgisi`` ile alınır. Bağlam içinde
+    ``read_elf_info``'nun yalnız ``build_id`` alanı GNU notundan gelir; öbür alanlar aynen.
+    ``function_f1.py`` değişmez (OLCUM paketinin dosyası). Öbür ELF'lerde iki değer zaten aynı."""
+    if not acik:
+        yield
+        return
+    f1 = kurallar()["V"].ks1()._f1()
+    asil = f1.read_elf_info
+
+    def sarili(path):
+        r = asil(path)
+        b = gnu_buildid(Path(path))
+        return dict(r, build_id=b) if b else r
+
+    f1.read_elf_info = sarili
+    try:
+        yield
+    finally:
+        f1.read_elf_info = asil
 
 
 @contextlib.contextmanager
 def etkin(v: Veri, gorunur: Iterable[str]) -> Iterator[dict[str, Any]]:
+    with _etkin(v, gorunur) as m, _gnu_buildid_baglami(v.gnu_buildid):
+        yield m
+
+
+@contextlib.contextmanager
+def _etkin(v: Veri, gorunur: Iterable[str]) -> Iterator[dict[str, Any]]:
     """Araştırma betiklerinin veri köklerini ve birim listelerini ``v``'ye çevir; yalnız ``gorunur``
     taraf(lar)ın ("kesif", "sinama") birimleri listede kalır. Çıkışta eski değerler geri yüklenir."""
     m = kurallar()
@@ -727,12 +765,11 @@ def gt_bag_kur(v: Veri, nufus_kok: Path = NUFUS_KOK) -> dict[str, Any]:
     """``ks1_olc.gt_elf``'in değişmeden çalışması için bağ dizini (yalnız sembolik bağ; veri kopyası yok).
 
     ``gt_elf`` hata ayıklama dosyasını ``<indir>/x_*-dbgsym_*/usr/lib/debug/.build-id/xx/yy.debug`` diye
-    arar ve anahtarı ``function_f1.read_elf_info`` verir. ÖK-V'de dosyalar ``x_<hata paketi>/`` altında
-    ve iki ELF'te (NUFUS.md §8 not 3) ``read_elf_info`` SystemTap notunun baytlarını BuildID sanıyor.
-    Bu yüzden her ölçülecek ELF için: gerçek GNU BuildID'ler (``tabaka_indir.elf_bilgisi``: ikili ve
-    .debug) birbirine ve ``nufus.json``'a eşit olmalı; bağ ``read_elf_info``'nun döndürdüğü anahtarla
-    kurulur. Döndürür: ELF sayısı, eşleşen, stapsdt sapması, hatalar (yalnız sayı ve iş anahtarı)."""
-    ti_ = _modul("tabaka_indir", REPO / "scripts" / "arge" / "olcu" / "tabaka_indir.py")
+    arar ve anahtarı ``function_f1.read_elf_info`` verir. ÖK-V'de dosyalar ``x_<hata paketi>/`` altında.
+    İki ELF'te (NUFUS.md §8 not 3) ``read_elf_info`` SystemTap notunu BuildID sanıyor; ölçüm bu yüzden
+    ``_gnu_buildid_baglami`` içinde koşar ve bağ GNU BuildID'siyle kurulur. Her ölçülecek ELF için:
+    GNU BuildID'ler (``tabaka_indir.elf_bilgisi``: ikili ve .debug) birbirine ve ``nufus.json``'a eşit
+    olmalı. Döndürür: ELF sayısı, eşleşen, stapsdt sapması, hatalar (yalnız sayı ve iş anahtarı)."""
     f1 = kurallar()["V"].ks1()._f1()
     nk = _modul("ozkod_nufus_kur", OLCUM / "ozkod_nufus_kur.py")
     nufus = json.loads((nufus_kok / "nufus.json").read_text(encoding="utf-8"))
@@ -741,15 +778,15 @@ def gt_bag_kur(v: Veri, nufus_kok: Path = NUFUS_KOK) -> dict[str, Any]:
     hatalar = []
     for is_ in nk.olculecek_isler(nufus_kok, nufus):
         say["elf"] += 1
-        gercek_i = (ti_.elf_bilgisi(is_["girdi"]) or {}).get("build_id")
-        gercek_d = (ti_.elf_bilgisi(is_["debug"]) or {}).get("build_id")
+        gercek_i = gnu_buildid(is_["girdi"])
+        gercek_d = gnu_buildid(is_["debug"])
         if not (gercek_i and gercek_i == gercek_d == is_["build_id"]):
             hatalar.append({"anahtar": is_["anahtar"], "neden": "GNU BuildID eşleşmedi"})
             continue
         say["buildid_eslesti"] += 1
-        anahtar = f1.read_elf_info(is_["girdi"])["build_id"]
-        if anahtar != gercek_i:
+        if f1.read_elf_info(is_["girdi"])["build_id"] != gercek_i:
             say["stapsdt_sapmasi"] += 1
+        anahtar = gercek_i
         bag = taban / anahtar[:2] / f"{anahtar[2:]}.debug"
         bag.parent.mkdir(parents=True, exist_ok=True)
         if bag.is_symlink() or bag.exists():
