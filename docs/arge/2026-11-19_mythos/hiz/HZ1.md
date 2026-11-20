@@ -1,15 +1,44 @@
 # HZ1 — HZ-1 ölçüm kancaları (ilerleme dosyası)
 
 Paket: Dalga 0, HZ1 (`docs/arge/2026-11-20_dalga0/gonderim/HZ1.md`). Plan: `docs/arge/2026-11-19_mythos/hiz/PLAN.md` "HZ-1".
-Taban: `e996200` (main, `git merge --ff-only main` sonrası). Başlangıç: 2026-11-20 08:15.
+Taban: `e996200` (main, `git merge --ff-only main` sonrası; `b6aceb9` ile kod farkı yok). Başlangıç: 2026-11-20 08:15.
 
 ## Kalemler
 
-| # | Kalem | Durum |
-|---|---|---|
-| 1 | Ön kayıt (`on_kayit_hz1.md`) | bitti (commit aşağıda) |
-| 2 | Kod (`headless.py`, `macho.py`) | bekliyor |
-| 3 | Testler (`tests/test_hz1_olcum_kancasi.py`) | bekliyor |
-| 4 | Mutasyon (hz1 + macho / p16a / p16c / p16d) | bekliyor |
-| 5 | S8 çıktı eşitliği (`scripts/arge/hiz/s8_esitlik.py`) | bekliyor |
-| 6 | Süre oranı | bekliyor |
+| # | Kalem | Durum | Commit |
+|---|---|---|---|
+| 1 | Ön kayıt (`on_kayit_hz1.md`) + A/A eki | bitti | `df77fc7`, ek `114f4c6` |
+| 2 | Kod (`headless.py`, `macho.py`) | bitti | `959106b` |
+| 3 | Testler (`tests/test_hz1_olcum_kancasi.py`, 23 test) | bitti | `afa9751`, `f4ce353` |
+| 4 | Mutasyon (hz1 13 / 13; macho 34 / 34, p16a 33 / 33, p16c 16 / 16, p16d 11 / 11) | bitti | `b3ddf97`, `acdb8a4` |
+| 5 | S8 çıktı eşitliği (`scripts/arge/hiz/s8_esitlik.py`) | araç bitti (`f4ce353`); sonra kolu kuyrukta | — |
+| 6 | Süre oranı | yapı gereği; ölçüm gece HZ-0'da | — |
+
+## Kalem 2 — kod
+
+- `karadul/ghidra/headless.py`
+  - Modül sabitleri: `ADIM_*` (18 ad) ve `GHIDRA_ADIMLARI` (tek liste; ÖL-1 içe aktaracak), `DURUM_SURE_ALANLARI = ("analysis", "adim_sureleri", "decompile_parcalari")`.
+  - Adlar ilerleme olayı sözleşmesine (`olcek/PLAN.md` §1, `adim=ghidra.<adım>`) göre: `ghidra.jvm_baslatma`, `ghidra.ice_aktarma`, `ghidra.otomatik_analiz`, `ghidra.gdt`, `ghidra.pdb`, `ghidra.functions`, `ghidra.strings`, `ghidra.call_graph`, `ghidra.decompile`, `ghidra.types`, `ghidra.xref`, `ghidra.pcode`, `ghidra.cfg`, `ghidra.function_id`, `ghidra.bsim.ingest`, `ghidra.bsim.query`, `ghidra.combined`, `ghidra.kapatma`. Planın 12 adımına JVM, içe aktarma, otomatik analiz, GDT, PDB ve `open_program` çıkışı (kapatma) eklendi; BSim sözleşmedeki `ghidra.bsim` altında iki alt adım.
+  - `_AdimSaati`: `basla` / `bitti` (`time.monotonic`, üç basamak); listede olmayan ad `ValueError`. Adım süresi = çıkarım + JSON yazımı (try bloğunun tamamı); düşen adımın süresi düştüğü ana kadar yazılır; koşmayan adım (ayarı kapalı) ve köprü düşünce yarım kalan adım sözlükte yok.
+  - `_analyze_pyghidra`: her adımın başına / sonuna `saat.basla` / `saat.bitti` (gövdeler değişmedi, satır girintisi değişmedi); sonuçta `adim_sureleri`; decompile sonucundan `_decompile_parcalari` `decompiled.json` yazılmadan önce ayrılır → sonuçta `decompile_parcalari`.
+  - `_parallel_decompile_java_threads`: `_timed_chunk` sarmalayıcısı parça başına süreyi ölçer (iş parçacığında koştuğu süre; kuyruk beklemesi hariç); `_chunk_time_summary`: `yol`, `parca_sayisi`, `is_parcacigi`, `parca_boyu`, `parca_sn` (parça sırasında), `sure_sn` (en küçük / ortanca / en büyük). Seri yedek yolda tek parça (decompile'ın kendi toplam süresi).
+- `karadul/analyzers/macho.py` `_record_ghidra_outcome`: `DURUM_SURE_ALANLARI`'ndan sonuçta olanlar `ghidra_status.json`'un sonuna aynen eklenir; yoksa (CLI / başka arka uç) dosya eskisiyle aynı.
+- Dokunulmayan: adımların gövdeleri, `ghidra_output/*.json`, `scripts_output` (→ `static/ghidra_*.json`), `ghidra_log.txt`, `pipeline_result.json`, `stats`, `karadul/config.py`.
+- Gerçek Ghidra'da ilk sonuç (S8 sonra, `debian/coreutils/cat`, yük altında): `analysis.analyzer_times` 28 çözümleyici; `adim_sureleri` 17 adım (GDT ayarı boş: yok), toplam 10,140 sn ↔ `duration_seconds` 10,139 (fark yuvarlama, ön kayıttaki 0,01 payının içinde); `decompile_parcalari` 10 parça / 9 iş parçacığı, parça 0,243–1,596 sn (ortanca 0,56).
+
+## Kalem 3 — testler
+
+`tests/test_hz1_olcum_kancasi.py` (23 test): sahte saatle (`headless_mod.time`) her adımın süresi tam eşitlikle ve liste sırasında; adım toplamı = köprü süresi; düşen adım; BSim ingest / query düşmesi; kapalı adımlar; JVM / içe aktarma düşünce yarım adım yok; decompile özeti `decompiled.json`'a ve `scripts_output`'a girmez, `ghidra_output`'a yazılan dosya kümesi aynı; gerçek paralel / seri decompile yolunda parça süreleri (sahte decompiler); P16c'nin `_run_auto_analysis`'inden `analyzer_times` sonuca geçer; `_record_ghidra_outcome` yeni alanları sona ekler, geri kalanı ve `stats` aynı, alan yoksa anahtar listesi eskisiyle aynı; `s8_esitlik.py` hariç alanlar, fark birimi, A/A sınıflaması, H4 toplam denetimi. Eski kodda içe aktarma düşer (kırmızı).
+
+İlgili eski testler: `test_p16a_ghidra_sonuc`, `test_p16c_analiz_suresi`, `test_p16a_decompile_sirasi`, `test_p16a_proje`, `test_p16a_fonksiyon_sayaci`, `test_large_binary_support`, `test_pdb_loading` → 74 geçti.
+
+## Kalem 4 — mutasyon
+
+- `scripts/measurement/mutation_specs_hz1.json`: 13 mutant (10 ürün kodu + 3 `s8_esitlik.py`), 13 öldü, hata 0.
+- Var olan tanımlar (değişiklik gerekmedi; `find` metinleri bayatlamadı): `macho` 34 / 34, `p16a` 33 / 33, `p16c` 16 / 16, `p16d` 11 / 11 öldü, hata 0. Not (bu paketten önce de böyleydi): `p16a` üç mutantta (`g10_istatistik_toplami_karisir`, `evrensel_x86_64_tercih`, `bc4_akibet_yazilmaz`) ve `p16c_analiz_suresiz`'de `replace` metni `find` ile aynı uzunlukta; `p16c` iki BSim mutantının `find` metni `bsim.py`'de iki kez geçiyor (tanım `occurrence` ile çözüyor olabilir). Bu dosyalar HZ1'in değil; dokunulmadı.
+
+## Kalem 5 — S8 çıktı eşitliği
+
+- Araç: `scripts/arge/hiz/s8_esitlik.py --once <kök> --sonra <kök> [--aa <kök>] [--json …] [--md …]`; `S8_ANAHTARLARI`, `HARIC_ALANLAR` sabitleri sonraki paketler için.
+- Önce: `~/karadul_olcum/runs/dalga0-2026-11-20/s8_taban_b6aceb9/` (ana oturum). A/A: `…/s8_taban_b6aceb9_AA/` (ana oturum). Sonra: `~/karadul_olcum/runs/dalga0-2026-11-20/HZ1/s8_sonra_959106b/`, ürün ağacı `~/karadul_olcum/urun-959106b` (`git worktree add --detach`, altı çalışma verisi bağı; `agac_kunyesi` geçti).
+- **2026-11-20 08:40 — bekliyorum:** S8 sonra kolu Ghidra kuyruğunda (ANA A/A ve OK5 ile sırayla); cat bitti (08:34, eşit), 7 ikili kaldı. TAHMİNİ bitiş 09:40–10:40 (kuyruk payı belirsiz). Bu arada tam takım koşulacak.
