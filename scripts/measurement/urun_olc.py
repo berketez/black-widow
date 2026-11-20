@@ -38,6 +38,14 @@ Alt komutlar
     kaybedilen ve kazanılan doğru ad. Öğeler birim, ikili ve adresle eşlenir; iki kol aynı dosyaları
     (sha256) ölçmüş olmalıdır.
 
+Ad sınıflayıcısının sürümü (OLCUM kalem 7; birleşik ölçüm ön kaydı §2.2 kuralı): kanal adı ve
+kanal grubu ``naming_labels.py`` / ``alt_kanal.py``'den gelir. ``olc`` her kökün koşu künyesinden
+(``kosu_kunyesi.json``: ``agac.commit`` ya da eski N1 ``commit``; ol7 Mac ``session.json``) ürünün
+commit'ini okur, o commit'teki iki dosyanın sha256'sını yüklü sınıflayıcınınkiyle karşılaştırır.
+Fark varsa ölçüm durur; ``--siniflayici-agac <ürün ağacı>`` sınıflayıcıyı o ağaçtan yükler (yalnız bu
+iki modül; geri kalan her şey betiğin ağacından). Denetlenemeyen kök (künye ya da commit yok,
+sınıflayıcı koşu anında kirli) durdurmaz ama çıktının ``siniflayici`` alanına ve Markdown'a yazılır.
+
 Eksiksizlik: birim başına ikili sayısı ``ks1_olc.BEKLENEN_ELF`` ile denetlenir. Eksik, bitmemiş ya
 da ad haritası yazılmamış koşu varsa ölçüm durur; ``--eksik-izinli`` ile sürer ve eksikleri listeler.
 C++ ikililer ``ks1_olc.cpp_ikili_mi`` kuralıyla ölçülerin dışındadır.
@@ -53,10 +61,12 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import hashlib
 import importlib.util
 import json
 import platform
 import re
+import subprocess
 import sys
 from collections import Counter
 from fractions import Fraction
@@ -95,6 +105,14 @@ if REPO not in Path(karadul.__file__).resolve().parents:
 
 from karadul.core import naming_labels  # noqa: E402
 from karadul.reconstruction.tarif import alt_kanal  # noqa: E402
+
+# ---- Ad sınıflayıcısının sürümü (OLCUM kalem 7) ----
+SINIFLAYICI_DOSYALARI = ("karadul/core/naming_labels.py", "karadul/reconstruction/tarif/alt_kanal.py")
+SINIFLAYICI_AYNI = "ayni"
+SINIFLAYICI_FARKLI = "farkli"
+SINIFLAYICI_DENETLENEMEDI = "denetlenemedi"
+SINIFLAYICI_BETIK_AGACI = "betik_agaci"
+_siniflayici_kaynagi = SINIFLAYICI_BETIK_AGACI
 
 # ---- Ürün çıktısının yerleri (çalışma alanına göre) ----
 HARITA_REL = Path("reconstructed") / "src" / "naming_map.json"
@@ -169,6 +187,129 @@ def _json(yol: Path) -> Any:
 
 # --------------------------------------------------------------------------------------------
 # Ürün çıktısını okuma
+
+
+def _modul_yukle(ad: str, yol: Path) -> ModuleType:
+    spec = importlib.util.spec_from_file_location(ad, yol)
+    modul = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modul)
+    return modul
+
+
+def siniflayici_modulleri(agac: Path) -> tuple[ModuleType, ModuleType]:
+    """``agac``'taki ``naming_labels.py`` ve ``alt_kanal.py``. ``alt_kanal``'ın içe aktardığı
+    ``karadul.core.naming_labels`` yükleme sırasında o ağacınki olur; sonra eski hâline döner."""
+    agac = Path(agac).expanduser().resolve()
+    nl = _modul_yukle("urun_olc_siniflayici_naming_labels", agac / SINIFLAYICI_DOSYALARI[0])
+    anahtar = "karadul.core.naming_labels"
+    onceki = sys.modules.get(anahtar)
+    sys.modules[anahtar] = nl
+    try:
+        ak = _modul_yukle("urun_olc_siniflayici_alt_kanal", agac / SINIFLAYICI_DOSYALARI[1])
+    finally:
+        if onceki is None:
+            sys.modules.pop(anahtar, None)
+        else:
+            sys.modules[anahtar] = onceki
+    return nl, ak
+
+
+def siniflayiciyi_kur(nl: ModuleType, ak: ModuleType, kaynak: str) -> None:
+    """Ölçümün kullandığı sınıflayıcıyı değiştirir (modül değişkenleri ve onlardan türeyen sabitler)."""
+    global naming_labels, alt_kanal, KOKEN_REL, ETIKETLER, ETIKET_KESIN, _siniflayici_kaynagi
+    naming_labels, alt_kanal, _siniflayici_kaynagi = nl, ak, kaynak
+    KOKEN_REL = HARITA_REL.with_name(nl.NAMING_PROVENANCE_FILE)
+    ETIKETLER = nl.NAME_LABELS + (ETIKETSIZ,)
+    ETIKET_KESIN = nl.LABEL_CERTAIN
+
+
+def yuklu_siniflayici() -> dict[str, str]:
+    """Ölçümün kullandığı sınıflayıcı dosyalarının sha256'sı (göreli yol → sha256)."""
+    return {SINIFLAYICI_DOSYALARI[0]: ks1.sha256_dosya(Path(naming_labels.__file__)),
+            SINIFLAYICI_DOSYALARI[1]: ks1.sha256_dosya(Path(alt_kanal.__file__))}
+
+
+def kok_kunyesi(kok: Path) -> Optional[dict[str, Any]]:
+    """Koşu kökünün künyesi: ürün commit'i ve koşu anındaki kirli dosyalar. Sırayla kökün kendisinde
+    ve üstünde ``kosu_kunyesi.json`` (urun_kos: ``agac.commit``; eski N1: ``commit``) ya da
+    ``session.json`` (ol7 Mac: ``tree.commit``). Bulunamazsa None."""
+    kok = Path(kok)
+    for d in (kok, kok.parent):
+        yol = d / "kosu_kunyesi.json"
+        if yol.is_file():
+            k = _json(yol)
+            agac = k.get("agac") if isinstance(k.get("agac"), dict) else {}
+            kirli = agac.get("kirli") if "kirli" in agac else k.get("karadul_kirli")
+            return {"dosya": str(yol), "commit": agac.get("commit") or k.get("commit"),
+                    "kirli": list(kirli or [])}
+        yol = d / "session.json"
+        if yol.is_file():
+            t = _json(yol).get("tree") or {}
+            return {"dosya": str(yol), "commit": t.get("commit"), "kirli": list(t.get("dirty_files") or [])}
+    return None
+
+
+def _git_bayt(*arglar: str) -> Optional[bytes]:
+    try:
+        r = subprocess.run(["git", "-C", str(REPO), *arglar], capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def commit_siniflayicisi(commit: str) -> Optional[dict[str, Optional[str]]]:
+    """Ürün commit'indeki sınıflayıcı dosyalarının sha256'sı (depodan ``git show``). Commit depoda
+    yoksa None; commit var ama dosya o commit'te yoksa o dosyanın değeri None (eski ürün)."""
+    if _git_bayt("cat-file", "-e", f"{commit}^{{commit}}") is None:
+        return None
+    out: dict[str, Optional[str]] = {}
+    for rel in SINIFLAYICI_DOSYALARI:
+        veri = _git_bayt("show", f"{commit}:{rel}")
+        out[rel] = None if veri is None else hashlib.sha256(veri).hexdigest()
+    return out
+
+
+def siniflayici_denetle(kokler: Iterable[Path]) -> dict[str, Any]:
+    """Her kökün ürününün sınıflayıcısı yüklü sınıflayıcıyla aynı mı (``ayni`` / ``farkli`` /
+    ``denetlenemedi``). Durdurma kararı çağırana aittir (``siniflayici_farki``)."""
+    yuklu = yuklu_siniflayici()
+    adlar = [rel.rsplit("/", 1)[1] for rel in SINIFLAYICI_DOSYALARI]
+    sonuc = []
+    for kok in kokler:
+        k = kok_kunyesi(kok)
+        d: dict[str, Any] = {"kok": str(kok), "kunye": k and k["dosya"], "commit": k and k["commit"]}
+        if not k or not k["commit"]:
+            d.update(durum=SINIFLAYICI_DENETLENEMEDI, neden="koşu künyesi ya da ürün commit'i yok")
+        elif any(ad in str(satir) for satir in k["kirli"] for ad in adlar):
+            d.update(durum=SINIFLAYICI_DENETLENEMEDI, neden="sınıflayıcı dosyası koşu anında kirliydi")
+        else:
+            urun = commit_siniflayicisi(k["commit"])
+            d["urun_sha256"] = urun
+            if urun is None:
+                d.update(durum=SINIFLAYICI_DENETLENEMEDI, neden="ürün commit'i depoda bulunamadı")
+            elif None in urun.values():
+                eksik = ", ".join(rel.rsplit("/", 1)[1] for rel, v in urun.items() if v is None)
+                d.update(durum=SINIFLAYICI_DENETLENEMEDI,
+                         neden=f"ürün commit'inde {eksik} yok (eski ürün; alt kanal betiğin sınıflayıcısıyla sonradan)")
+            else:
+                d["durum"] = SINIFLAYICI_AYNI if urun == yuklu else SINIFLAYICI_FARKLI
+        sonuc.append(d)
+    return {"kaynak": _siniflayici_kaynagi, "yuklu_sha256": yuklu, "kokler": sonuc}
+
+
+def siniflayici_farki(denetim: dict[str, Any]) -> list[str]:
+    """Sınıflayıcısı yüklü olandan farklı köklerin açıklaması (boşsa fark yok)."""
+    return [f"{d['kok']} (ürün {str(d['commit'])[:10]})" for d in denetim["kokler"]
+            if d["durum"] == SINIFLAYICI_FARKLI]
+
+
+def siniflayici_cumlesi(denetim: Optional[dict[str, Any]]) -> str:
+    if not denetim:
+        return "denetlenmedi"
+    kokler = "; ".join(f"`{Path(d['kok']).name}` {d['durum']}" + (f" ({d['neden']})" if d.get("neden") else "")
+                       for d in denetim["kokler"]) or "kök yok"
+    kaynak = "betiğin ağacı" if denetim["kaynak"] == SINIFLAYICI_BETIK_AGACI else f"`{denetim['kaynak']}`"
+    return f"kaynak {kaynak}; {kokler}"
 
 
 def harita_yolu(e: Any) -> Path:
@@ -499,8 +640,9 @@ def ayni_dosyalar(birimler: dict[str, dict[str, Any]]) -> list[list[str]]:
 
 def olc(elfler: list[Any], mac_veri: Optional[Path], indir: Optional[Path],
         beklenen: Optional[dict[str, int]] = ks1.BEKLENEN_ELF, eksik_izinli: bool = False,
-        kol: Optional[dict[str, Any]] = None) -> dict[str, Any]:
-    """Bir kolun ölçümü. Eksik ya da bitmemiş koşu varsa durur (``eksik_izinli`` değilse)."""
+        kol: Optional[dict[str, Any]] = None, siniflayici: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    """Bir kolun ölçümü. Eksik ya da bitmemiş koşu varsa durur (``eksik_izinli`` değilse).
+    ``siniflayici``: ``siniflayici_denetle`` sonucu (verilirse çıktıya ``siniflayici`` alanı olarak girer)."""
     elfler = haritasizlari_isaretle(elfler)
     nufus_kunyesi = ks1.nufus_denetle(elfler, beklenen, eksik_izinli)
     biten = [e for e in elfler if e.static is not None]
@@ -535,7 +677,8 @@ def olc(elfler: list[Any], mac_veri: Optional[Path], indir: Optional[Path],
             "nufus": b["nufus"], "ozet": birim_ozeti(b["kayitlar"], b["nufus"]),
             "anahtar_sayaci": dict(sorted(b["sayac"].items())), "cpp_disarida": sorted(b["cpp_disarida"]),
             "elfler": dict(sorted(b["elfler"].items()))}
-    return {"sema": SEMA, "komut": "olc", "kol": kol or {},
+    ek = {} if siniflayici is None else {"siniflayici": siniflayici}
+    return {"sema": SEMA, "komut": "olc", "kol": kol or {}, **ek,
             "arac": {"betik_sha256": ks1.sha256_dosya(OLC_YOLU), "ks1_olc_sha256": ks1.sha256_dosya(KS1_YOLU),
                      "git_head": ks1._git("rev-parse", "HEAD").stdout.strip(),
                      "python": platform.python_version(), "ghidra_surumleri": ghidra_surumleri(biten)},
@@ -757,6 +900,8 @@ def olc_markdown(s: dict[str, Any]) -> str:
            f"- İkililer: {sum(s['nufus']['biten'].values())} bitti; sorunlar: "
            f"{'; '.join(s['nufus']['sorunlar']) or 'yok'}.",
            f"- Bitmişlik (`BITTI` içeriği; yalnız başarı işareti bitmiş sayılır): {bitmislik_cumlesi(s['nufus'])}.",
+           f"- Ad sınıflayıcısı (`naming_labels.py`, `alt_kanal.py`; ürün commit'iyle karşılaştırma): "
+           f"{siniflayici_cumlesi(s.get('siniflayici'))}.",
            "- Kol kimliği (köken kaydından; C++ dışı ikili sayısı): "
            + ("; ".join(f"`{k}` × {v}" for k, v in s["kol_kimligi"].items()) or "—") + ".",
            "- Hüküm tam eşitliktir (Mach-O'da baştaki tek `_` soyulur; klon ekli GT'de taban eşitliği; "
@@ -939,6 +1084,8 @@ def main(argv: Optional[list[str]] = None) -> int:
     o.add_argument("--kol", default=None, help="kolun adı (ör. taban, yeni); çıktıya yazılır")
     o.add_argument("--eksik-izinli", action="store_true",
                    help="eksik ya da bitmemiş koşu varken de ölç (eksikler çıktıda listelenir)")
+    o.add_argument("--siniflayici-agac", type=Path, default=None,
+                   help="ad sınıflayıcısını (naming_labels.py, alt_kanal.py) bu ürün ağacından yükle")
     k = sub.add_parser("karsilastir", help="iki kolun yan yana tablosu ve farklar")
     k.add_argument("--taban", type=Path, required=True)
     k.add_argument("--yeni", type=Path, required=True)
@@ -950,11 +1097,20 @@ def main(argv: Optional[list[str]] = None) -> int:
     a = ap.parse_args(argv)
     try:
         if a.komut == "olc":
+            if a.siniflayici_agac:
+                siniflayiciyi_kur(*siniflayici_modulleri(a.siniflayici_agac),
+                                  str(a.siniflayici_agac.expanduser().resolve()))
+            denetim = siniflayici_denetle(k for k in (a.kok_debian, a.kok_mac) if k)
+            farkli = siniflayici_farki(denetim)
+            if farkli:
+                raise OnkosulHatasi(
+                    "ad sınıflayıcısı ölçülen ürününkiyle farklı: " + "; ".join(farkli)
+                    + " — sınıflayıcıyı ürün ağacından yükleyin (--siniflayici-agac <ürün ağacı>)")
             elfler = ks1.elfleri_topla(a.kok_mac, a.kok_debian)
             sonuc = olc(elfler, a.mac_veri, a.debian_indir, beklenen=ks1.BEKLENEN_ELF,
                         eksik_izinli=a.eksik_izinli,
                         kol={"ad": a.kol, "kok_debian": a.kok_debian and str(a.kok_debian),
-                             "kok_mac": a.kok_mac and str(a.kok_mac)})
+                             "kok_mac": a.kok_mac and str(a.kok_mac)}, siniflayici=denetim)
             metin = olc_markdown(sonuc)
         else:
             sonuc = karsilastir(_json(a.taban), _json(a.yeni), eksik_izinli=a.eksik_izinli)

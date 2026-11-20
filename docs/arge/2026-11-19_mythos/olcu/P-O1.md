@@ -44,6 +44,12 @@ Yöntem: yeni iki alan (`bicim_normallestirmesi`, `bicim_yanlis_orani`) her düz
 |---|---|---|---|
 | a62f15e | `docs/arge/2026-11-19_birlesik_olcum/urun_olcumu_onarim.json` | yalnız `arac.betik_sha256` (betik değişti) ve `arac.git_head`; `arac` ve `kol` dışındaki her şey (karar (a)–(c), kanal kırılımı, kanal grubu, tabaka, `etiket_kanal`, `ogeler`) metin olarak aynı | **tuttu** |
 | f30ac9a | `docs/arge/2026-11-10_n1_adim3/urun_olcumu_yeni2.json` | `arac` 2 alan + `kanal_grubu` 92 alan (birim 64, toplam 28); öbür her şey (kararlar, kanal kırılımı, `ogeler`) aynı | ön kayıttaki kurala göre ertelendi: `kanal_grubu` farkı sınıflayıcı sürümünden (worktree `alt_kanal.SILENCED_SUBCHANNELS` ≠ f30ac9a ağacınınki; ön kayıt "Karşılaştırma kuralı"). Sınıflayıcıyı ürün ağacından yükleyen seçenek (OLCUM kalem 7) ile yeniden denetlenir; sonucu aşağıdaki "Kalem 7 sonrası" satırında. |
+| f30ac9a, **kalem 7 sonrası** (`--siniflayici-agac ~/karadul_olcum/urun-f30ac9a`) | aynı | yeni alanlar (`bicim_*`, `nufus.durumlar`, `nufus.bitti_isareti`, `siniflayici`), `arac` ve `kol` dışında metin olarak **aynı** (`kanal_grubu` dahil); sınıflayıcı denetimi iki kökte `ayni` | **tuttu** |
+| a62f15e, kalem 7 sonrası (betiğin sınıflayıcısı; denetim `ayni`) | aynı | aynı ölçüt: metin olarak aynı | **tuttu** |
+
+Worktree sınıflayıcısıyla f30ac9a kökünü ölçmek kalem 7'den sonra durur (`DURDU: ad sınıflayıcısı ölçülen ürününkiyle farklı …`, çıkış 2). `karsilastir` eski JSON'la (taban: eski `urun_olcumu_yeni2.json`, yeni: kalem 7 a62f15e çıktısı) çalıştı; birleşik ölçümün `urun_olcumu_fark_yeni2_onarim.json`'uyla yeni alanlar, `arac` ve `kol` dışında aynı.
+
+**P-Ö1 kabulü bütünüyle:** altı sayı tuttu; var olan alanlar iki kolda eski çıktıyla aynı (f30ac9a ürünün sınıflayıcısıyla); `tests/test_urun_olc.py` yeşil.
 
 ## Sınama ve mutasyon
 

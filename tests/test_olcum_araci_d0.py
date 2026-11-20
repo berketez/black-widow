@@ -5,6 +5,13 @@ Her sınama sentetik veriyle koşar (gerçek koşu kökü, GT, Ghidra yok).
 
   - kalem 2: ``ks1_olc`` ``BITTI``'nin içeriğini okur; yalnız başarı işareti bitmiş sayılır, kısmi /
     hatalı / bekleyen ayrı sayılır ve özete girer; Mac birimi de ``BITTI``'ye bakılarak sınanır.
+  - kalem 3: ``masum_kapi`` ``sarif`` katmanında bilgi düzeyi (KRDL001 / KRDL007) YARA isabeti ``yara``
+    katmanının doğru iddia kuralıyla hükmedilir; şüpheli kategorideki aynı isabet yanlış kalır.
+  - kalem 4: ``tests/test_saglamlik_denetle.py`` (``test_turkce_yazildi_satiri_okunur``).
+  - kalem 5: ``function_f1.read_elf_info`` BuildID'yi yalnız sahibi ``GNU`` olan nottan alır.
+  - kalem 6: ``urun_kos`` künyesinde ``KARADUL_CACHE_DIR`` ve imza veritabanı künyesi.
+  - kalem 7: ``urun_olc`` ad sınıflayıcısını ölçülen ürünün commit'iyle karşılaştırır; farkta durur,
+    ``--siniflayici-agac`` ile ürünün sınıflayıcısını yükler.
 
 Mutasyon koruması: ``scripts/measurement/mutation_specs_olcum_araci.json``.
 """
@@ -358,3 +365,112 @@ def test_kosu_kunyesi_onbellek_ve_imza_vt_degisimi(tmp_path, monkeypatch):
     assert uk.main(["--agac", str(tmp_path), "--kok", str(kok)]) == 0
     k = json.loads((kok / "kosu_kunyesi.json").read_text(encoding="utf-8"))
     assert k["KARADUL_CACHE_DIR"] is None and k["imza_vt_degisti"] is False
+
+
+# --------------------------------------------------------------------------------------------
+# Kalem 7 — urun_olc ad sınıflayıcısının sürümü (birleşik ölçüm ön kaydı §2.2 kuralı)
+
+import subprocess  # noqa: E402
+
+F30 = "f30ac9a1d271e61f8be116882d86b7e74a4eaaa2"     # 1.22.1 (yeni2 kolu): sınıflayıcısı bugünkünden farklı
+A10 = "a10fde3efbf5ad3147297b587a9bcc23612c8ba4"     # N1 tabanı: o commit'te sınıflayıcı dosyaları yok
+
+
+def _git(*arg: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", "-C", str(_KOK), *arg], capture_output=True)
+
+
+def _commit_var(c: str) -> bool:
+    return _git("cat-file", "-e", f"{c}^{{commit}}").returncode == 0
+
+
+def _kunye_yaz(yol: Path, belge: dict) -> None:
+    yol.parent.mkdir(parents=True, exist_ok=True)
+    yol.write_text(json.dumps(belge), encoding="utf-8")
+
+
+def test_kok_kunyesi_bicimleri(tmp_path):
+    urun = tmp_path / "urun"                                       # urun_kos: künye kökün üstünde
+    _kunye_yaz(urun / "kosu_kunyesi.json", {"agac": {"commit": "c1", "kirli": [" M a.py"]}})
+    (urun / "debian").mkdir()
+    assert uo.kok_kunyesi(urun / "debian") == {"dosya": str(urun / "kosu_kunyesi.json"), "commit": "c1",
+                                               "kirli": [" M a.py"]}
+    n1 = tmp_path / "n1"                                           # eski N1: künye kökün içinde
+    _kunye_yaz(n1 / "kosu_kunyesi.json", {"commit": "c2", "karadul_kirli": []})
+    assert uo.kok_kunyesi(n1)["commit"] == "c2"
+    ol7 = tmp_path / "ol7"                                         # ol7 Mac: session.json
+    _kunye_yaz(ol7 / "session.json", {"tree": {"commit": "c3", "dirty_files": [" M b.py"]}})
+    assert uo.kok_kunyesi(ol7) == {"dosya": str(ol7 / "session.json"), "commit": "c3", "kirli": [" M b.py"]}
+    (tmp_path / "yalin" / "debian").mkdir(parents=True)
+    assert uo.kok_kunyesi(tmp_path / "yalin" / "debian") is None
+
+
+def test_siniflayici_denetle_durumlar(tmp_path):
+    if not (_commit_var(F30) and _commit_var(A10)):
+        pytest.skip("ürün commit'leri bu depoda yok")
+    bas = _git("rev-parse", "HEAD").stdout.decode().strip()
+    kokler = {}
+    for ad, belge in {"ayni": {"agac": {"commit": bas, "kirli": []}},
+                      "farkli": {"agac": {"commit": F30, "kirli": []}},
+                      "eski": {"commit": A10},
+                      "yok": {"agac": {"commit": "0" * 40, "kirli": []}},
+                      "kirli": {"agac": {"commit": F30, "kirli": [" M karadul/core/naming_labels.py"]}}}.items():
+        _kunye_yaz(tmp_path / ad / "kosu_kunyesi.json", belge)
+        (tmp_path / ad / "debian").mkdir()
+        kokler[ad] = tmp_path / ad / "debian"
+    d = uo.siniflayici_denetle([*kokler.values(), tmp_path])
+    durum = {Path(k["kok"]).parent.name: (k["durum"], k.get("neden")) for k in d["kokler"]}
+    # çalışma ağacında sınıflayıcı commit'lenmemiş değişiklik taşıyorsa HEAD'den farklıdır
+    calisma_kirli = _git("diff", "--quiet", "HEAD", "--", *uo.SINIFLAYICI_DOSYALARI).returncode != 0
+    assert durum["ayni"] == ("farkli" if calisma_kirli else "ayni", None)
+    assert durum["farkli"] == ("farkli", None)
+    assert durum["eski"][0] == "denetlenemedi" and "naming_labels.py, alt_kanal.py yok" in durum["eski"][1]
+    assert durum["yok"] == ("denetlenemedi", "ürün commit'i depoda bulunamadı")
+    assert durum["kirli"] == ("denetlenemedi", "sınıflayıcı dosyası koşu anında kirliydi")
+    assert d["kokler"][-1]["durum"] == "denetlenemedi"            # künyesiz kök
+    assert uo.siniflayici_farki(d) == [f"{kokler['farkli']} (ürün {F30[:10]})"]
+    assert d["kaynak"] == "betik_agaci"
+
+
+def test_siniflayici_modulleri_urun_agacindan(tmp_path):
+    """``alt_kanal`` ürün ağacının ``naming_labels``'ını görür; sonra ``sys.modules`` eski hâline döner."""
+    agac = tmp_path / "agac"
+    (agac / "karadul/core").mkdir(parents=True)
+    (agac / "karadul/reconstruction/tarif").mkdir(parents=True)
+    (agac / "karadul/core/naming_labels.py").write_text('LABEL_VERIFIED = "urun_dogrulandi"\nLABEL_UNVERIFIED = "u"\n')
+    (agac / "karadul/reconstruction/tarif/alt_kanal.py").write_text(
+        "from karadul.core.naming_labels import LABEL_UNVERIFIED, LABEL_VERIFIED\nSILENCED_SUBCHANNELS = ()\n")
+    once = sys.modules.get("karadul.core.naming_labels")
+    nl, ak = uo.siniflayici_modulleri(agac)
+    assert ak.LABEL_VERIFIED == "urun_dogrulandi" and nl.__file__ == str(agac / "karadul/core/naming_labels.py")
+    assert sys.modules.get("karadul.core.naming_labels") is once
+
+
+def test_cli_siniflayici_farki_durdurur_secenekle_olcer(tmp_path, monkeypatch, capsys):
+    if not _commit_var(F30):
+        pytest.skip("f30ac9a bu depoda yok")
+    kok = tmp_path / "kok"
+    _kunye_yaz(kok / "kosu_kunyesi.json", {"agac": {"commit": F30, "kirli": []}})
+    _ikili(kok / "debian" / "zstd" / "zstd", bitti="0\n")
+    bos = ks1.GtBirimi(adlar={}, nufus=set(), export_gt=set(), kunye={"gt": "sentetik"})
+    monkeypatch.setattr(ks1, "gt_elf", lambda e, indir: bos)
+    monkeypatch.setattr(ks1, "BEKLENEN_ELF", {"debian/zstd": 1})
+    cikti = tmp_path / "olcum.json"
+    arg = ["olc", "--kok-debian", str(kok / "debian"), "--json", str(cikti)]
+    assert uo.main(arg) == 2
+    assert "DURDU: ad sınıflayıcısı ölçülen ürününkiyle farklı" in capsys.readouterr().err and not cikti.exists()
+    # ürün ağacının sınıflayıcısı (f30ac9a'daki iki dosya) seçenekle yüklenir
+    agac = tmp_path / "urun_agaci"
+    for rel in uo.SINIFLAYICI_DOSYALARI:
+        (agac / rel).parent.mkdir(parents=True, exist_ok=True)
+        (agac / rel).write_bytes(_git("show", f"{F30}:{rel}").stdout)
+    ozgun = (uo.naming_labels, uo.alt_kanal)
+    try:
+        assert uo.main(arg + ["--siniflayici-agac", str(agac), "--md", str(tmp_path / "olcum.md")]) == 0
+        s = json.loads(cikti.read_text(encoding="utf-8"))
+        assert s["siniflayici"]["kaynak"] == str(agac.resolve())
+        assert [k["durum"] for k in s["siniflayici"]["kokler"]] == ["ayni"]
+        assert uo.alt_kanal.__file__ == str(agac.resolve() / uo.SINIFLAYICI_DOSYALARI[1])
+        assert "Ad sınıflayıcısı" in (tmp_path / "olcum.md").read_text(encoding="utf-8")
+    finally:
+        uo.siniflayiciyi_kur(*ozgun, uo.SINIFLAYICI_BETIK_AGACI)

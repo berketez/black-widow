@@ -168,6 +168,46 @@
    "test": "tests/test_olcum_araci_d0.py::test_imza_vt_kunyesi_urun_cozucusuyle",
    "find": "[sys.executable, \"-c\", _IMZA_VT_YOKLAMA], cwd=agac, env=ortam,",
    "replace": "[sys.executable, \"-c\", _IMZA_VT_YOKLAMA], cwd=\"/\", env=dict(os.environ, PYTHONPATH=\"\"),"
+  },
+  {
+   "id": "k7_fark_durdurmaz",
+   "desc": "kalem 7: sınıflayıcı ölçülen ürününkinden farklıyken ölçüm sürer (eski kusur: sessizce yanlış sınıflar)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_cli_siniflayici_farki_durdurur_secenekle_olcer",
+   "find": "            farkli = siniflayici_farki(denetim)\n",
+   "replace": "            farkli = []\n"
+  },
+  {
+   "id": "k7_secenek_yuklemez",
+   "desc": "kalem 7: --siniflayici-agac verilse de sınıflayıcı ürün ağacından yüklenmez",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_cli_siniflayici_farki_durdurur_secenekle_olcer",
+   "find": "            if a.siniflayici_agac:\n                siniflayiciyi_kur(",
+   "replace": "            if False:\n                siniflayiciyi_kur("
+  },
+  {
+   "id": "k7_kirli_denetimi_yok",
+   "desc": "kalem 7: koşu anında kirli sınıflayıcı denetlenebilir sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_siniflayici_denetle_durumlar",
+   "find": "elif any(ad in str(satir) for satir in k[\"kirli\"] for ad in adlar):",
+   "replace": "elif False:"
+  },
+  {
+   "id": "k7_alt_kanal_betik_naming_labels",
+   "desc": "kalem 7: ürün ağacının alt_kanal'ı betiğin naming_labels'ıyla yüklenir",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_siniflayici_modulleri_urun_agacindan",
+   "find": "    sys.modules[anahtar] = nl\n",
+   "replace": "    pass\n"
+  },
+  {
+   "id": "k7_eski_urun_farkli_sayilir",
+   "desc": "kalem 7: sınıflayıcı dosyası olmayan eski ürün commit'i 'commit yok' diye raporlanır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_siniflayici_denetle_durumlar",
+   "find": "    if _git_bayt(\"cat-file\", \"-e\", f\"{commit}^{{commit}}\") is None:",
+   "replace": "    if _git_bayt(\"show\", f\"{commit}:{SINIFLAYICI_DOSYALARI[1]}\") is None:"
   }
  ]
 }
