@@ -508,3 +508,88 @@ def test_alan_yoksa_durum_dosyasi_eskisiyle_bayt_ayni(tmp_path) -> None:
     assert list(eski["durum"]) == beklenen_anahtar
     kismi = _durum_yaz(tmp_path, {**ESKI_SONUC, "analysis": YENI["analysis"]}, "kismi")
     assert list(kismi["durum"]) == beklenen_anahtar + ["analysis"]
+
+
+# ---------------------------------------------------------------------------
+# scripts/arge/hiz/s8_esitlik.py: hariç alanlar, fark birimleri, A/A ile sınıflama
+# ---------------------------------------------------------------------------
+
+def _s8_modulu():
+    import importlib.util
+
+    yol = Path(__file__).resolve().parents[1] / "scripts" / "arge" / "hiz" / "s8_esitlik.py"
+    spec = importlib.util.spec_from_file_location("s8_esitlik_test", yol)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _kosu_kur(kok: Path, zaman: str, *, sure: float, cfg_blok: int, c_govde: str,
+              yeni_alan: bool) -> None:
+    ikili = kok / "debian" / "coreutils" / "cat"
+    st = ikili / "ws" / "workspaces" / "cat" / zaman / "static"
+    (st / "ghidra_output" / "decompiled").mkdir(parents=True)
+    dec = {"success": 2, "duration_seconds": sure, "decompiled_dir": str(st / "x"),
+           "functions": [{"name": "main"}]}
+    (st / "ghidra_output" / "decompiled.json").write_text(json.dumps(dec), encoding="utf-8")
+    (st / "ghidra_decompiled.json").write_text(json.dumps(dec), encoding="utf-8")
+    (st / "ghidra_output" / "cfg.json").write_text(
+        json.dumps({"functions": [{"blocks": cfg_blok}]}), encoding="utf-8")
+    (st / "ghidra_output" / "bsim_shadow.json").write_text(
+        json.dumps({"timestamp": sure, "bsim_detail": {"ingest_s": sure, "mode": "lite"}}),
+        encoding="utf-8")
+    (st / "ghidra_output" / "decompiled" / "main.c").write_text(c_govde, encoding="utf-8")
+    durum = {"success": True, "duration_seconds": 10.0 + sure,
+             "project": {"path": str(st / "proje"), "kept": False}}
+    if yeni_alan:
+        durum.update({"analysis": {"status": "ok", "analyzer_times": {"Stack": 0.5}},
+                      "adim_sureleri": {"ghidra.functions": 1.0, "ghidra.decompile": 2.0},
+                      "decompile_parcalari": {"parca_sayisi": 3}})
+    (st / "ghidra_status.json").write_text(json.dumps(durum), encoding="utf-8")
+    (ikili / "out").mkdir()
+    (ikili / "out" / "naming_map.json").write_text('{"a": 1}', encoding="utf-8")
+    (ikili / "BITTI").write_text("0\n", encoding="utf-8")
+
+
+def test_s8_esitlik_haric_alanlar_ve_yeni_durum_alanlari_fark_sayilmaz(tmp_path) -> None:
+    m = _s8_modulu()
+    _kosu_kur(tmp_path / "once", "1", sure=1.5, cfg_blok=4, c_govde="int main;", yeni_alan=False)
+    _kosu_kur(tmp_path / "sonra", "2", sure=9.25, cfg_blok=4, c_govde="int main;", yeni_alan=True)
+    r = m.kos(tmp_path / "once", tmp_path / "sonra", None)
+    s = r["ikililer"]["debian/coreutils/cat"]
+    assert s["cikti_esit"] is True and s["sonraya_yuklenebilir"] == []
+    assert s["sonra"]["ozet"]["durum_yeni_alanlar"] == {
+        "once": [], "sonra": ["analysis", "adim_sureleri", "decompile_parcalari"]}
+    k = s["sure_kaydi"]
+    assert k["H3_analyzer_times_dolu"] is True and k["H4_tutarli"] is True
+    assert r["ikililer"]["mac/tmux"] == {"durum": "koşu bitmedi (BITTI yok)"}
+    assert r["ozet"]["kiyaslanan"] == 1
+
+
+def test_s8_esitlik_farki_birimiyle_bulur_ve_aa_ile_ayirir(tmp_path) -> None:
+    m = _s8_modulu()
+    _kosu_kur(tmp_path / "once", "1", sure=1.0, cfg_blok=4, c_govde="int main;", yeni_alan=False)
+    _kosu_kur(tmp_path / "aa", "2", sure=2.0, cfg_blok=5, c_govde="int main;", yeni_alan=False)
+    _kosu_kur(tmp_path / "sonra", "3", sure=3.0, cfg_blok=5, c_govde="int main2;", yeni_alan=True)
+    r = m.kos(tmp_path / "once", tmp_path / "sonra", tmp_path / "aa")
+    s = r["ikililer"]["debian/coreutils/cat"]
+    assert s["belirlenimsizlik"] == ["json:ghidra_output/cfg.json:functions[].blocks"]
+    assert s["sonraya_yuklenebilir"] == ["c:main.c"]
+    assert s["cikti_esit"] is False
+    assert s["aa"]["ozet"]["json_farkli_dosya"] == 1
+    md = m.markdown(r)
+    assert "T-AA" in md and "`c:main.c`" in md
+
+
+def test_s8_esitlik_toplam_sure_asilirsa_h4_tutmaz(tmp_path) -> None:
+    m = _s8_modulu()
+    _kosu_kur(tmp_path / "sonra", "1", sure=0.0, cfg_blok=1, c_govde="x", yeni_alan=True)
+    st = next((tmp_path / "sonra").glob("debian/coreutils/cat/ws/workspaces/cat/*/static"))
+    d = json.loads((st / "ghidra_status.json").read_text(encoding="utf-8"))
+    d["adim_sureleri"]["ghidra.cfg"] = 100.0
+    d["adim_sureleri"]["ghidra.yok"] = 0.0
+    (st / "ghidra_status.json").write_text(json.dumps(d), encoding="utf-8")
+    k = m.sure_kaydi_denetle(tmp_path / "sonra" / "debian" / "coreutils" / "cat")
+    assert k["toplam_sureyi_asmiyor"] is False
+    assert k["bilinmeyen_adim"] == ["ghidra.yok"]
+    assert k["H4_tutarli"] is False
