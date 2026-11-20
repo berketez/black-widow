@@ -38,6 +38,13 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
+from karadul.analyzers.ustveri.goruntu import (
+    DURUM_CALISTI,
+    DURUM_DESTEKLENMIYOR,
+    DURUM_HATA,
+    DURUM_VERI_YOK,
+)
+
 # ---------------------------------------------------------------------------
 # Biçim sabitleri
 # ---------------------------------------------------------------------------
@@ -78,12 +85,9 @@ K4_IHLAL_ORANI = 0.01
 # Akıl sağlığı üst sınırı (imza taramasında yanlış eşleşmeyi elemek için).
 AZAMI_FONKSIYON = 10_000_000
 
-DURUM_CALISTI = "calisti"
-DURUM_VERI_YOK = "veri_yok"
-DURUM_DESTEKLENMIYOR = "desteklenmiyor"
+# Ortak durumlar P-ÜV0 görüntü okuyucusuyla aynı sözlükten; bu okuyucuya özgü iki ek durum.
 DURUM_TUTARSIZ = "tutarsiz"
 DURUM_KAPALI = "kapali"
-DURUM_HATA = "hata"
 DURUMLAR = (DURUM_CALISTI, DURUM_VERI_YOK, DURUM_DESTEKLENMIYOR, DURUM_TUTARSIZ,
             DURUM_KAPALI, DURUM_HATA)
 

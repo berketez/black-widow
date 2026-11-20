@@ -15,74 +15,7 @@ from dataclasses import dataclass, field
 import pytest
 
 from karadul.analyzers.ustveri import go_pclntab as G
-
-try:
-    from karadul.analyzers.ustveri.goruntu import Bag, BellekGoruntu
-except ImportError:  # P-ÜV0 main'e girene dek geçici (rebase'de kaldırılır)
-    @dataclass(frozen=True)
-    class Bag:  # type: ignore[no-redef]
-        ad: str
-        ek: int = 0
-
-    @dataclass(frozen=True)
-    class _Bolum:
-        ad: str
-        adres: int
-        boyut: int
-        kod: bool
-        bolut: str = ""
-        dosya_ofseti: int | None = None
-
-    class BellekGoruntu:  # type: ignore[no-redef]
-        def __init__(self, bolumler, *, bicim="macho", mimari="arm64", gosterici_boyutu=8,
-                     giris_adresi=None, semboller=(), fonksiyon_baslangiclari=None,
-                     yeniden_konumlamalar=None, baglar=None, kaynak="bellek"):
-            self.bicim, self.mimari, self.gosterici_boyutu = bicim, mimari, gosterici_boyutu
-            self.giris_adresi = giris_adresi
-            self._b = []
-            self._v = []
-            for t in bolumler:
-                ad, adres, veri = t[0], int(t[1]), bytes(t[2])
-                kod = bool(t[3]) if len(t) > 3 else False
-                self._b.append(_Bolum(ad, adres, len(veri), kod))
-                self._v.append((adres, adres + len(veri), veri))
-            self._fb = sorted(set(fonksiyon_baslangiclari)) if fonksiyon_baslangiclari is not None else None
-            self._rk = dict(yeniden_konumlamalar or {})
-            self._bg = dict(baglar or {})
-
-        @property
-        def bolumler(self):
-            return list(self._b)
-
-        @property
-        def kod_bolumleri(self):
-            return [b for b in self._b if b.kod]
-
-        def oku(self, adres, n):
-            for bas, son, veri in self._v:
-                if bas <= adres < son:
-                    if n < 0 or adres + n > son:
-                        return None
-                    return veri[adres - bas:adres - bas + n]
-            return None
-
-        def u64(self, adres):
-            b = self.oku(adres, 8)
-            return struct.unpack("<Q", b)[0] if b else None
-
-        def gosterici(self, adres):
-            if adres in self._bg:
-                return self._bg[adres]
-            if adres in self._rk:
-                return self._rk[adres]
-            v = self.u64(adres) if self.gosterici_boyutu == 8 else None
-            return v if v else None
-
-        def fonksiyon_baslangiclari(self):
-            return list(self._fb) if self._fb is not None else None
-
-        def semboller(self):
-            return []
+from karadul.analyzers.ustveri.goruntu import Bag, BellekGoruntu, Bolum
 
 
 # ---------------------------------------------------------------------------
@@ -608,6 +541,21 @@ def test_moduledata_pclntable_uzunlugu_bozuksa_bolum_boyu() -> None:
     s = G.oku(g)
     assert s.durum == G.DURUM_CALISTI, s.neden
     assert [f.giris for f in s.fonksiyonlar] == b["girisler"]
+
+
+def test_yuklenmeyen_bolum_atlanir() -> None:
+    """``bellekte`` yanlış bölüm (ELF ``SHF_ALLOC`` yok) adres içermez: pclntab orada aranmaz."""
+    g, _ = kur()
+
+    class Yuklenmeyen(type(g)):
+        @property
+        def bolumler(self):
+            return [Bolum(b.ad, b.adres, b.boyut, b.kod, b.bolut, b.dosya_ofseti,
+                          bellekte=b.ad != "__gopclntab") for b in super().bolumler]
+
+    g.__class__ = Yuklenmeyen
+    s = G.oku(g)
+    assert s.durum == G.DURUM_VERI_YOK
 
 
 def test_kayit_bicimi() -> None:
