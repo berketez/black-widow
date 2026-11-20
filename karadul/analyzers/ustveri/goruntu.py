@@ -624,6 +624,7 @@ class MachO64Goruntu(_DosyaGoruntusu):
         self._duzeltme: dict[int, Any] | None = None
         self._ice_aktarimlar: list[str] | None = None
         self._ice_ekler: list[int] = []
+        self._duzeltme_bozuk = False
         self._desteksiz_araliklar: list[tuple[int, int]] = []
         self._dyld_baglar: dict[int, Bag] | None = None
         self._baslik_oku()
@@ -864,6 +865,10 @@ class MachO64Goruntu(_DosyaGoruntusu):
                 try:
                     self._zincir_oku()
                 except (struct.error, IndexError, ValueError) as exc:
+                    # Zincir bozuksa hiçbir düzeltme yerine güvenilmez (ham sözcükler kodlu):
+                    # sözlük boşaltılır, gosterici bu görüntüde hep None döner.
+                    self._duzeltme = {}
+                    self._duzeltme_bozuk = True
                     self._durum_yaz(KISIM_DUZELTME, DURUM_HATA, f"zincirli düzeltme okunamadı: {exc}")
             else:
                 self._durum_yaz(KISIM_DUZELTME, DURUM_VERI_YOK, "LC_DYLD_CHAINED_FIXUPS yok")
@@ -1065,6 +1070,8 @@ class MachO64Goruntu(_DosyaGoruntusu):
     def gosterici(self, adres: int) -> int | Bag | None:
         if self._zd_cmd is not None:
             fx = self.duzeltmeler()
+            if self._duzeltme_bozuk:
+                return None
             e = fx.get(adres)
             if e is None:
                 for bas, son in self._desteksiz_araliklar:
