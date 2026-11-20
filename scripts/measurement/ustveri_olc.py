@@ -575,7 +575,10 @@ def urun_kayitlari(genel: dict[str, Any], koken: dict[str, Any], gfonk: list[dic
             if not gt_adlari:
                 durum = GT_SIZ
             else:
-                durum = DOGRU if any(urun_esit(yeni, x) for x in gt_adlari) else YANLIS
+                # C adı: urun_olc ile aynı hüküm (ks1: tam eşitlik, klon satırında ekli tabanla);
+                # Go / ObjC adı: kalem 2 yazım kuralları.
+                ks1_dogru = uo.ks1.capa_degerlendir(yeni, gt_adlari, uo.ks1.PLATFORM_MAC)["durum"] == uo.DOGRU
+                durum = DOGRU if ks1_dogru or any(urun_esit(yeni, x) for x in gt_adlari) else YANLIS
             bicim = durum == DOGRU or bool(gt_adlari and ad_bicimi.harf_tam(
                 yeni, [macho_c_adi(x) for x in gt_adlari]))
             kayitlar.append({"adres": adres, "ad": yeni, "durum": durum, "bicim": bicim,
@@ -589,9 +592,11 @@ def urun_ozeti(kayitlar: list[dict[str, Any]], nufus: set[int]) -> dict[str, Any
         d = sum(1 for k in ks if k["durum"] == DOGRU)
         y = sum(1 for k in ks if k["durum"] == YANLIS)
         b = sum(1 for k in ks if k["durum"] != GT_SIZ and k["bicim"])
-        return {"ad_verilen": len(ks), "dogru": d, "yanlis": y,
-                "gt_siz": sum(1 for k in ks if k["durum"] == GT_SIZ),
-                "kesinlik": oran(d, d + y), "tam_bicim_dogru": b}
+        g = sum(1 for k in ks if k["durum"] == GT_SIZ)
+        # urun_olc tanımı: GT'de karşılığı olmayan ad da yanlıştır (eşlenemedi) — ayrıca yazılır
+        return {"ad_verilen": len(ks), "dogru": d, "yanlis": y, "gt_siz": g,
+                "kesinlik": oran(d, d + y), "kesinlik_gt_siz_yanlis": oran(d, len(ks)),
+                "tam_bicim_dogru": b}
     nf = [k for k in kayitlar if k["nufusta"]]
     return {"toplam": say(kayitlar),
             "kanal": {c: say([k for k in kayitlar if k["kanal"] == c]) for c in sorted({k["kanal"] for k in kayitlar})},

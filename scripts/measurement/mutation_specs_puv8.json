@@ -82,6 +82,14 @@
    "replace": "    adsiz = {g[\"addr\"] for g in gfonk}"
   },
   {
+   "id": "puv8_urun_klon_kurali_yok",
+   "desc": "ürün adı hükmünde ks1 klon satırı (ekli GT tabanı) yok sayılır",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_urun_kayitlari_suzgec_ve_hukum",
+   "find": "                durum = DOGRU if ks1_dogru or any(urun_esit(yeni, x) for x in gt_adlari) else YANLIS",
+   "replace": "                durum = DOGRU if any(urun_esit(yeni, x) for x in gt_adlari) else YANLIS"
+  },
+  {
    "id": "puv8_macho_onek_soyulmaz",
    "desc": "Mach-O C öneki (baştaki _) soyulmaz",
    "module": "scripts/measurement/ustveri_set.py",

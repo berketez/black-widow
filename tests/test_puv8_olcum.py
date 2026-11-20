@@ -207,16 +207,20 @@ def test_urun_kayitlari_suzgec_ve_hukum():
     gfonk = [{"addr": 0x1000, "name": "FUN_00001000", "is_thunk": False, "size": 8},
              {"addr": 0x2000, "name": "Ghidra_adi", "is_thunk": False, "size": 8},
              {"addr": 0x3000, "name": "FUN_00003000", "is_thunk": False, "size": 8},
-             {"addr": 0x4000, "name": "FUN_00004000", "is_thunk": False, "size": 8}]
+             {"addr": 0x4000, "name": "FUN_00004000", "is_thunk": False, "size": 8},
+             {"addr": 0x7000, "name": "FUN_00007000", "is_thunk": False, "size": 8}]
     genel = {"FUN_00001000": "main", "FUN_00002000": "x", "FUN_00003000": "usage",
-             "FUN_00004000": "gt_siz_ad", "FUN_00005000": "yok", "DAT_00006000": "veri"}
-    gt = {0x1000: ["_main"], 0x2000: ["_x"], 0x3000: ["_dogrusu"]}
+             "FUN_00004000": "gt_siz_ad", "FUN_00005000": "yok", "DAT_00006000": "veri",
+             "FUN_00007000": "parca"}
+    gt = {0x1000: ["_main"], 0x2000: ["_x"], 0x3000: ["_dogrusu"], 0x7000: ["_parca.cold.1"]}
     nufus = uo.urun_nufusu(gt, gfonk)
-    assert nufus == {0x1000, 0x3000}
+    assert nufus == {0x1000, 0x3000}          # soğuk parça program sınıfı değil
     kayitlar, sayac = uo.urun_kayitlari(genel, {}, gfonk, gt, nufus)
     durum = {k["adres"]: k["durum"] for k in kayitlar}
-    assert durum == {0x1000: uo.DOGRU, 0x3000: uo.YANLIS, 0x4000: uo.GT_SIZ}
+    # klon satırı (bütün GT adları ekli): ekli tabanla eşitlik doğrudur (urun_olc / ks1 ile aynı hüküm)
+    assert durum == {0x1000: uo.DOGRU, 0x3000: uo.YANLIS, 0x4000: uo.GT_SIZ, 0x7000: uo.DOGRU}
     assert sayac["ghidra_adli"] == 1 and sayac["ghidra_fonksiyonu_yok"] == 1
     oz = uo.urun_ozeti(kayitlar, nufus)
-    assert (oz["toplam"]["dogru"], oz["toplam"]["yanlis"], oz["toplam"]["gt_siz"]) == (1, 1, 1)
+    assert (oz["toplam"]["dogru"], oz["toplam"]["yanlis"], oz["toplam"]["gt_siz"]) == (2, 1, 1)
+    assert oz["toplam"]["kesinlik"]["n"] == 3 and oz["toplam"]["kesinlik_gt_siz_yanlis"]["n"] == 4
     assert oz["dogru_kapsam"]["k"] == 1 and oz["dogru_kapsam"]["n"] == 2
