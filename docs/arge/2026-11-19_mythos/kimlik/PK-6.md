@@ -134,3 +134,17 @@ satırı"**. Okuma (yön gösterici): platform + derleyici + ikili biçimi birli
 iniyor; Debian ikilileri macOS derlemelerinden farklı yapılandırılmış (bağlı kitaplıklar `lief` ile okundu: Debian zstd zlib + lzma + lz4,
 redis-cli / benchmark libssl + jemalloc + systemd + lzf, sqlite3 readline + zlib; V1 derlemelerinde zstd yalnız zlib, redis TLS'siz, sqlite3 readline'sız). Bu satır yapılandırmayı eşlemediği için
 "platform etkisi" diye okunmamalı; A6 kısmen açık kalır.
+
+## x86-64 koşularında capa adımı (11:15; ürün bulgusu, ölçüme etkisi yok)
+
+- `tabA/tmux/tmux` sürücünün 1 800 sn süre sınırına takıldı (`ZAMAN_ASIMI`, çıkış 124). Ghidra adımı 10:43'te
+  76,6 sn'de bitmiş, `ghidra_status.json` `success: true`, çıktılar tam (2 376 fonksiyon); kalan ~29 dk statik
+  aşamanın **capa** taramasında geçti (kosu.log: vivisect `graph building` iletileri). `tabA/redis-tools/redis-cli`
+  aynı nedenle 522 sn sürdü; AArch64 / Mach-O koşularında capa çalışmıyor (desteklenmiyor) ve koşular 14–120 sn.
+- Ürün nedeni (okundu, değiştirilmedi): `karadul/analyzers/capa_scanner.py` `_scan_via_api` süreç içi yol;
+  belgesi "``timeout`` uygulanamaz" diyor → `capa_timeout = 600` bu yolda geçersiz. Analist açısından: x86-64 ELF'te
+  statik aşama yarım saati aşabiliyor ve Ghidra kuyruğunu tutuyor. HIZ / ÖLÇEK hattının bilmesi gereken bir olgu.
+- Ölçüme etkisi: eşleyici yalnız Ghidra çıktılarını okuyor; `d0_olc.kosu_durumu` her koşuda `ghidra_status.success`
+  denetler, zaman aşımına uğrayan ama Ghidra'sı başarılı koşuları künyede ayrıca listeler (başarısızsa ölçüm durur).
+- Sıra: `tabA/zstd/zstd` (x86-64, en büyük) iş listesinin en sonuna alındı ki kısa AArch64 işleri (tabaka B)
+  onun arkasında beklemesin; `tabA/openssl/openssl` zaten kuyruktaydı (bekletmede).

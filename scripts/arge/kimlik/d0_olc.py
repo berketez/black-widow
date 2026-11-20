@@ -289,6 +289,9 @@ def _f(o: dict[str, Any]) -> str:
 def md(s: dict[str, Any]) -> str:
     g = s["grup"]
     out = [f"### `{g}`", "", f"- Noktalar: {', '.join(s['noktalar'])}; v2: {s['v2']}."]
+    if s.get("zaman_asimi_ghidra_tamam"):
+        out.append(f"- Süre sınırına takılan (capa adımı; Ghidra çıktısı tamam, `success`): "
+                   f"{', '.join(s['zaman_asimi_ghidra_tamam'])}.")
     for n, t in s["noktalar_tablo"].items():
         out.append(f"- **{n}** — iki yön havuzu {_f(t['havuz_iki_yon'])}")
         for y in ("yon:ileri", "yon:geri"):
@@ -337,6 +340,27 @@ def kunye() -> dict[str, Any]:
                          for k, p in esle.NOKTALAR.items()}, "AD_ESIGI": AD_ESIGI}
 
 
+def kosu_durumu(grup: str) -> dict[str, Any]:
+    """Grubun Dalga 0 koşuları: işaret (BITTI / ZAMAN_ASIMI / HATA) ve Ghidra'nın kendi başarı kaydı.
+
+    x86-64 koşularında statik aşamanın capa adımı (süreç içi vivisect; ürünün ``capa_timeout``'u bu yolda
+    uygulanmıyor) sürücünün süre sınırına takılabiliyor; Ghidra çıktıları o adımdan ÖNCE yazılmış ve
+    ``ghidra_status.json`` ``success`` ise eşleyicinin okuduğu olgu tamdır. Ghidra başarısızsa ölçüm durur.
+    """
+    out: dict[str, Any] = {}
+    for k in sorted({k for c in kc.grup(grup) for k in c}):
+        d = d0_veri.KOSU / k
+        if not d.is_dir():
+            continue
+        isaret = [i for i in ("BITTI", "ZAMAN_ASIMI", "HATA") if (d / i).exists()]
+        st = sorted(d.glob("ws/workspaces/*/*/static/ghidra_status.json"))
+        basari = json.loads(st[0].read_text(encoding="utf-8")).get("success") if len(st) == 1 else None
+        if basari is not True:
+            raise SystemExit(f"{k}: Ghidra çıktısı başarılı değil ya da yok (işaret {isaret}, success {basari})")
+        out[k] = {"isaret": isaret, "ghidra_success": basari}
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("adim", choices=("betikler", "hukum", "hepsi"))
@@ -344,11 +368,14 @@ def main(argv=None) -> int:
     ap.add_argument("--etiket", default=None)
     a = ap.parse_args(argv)
     etiket = a.etiket or a.grup
+    durum = kosu_durumu(a.grup)
     if a.adim in ("betikler", "hepsi"):
         betikler(a.grup, etiket)
     if a.adim in ("hukum", "hepsi"):
         s = hukum(a.grup, etiket)
         s["kunye"] = kunye()
+        s["kosu_durumu"] = durum
+        s["zaman_asimi_ghidra_tamam"] = sorted(k for k, v in durum.items() if "ZAMAN_ASIMI" in v["isaret"])
         (OLCUM_DIZINI / f"hukum_{etiket}.json").write_text(json.dumps(s, ensure_ascii=False, indent=1, default=str),
                                                            encoding="utf-8")
         metin = md(s)
