@@ -30,6 +30,7 @@ bir hata ``hata`` durumuyla döner).
 
 from __future__ import annotations
 
+import bisect
 import logging
 from collections import Counter
 from dataclasses import dataclass, field
@@ -322,6 +323,9 @@ class ObjcOkuyucu:
         self.g = goruntu
         self.sayac: Counter = Counter()
         self._bolumler = list(goruntu.bolumler)
+        self._bolum_araliklari = sorted((b.adres, b.adres + b.boyut) for b in self._bolumler if b.boyut > 0)
+        self._bolum_baslari = [bas for bas, _son in self._bolum_araliklari]
+        self._en_buyuk_bolum = max((son - bas for bas, son in self._bolum_araliklari), default=0)
         self._sinif_adi_onbellek: dict[int, Optional[str]] = {}
 
     # ---- temel okuma ---------------------------------------------------------------------
@@ -333,7 +337,16 @@ class ObjcOkuyucu:
         return v
 
     def _bolumde(self, adres: int) -> bool:
-        return any(b.icerir(adres) for b in self._bolumler)
+        """``adres`` bir bölümün içinde mi (bölüm başlangıçlarında ikili arama)."""
+        i = bisect.bisect_right(self._bolum_baslari, adres) - 1
+        while i >= 0:
+            bas, son = self._bolum_araliklari[i]
+            if adres < son:
+                return True
+            if adres - bas > self._en_buyuk_bolum:
+                return False
+            i -= 1
+        return False
 
     def _cstr(self, adres: Optional[int]) -> Optional[str]:
         if not adres:

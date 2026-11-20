@@ -394,6 +394,14 @@ class TestOkuyucu:
         assert s.sayaclar[objc.H_BOLUM_DISI] == 1
         assert s.durum == objc.DURUM_TUTARSIZ
 
+    def test_bolumde_sinirlar(self) -> None:
+        g = BellekGoruntu([("buyuk", 0x1000, b"\0" * 0x1000), ("ic", 0x1100, b"\0" * 0x10),
+                           ("bitisik", 0x2000, b"\0" * 0x10), ("uzak", 0x9000, b"\0" * 0x10)])
+        o = objc.ObjcOkuyucu(g)
+        assert [o._bolumde(a) for a in (0xFFF, 0x1000, 0x1105, 0x1500, 0x1FFF, 0x2000, 0x200F)] == [
+            False, True, True, True, True, True, True]
+        assert [o._bolumde(a) for a in (0x2010, 0x8FFF, 0x900F, 0x9010)] == [False, False, True, False]
+
     def test_paylasimli_imp_ad_yazilmaz(self) -> None:
         k = Kurucu()
         ro = k.ro("X", k.kucuk_liste([("a", "v16@0:8", F0), ("b", "v16@0:8", F0)]))
