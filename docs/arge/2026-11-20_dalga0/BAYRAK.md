@@ -334,3 +334,8 @@ Koşum: `PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scrip
 | m12 | etkisizlik gerekçesi bağlayacak paketi söylemez | `test_gerekce_bagli_paketi_soyler` |
 | m13 | liste alanının öntanımı dolu (`debug_file_dirs`) | `test_alan_var_tur_ve_ontanim[...debug_file_dirs]` |
 | m14 | `reconstruct.ara_kopyalar` bugünkü davranıştan (True) ayrılır | `test_alan_var_tur_ve_ontanim[reconstruct.ara_kopyalar]` |
+
+## 8. Tam takım
+
+- Şu an tam takım koşuyor (worktree kökünden `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`);
+  başlangıç 2026-11-20 08:39, yük altında; TAHMİN bitiş 10–25 dk sonra.
