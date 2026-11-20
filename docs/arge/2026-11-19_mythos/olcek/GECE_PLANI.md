@@ -15,6 +15,8 @@
 | 4c–4e | `hz0_ek.py`, `gece_kosusu.py`, `zaman_cizelgesi.py` eki, bu belge | bitti | (bu commit) |
 | 5 | Testler ve mutasyon (`gece_kosusu` dahil) | testler bu commit'te; mutasyon dumandan sonra (duman aynı dosyaları kullanıyor) | — |
 
+**08:50 — şu an bekleniyor:** duman 2. denemesi Ghidra kuyruğunda (`OLCEK bekliyor duman:cat`, 08:49:49); önünde ANA (S8-AA), HZ1 (S8 sonra kolu) ve OK5 koşuları var, kilit sırası FIFO değil. Tahmini bitiş 09:10–09:40 (TAHMİN: kuyruktakilerin bugünkü süreleri 36–291 sn / koşu). Mutasyon koşusu dumandan sonra (duman `olcek_kos.py` / `hz0_ek.py`'yi kilit alınınca yüklüyor; mutasyon o dosyaları değiştirir).
+
 ## Kalem 1 — ÖLÇ-A (`scripts/measurement/olcek_kos.py`)
 
 - Arayüz planın adım 1'iyle aynı; ek seçenekler: `--java-ek` (JFR / AppCDS gibi ek JVM seçenekleri; gece kuyruğu kullanır), `--ornek-aralik` (10), `--disk-aralik` (60), `--kill-bekle-sn` (60), `--komut` (yalnız test kancası).
