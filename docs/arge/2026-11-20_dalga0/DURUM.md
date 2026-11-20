@@ -29,12 +29,12 @@ Yaşayan kayıt: hangi paket kimde, ne main'e girdi, hangi karar verildi. Oturum
 | Paket | Ajan | Durum | Not |
 |---|---|---|---|
 | BAYRAK | a9659944b32ed01ff | **bitti 08:52; main'de** (`6e0181f..6551f2f`, 8 commit, cherry-pick) | 49 alan (36 var olan bölümlerde + 5 yeni bölümde 13), hepsi etkisiz ve INERT'te; `AD_ESIGI` / `MALIYET_ORANI_L`; 160 test, mutant 14/14; ajanın tam takımı 10 337 geçti, 7 kırmızı yalnız eksik çalışma verisi (bağla geçti). **Bağımsız doğrulama (ana oturum, main `6551f2f`, `dogrulama-d0`): 8 test dosyası 262 / 0; mutasyon 14 / 14 öldü** (`~/karadul_olcum/runs/dalga0-2026-11-20/dogrulama/BAYRAK/`) |
-| OLCUM | af4cea2568cbc91f4 | çalışıyor (08:13) | |
+| OLCUM | af4cea2568cbc91f4 | **bitti 09:18; main'de** (`11949f4..233f199`, 10 commit) | P-Ö1 6 / 6 tuttu (a62f15e: biçim 40, tam + biçim yanlış 79 / 1 800, makro 0,1914; f30ac9a: 47, 625 / 2 261, 0,4077); 7 araç kusuru onarıldı (ks1 `BITTI`, masum `sarif` 12 → 0, sağlamlık "yazıldı" 119 → 0, BuildID not sahibi 2 → 0, urun_kos künyesi, urun_olc sınıflayıcı sürüm denetimi); ajanın tam takımı 10 322 / 0. **Bağımsız doğrulama (main `233f199`): 7 test dosyası 190 / 0 (1 atlandı); mutasyon po1 7/7, olcum_araci 26/26, urun_olc 65/65, ks1 67/67, function_f1 18/18, p00 41/41** |
 | OK5 | a6b44e6ccb8e6088a | çalışıyor (08:13) | Ghidra kuyruğu uzun (86 ELF) |
 | OLCEK | a22f2a2142be019e1 | çalışıyor (08:13) | |
 | HZ1 | a6926ad632ec03810 | çalışıyor (08:13) | S8 "sonra" kolu tabanı bekler |
 | MUTBAKIM | — | sırada | son doğrulama koşusu bitince |
-| HEDEF | — | sırada | |
+| HEDEF | a2c93f93ab3c32a19 | çalışıyor (09:19) | bugün yalnız terminal-notifier koşulur (öbürleri tahmini > 60 dk) |
 | KIMLIK | a2e74e17f3b864d9d | çalışıyor (08:53) | V5 ve V1 indi; V1 derlemesi izinli (A-23) |
 | OL10 | — | **Dalga 0'dan çıktı** | Mythos oturumuna (A-24) |
 
@@ -44,6 +44,10 @@ Yaşayan kayıt: hangi paket kimde, ne main'e girdi, hangi karar verildi. Oturum
 - **BAYRAK → ÜST VERİ (Dalga 2):** P-ÜV1 / P-ÜV2 / P-ÜV3 bayrağı `getattr` ile okursa `test_p15a` INERT satırını o pakette sildirir ama adım Faz 1'e ancak P-ÜV6'da girer (arada alan sessizce etkisiz). Ana oturum hükmü: okuyucu paketleri (P-ÜV1–4) bayrak OKUMAZ; bayrakları P-ÜV6 bağlar ve INERT satırlarını o siler. (`enable_rtti_recovery` için P-ÜV4'te aynı kural.)
 - **BAYRAK → ÖL-2 / ÖL-5a:** `timeouts.ghidra_adim`, `paket.toplam_butce_sn`, `paket.bilesen_butce_sn` için 0 = sınırsız (bugünkü davranış); bağlayan paket bu anlamı uygular.
 - **BAYRAK → ÖL-9:** alan adı `onbellek.ghidra_kosusu` (plandaki `onbellek.ghidra` `test_p15a`'nın ad aramasında `timeouts.ghidra` ile çakışıyordu).
+- **OLCUM → KS-1:** `ks1_olc.py` ve `function_f1.py` KS-1 ön kaydının sha256'larıyla sabitti; KS-1 yeniden koşulacaksa yeni bir sapma kaydı gerekir (`ks1_olc.py olc` artık durur).
+- **OLCUM → eski kökler:** sınıflayıcısı farklı eski kökler (`urun-yeni2-f30ac9a`, `urun-yeni-93a2956`) artık `urun_olc --siniflayici-agac <ürün ağacı>` ister.
+- **OLCUM → P23 / ölçüm paketi:** `masum_kapi.kosu_ikilileri` `BITTI`'nin yalnız varlığına bakıyor (kısmi `3` bitmiş görünür); aynı kusur, bu pakette kapsam dışıydı.
+- **Masum kapı eşikleri (ana oturum, 09:2x, `c530b8c`):** çıktı kipi / geliştirme 119 ikili (a62f15e); `sarif` yeni kodla 0. Önce 14 ikili → şimdi 119: bileşim 82 → 0, sarif 37 → 0, YARA 31 → 0, types.h 14 → 0, intel 353 → 455, algoritma_json 45 → 56.
 - **Scratchpad ortak:** iki ajanın `tam_takim.log`'u karıştı (08:5x); ORTAK_D0 §2'ye kural eklendi, çalışan ajanlara bildirildi.
 
 ## Berke'nin kararları (2026-11-20 08:1x)
