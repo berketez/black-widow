@@ -276,6 +276,125 @@ class TestEvrensel:
 
 
 # ---------------------------------------------------------------------------------------
+# Sentetik ELF 64 (aarch64, ET_DYN): .text, .data, yeniden konumlama, .dynsym, .eh_frame
+# ---------------------------------------------------------------------------------------
+E_TEXT, E_DATA, E_REL, E_DYNSYM, E_DYNSTR, E_EH = 0x100, 0x200, 0x300, 0x340, 0x370, 0x380
+E_SHSTR, E_SYMTAB, E_STRTAB, E_SHDR = 0x400, 0x440, 0x478, 0x480
+E_YUK = 0x400  # PT_LOAD dosya boyu (yüklenen kısım)
+R_AARCH64_RELATIVE, R_AARCH64_GLOB_DAT = 1027, 1025
+E_EK = 0x110   # RELATIVE ek alanı (dosyadaki sözcük 0)
+
+
+def _eh_frame() -> bytes:
+    cie_govde = struct.pack("<I", 0) + bytes([1]) + b"zR\0" + bytes([4, 0x78, 30, 1, 0x1B])
+    cie_govde += b"\0" * (-(len(cie_govde) + 4) % 8)
+    cie = struct.pack("<I", len(cie_govde)) + cie_govde
+    fde_bas = len(cie)
+    alan = E_EH + fde_bas + 8  # pc_begin alanının adresi
+    fde_govde = struct.pack("<Iii", fde_bas + 4, E_TEXT - alan, 0x10) + bytes([0])
+    fde_govde += b"\0" * (-(len(fde_govde) + 4) % 8)
+    return cie + struct.pack("<I", len(fde_govde)) + fde_govde + b"\0" * 4
+
+
+def elf_kur(rk: str = "rela") -> bytes:
+    """``rk``: ``rela`` (RELATIVE + GLOB_DAT), ``rel`` (örtük ek), ``relr`` (paketli göreli)."""
+    d = bytearray(0x700)
+    shstr = b"\0.text\0.data\0.rela.dyn\0.dynsym\0.dynstr\0.eh_frame\0.shstrtab\0.symtab\0.strtab\0"
+
+    def ad(s: bytes) -> int:
+        return shstr.index(s + b"\0")
+
+    struct.pack_into("<4sBBBB8sHHIQQQIHHHHHH", d, 0, b"\x7fELF", 2, 1, 1, 0, b"\0" * 8, 3, 183, 1,
+                     E_TEXT, 64, E_SHDR, 0, 64, 56, 1, 64, 10, 7)
+    struct.pack_into("<IIQQQQQQ", d, 64, 1, 5, 0, 0, 0, E_YUK, E_YUK, 0x10000)
+    d[E_TEXT:E_TEXT + 4] = b"\x1f\x20\x03\xd5"
+    if rk == "rela":
+        struct.pack_into("<QQ", d, E_DATA, 0, 0x5555)
+        rel = struct.pack("<QQq", E_DATA, R_AARCH64_RELATIVE, E_EK)
+        rel += struct.pack("<QQq", E_DATA + 8, (1 << 32) | R_AARCH64_GLOB_DAT, 0)
+        rel_tur, rel_ad, rel_es = 4, b".rela.dyn", 24
+    elif rk == "rel":
+        struct.pack_into("<QQ", d, E_DATA, E_EK, 0)
+        rel = struct.pack("<QQ", E_DATA, R_AARCH64_RELATIVE)
+        rel_tur, rel_ad, rel_es = 9, b".rela.dyn", 16
+    else:
+        struct.pack_into("<QQ", d, E_DATA, E_EK, E_EK + 0x10)
+        rel = struct.pack("<QQ", E_DATA, 0b11)  # 0x200, ardından bit eşlemi: 0x208
+        rel_tur, rel_ad, rel_es = 19, b".rela.dyn", 8
+    d[E_REL:E_REL + len(rel)] = rel
+    struct.pack_into("<IBBHQQ", d, E_DYNSYM + 24, 1, 0x12, 0, 0, 0, 0)       # puts (tanımsız)
+    d[E_DYNSTR:E_DYNSTR + 6] = b"\0puts\0"
+    eh = _eh_frame()
+    d[E_EH:E_EH + len(eh)] = eh
+    d[E_SHSTR:E_SHSTR + len(shstr)] = shstr
+    struct.pack_into("<IBBHQQ", d, E_SYMTAB + 24, 1, 0x02, 0, 1, E_TEXT, 4)  # f (yerel, .text)
+    d[E_STRTAB:E_STRTAB + 3] = b"\0f\0"
+    bolumler = [
+        (0, 0, 0, 0, 0, 0, 0, 0, 0),
+        (ad(b".text"), 1, 0x6, E_TEXT, E_TEXT, 0x10, 0, 0, 0),
+        (ad(b".data"), 1, 0x3, E_DATA, E_DATA, 0x10, 0, 0, 0),
+        (ad(rel_ad), rel_tur, 0x2, E_REL, E_REL, len(rel), 4, 0, rel_es),
+        (ad(b".dynsym"), 11, 0x2, E_DYNSYM, E_DYNSYM, 48, 5, 1, 24),
+        (ad(b".dynstr"), 3, 0x2, E_DYNSTR, E_DYNSTR, 6, 0, 0, 0),
+        (ad(b".eh_frame"), 1, 0x2, E_EH, E_EH, len(eh), 0, 0, 0),
+        (ad(b".shstrtab"), 3, 0, 0, E_SHSTR, len(shstr), 0, 0, 0),
+        (ad(b".symtab"), 2, 0, 0, E_SYMTAB, 48, 9, 1, 24),
+        (ad(b".strtab"), 3, 0, 0, E_STRTAB, 3, 0, 0, 0),
+    ]
+    for i, (n, t, f, a, o, s, link, info, es) in enumerate(bolumler):
+        struct.pack_into("<IIQQQQIIQQ", d, E_SHDR + 64 * i, n, t, f, a, o, s, link, info, 8, es)
+    return bytes(d)
+
+
+class TestElf:
+    def test_kimlik_bolumler(self):
+        g = baytlardan(elf_kur())
+        assert (g.bicim, g.mimari, g.gosterici_boyutu, g.giris_adresi) == ("elf", "arm64", 8, E_TEXT)
+        assert [b.ad for b in g.bolumler] == [".text", ".data", ".rela.dyn", ".dynsym", ".dynstr",
+                                              ".eh_frame", ".shstrtab", ".symtab", ".strtab"]
+        assert [b.ad for b in g.kod_bolumleri] == [".text"]
+        assert g.bolum_adli(".symtab").bellekte is False
+        assert g.adres_bolumu(0x10) is None  # yüklenmeyen bölüm (adres 0) adres içermez
+        assert g.ozet()["bolum_basligi"] == 10
+        assert g.oku(E_TEXT, 4) == b"\x1f\x20\x03\xd5"
+        assert g.oku(E_YUK - 4, 8) is None  # PT_LOAD sınırını aşan okuma
+
+    def test_rela_relative_ek_alanindan(self):
+        g = baytlardan(elf_kur("rela"))
+        assert g.u64(E_DATA) == 0
+        assert g.gosterici(E_DATA) == E_EK
+        assert g.ozet()["yeniden_konumlama"] == 1
+
+    def test_glob_dat_tanimsiz_sembol_bag(self):
+        g = baytlardan(elf_kur("rela"))
+        assert g.gosterici(E_DATA + 8) == Bag("puts")
+        assert g.ozet()["bag"] == 1
+
+    def test_rel_ve_relr_ortuk_ek(self):
+        g = baytlardan(elf_kur("rel"))
+        assert g.gosterici(E_DATA) == E_EK
+        g = baytlardan(elf_kur("relr"))
+        assert (g.gosterici(E_DATA), g.gosterici(E_DATA + 8)) == (E_EK, E_EK + 0x10)
+        assert g.ozet()["yeniden_konumlama"] == 2
+
+    def test_semboller(self):
+        s = baytlardan(elf_kur()).semboller()
+        assert [(x.ad, x.tur, x.disa_acik, x.tablo) for x in s] == [
+            ("puts", "tanimsiz", True, ".dynsym"), ("f", "kod", False, ".symtab")]
+        assert s[1].adres == E_TEXT and s[1].boyut == 4
+
+    def test_eh_frame_fde_baslangici(self):
+        g = baytlardan(elf_kur())
+        assert g.fonksiyon_baslangiclari() == [E_TEXT]
+        assert g.durum["fonksiyon_baslangici"]["durum"] == "calisti"
+
+    def test_32_bit_elf_desteklenmiyor(self):
+        with pytest.raises(GoruntuHatasi) as e:
+            baytlardan(b"\x7fELF\x01\x01\x01\0" + b"\0" * 60)
+        assert e.value.durum == "desteklenmiyor"
+
+
+# ---------------------------------------------------------------------------------------
 # Sağlamlık: kesik / bozuk dosya
 # ---------------------------------------------------------------------------------------
 def _hepsini_cagir(g: Goruntu) -> None:
@@ -289,17 +408,19 @@ def _hepsini_cagir(g: Goruntu) -> None:
     _ = (g.kod_bolumleri, g.giris_adresi, g.mimari, g.gosterici_boyutu, g.bicim, g.durum)
     g.semboller()
     g.fonksiyon_baslangiclari()
-    for a in (R0, R1, B0, HAM, 0, -8, 1 << 70):
+    for a in (R0, R1, B0, HAM, E_DATA, E_DATA + 8, 0, -8, 1 << 70):
         g.gosterici(a)
         g.oku(a, 16)
         g.cstr(a)
     g.ozet()
 
 
-@pytest.mark.parametrize("kur", [lambda: macho_kur(), lambda: macho_kur(dyld_info=True)])
+@pytest.mark.parametrize("kur", [lambda: macho_kur(), lambda: macho_kur(dyld_info=True),
+                                 lambda: elf_kur("rela"), lambda: elf_kur("relr")])
 def test_kesik_dosyada_istisna_yok(kur):
     tam = kur()
-    for kesim in (4, 31, 32, 100, 300, 0x1000, DATA_OFS + 0x8, LINK_OFS, ZD_OFS + 30, len(tam) - 1):
+    for kesim in (4, 31, 32, 63, 64, 100, 300, E_REL + 8, E_EH + 20, E_SHDR + 70, 0x1000,
+                  DATA_OFS + 0x8, LINK_OFS, ZD_OFS + 30, len(tam) - 1):
         try:
             g = baytlardan(tam[:kesim])
         except GoruntuHatasi:
