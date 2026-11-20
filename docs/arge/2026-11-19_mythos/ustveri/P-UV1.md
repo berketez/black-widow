@@ -230,3 +230,15 @@ doğru 90 077, yanlış 0, GT'siz 0; yazım: birebir 89 699, `.abi0` eki 360, or
 %95 alt sınırı 0,999957 ≥ 0,999. Bütün yapı denetimlerinde ihlal 0. Okuma 0,88 sn (yük altında).
 
 **H2: 125 125 / 125 125** (docker-cli 35 048 + docker-compose 90 077) → TUTTU.
+
+## Yama denetimi (rebase sonrası, 11:17)
+
+`git apply --check` temiz. Güncel kodun yamalı kopyasında (`PUV1/yamali2/`: `karadul`, `ui`,
+`tests`, `docker`, `scripts/measurement`, `scripts/arge`) `test_p15a_etkisiz`, `test_bayrak_on_paketi`,
+`test_p15b_etkisiz_bayraklar`, `test_puv0_goruntu`, P-ÜV1 testleri: 278 geçti / 1 atlandı / 0 kaldı.
+
+Şu an: tam takım (yamasız dal, worktree kökünden) arka planda; günlük
+`~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/tam_takim.log`; tahmini 10–20 dk (yük altında).
+Çalışma verisi bağları kuruldu (`sigs`, `vendor`, `scripts/node_modules`, `signatures*.json`,
+`sigs_macos_system.json`, `signatures.lmdb`; commit'lenmez). Ön koşuda (bağlar yokken)
+`test_deobfuscator::test_extract_webpack_modules` `@babel/parser` bulunamadığı için kalmıştı.
