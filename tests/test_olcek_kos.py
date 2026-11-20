@@ -694,7 +694,9 @@ def test_hz0_ek_izler_ve_acma_olcer(tmp_path):
     dec = kok / "ws" / "workspaces" / "a" / "b" / "static" / "ghidra_output" / "decompiled"
     dec.mkdir(parents=True)
     (dec / "g.c").write_text("y")
-    p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2.5)"])
+    # Ömür, başlangıçtaki açma ölçümünün (alt süreç) yük altındaki süresinden belirgin uzun olmalı:
+    # tam takımda 2,5 sn'lik süreç tek örnekle bitti (yük altında açma ölçümü ~2 sn sürdü).
+    p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(8)"])
     try:
         s = hz.izle(p.pid, kok, 0.5, oku, en_uzun_sn=30, n=5)
     finally:
