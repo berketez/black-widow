@@ -31,9 +31,9 @@ Yaşayan kayıt: hangi paket kimde, ne main'e girdi, hangi karar verildi. Oturum
 | BAYRAK | a9659944b32ed01ff | **bitti 08:52; main'de** (`6e0181f..6551f2f`, 8 commit, cherry-pick) | 49 alan (36 var olan bölümlerde + 5 yeni bölümde 13), hepsi etkisiz ve INERT'te; `AD_ESIGI` / `MALIYET_ORANI_L`; 160 test, mutant 14/14; ajanın tam takımı 10 337 geçti, 7 kırmızı yalnız eksik çalışma verisi (bağla geçti). **Bağımsız doğrulama (ana oturum, main `6551f2f`, `dogrulama-d0`): 8 test dosyası 262 / 0; mutasyon 14 / 14 öldü** (`~/karadul_olcum/runs/dalga0-2026-11-20/dogrulama/BAYRAK/`) |
 | OLCUM | af4cea2568cbc91f4 | **bitti 09:18; main'de** (`11949f4..233f199`, 10 commit) | P-Ö1 6 / 6 tuttu (a62f15e: biçim 40, tam + biçim yanlış 79 / 1 800, makro 0,1914; f30ac9a: 47, 625 / 2 261, 0,4077); 7 araç kusuru onarıldı (ks1 `BITTI`, masum `sarif` 12 → 0, sağlamlık "yazıldı" 119 → 0, BuildID not sahibi 2 → 0, urun_kos künyesi, urun_olc sınıflayıcı sürüm denetimi); ajanın tam takımı 10 322 / 0. **Bağımsız doğrulama (main `233f199`): 7 test dosyası 190 / 0 (1 atlandı); mutasyon po1 7/7, olcum_araci 26/26, urun_olc 65/65, ks1 67/67, function_f1 18/18, p00 41/41** |
 | OK5 | a6b44e6ccb8e6088a | çalışıyor (08:13) | Ghidra kuyruğu uzun (86 ELF) |
-| OLCEK | a22f2a2142be019e1 | çalışıyor (08:13) | |
+| OLCEK | a22f2a2142be019e1 | **bitti 09:30; main'de** (`…b4e02be`, 11 commit) | ÖLÇ-A `olcek_kos.py` (36 test, mutant 17/17); duman (cat, 41 sn, künye eksiksiz); ÖLÇ-0 ön kaydı 10 satırın 3'ü tuttu; gece kuyruğu `gece_kosusu.py` (Gece 1 / Gece 2); ajanın tam takımı 10 325 / 0. Bağımsız doğrulama sürüyor |
 | HZ1 | a6926ad632ec03810 | çalışıyor (08:13) | S8 "sonra" kolu tabanı bekler |
-| MUTBAKIM | — | sırada | son doğrulama koşusu bitince |
+| MUTBAKIM | aa0b927e2895ab045 | çalışıyor (09:32) | Dalga 0'ın son (8.) ajanı |
 | HEDEF | a2c93f93ab3c32a19 | çalışıyor (09:19) | bugün yalnız terminal-notifier koşulur (öbürleri tahmini > 60 dk) |
 | KIMLIK | a2e74e17f3b864d9d | çalışıyor (08:53) | V5 ve V1 indi; V1 derlemesi izinli (A-23) |
 | OL10 | — | **Dalga 0'dan çıktı** | Mythos oturumuna (A-24) |
@@ -48,6 +48,9 @@ Yaşayan kayıt: hangi paket kimde, ne main'e girdi, hangi karar verildi. Oturum
 - **OLCUM → eski kökler:** sınıflayıcısı farklı eski kökler (`urun-yeni2-f30ac9a`, `urun-yeni-93a2956`) artık `urun_olc --siniflayici-agac <ürün ağacı>` ister.
 - **OLCUM → P23 / ölçüm paketi:** `masum_kapi.kosu_ikilileri` `BITTI`'nin yalnız varlığına bakıyor (kısmi `3` bitmiş görünür); aynı kusur, bu pakette kapsam dışıydı.
 - **Masum kapı eşikleri (ana oturum, 09:2x, `c530b8c`):** çıktı kipi / geliştirme 119 ikili (a62f15e); `sarif` yeni kodla 0. Önce 14 ikili → şimdi 119: bileşim 82 → 0, sarif 37 → 0, YARA 31 → 0, types.h 14 → 0, intel 353 → 455, algoritma_json 45 → 56.
+- **OLCEK → ölçek modeli:** 119 küçük ikiliden kurulan örneklem modeli gösteriyi tutturmadı (ÖLÇ-0: 10 satırın 7'si tutmadı; reconstruct 2 353 sn ↔ öngörü üst sınırı 710–732; toplam 7 729 ↔ 1 632–1 827). Büyük ikili için 119'dan dışa uzatma güvenilmez (KARŞI İ-1 / İ-2 ile tutarlı); ÖL-10 tasarımı ve ÖLÇ-1 bunu hesaba katmalı.
+- **OLCEK → HIZ (JDK):** Ghidra'nın JVM'i Temurin 27, `JAVA_HOME`'daki 21 değil → `hiz/BULGULAR.md`'deki JDK künyesi yanlış; HZ-5 (yığın / CDS bayrakları) ve AppCDS / JFR adımları JDK 27'ye göre yeniden denetlenmeli. pyghidra iki yan JVM açıyor ve onlar da `JAVA_TOOL_OPTIONS`'ı okuyor (GC günlüğü süreç numarasıyla ayrıldı). JFR'ın çıkış dökümü 0 bayt; kayıt deposu saklanınca okunuyor, Ghidra'lı koşuda denenmedi → Gece 2'den önce boş makinede `--yalniz duman` (~1 dk).
+- **Gece kuyruğu (OLCEK `GECE_PLANI.md`):** tek seferde TAHMİN [10,4; 16,9] sa → iki gece. Gece 1 (HZ-0 + p16c + K AppCDS + Avast kolu) [3,5; 8,5] sa (ek tekrar gerekirse en kötü +4,9 sa); Gece 2 (B_jfr + ÖLÇ-1) [6,9; 8,4] sa. B hedefi gösterinin `gosteri.yaml`'ıyla (ObjC çözümleyicisi kapalı); T100 / T300 / PAKET öntanım ayarla. Komut (ana ağaç kökünden, makine boşken): `PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 python scripts/arge/olcek/gece_kosusu.py --commit <hash> --gece 1 [--avast-dislama-yapildi]`; Avast klasörü `--avast-hazirla` ile `~/karadul_olcum/runs/hiz-avast-dislama/<kısa-commit>/`.
 - **Scratchpad ortak:** iki ajanın `tam_takim.log`'u karıştı (08:5x); ORTAK_D0 §2'ye kural eklendi, çalışan ajanlara bildirildi.
 
 ## Berke'nin kararları (2026-11-20 08:1x)
