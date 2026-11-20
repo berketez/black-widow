@@ -134,16 +134,111 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
 - Payda "fonksiyon"; Wilson %95. G1 kapısı Ollama'da açık (KS-1 çapası 0, `__assert_rtn` içe aktarımı var). 9 `oz_ad` adı gösteri koşusunun 9 `string_context/oz_ad` adıyla aynı sayı (KARŞI İ-1 kanıtı).
 - **Okuma (eşik yok):** K1'in hedefteki erişimi Go dışı kodun yaklaşık onda biri (aday grubu) ya da yirmide biri (K1-b tanımı); G1 ve R1 neredeyse hiç (7 ve 2 fonksiyon). Go kodunda kayıt çifti yok (Go adları zaten `pclntab`'da).
 
+## 2. Koşu ve önbellek sonucu (ÖK-V adım 5–6)
+
+| taraf | paket | ELF | tamam | kısmi | zaman aşımı | hatalı | önbellek kuruldu / hata | süre (sn; yük altında) | nüfus |
+|---|---:|---:|---:|---:|---:|---:|---|---:|---:|
+| ayar | 9 | 9 | 9 | 0 | 0 | 0 | 9 / 0 | 4 184 | 12 137 |
+| kör | 14 | 76 | 76 | 0 | 0 | 0 | 76 / 0 | 4 677 | 14 773 |
+
+- Paket başına tablo, BuildID ve kabul ölçütü: `NUFUS.md` §9 (yeni bölüm). BuildID 85 / 85 (GNU notu); stapsdt sapması 2 (aşıldı, §9). ÖK-V kabulü tuttu (23 paket; ayar 9, kör 14; 85 / 85).
+- Ana oturumun 12:2x mesajındaki "python3.13-minimal 12:35'e kadar bitmezse sonlandır" koşulu doğmadı: iş 12:21:35'te bitti (1 171 sn, tamam). Kör sayım **76 / 76 ELF** ile yapıldı; eksik ELF yok.
+
+## 6. ÖK-5 adım 5–6 — kör sayım (12:22–12:33; ayar dondurması `4601218`'den sonra)
+
+- Komut: `PYTHONDONTWRITEBYTECODE=1 python scripts/measurement/ozkod_olc.py kor` → `~/karadul_olcum/ozkod_nufus/runs/ok5/kor_sayim.json` (sha256 `f3e2c25b1acfce81c6fbe1ee3934411c58ec3e98b5ea50da83137fb7556b80ab`) ve `kor_sayim.md`. Yalnız kör birimleri görünür; dönüşüm kümesi `ayar.json`'dan; beş dondurulmuş betiğin sha256'ları DEFTER ile aynı (koşudan sonra da; aşağıda).
+- **Etiket düzeltmesi (sayıları değiştirmez):** ilk kör koşusunda K1-a'nın karar metni "hacim şartı tutmadı" çıktı; oysa tutmayan şart kesinlikti (Wilson alt %80,01, kesinlik %81,7 < %85). `hukum_k1a`'nın "planın üç kolu dışında" kolunun metni "kesinlik ya da hacim şartı" diye düzeltildi (eşik ve sayı aynı; yeni test `test_k1a_wilson_tamam_kesinlik_eksik_kol_disi`), sayım yeniden koşuldu, sayılar bayt bayt aynı. Ön kayıt §3.3 bu durumu (Wilson tutar, kesinlik tutmaz) öngörmemişti; aşağıda açıkça yazılıyor.
+
+- Dondurulmuş beş betiğin sha256'ları kör sayımdan sonra yeniden denetlendi: 5 / 5 DEFTER ile aynı (`7d02a6b5…`, `69201c56…`, `8767bde0…`, `ccc73f5c…`, `7ee4edfc…`).
+
+### 6.1 Havuz (kör, 14 paket, 76 ELF, nüfus 14 773)
+
+| ölçü | ad / karar | doğru | kesinlik (Wilson %95) |
+|---|---:|---:|---|
+| K1 kâhin, norm eşitliği | 2 048 | 1 674 | %81,7 (%80,0–%83,4) |
+| K1 kâhin, karakter eşitliği (kural snake_case yazar) | 2 048 | 1 169 | %57,1 (%54,9–%59,2) |
+| K1 kâhin, ayraçsız eşitlik | 2 048 | 1 705 | %83,3 (%81,6–%84,8) |
+| K1 kâhin, karakter eki ayarda dondurulan yüzeyle (ÖK-7 A) | 2 048 | 1 664 | %81,2 (%79,5–%82,9) |
+| K1 kâhin, belirteç kesinliği / duyarlılığı (mikro) | 6 557 / 6 376 belirteç | 6 078 | %92,7 / %95,3 |
+| K1 kâhin, tekil (kaynak grubu + GT adı; A-14) | 1 691 | 1 373 | %81,2 (%79,3–%83,0) |
+| K1 kip A (ürünün ön adları + Ghidra adları) | 98 | 87 | %88,8 (%81,0–%93,6) |
+| K1 kip C (A + düz G1) | 258 | 170 | %65,9 (%59,9–%71,4) |
+| K1 kip C-kapılı (A + kapılı G1) | 107 | 97 | %90,7 (%83,7–%94,8) |
+| K1 kip D (ürünün bütün adları) | 291 | 242 | %83,2 (%78,4–%87,0) |
+| G1 düz | 593 | 487 | %82,1 (%78,8–%85,0) |
+| G1 kapılı (kapı 76 ikilinin 12'sinde açık; KS-1 çapalı 12, assert 10) | 146 | 101 | %69,2 (%61,3–%76,1) |
+| `oz_ad` (ürün, bugün) | 366 | 168 | %45,9 (%40,9–%51,0) |
+| `oz_ad`, kanıt harfleriyle | 366 | 192 | %52,5 (%47,3–%57,5) |
+| R1 + harf koruma | 168 | 134 | %79,8 (%73,0–%85,1) |
+| Ö: sandviç, aralık ≤ 32 | 2 414 | 1 169 | %48,4 (%46,4–%50,4) |
+| Ö: sandviç, aralık sınırsız | 3 663 | 1 842 | %50,3 (%48,7–%51,9) |
+| Ö: iki adres komşusu uzlaşıyor (kâhin) | 7 124 | 6 314 | %88,6 (%87,9–%89,3) |
+| Ö: çağrı komşusu çoğunluğu (kâhin) | 8 062 | 3 893 | %48,3 (%47,2–%49,4) |
+
+- K1 aday türü (kâhin): T (tablo) 1 828 / 1 497 doğru, C (çağrı) 193 / 167, N (nesne) 22 / 6, N + T 5 / 4. Kâhin K1'in doğru adlarının 1 646'sı bugün adsız, 13'ü bugün yanlış adlı, 15'i bugün de doğru. Çekimser: çapa yok 1 222, çelişki 85. Ürün çapasıyla (≥ 2; `ek_kurali.olc` "urun" kipi) 316 ad, 262 doğru; eksiz C 346 / 7.
+- Çapa benzetimi (5 tohum toplamı): p = %5 → 3 277 ad, 2 742 doğru (%83,7); p = %10 → 4 947 / 3 772 (%76,2).
+- V ∪ C erişimi (havuz): 4 071 / 14 773 (%27,6).
+- Program (kaynak grubu) düzeyi K1 kâhin kesinliği (İ-7; yalnız rapor): irssi 164 / 170, python3.13 (stdlib modülleri) 806 / 956, lua-socket + lua-cjson 336 / 408, tcl 184 / 254, nginx 104 / 133, xterm 36 / 49, busybox 23 / 31, mc 17 / 27, bash 4 / 19, xfce4-terminal 0 / 1. Makro ortalama (ad ≥ 10 olan 9 program): %71,7.
+
+### 6.2 Paket başına (kör)
+
+| paket | nüfus | V ∪ C | K1 ad | K1 doğru (norm) | K1 karakter | G1 düz ad / doğru | G1 kapılı ad / doğru | kip A ad / doğru | sandviç ≤ 32 doğru / karar |
+|---|---:|---:|---:|---:|---:|---|---|---|---|
+| bash | 504 | 51 | 19 | 4 | 4 | 7 / 2 | 7 / 2 | 0 / 0 | 46 / 106 |
+| busybox | 2 053 | 76 | 31 | 23 | 22 | 6 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| irssi | 1 371 | 913 | 170 | 164 | 164 | 275 / 259 | 0 / 0 | 0 / 0 | 122 / 363 |
+| libpython3.13-stdlib | 1 987 | 1 148 | 956 | 806 | 534 | 81 / 48 | 60 / 46 | 72 / 63 | 1 / 33 |
+| libtcl8.6 | 1 928 | 589 | 254 | 184 | 0 | 2 / 0 | 0 / 0 | 2 / 0 | 321 / 932 |
+| lua-cjson | 88 | 40 | 40 | 28 | 28 | 4 / 0 | 4 / 0 | 0 / 0 | 0 / 0 |
+| lua-socket | 1 292 | 580 | 368 | 308 | 300 | 0 / 0 | 0 / 0 | 24 / 24 | 24 / 24 |
+| mc | 2 193 | 85 | 27 | 17 | 17 | 46 / 35 | 46 / 35 | 0 / 0 | 35 / 38 |
+| mousepad | 0 | 0 | 0 | 0 | 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| nginx | 1 102 | 291 | 133 | 104 | 82 | 15 / 0 | 0 / 0 | 0 / 0 | 355 / 355 |
+| python3.13-minimal | 911 | 3 | 0 | 0 | 0 | 27 / 18 | 27 / 18 | 0 / 0 | 265 / 563 |
+| tcl8.6 | 2 | 0 | 0 | 0 | 0 | 1 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| xfce4-terminal | 364 | 91 | 1 | 0 | 0 | 127 / 125 | 0 / 0 | 0 / 0 | 0 / 0 |
+| xterm | 978 | 204 | 49 | 36 | 18 | 2 / 0 | 2 / 0 | 0 / 0 | 0 / 0 |
+
+- K1-b payları (V ∪ C / nüfus; payda nüfusu > 0 olan 13 paket): irssi %66,6, libpython3.13-stdlib %57,8, lua-cjson %45,5, lua-socket %44,9, libtcl8.6 %30,5, nginx %26,4, xfce4-terminal %25,0, xterm %20,9, bash %10,1 (≥ %5: 9); mc %3,9, busybox %3,7, python3.13-minimal %0,3, tcl8.6 %0.
+- Üretilmiş kod notu (PLAN riski): GObject / Vala paketleri kör tarafta yalnız mousepad ve xfce4-terminal; mousepad'in nüfusu 0, xfce4-terminal'de K1 1 ad. K1'in kör havuzunu taşıyan paketler Python stdlib modülleri (`PyMethodDef` tabloları; 956 ad), lua-socket / lua-cjson (`luaL_Reg`; 408), tcl (254), irssi (170), nginx (133). K1 adlarının %47'si tek kaynak grubundan (python3.13).
+
+## 7. Ön kayıtlı hükümler (on_kayit_OK5.md, commit `c5a57ea`)
+
+| satır | eşik | ölçülen (kör) | hüküm |
+|---|---|---|---|
+| **K1-a** (kâhin, norm) | havuz kesinliği ≥ %85 ve Wilson alt ≥ %80; ad ≥ 200; en az 5 pakette ≥ 10 ad | %81,7 (1 674 / 2 048); Wilson alt %80,01; ad 2 048; ≥ 10 adlı paket 10 | **TUTMADI** (kesinlik şartı). Beklenti "%85–%95" tutmadı. |
+| K1-a karar kolu | Wilson alt %70–%80 → yeniden ön kayıt; < %70 → bırakılır | Wilson alt %80,01: üç kolun hiçbirine tam düşmüyor (Wilson şartı tutuyor, kesinlik tutmuyor) | ÖK-4b **açılmaz**; "%70–%80" koluna 0,01 puanla girmiyor, "< %70" durma ölçütü tetiklenmedi. Yeniden ön kayıt mı kapalı mı: **ana oturumun kararı** (öneri aşağıda). |
+| **K1-b** (erişim) | V ∪ C ≥ %5, paketlerin en az yarısında | 13 paketin 9'unda | **TUTTU.** Beklenti (kabuk, sunucu, GTK'da var; kitaplıklarda değişken): kısmen — bash %10, nginx %26, xfce4-terminal %25 var; kitaplıklar (stdlib, lua, tcl) en yüksek; busybox ve mc %4 altında. |
+| **K1-c** (kip A) | nüfusun < %2'si; kesinlik ≥ %90 (n ≥ 30 ise) | 98 ad = nüfusun %0,66'sı; 87 / 98 = %88,8 | "küçük" beklentisi **tuttu**; kesinlik **TUTMADI** (n = 98 ≥ 30, hükme girdi). |
+| **G1-a** (düz) | kesinlik ≥ %85 | %82,1 (487 / 593) | **TUTMADI** (beklenti "tutmaz" — tuttu). |
+| **G1-b** (kapılı) | kesinlik ≥ %90, Wilson alt ≥ %85, ad ≥ 50 | %69,2 (101 / 146); Wilson alt %61,3; ad 146 | **TUTMADI.** |
+| **Ö-a** (sandviç ≤ 32) | önek kesinliği ≥ %85 | %48,4 (1 169 / 2 414) | **TUTMADI** (geliştirme setinde %83,4). |
+| İ-1/3 (hedef erişimi; eşik yok) | — | Ollama Go dışı 2 352: V ∪ C 125 (%5,3), K1 aday grubu 219 (%9,3), G1 7, R1 2 (§8) | raporlandı |
+| (bilgi) ÖK-2 şartı: R1 kesinliği ≥ %90 | — | R1 + harf koruma 134 / 168 = %79,8 (%73,0–%85,1) | tutmadı → `oz_ad_uniqueness_gate` öntanımı açılmaz |
+
+### 7.1 Karar satırları
+
+- **ÖK-3 (G1 üretici): KAPALI KALIR.** G1-b tutmadı (%69,2). PLAN durma ölçütü ("ÖK-3'te G1'in kapılı hâli bağımsız nüfusta < %85 kalırsa G1 bırakılır; ÖK-1 ve R1 kalır") tetiklendi: G1 ad kanalı olarak bırakılır. Not: bu ürün sürümünde KS-1 ayar tarafında hiç çapa vermedi, kör tarafta 12 ikilide verdi; kapı kör tarafta düz G1'den kötü seçti (kapılı %69,2 < düz %82,1).
+- **ÖK-4b (K1 ad kanalı): AÇILMAZ; yeniden ön kayıt ana oturumun kararı.** K1-a'nın kesinlik şartı tutmadı (%81,7 < %85); Wilson alt %80,01 (planın "%70–%80 → yeniden ön kayıt" kolunun 0,01 puan üstünde, "< %70 → bırak" durma ölçütünün çok üstünde). Öneri (karar değil): PLAN'ın yeniden ön kayıt kolundaki "ek yüzey biçimi + tablo türü" kısıtları — tablo (T) adayları %81,9, çağrı (C) %86,5, nesne (N) 6 / 22; karakter eki ayarda dondurulan yüzeyle karakter eşitliği %57,1 → %81,2'ye çıkıyor (ÖK-4b H5'in girdisi). Bağımsız nüfusta bile K1'in kesinliği A-13 / A-14 ad eşiğinin (Wilson alt ≥ 0,909) çok altında: kanal açılsa da öntanımda ad değil kanıt satırı yazmalı (A-14).
+- **ÖK-6 (modül öneki kanıt satırı): KAPALI KALIR.** Ö-a tutmadı (%48,4; geliştirme setinde %83,4). İki adres komşusunun kâhin uzlaşısı kör tarafta %88,6 (geliştirmede %96,4): adres sırası önek taşıyor ama bugünkü adlarla sandviç taşımıyor (çapalar bu nüfusta seyrek ve karışık: libtcl8.6 321 / 932, python3.13-minimal 265 / 563, bash 46 / 106).
+- **ÖK-2 (R1 kapısı) için bilgi:** bağımsız nüfusta R1 + harf koruma %79,8 (PLAN'ın açılma şartı ≥ %90): bayrak öntanımı kapalı kalmalı. ÖK-1'in harf koruması kör tarafta 366 `oz_ad` adında doğru sayısını 168'den 192'ye çıkarıyor (net +24).
+- **Hat düzeyinde okuma (TAHMİN değil, sayı):** geliştirme setinde ölçülen dört kuralın hepsi bağımsız nüfusta düştü — K1 kâhin %98,1 / %81,7 (keşif / sınama) → %81,7; G1 %93,8 / %79,7 → %82,1 (kapılı %69,2); sandviç %83,4 → %48,4. K1'in sınamadaki %81,7'si bağımsız nüfusta aynen tekrarlandı (aşırı uyumun keşif tarafında olduğu doğrulandı). Erişim (K1-b) beklenenden geniş: V ∪ C havuzda %27,6.
+
+## 9. Testler ve mutasyon
+
+- `tests/test_ozkod_olc.py`: 28 test, 28 geçti.
+- `scripts/measurement/mutation_specs_ozkod_olc.json`: 16 mutant (kör / ayar karışması × 2, birim listesi, Wilson, K1-a kesinlik eşiği, K1-a paket şartı, K1-b yarısı, K1-c n şartı, G1-b ad şartı, kip A'ya `oz_ad`, G1'in kip A'ya yazılması, G1 kapısı ve / ya da, karakter eki tek oy, dönüşüm dondurma eşiği, GNU BuildID bağlamı, dondurulmuş betik denetimi) — son koşu aşağıda (§10).
+
 ## Kalemler
 
 | # | kalem | durum |
 |---|---|---|
-| 1 | ÖK-V adım 5 — taban ürün koşusu | başlamadı |
-| 2 | ÖK-V adım 6 — olgu önbelleği | başlamadı |
-| 3 | ÖK-5 adım 1–2 — `ozkod_olc.py` + eşdeğerlik | başlamadı |
-| 4 | ön kayıt `on_kayit_OK5.md` | başlamadı |
-| 5 | ayar tarafında dondurma (G1 kapısı, K1 karakter eki) | başlamadı |
-| 6 | kör sayım | başlamadı |
-| 7 | `OK5.md` hükümleri | başlamadı |
-| 8 | hedef erişimi (Ollama) | başlamadı |
-| 9 | testler ve mutasyon | başlamadı |
+| 1 | ÖK-V adım 5 — taban ürün koşusu | bitti: 85 / 85 tamam (ayar 9, kör 76); zaman aşımı 0, hata 0 |
+| 2 | ÖK-V adım 6 — olgu önbelleği | bitti: 85 / 85, GT BuildID 85 / 85, hata 0 (`NUFUS.md` §9) |
+| 3 | ÖK-5 adım 1–2 — `ozkod_olc.py` + eşdeğerlik | bitti: 10 / 10 aynı (K1 754 / 740, 126 / 103) |
+| 4 | ön kayıt `on_kayit_OK5.md` | bitti: `c5a57ea` |
+| 5 | ayar tarafında dondurma (G1 kapısı, K1 karakter eki) | bitti: `4601218` |
+| 6 | kör sayım | bitti (§6) |
+| 7 | `OK5.md` hükümleri | bitti (§7) |
+| 8 | hedef erişimi (Ollama) | bitti (§8) |
+| 9 | testler ve mutasyon | bitti (§9, §10) |

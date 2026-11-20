@@ -210,3 +210,53 @@ Taraf özeti (aynı betik):
 - Bu paketin dizinleri (`du -sk`): `~/karadul_olcum/ozkod_nufus` 456 556 KiB, `~/karadul_olcum/n2_tabaka` 154 364 KiB, `~/karadul_olcum/downloads/n2_tabaka` 127 632 KiB (toplam 738 552 KiB). Aradaki farkın geri kalanı bu paketin dışından.
 
 **Sonraki adım (ÖK-V adım 5–6, sonraki oturum):** ürün koşusu `nufus.json`'daki seçilen ve `olculur` ELF'lerle (ELF yolu ve `x_<paket>` dizini orada); `--kok` seçeneğiyle olgu önbelleği. Ön kayıt (ÖK-5) ve bu belgenin commit'i koşudan önce.
+
+---
+
+*Aşağısı OK5 paketinde (Dalga 0, 2026-11-20) eklendi; §1–§8 değişmedi.*
+
+## 9. Adım 5–6: taban ürün koşusu ve olgu önbelleği (OK5, 2026-11-20)
+
+- **Ürün:** sabit ağaç `~/karadul_olcum/urun-b6aceb9` (commit `b6aceb9`, sürüm 1.24.1, kirli 0; `urun_kos.agac_kunyesi` her koşudan önce). Bayraklar öntanımlı. Komut `python -m karadul analyze <ikili> --skip-dynamic --output-dir <d>/ws --output <d>/out` (`urun_kos.calistir`), her ELF ayrı `~/karadul_olcum/ghidra_kuyruk.sh OK5 <paket>:eNN` çağrısıyla, `PYTHONHASHSEED=0`, koşuya özel `KARADUL_CACHE_DIR`, ikili başına sınır 3 600 sn. Koşucu: `scripts/measurement/ozkod_nufus_kur.py kos-hepsi`. Kök: `~/karadul_olcum/ozkod_nufus/runs/taban-b6aceb9/debian/<paket>/eNN/` (ELF dizini paket içindeki sıra numarası; kör ELF'in dosya adı hiçbir günlüğe yazılmadı).
+- **Süre:** yük altında (gündüz, ortak makine; yük ortalaması 3–18 arası); ölçüm değildir. Ayar 08:22–09:52, kör 09:59–12:21 (kuyruk başka paketlerle paylaşıldı).
+- **Olgu önbelleği:** `scripts/measurement/ozkod_olc.py kur --taraf ayar|kör` (`ozkod_veri.ikili_kur` aynen; kök ve birim listesi parametre). GT: `ks1_olc.gt_elf` değişmeden, `ozkod_olc.gt_bag_kur`'un kurduğu bağ dizininden (`~/karadul_olcum/ozkod_nufus/runs/ok5/gt_bag/`, yalnız sembolik bağ). BuildID: 85 / 85 ELF'te ikili ve `.debug`'ın GNU BuildID'si (`tabaka_indir.elf_bilgisi`) birbirine ve `nufus.json`'a eşit. §8 not 3'teki iki SystemTap sapması (postgresql-17 / ayar, python3.13-minimal / kör) ölçüm sırasında `read_elf_info`'nun yalnız `build_id` alanı GNU notundan alınarak aşıldı (`ozkod_olc._gnu_buildid_baglami`; `function_f1.py` değişmedi).
+- **Körlük:** kör tarafta bu tablodaki sayılar dışında hiçbir şey yazılmadı; ad, dizgi, ELF yolu okunmadı.
+
+| paket | taraf | ölçülecek ELF | koşulan: tamam / kısmi / zaman aşımı / hatalı | süre (sn, yük altında) | Ghidra fonksiyonu | GT FUNC | nüfus | nüfusu 0 ELF |
+|---|---|---:|---|---:|---:|---:|---:|---:|
+| bash | kör | 1 | 1 / 0 / 0 / 0 | 242 | 2951 | 2269 | 504 | 0 |
+| nginx | kör | 1 | 1 / 0 / 0 / 0 | 279 | 3202 | 1906 | 1102 | 0 |
+| irssi | kör | 1 | 1 / 0 / 0 / 0 | 194 | 3478 | 2572 | 1371 | 0 |
+| hexchat | ayar | 1 | 1 / 0 / 0 / 0 | 154 | 3663 | 1618 | 903 | 0 |
+| jq | ayar | 1 | 1 / 0 / 0 / 0 | 29 | 242 | 15 | 7 | 0 |
+| gawk | ayar | 1 | 1 / 0 / 0 / 0 | 174 | 1666 | 868 | 800 | 0 |
+| tcl8.6 | kör | 1 | 1 / 0 / 0 / 0 | 17 | 31 | 10 | 2 | 0 |
+| libtcl8.6 | kör | 1 | 1 / 0 / 0 / 0 | 396 | 3890 | 2853 | 1928 | 0 |
+| python3.13-minimal | kör | 1 | 1 / 0 / 0 / 0 | 1170 | 8727 | 7731 | 911 | 0 |
+| libpython3.13-stdlib | kör | 45 | 45 / 0 / 0 / 0 | 1187 | 9466 | 3331 | 1987 | 1 |
+| lua-socket | kör | 16 | 16 / 0 / 0 / 0 | 450 | 4658 | 1980 | 1292 | 0 |
+| lua-cjson | kör | 4 | 4 / 0 / 0 / 0 | 90 | 668 | 184 | 88 | 0 |
+| postgresql-17 | ayar | 1 | 1 / 0 / 0 / 0 | 2779 | 16503 | 14826 | 4207 | 0 |
+| gedit | ayar | 1 | 1 / 0 / 0 / 0 | 100 | 3335 | 1034 | 667 | 0 |
+| evince | ayar | 1 | 1 / 0 / 0 / 0 | 114 | 4607 | 963 | 691 | 0 |
+| mousepad | kör | 1 | 1 / 0 / 0 / 0 | 19 | 36 | 9 | 0 | 1 |
+| xfce4-terminal | kör | 1 | 1 / 0 / 0 / 0 | 68 | 1898 | 382 | 364 | 0 |
+| geany | kör | 0 | — | — | — | — | — | — |
+| pidgin | ayar | 1 | 1 / 0 / 0 / 0 | 227 | 5455 | 1781 | 1233 | 0 |
+| xterm | kör | 1 | 1 / 0 / 0 / 0 | 152 | 2256 | 1054 | 978 | 0 |
+| mc | kör | 1 | 1 / 0 / 0 / 0 | 225 | 3906 | 2308 | 2193 | 0 |
+| busybox | kör | 1 | 1 / 0 / 0 / 0 | 190 | 3233 | 2360 | 2053 | 0 |
+| lighttpd | ayar | 1 | 1 / 0 / 0 / 0 | 78 | 1299 | 745 | 269 | 0 |
+| neomutt | ayar | 1 | 1 / 0 / 0 / 0 | 528 | 4999 | 3480 | 3360 | 0 |
+
+| taraf | paket | ELF | tamam | kısmi | zaman aşımı | önbellek kuruldu | önbellek hatası | süre (sn) | Ghidra fonksiyonu | GT FUNC | nüfus |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| ayar | 9 | 9 | 9 | 0 | 0 | 9 | 0 | 4184 | 41769 | 25330 | 12137 |
+| kör | 14 | 76 | 76 | 0 | 0 | 76 | 0 | 4677 | 48400 | 28949 | 14773 |
+
+- "Ghidra fonksiyonu" = `ghidra_functions.json`'daki bütün fonksiyonlar (thunk ve dış dahil); "GT FUNC" = §7 ile aynı (`extract_gt` `counts.functions`; bu kez önbellekteki adres sayısı); "nüfus" = ad bekleyen fonksiyon (`ks1_olc.GtBirimi.nufus`: GT'li, Ghidra'da adsız, CRT / ihraç / klon değil).
+- Küçük paketler: mousepad (kör) nüfus 0, tcl8.6 (kör) 2, jq (ayar) 7; libpython3.13-stdlib'in bir ELF'inde nüfus 0. Birim olarak sayıldılar; payda tanımlı olmayan yerde (nüfus 0) paket paydaya girmedi (ön kayıt §3.4).
+
+**PLAN kabul ölçütü (ÖK-V):** en az 15 paket GT'li ve koşulmuş — **23** (24 paketten geany C++ olduğu için ölçü dışı); iki tarafta en az 5 paket — **ayar 9, kör 14**; her ikilide BuildID eşleşmesi — **85 / 85**. Tuttu.
+
+**Disk:** koşu ve önbellek kökü `~/karadul_olcum/ozkod_nufus/runs/` 8,1 GB (12:21); birim kullanımı 739,6 GB (08:15) → 764,1 GB (12:22; ortak makine, öbür paketler de yazıyor).
