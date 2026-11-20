@@ -1,0 +1,133 @@
+{
+ "_comment": "P-ÜV2 (2026-11-20): ObjC yöntem listesi okuyucu ve objc_metadata_recovery adımı. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv2.json",
+ "mutants": [
+  {
+   "id": "puv2_goreli_ofset_kayit_basina",
+   "desc": "küçük biçimde IMP ofseti kendi alanına değil kaydın başına eklenir",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_butun_kayitlar_adres_ve_ad",
+   "find": "imp = e + 8 + imp_ofs if imp_ofs else 0",
+   "replace": "imp = e + imp_ofs if imp_ofs else 0"
+  },
+  {
+   "id": "puv2_tip_ofseti_kayit_basina",
+   "desc": "küçük biçimde tip ofseti kendi alanına değil kaydın başına eklenir",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_kucuk_bicim_secici_basvurusu_uzerinden",
+   "find": "tip_yeri = e + 4 + tip_ofs if tip_ofs else None",
+   "replace": "tip_yeri = e + tip_ofs if tip_ofs else None"
+  },
+  {
+   "id": "puv2_veri_maskesi_yok",
+   "desc": "sınıf bits alanına veri maskesi uygulanmaz (Swift işaret bitleri adreste kalır)",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_swift_isareti_ve_veri_maskesi",
+   "find": "ro = bits & DATA_MASK",
+   "replace": "ro = bits"
+  },
+  {
+   "id": "puv2_kucuk_kayit_boyu_24",
+   "desc": "küçük biçimde kayıt adımı 12 yerine 24 bayt alınır",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_kucuk_bicim_secici_basvurusu_uzerinden",
+   "find": "e = taban + SMALL_ENTSIZE * i",
+   "replace": "e = taban + BIG_ENTSIZE * i"
+  },
+  {
+   "id": "puv2_dogrudan_secici_bayragi_yok",
+   "desc": "0x40000000 (seçici doğrudan) bayrağı yok sayılır",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_secici_dogrudan_bayragi",
+   "find": "self._kucuk_liste(taban, sayi, bool(ef & DIRECT_SEL_FLAG))",
+   "replace": "self._kucuk_liste(taban, sayi, False)"
+  },
+  {
+   "id": "puv2_secici_basvurusu_cozulmez",
+   "desc": "H4: seçici başvurusu yerine ad ofsetinin gösterdiği yer doğrudan dizgi okunur",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_kucuk_bicim_secici_basvurusu_uzerinden",
+   "find": "secici = self._cstr(self._yerel(ad_yeri))",
+   "replace": "secici = self._cstr(ad_yeri)"
+  },
+  {
+   "id": "puv2_meta_yontemi_eksi",
+   "desc": "meta sınıf yöntemleri '-' diye yazılır",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_meta_sinif_yontemi_arti_ve_buyuk_bicim",
+   "find": "(TUR_SINIF, b[\"sinif_yontemi\"])",
+   "replace": "(TUR_ORNEK, b[\"sinif_yontemi\"])"
+  },
+  {
+   "id": "puv2_kategori_bag_oneki_kalir",
+   "desc": "kategori sınıfı bağından _OBJC_CLASS_$_ öneki soyulmaz",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_kategori_dis_sinif_bagi_onek_soyulur",
+   "find": "return sinif_bagi_adi(bag_adi), True",
+   "replace": "return bag_adi, True"
+  },
+  {
+   "id": "puv2_arite_eksi_iki",
+   "desc": "arite denetiminde − 3 yerine − 2",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestTipKodlamasi::test_arite_hukmu",
+   "find": "ARITE_GIZLI_OGE = 3",
+   "replace": "ARITE_GIZLI_OGE = 1 + 1"
+  },
+  {
+   "id": "puv2_sayi_siniri_yok",
+   "desc": "liste başına yöntem sayısı üst sınırı kaldırılır",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_yontem_sayisi_ust_siniri",
+   "find": "if sayi > MAX_METHODS_PER_LIST:",
+   "replace": "if sayi > MAX_METHODS_PER_LIST * 1000:"
+  },
+  {
+   "id": "puv2_kod_denetimi_yok",
+   "desc": "IMP kod bölümü denetimi her zaman geçer",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_kod_disi_imp_tutarsiz",
+   "find": "y.imp_kodda = kodda(y.imp)",
+   "replace": "y.imp_kodda = True"
+  },
+  {
+   "id": "puv2_dongu_denetimi_yok",
+   "desc": "döngüsel üst sınıf zinciri görülen kümesiyle kesilmez",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_dongusel_ust_sinif_sayacla_kesilir",
+   "find": "if ust in gorulen:",
+   "replace": "if ust in ():"
+  },
+  {
+   "id": "puv2_bolum_disi_kayit_kalir",
+   "desc": "bölüm dışına gösteren göreli ofsetli kayıt atlanmaz",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_bolum_disi_goreli_ofset_kayit_atlanir",
+   "find": "                self.sayac[H_BOLUM_DISI] += 1\n                continue\n",
+   "replace": "                self.sayac[H_BOLUM_DISI] += 1\n"
+  },
+  {
+   "id": "puv2_paylasimli_imp_yok",
+   "desc": "aynı IMP'e birden çok ad işaretlenmez",
+   "module": "karadul/analyzers/ustveri/objc.py",
+   "test": "tests/test_puv2_objc.py::TestOkuyucu::test_paylasimli_imp_ad_yazilmaz",
+   "find": "y.imp_paylasimli = len(imp_adlari.get(y.imp, ())) > 1",
+   "replace": "y.imp_paylasimli = False"
+  },
+  {
+   "id": "puv2_tutarsizda_ad_listesi",
+   "desc": "tutarsiz durumda adım ad listesini yine de döndürür",
+   "module": "karadul/pipeline/steps/objc_metadata_recovery.py",
+   "test": "tests/test_puv2_objc.py::TestAdim::test_tutarsizsa_ad_listesi_yok_kanit_var",
+   "find": "yontemler = [] if sonuc.durum == objc.DURUM_TUTARSIZ else",
+   "replace": "yontemler = [] if False else"
+  },
+  {
+   "id": "puv2_bayrak_dogruluk_degeri",
+   "desc": "bayrak denetimi 'is True' yerine doğruluk değeri",
+   "module": "karadul/pipeline/steps/objc_metadata_recovery.py",
+   "test": "tests/test_puv2_objc.py::TestAdim::test_bayrak_tam_true_degilse_kapali",
+   "find": "return getattr(recon, \"enable_objc_metadata_recovery\", False) is True",
+   "replace": "return bool(getattr(recon, \"enable_objc_metadata_recovery\", False))"
+  }
+ ]
+}
