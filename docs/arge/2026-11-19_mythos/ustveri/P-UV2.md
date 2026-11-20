@@ -7,24 +7,62 @@ Plan: `ustveri/PLAN.md` "P-ÜV2". Kararlar: A-10, A-27, A-28.
 - `karadul.__file__` worktree yolunu gösteriyor (doğrulandı).
 - Koşu dizini: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV2/`.
 - Sert son 15:15.
-- **Ön kayıt:** `on_kayit_PUV2.md`, commit `ef5983d` (koddan ve ölçümden önce).
+- **Ön kayıt:** `on_kayit_PUV2.md`, commit `60d7595` (rebase öncesi `ef5983d`; koddan ve ölçümden önce).
+- **Rebase:** 11:11'de bir kez `git rebase main` (P-ÜV0 `8844a08` main'de; çatışma yok). Aşağıdaki commit'ler rebase
+  sonrası kimlikleriyle. `karadul.analyzers.ustveri.goruntu.__file__` worktree yolunu gösteriyor.
+- **Okuyucu dondurma commit'i: `b160a04`** (iTerm2 sınama GT'si bundan sonra açıldı).
 
 ## Durum
 
 | Kalem | Durum | Commit |
 |---|---|---|
-| Ön kayıt | yazıldı | `ef5983d` |
-| 1 okuyucu (sınıf, meta, kategori, protokol) | bitti (sentetik) | `11e30c7` |
-| 2 denetimler (IMP kodda, başlangıç, arite, paylaşımlı IMP) | bitti (sentetik) | `11e30c7` |
-| 3 ad biçimi (tam ad + seçici ayrı alan; kategori adı ayrı; Swift köprüsü işareti) | bitti | `11e30c7` |
-| 4 üretici adım `objc_metadata_recovery` | bitti (sentetik) | `11e30c7` |
-| 5 sağlamlık (sayı sınırı, döngüsel üst sınıf, bölüm dışı ofset, istisna yok) | bitti (sentetik) | `11e30c7` |
-| 6 eski `LC_DYLD_INFO` (Rectangle) | P-ÜV0 gelince (kabulde) | — |
-| Mutasyon | 16 / 16 öldü | `8f891e7` |
-| INERT yaması | bırakıldı | `754359a` |
-| Rebase + 6 hedef kabulü | PUV0 main'e girince | — |
-| SINAMA GT (iTerm2) | dondurmadan sonra | — |
+| Ön kayıt | yazıldı | `60d7595` |
+| 1 okuyucu (sınıf, meta, kategori, protokol) | bitti; gerçek görüntüyle 6 / 6 | `3977815`, `b160a04` |
+| 2 denetimler (IMP kodda, başlangıç, arite, paylaşımlı IMP) | bitti; 6 / 6 hedefte IMP başlangıç = ayrık IMP | `3977815` |
+| 3 ad biçimi (tam ad + seçici ayrı alan; kategori adı ayrı; Swift köprüsü işareti) | bitti | `3977815` |
+| 4 üretici adım `objc_metadata_recovery` | bitti; gerçek ikilide uçtan uca (terminal-notifier, Ollama, gh) | `3977815`, `6da42c6` |
+| 5 sağlamlık (sayı sınırı, döngüsel üst sınıf, bölüm dışı ofset, istisna yok) | bitti (sentetik) | `3977815`, `9e5e3eb`, `a6c437d` |
+| 6 eski `LC_DYLD_INFO` (Rectangle) | bitti: zincirli düzeltme 0, ham göstericiyle 450 / 450 aynı | `b160a04` |
+| Mutasyon | 16 / 16 öldü (rebase sonrası yinelendi) | `ecc104a` |
+| INERT yaması | bırakıldı | `2772118` |
+| Rebase + 6 hedef kabulü | **H1 tuttu** (aşağıda) | `b160a04` |
+| Keşif GT (terminal-notifier) | 32 / 32 doğru, farklı 0 | — |
+| SINAMA GT (iTerm2) | dondurmadan sonra bir kez | — |
 | Tam takım | sonda | — |
+
+## Kabul (gerçek P-ÜV0 görüntüsüyle, 11:11–11:15, yük altında: load 5,4)
+
+Betik `~/karadul_olcum/runs/dalga0-2026-11-20/PUV2/kabul.py --goruntu gercek`; çıktı `…/PUV2/kabul_gercek.json`.
+Karşılaştırma: IMP'li her kayıt için (IMP, tür, sınıf, kategori, seçici, protokolde, swift, tip) sekizlisi ↔
+`$V/objc/<ad>.tsv`, çoklu küme.
+
+| Hedef | Yöntem kaydı (ben / başvuru) | Yalnız bende / yalnız başvuruda | IMP başlangıç / ayrık IMP | IMP kodda | Okuma hatası | Okuma süresi (yük altında) |
+|---|---|---|---|---|---|---|
+| terminal-notifier | 32 / 32 | 0 / 0 | 32 / 32 | 32 | 0 | 0,001 sn |
+| iTerm2 arm64 | 41 305 / 41 305 | 0 / 0 | 41 305 / 41 305 | 41 305 | 0 | 0,59 sn (+ görüntü 0,62) |
+| Ollama arm64 | 151 / 151 | 0 / 0 | 151 / 151 | 151 | 0 | 0,04 sn |
+| Ollama x86_64 | 151 / 151 | 0 / 0 | 151 / 151 | 151 | 0 | 0,04 sn |
+| limactl | 102 / 102 | 0 / 0 | 102 / 102 | 102 | 0 | 0,12 sn |
+| Rectangle arm64 | 450 / 450 | 0 / 0 | 450 / 450 | 450 | 0 | 0,03 sn |
+
+- **H1 tuttu:** 6 / 6 hedefte yöntem kaydı sayısı ve (adres, ad) listesi başvuruyla aynı; sınıf, Swift sınıfı,
+  kategori, protokol, paylaşımlı IMP (0) ve arite (iTerm2 41 262 uyan / 43 uymayan) da aynı. IMP = fonksiyon
+  başlangıcı 6 / 6. Okuma hatası sayaçları 0 (6 / 6). Durum 6 / 6 `calisti`; `ad_yazilabilir` = IMP'li kayıt (6 / 6).
+- **H4 tuttu:** mutant (seçici başvurusu çözülmez) küçük biçimli kayıtlarda doğru seçici: terminal-notifier 0 / 32,
+  iTerm2 0 / 41 305, Ollama arm64 0 / 151, limactl 0 / 102, Rectangle 0 / 450; Ollama x86_64'te küçük biçimli liste yok
+  (151 kaydın hepsi büyük biçim) → o hedefte veri yok. (`…/PUV2/kabul_h4.json`)
+- **H5 tuttu:** `gh` → `veri_yok` ("ObjC sınıf / kategori / protokol listesi bölümü yok"), yöntem 0.
+- **Kalem 6:** Rectangle'da P-ÜV0 özeti zincirli düzeltme yeri 0 (eski düzen, ham gösterici); 450 / 450 aynı.
+- **Adım uçtan uca** (bayrak açık, gerçek `goruntu.ac`, gerçek `Workspace`; `…/PUV2/adim_uctan.py`): terminal-notifier
+  soyulmuş kopya (`ustveri_set/terminal-notifier/bin`) `calisti`, 32 yöntem, 32 `ad_yazilabilir`, dosya 32 kayıt;
+  Ollama arm64 `calisti` 151; `gh` `veri_yok`; hata 0.
+
+## Keşif GT — terminal-notifier (`…/PUV2/gt.py --ad terminal-notifier`, HEDEF'in kuralı)
+
+- Özgün ve soyulmuş kopyada ad haritası aynı (okuyucu sembol okumaz). 32 IMP'in 32'sinde ObjC GT sembolü var.
+- **32 / 32 doğru, yanlış 0** (birebir 31, kategori yazımı 1); Wilson %95 [0,8928, 1]. Ön kayıt §2'deki eşik notu
+  gereği 0,999 eşiği burada uygulanmaz (n = 32); ölçüt "farklı ad 0" tuttu. GT'de ObjC adı olup okuyucuda olmayan
+  10 adres (başvuruyla aynı sayı; IMP'i yöntem listesinde olmayan semboller).
 
 ## Tasarım kararları (koddan)
 
@@ -87,9 +125,9 @@ kırmızı (doğrulandı); yamalı hâlde `test_p15a_etkisiz` + `test_bayrak_on_
 atlandı. **Not:** P-ÜV1'in yaması bir önceki satırı (`enable_go_metadata_recovery`) siliyor; iki yama art arda
 `git apply` ile bağlam çakışması verebilir: `git apply --3way` ya da elle uygulanmalı (iki satır).
 
-## Bekleme (11:1x)
+## Bekleme (11:1x; bitti 11:11)
 
-- Şu an bekleniyor: P-ÜV0 gerçek `Goruntu` uygulamasının main'e girmesi (ana oturum haber verecek). Bu sürede tam takım (yama
+- Bekleniyordu: P-ÜV0 gerçek `Goruntu` uygulamasının main'e girmesi (ana oturum haber verecek). Bu sürede tam takım (yama
   geçici uygulanmış, rebase öncesi) arka planda koşuyor; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/PUV2/tam_takim_on.log`.
   Tahmini bitiş 11:30 (yük altında). Kabul betikleri hazır: `…/PUV2/kabul.py` (6 hedef + gh + H4), `…/PUV2/gt.py` (H2 / H3).
 
