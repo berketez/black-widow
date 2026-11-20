@@ -37,10 +37,15 @@ SEMA = "karadul-go-functions/1"
 
 
 def _goruntu_ac(yol: Path) -> Any:
-    """P-ÜV0 görüntüsünü aç (``GoruntuHatasi`` ``durum`` / ``neden`` taşır)."""
-    from karadul.analyzers.ustveri.goruntu import ac
+    """P-ÜV0 görüntüsünü aç (``GoruntuHatasi`` ``durum`` / ``neden`` taşır).
 
-    return ac(yol)
+    ``binary_for_byte_match`` normalde ürünün kestiği ince dilimdir; evrensel dosya gelirse ürünün
+    seçeceği dilim (``goruntu.urun_dilimi``) açılır, başka dilim değil.
+    """
+    from karadul.analyzers.ustveri import goruntu
+
+    veri = Path(yol).read_bytes()
+    return goruntu.baytlardan(veri, goruntu.urun_dilimi(veri), kaynak=str(yol))
 
 
 def go_metadata_enabled(cfg: Any) -> bool:

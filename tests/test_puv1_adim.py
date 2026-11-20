@@ -163,3 +163,20 @@ def test_yapit_yazilamazsa_adim_dusmez(tmp_path: Path, go_goruntu) -> None:
     assert out["go_status"]["durum"] == G.DURUM_CALISTI
     assert out["go_functions_path"] is None
     assert any("yapıt yazımı" in e for e in ctx.errors)
+
+
+def test_goruntu_ac_urunun_dilimini_secer(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from karadul.analyzers.ustveri import goruntu
+
+    yol = tmp_path / "evrensel"
+    yol.write_bytes(b"\xca\xfe\xba\xbe" + b"\0" * 60)
+    cagri = {}
+    monkeypatch.setattr(goruntu, "urun_dilimi", lambda veri: "arm64")
+
+    def baytlardan(veri, dilim=None, kaynak=""):
+        cagri.update(dilim=dilim, kaynak=kaynak, boy=len(veri))
+        return "goruntu"
+
+    monkeypatch.setattr(goruntu, "baytlardan", baytlardan)
+    assert A._goruntu_ac(yol) == "goruntu"
+    assert cagri == {"dilim": "arm64", "kaynak": str(yol), "boy": 64}

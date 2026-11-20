@@ -100,6 +100,14 @@ SINIF_DERLEYICI = "derleyici"
 SINIF_PAKETSIZ = "paketsiz"
 SINIF_ADSIZ = "adsiz"
 
+# K4 fonksiyon başına sonuç.
+PCSP_TAM = "tam"
+PCSP_DOLGUYLA = "dolguyla"
+PCSP_KISA_ASM = "kisa_asm"
+PCSP_KISA = "kisa"
+PCSP_TASAN = "tasan"
+PCSP_YOK = "yok"
+
 # K7: Go ≤ 1.25 arm64'te Duff gövdelerinin ortasına çağrı olağandır.
 DUFF_ADLARI = frozenset({"runtime.duffzero", "runtime.duffcopy"})
 
@@ -144,6 +152,9 @@ class GoFonksiyon:
     dosya: str | None = None
     paket: str = ""
     sinif: str = ""
+    # K4 sonucu (fonksiyon başına): tam / dolguyla / kisa_asm / kisa / tasan / yok; denetim koşmadıysa "".
+    # "kisa" / "tasan" bu fonksiyonun üst verisinin gövdesine uymadığını gösterir (P-ÜV6 / P-ÜV7 tüketir).
+    pcsp_kapsama: str = ""
 
     def kayit(self) -> dict[str, Any]:
         """JSON'a yazılan biçim (adresler onaltılık dizgi)."""
@@ -157,6 +168,7 @@ class GoFonksiyon:
             "sinif": self.sinif,
             "func_id": self.func_id,
             "flag": self.flag,
+            "pcsp_kapsama": self.pcsp_kapsama,
         }
 
 
@@ -667,19 +679,25 @@ def _k4(p: GoPclntab, fs: list[GoFonksiyon]) -> dict[str, Any]:
     for f in fs:
         if f.pcsp == 0:
             pcspsiz += 1
+            f.pcsp_kapsama = PCSP_YOK
             continue
         tb = p.pc_tablosu(f.pcsp, f.giris)
         son = tb[-1][2] if tb else f.giris
         if son == f.bitis:
             tam += 1
+            f.pcsp_kapsama = PCSP_TAM
         elif son < f.bitis and f.bitis - son < hiza:
             dolgulu += 1
+            f.pcsp_kapsama = PCSP_DOLGUYLA
         elif son < f.bitis and f.flag & FUNC_FLAG_ASM:
             kisa_asm += 1
+            f.pcsp_kapsama = PCSP_KISA_ASM
         elif son < f.bitis:
             kisa += 1
+            f.pcsp_kapsama = PCSP_KISA
         else:
             tasan += 1
+            f.pcsp_kapsama = PCSP_TASAN
     return {"bakilan": len(fs) - pcspsiz, "ihlal": kisa + tasan, "hiza": hiza, "tam": tam,
             "dolguyla": dolgulu, "kisa_asm": kisa_asm, "kisa": kisa, "tasan": tasan,
             "pcsp_yok": pcspsiz}

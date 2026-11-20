@@ -465,6 +465,7 @@ def test_komsu_func_takasi_k4_ihlal_verir() -> None:
     liste[0].pcsp, liste[1].pcsp = liste[1].pcsp, liste[0].pcsp
     k4 = G.butunluk_denetle(p, liste)["K4_pcsp_kapsama"]
     assert k4["ihlal"] == 2
+    assert [f.pcsp_kapsama for f in liste] == [G.PCSP_TASAN, G.PCSP_KISA, G.PCSP_TAM, G.PCSP_TAM]
 
 
 # ---------------------------------------------------------------------------
@@ -563,3 +564,4 @@ def test_kayit_bicimi() -> None:
     k = G.oku(g).fonksiyonlar[2].kayit()
     assert k["giris"] == hex(GO_METIN + 0x80) and k["ad"] == "main.main" and k["dosya"] == "main.go"
     assert k["sinif"] == G.SINIF_KENDI and k["baslangic_satiri"] == 12
+    assert k["pcsp_kapsama"] == G.PCSP_TAM
