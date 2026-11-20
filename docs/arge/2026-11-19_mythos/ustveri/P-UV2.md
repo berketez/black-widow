@@ -51,9 +51,29 @@ Plan: `ustveri/PLAN.md` "P-ÜV2". Kararlar: A-10, A-27, A-28.
   `class_ro_t`'sinden okunur (başvuru `None` yazıyordu; bilgi sayacı `kategori_sinifi_listede_yok`); üst sınıf zinciri
   (döngü sayaçlı) eklendi; bölüm dışı göreli ofset kaydı atlanır (başvuru adsız kayıt bırakıyordu).
 
+## Ön deneme (KABUL DEĞİL; araştırma `macho.py` bağdaştırıcısıyla, 11:0x)
+
+P-ÜV0 main'e girmeden okuyucunun gerçek veride hatasını erken görmek için: kabul betiği
+`~/karadul_olcum/runs/dalga0-2026-11-20/PUV2/kabul.py --goruntu arastirma` (görüntü yerine araştırma
+`scripts/arge/ustveri/macho.py`; okuyucu ürün kodu). Yalnız keşif / sınama dışı hedefler; iTerm2 (sınama ikilisi) bu
+denemede koşulmadı. Çıktı `…/PUV2/onden_arastirma.json`.
+
+| Hedef | Yöntem kaydı (ben / başvuru) | Yalnız bende / yalnız başvuruda (8 sütun, çoklu küme) | IMP başlangıç / ayrık IMP | Okuma hatası |
+|---|---|---|---|---|
+| terminal-notifier | 32 / 32 | 0 / 0 | 32 / 32 | 0 |
+| Ollama arm64 | 151 / 151 | 0 / 0 | 151 / 151 | 0 |
+| Ollama x86_64 | 151 / 151 | 0 / 0 | 151 / 151 | 0 |
+| limactl | 102 / 102 | 0 / 0 | 102 / 102 | 0 |
+| Rectangle arm64 | 450 / 450 | 0 / 0 | 450 / 450 | 0 |
+| `gh` | `veri_yok` (ObjC bölümü yok) | — | — | — |
+
+Sınıf, Swift sınıfı, kategori, protokol, paylaşımlı IMP ve arite sayıları da 5 / 5 başvuruyla aynı. H4 ön denemesi
+(mutant kaynak metinden kurulup): küçük biçimli kayıtlarda doğru seçici terminal-notifier 0 / 32, Ollama arm64 0 / 151,
+limactl 0 / 102, Rectangle 0 / 450; Ollama x86_64'te küçük biçimli liste yok (H4 o hedefte veri yok).
+
 ## Testler ve mutasyon
 
-- `tests/test_puv2_objc.py`: 50 test (okuyucu 24, tip kodlaması 15 parametre + 2, adım 9). Sentetik görüntü:
+- `tests/test_puv2_objc.py`: 51 test (okuyucu 24, tip kodlaması 15 parametre + 2, adım 10; biri gerçek `Workspace` ile). Sentetik görüntü:
   `Kedi` + meta sınıf (küçük biçim 2 yöntem seçici başvurusuyla, meta sınıfta büyük biçim 1 yöntem), Swift
   işaretli `Kopek` (`bits` yeniden konumlamayla, düşük bit 2), `NSString`'e `Ek` kategorisi (bağ, seçici doğrudan),
   `Sesli` protokolü.

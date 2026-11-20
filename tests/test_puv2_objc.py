@@ -578,6 +578,21 @@ class TestAdim:
         assert belge["ozet"]["yontem_kaydi"] == 5 and len(belge["siniflar"]) == 2
         assert ctx.stats["objc_method_count"] == 5 and ctx.errors == []
 
+    def test_gercek_calisma_alani_ile(self, tmp_path: Path, sahte_ac) -> None:
+        from karadul.core.workspace import Workspace
+
+        sahte_ac(ornek_goruntu())
+        ctx = _ctx(tmp_path)
+        ws = Workspace(tmp_path, "ornek", workspace_dir=tmp_path / "gercek_ws")
+        ws.create()
+        ctx.pipeline_context.workspace = ws
+        out = ObjcMetadataRecoveryStep().run(ctx)
+        belge = json.loads(Path(out["objc_methods_path"]).read_text(encoding="utf-8"))
+        assert Path(out["objc_methods_path"]).parent.name == "static"
+        assert belge["schema"] == "karadul.objc_methods.v1"
+        assert [m["tam_ad"] for m in belge["yontemler"]][-1] == "-[NSString kedice]"
+        assert ctx.stage_artifacts["objc_methods_path"] == out["objc_methods_path"]
+
     def test_objc_olmayan_ikili_veri_yok(self, tmp_path: Path, sahte_ac) -> None:
         sahte_ac(BellekGoruntu([("__text", TEXT, b"\0" * 16, True, "__TEXT")]))
         out = ObjcMetadataRecoveryStep().run(_ctx(tmp_path))
