@@ -161,6 +161,7 @@ class Modul:
     bl_hedefi: str = "giris"         # "giris" / "govde" / "yok"
     gosterici_boyutu: int = 8
     kod_boyu: int | None = None      # None → bütün gövdeler kod bölümünde
+    md_pclntable_uz: int | None = None  # moduledata'daki pclntable uzunluğu (None → doğru değer)
     baglar: dict = field(default_factory=dict)
 
 
@@ -263,6 +264,8 @@ def kur(m: Modul | None = None) -> tuple[BellekGoruntu, dict]:
         2: len(fn), 3: len(fn), 5: len(cutab) // 4, 6: len(cutab) // 4, 8: len(ft), 9: len(ft),
         11: len(pct), 12: len(pct), 14: len(pclntable), 15: len(pclntable), 17: n + 1, 18: n + 1,
     }
+    if m.md_pclntable_uz is not None:
+        uz[14] = m.md_pclntable_uz
     gos = {
         0: PCLN, 1: PCLN + funcname_off, 4: PCLN + cu_off, 7: PCLN + filetab_off,
         10: PCLN + pctab_off, 13: PCLN + pcln_off, 16: PCLN + pcln_off, 19: FFTAB,
@@ -598,6 +601,13 @@ def test_beklenmedik_hata_hata_durumu() -> None:
 
     s = G.oku(Bozuk())
     assert s.durum == G.DURUM_HATA and "RuntimeError" in s.neden
+
+
+def test_moduledata_pclntable_uzunlugu_bozuksa_bolum_boyu() -> None:
+    g, b = kur(Modul(md_pclntable_uz=1 << 40))
+    s = G.oku(g)
+    assert s.durum == G.DURUM_CALISTI, s.neden
+    assert [f.giris for f in s.fonksiyonlar] == b["girisler"]
 
 
 def test_kayit_bicimi() -> None:

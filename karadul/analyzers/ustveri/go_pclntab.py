@@ -512,13 +512,19 @@ class GoPclntab:
 
     def _tablo_oku(self) -> None:
         """pclntab'ın tamamını tek okumayla al (bütün ofsetler başlığa göre)."""
-        boy = self.pcln_off + 8 * (self.nfunc + 1)
-        if self.bolum is not None:
-            boy = max(boy, self.bolum[2])
+        en_az = self.pcln_off + 8 * (self.nfunc + 1)
+        adaylar = []
         if self.md.get("pclntable_uzunlugu"):
-            boy = max(boy, self.pcln_off + self.md["pclntable_uzunlugu"])
-        blob = _oku(self.g, self.adres, boy)
-        if blob is None or len(blob) < self.pcln_off + 8 * (self.nfunc + 1):
+            adaylar.append(self.pcln_off + self.md["pclntable_uzunlugu"])
+        if self.bolum is not None:
+            adaylar.append(self.bolum[2])
+        # En büyük okunabilir boy (moduledata uzunluğu bozuksa bölüm boyuna düş).
+        blob = None
+        for boy in sorted({b for b in adaylar if b >= en_az}, reverse=True) + [en_az]:
+            blob = _oku(self.g, self.adres, boy)
+            if blob is not None:
+                break
+        if blob is None or len(blob) < en_az:
             raise GoOkumaHatasi(DURUM_TUTARSIZ, "pclntab kesik: ftab okunamıyor")
         self.blob = blob
 
