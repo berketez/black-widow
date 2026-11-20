@@ -171,19 +171,19 @@
   },
   {
    "id": "hat_kunye_c_namera_gecmez",
-   "desc": "tohumdaki künye c_namer'a verilmez (KS-1 adı sıradan ön ad olur)",
+   "desc": "tohumdaki künye c_namer'a verilmez (KS-1 adı sıradan ön ad olur) (MUTBAKIM 2026-11-20: 1811b8d paralel koşucu dalını silince satır 4 boşluk sola kaydı)",
    "module": "karadul/pipeline/steps/_feedback_naming.py",
    "test": "tests/test_adim3_hat_baglantisi.py::test_kunye_faz2_tohumundan_c_namera_ulasir",
-   "find": "                meta_kwargs[\"pre_name_meta\"] = pre_name_meta\n",
-   "replace": "                pass  # mutant: künye yok\n"
+   "find": "            meta_kwargs[\"pre_name_meta\"] = pre_name_meta\n",
+   "replace": "            pass  # mutant: künye yok\n"
   },
   {
    "id": "hat_kunye_yokken_de_gecer",
-   "desc": "künye yokken de pre_name_meta parametresi verilir (bugünkü çağrı değişir)",
+   "desc": "künye yokken de pre_name_meta parametresi verilir (bugünkü çağrı değişir) (MUTBAKIM 2026-11-20: 1811b8d sonrası girinti 4 boşluk az)",
    "module": "karadul/pipeline/steps/_feedback_naming.py",
    "test": "tests/test_adim3_hat_baglantisi.py::test_kunye_yokken_c_namer_bugunku_cagriyla",
-   "find": "            if pre_name_meta is not None:\n                meta_kwargs",
-   "replace": "            if True or pre_name_meta is not None:\n                meta_kwargs"
+   "find": "        if pre_name_meta is not None:\n            meta_kwargs",
+   "replace": "        if True or pre_name_meta is not None:\n            meta_kwargs"
   },
   {
    "id": "hat_kunye_sozluk_denetimi_yok",
@@ -211,11 +211,11 @@
   },
   {
    "id": "hat_merger_esik_uygulanmaz",
-   "desc": "NameMerger çıktısına ürün eşiği uygulanmaz (tasarım §5.4 satır 6)",
+   "desc": "NameMerger çıktısına ürün eşiği uygulanmaz (tasarım §5.4 satır 6) (MUTBAKIM 2026-11-20: 2450c0e eşiği birleştiricinin süzülmemiş haritasına (merged_map) taşıdı)",
    "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
    "test": "tests/test_adim3_hat_baglantisi.py::test_name_merger_esigi_bayrak_acikken",
-   "find": "            final_naming_map, merge_result.merged_names, threshold,\n",
-   "replace": "            final_naming_map, merge_result.merged_names, None,\n"
+   "find": "            merged_map, merge_result.merged_names, threshold,\n",
+   "replace": "            merged_map, merge_result.merged_names, None,\n"
   },
   {
    "id": "hat_merger_esik_esitlikte_duser",

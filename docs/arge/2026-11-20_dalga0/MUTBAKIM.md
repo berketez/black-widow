@@ -49,3 +49,9 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
   - Niyet korundu: mutant yalnız kapsayıcıyı dışarıda bırakır (`… == TargetType.UNKNOWN and not (target.metadata or {}).get("container")`), kapsayıcısız UNKNOWN atlanmaya devam eder; `find` üç satırlık tekil blok (`return StageResult(… skipped=True,` dahil; dosyada 4 `if target.target_type == TargetType.UNKNOWN:` var). Test aynı (`test_synthetic_wheel_is_skipped_not_js`). Öldü.
   - Not: `mutation_specs_ps4.json`'daki `ps4` mutantı aynı bloğu öbür yönde bozuyor (yalnız kapsayıcı atlanır); ikisi birlikte dalın iki yarısını kilitliyor.
 - Kaldırılan mutant yok; yeni test yok.
+
+### adim3_hat — önce 47 öldü / 0 hayatta / 3 hata → sonra 50 / 0 / 0 (50 mutant)
+
+- **Hata: `hat_kunye_c_namera_gecmez`, `hat_kunye_yokken_de_gecer`** (`_feedback_naming.py`, ön ad künyesinin c_namer'a geçişi). Kodu değiştiren commit: `1811b8d` (AD-12, K-3 A5: ölü paralel ad koşucusu silindi). Künye iletimi eskiden paralel koşucunun `else` dalındaydı; dal silinince satırlar 4 boşluk sola kaydı. Niyet ve `replace` aynı, yalnız girinti güncellendi. İkisi de öldü.
+- **Hata: `hat_merger_esik_uygulanmaz`** (`_feedback_naming_merger.py`, NameMerger çıktısına ürün eşiği). Kodu değiştiren commit: `2450c0e` (AD-04 / AD-05): eşik artık c_namer kararlarıyla birleşmiş `final_naming_map`'e değil, birleştiricinin kendi haritasına (`merged_map`) uygulanıyor. Mutant aynı çağrıda eşiği `None` yapar. Öldü.
+- Kaldırılan mutant yok; yeni test yok.
