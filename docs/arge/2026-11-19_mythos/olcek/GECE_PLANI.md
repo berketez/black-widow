@@ -8,9 +8,9 @@
 
 | # | Kalem | Durum | Commit |
 |---|---|---|---|
-| 1 | ÖLÇ-A `olcek_kos.py` + testler + mutantlar | bitti | (bu commit) |
+| 1 | ÖLÇ-A `olcek_kos.py` + testler + mutantlar | bitti | `45ac0f2` |
 | 2 | Uçtan uca duman (cat) | bekliyor | — |
-| 3 | ÖLÇ-0 (`gosteri_son.json`, `OLC0.md`) | bekliyor | — |
+| 3 | ÖLÇ-0 (`gosteri_son.json`, `OLC0.md`) | bitti | (bu commit) |
 | 4 | Gece koşusu tasarımı (ön kayıtlar, `hz0_ek.py`, `gece_kosusu.py`, bu belge) | bekliyor | — |
 | 5 | Testler ve mutasyon (`gece_kosusu` dahil) | bekliyor | — |
 
@@ -24,3 +24,9 @@
 - Ghidra adım süreleri: `ghidra_status.json` `adim_sureleri` (HZ-1) varsa o, yoksa `ghidra_output` dosya zamanları (`olcek_topla.ghidra_adim_sureleri` mantığı buraya taşındı); kaynak künyede `ghidra.adim_kaynagi`. Köprü yarıda kaldıysa her çıktının koşu başından beri saniyesi, son biten adım ve `decompiled/` sayısı.
 - Testler: `tests/test_olcek_kos.py` 16 test (koşucu gerçek alt süreç; sahte analiz komutu; Ghidra yok). PLAN kabulü: duvar 5 sn → `zaman_asimi`, süre ≤ 67 sn (ölçülen ≈ 5 sn); varsayılan aralıklarla 30 sn'lik sahte koşuda `ornekler.csv` ≥ 3 satır (testte).
 - Mutasyon: `scripts/measurement/mutation_specs_olcek_kos.json` 6 / 6 öldü (duvar eşiği, SIGKILL, SIGTERM'in hedefi, tepe RSS seçimi, ağaç RSS'i, adım kaynağı önceliği); `git diff` temiz.
+
+## Kalem 3 — ÖLÇ-0 (salt okur)
+
+- `gosteri_son.json` yazıldı (`~/karadul_olcum/runs/arge-2026-11-19/olcek/`); ayrıntı ve tablo `OLC0.md`.
+- Ön kayıt kıyası: 10 satırın 3'ü tuttu, 7'si tutmadı (reconstruct süresi 2 353 sn ↔ öngörü üst sınırı 710–732; toplam 7 729 sn ↔ 1 632–1 827; disk / dosya / `out/` eksenlerin birinde tutuyor, öbüründe %1–15 kaçırıyor).
+- Not (kalem 4 için): 2. denemenin azami RSS'i 4,68 GB; PLAN'daki "T25 ≥ 6,4 GB" ön kayıt taslağı 1. denemenin (ObjC çözümleyicisi açık, takılı) sayısına dayanıyordu.
