@@ -12,11 +12,11 @@ Paket metni: `docs/arge/2026-11-20_dalga0/gonderim/HEDEF.md`. Ortak brif: `docs/
 | Kalem | Durum |
 |---|---|
 | 1 set + GT + bölme | bitti (aşağıda) |
-| 2 ad eşitliği | bekliyor |
-| 3 kanal ölçümü | bekliyor |
-| 4 bütçe + ürün "önce" sayısı | bekliyor |
+| 2 ad eşitliği | bitti (`c16a315`) |
+| 3 kanal ölçümü | bitti: keşifte HK tuttu, H1 25 / 25 aynı |
+| 4 bütçe + ürün "önce" sayısı | bütçe bitti (16 / 16 aynı); ürün koşusu Ghidra kuyruğunda |
 | 5 P-ÜV9 kalem 1 | yön ön kaydı commit'li (`bbda937`, §5) |
-| 6 test + mutasyon | bekliyor |
+| 6 test + mutasyon | 23 test geçti; mutant 13 / 13 öldü (`c16a315`) |
 
 ## Koşu listesi (Ghidra kuyruğu) ve TAHMİNİ süre
 
@@ -45,3 +45,53 @@ Veri: `~/karadul_olcum/ustveri_set/<ad>/{orig,bin,gt}`, künye `~/karadul_olcum/
 - Dilimler araştırma kopyalarıyla (`$V/hedef/iTerm2.arm64`, `llama-server.arm64`) aynı sha256.
 - GT adres sayıları araştırma envanteriyle tutarlı: docker-cli 35 050 (= `ayrik_adres`), iTerm2 108 776 ve llama-server 17 210 (= sembollü başlangıç).
 - **HS tutmadı (2 / 5):** `/usr/bin/strip` öntanımı, ikilinin dışa açtığı sembolleri bırakıyor (iTerm2 5, llama-server 151 dışa aktarım; 1 ve 63 `T` sembolü). Kanal ölçümü sembol okumaz (RTTI taramasının zayıf bağ çözümü hariç; H1 bunu sınar). Ürün koşusu bu iki ikilide zaten yok (süre); gece kuyruğunda koşulursa bu adlar Ghidra'ya sızar: ya kalan sembollerin adresleri ölçümden çıkarılmalı ya da `strip -x` değil, dışa aktarım bırakmayan bir yol aranmalı (karar ana oturumda).
+
+## Kalem 2 — ad eşitliği (`scripts/measurement/ustveri_olc.py`, commit `c16a315`)
+
+Kurallar tek yerde (`go_yazimi`, `objc_yazimi`, `swift_yazimi`, `rtti_yazimi`, `urun_esit`); ön kayıt §2 ile aynı. Sentetik testler: `tests/test_puv8_olcum.py` (23 test). Mutasyon `scripts/measurement/mutation_specs_puv8.json`: 13 / 13 öldü (`.abi0` kuralı her eki soyar; kategori kuralı sınıfı da soyar; payda GT'siz adresleri sayar; kesin ∪ sembol yerine toplam; Wilson'da n yerine k; çok adlı adreste tek eşleşme; sınama reddi kalkar; GT'siz yanlış sayılır; A-2 eşiği gevşer; nüfus thunk sayar; Mach-O öneki soyulmaz; dilim ofsetsiz; RTTI GT'sinde vtable düşer).
+
+## Kalem 3 — kanal düzeyi ölçüm (keşif; **araştırma okuyucusu, ürün kanalı değil**)
+
+Soyulmuş kopyada kanal çıktısı ↔ özgünün sembol tablosu (`ustveri_olc.py kanal`; çıktı `~/karadul_olcum/runs/dalga0-2026-11-20/HEDEF/kanal_<ad>.json`).
+
+| İkili | Kanal | Ad verilen | Doğru | Yanlış | GT'siz | Yazım kırılımı | Kesinlik (Wilson %95) | A-2 (alt ≥ 0,909) |
+|---|---|---|---|---|---|---|---|---|
+| docker-cli | Go `pclntab` | 35 048 | 35 048 | 0 | 0 | birebir 34 710 / `.abi0` 328 / orta nokta 10 | %100 (%99,99–%100); alt 0,99989 | evet |
+| terminal-notifier | ObjC yöntem | 32 | 32 | 0 | 0 | birebir 31 / kategori 1 | %100 (%89,3–%100); alt 0,892821 | **hayır (n = 32 küçük)** |
+
+- Öbür kanallar iki keşif ikilisinde `veri_yok`. **HK tuttu** (sayılar ön kayıttaki gibi; A-2 "hayır" da ön kayıtta beklenen).
+- **Araç araştırma çıktısını yeniden üretiyor:** özgün dilimde kanal listesi `$V/go/docker-cli.tsv` (35 048 adres) ve `$V/objc/terminal-notifier.tsv` (32) ile adres ve ad düzeyinde aynı: yalnız bir yanda 0, ad farkı 0 (`ustveri_olc.py yeniden-uret`; `…/HEDEF/yeniden_<ad>.json`).
+- **Sınamada kanal kesinliği hesaplanmadı** (araç reddeder; Dalga 2).
+
+### H1 — soyma kanal çıktısını değiştiriyor mu (5 ikili × 5 kanal; GT okunmadı)
+
+`ustveri_olc.py h1` (`…/HEDEF/h1/<ad>.json`): özgün dilim ↔ soyulmuş kopya.
+
+| İkili | Go | ObjC | Swift erişim | C++ typeinfo | C++ vtable | Fark |
+|---|---|---|---|---|---|---|
+| terminal-notifier | veri yok | 32 / 32 | veri yok | veri yok | veri yok | 0 |
+| docker-cli | 35 048 / 35 048 | veri yok | veri yok | veri yok | veri yok | 0 |
+| docker-compose | 90 077 / 90 077 | veri yok | veri yok | veri yok | veri yok | 0 |
+| iTerm2 arm64 | veri yok | 41 305 / 41 305 | 3 659 / 3 659 | 18 / 18 | 10 / 10 | 0 |
+| llama-server arm64 | veri yok | veri yok | veri yok | 1 994 / 1 994 | 1 317 / 1 317 | 0 |
+
+**H1 tuttu: 25 / 25 kanal-ikili çiftinde durum ve adres → ad haritası aynı.** (iTerm2 ve llama-server soyulmuş kopyasında kalan dışa aktarımlar RTTI taramasının zayıf bağ çözümünü değiştirmedi.)
+
+## Kalem 4 (plan) — bütçe (`ustveri_olc.py butce`)
+
+- **Başvuruyla karşılaştırma (HB tuttu):** `$V/butce.json`'daki 16 hedefin 16'sında 13 sütunun (nüfus, Go, ObjC, Swift erişim, kesin, Swift yuva, RTTI yuva, yuva, sembol, kesin − sembol, kesin ∪ sembol, kalan, kalanın yuvalısı) hepsi aynı (`…/HEDEF/butce_basvuru.json`). Girdi: `$V/hedef/` kopyaları; htop / tmux `workspaces/olcum_mac/corpus/*/bin`, gsort / xz P-S3b kabul seti `bin` kopyaları.
+- **Set ikililerinin soyulmuş kopyası** (`…/HEDEF/butce_set_soyulmus.json`):
+
+| İkili | Nüfus (kaynak) | Go | ObjC | Swift erişim | Kesin | Yuva | Sembol | Kalan |
+|---|---|---|---|---|---|---|---|---|
+| terminal-notifier | 92 (LC_FUNCTION_STARTS) | 0 | 32 | 0 | 32 | 0 | 0 | 60 |
+| docker-cli | 35 048 (`pclntab`; LC_FUNCTION_STARTS yok) | 35 048 | 0 | 0 | 35 048 | 0 | 0 | 0 |
+| docker-compose | 90 257 | 90 077 | 0 | 0 | 90 077 | 0 | 0 | 180 |
+| iTerm2 arm64 | 109 608 | 0 | 41 305 | 3 659 | 44 964 | 3 128 | 1 | 64 643 |
+| llama-server arm64 | 17 211 | 0 | 0 | 0 | 0 | 7 053 | 63 | 17 148 |
+
+- Sembol sütunu iTerm2'de 1, llama-server'da 63: soyma sonrası kalan fonksiyon sembolleri (kalem 1, HS).
+
+## Bekleme (Ghidra kuyruğu)
+
+- **09:40 — şu an bekliyorum:** `urun:terminal-notifier` kuyrukta (09:33:28'den beri; önde OK5 `postgresql-17:e00` 09:05:41'den beri koşuyor, HZ1 ve KIMLIK bekliyor). Kendi koşu TAHMİNİ 1–5 dk; kuyruk bekleyişi bilinmiyor (TAHMİN 20–90 dk). Bu arada P-ÜV9 kalem 1 (Ghidra'sız; gösteri çıktısı salt okur) yapılıyor.
