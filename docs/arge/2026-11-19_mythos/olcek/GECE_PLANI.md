@@ -17,6 +17,8 @@
 
 **08:50 — şu an bekleniyor:** duman 2. denemesi Ghidra kuyruğunda (`OLCEK bekliyor duman:cat`, 08:49:49); önünde ANA (S8-AA), HZ1 (S8 sonra kolu) ve OK5 koşuları var, kilit sırası FIFO değil. Tahmini bitiş 09:10–09:40 (TAHMİN: kuyruktakilerin bugünkü süreleri 36–291 sn / koşu). Mutasyon koşusu dumandan sonra (duman `olcek_kos.py` / `hz0_ek.py`'yi kilit alınınca yüklüyor; mutasyon o dosyaları değiştirir).
 
+**Ortak scratchpad uyarısı (ana oturum, 08:5x):** geçici betiklerim `scratchpad/OLCEK/` altına taşındı; daha önce ortak dizinde koşulan iki okuma betiği (`OLC0.md` sayıları, TAHMİN kaynağı S8 ↔ 119 kıyası) oradan yeniden koşuldu, çıktılar aynı. Tam takım günlüğü baştan beri `~/karadul_olcum/runs/dalga0-2026-11-20/OLCEK/tam_takim/` altında.
+
 ## Kalem 1 — ÖLÇ-A (`scripts/measurement/olcek_kos.py`)
 
 - Arayüz planın adım 1'iyle aynı; ek seçenekler: `--java-ek` (JFR / AppCDS gibi ek JVM seçenekleri; gece kuyruğu kullanır), `--ornek-aralik` (10), `--disk-aralik` (60), `--kill-bekle-sn` (60), `--komut` (yalnız test kancası).
@@ -97,6 +99,8 @@ Yarıda kalırsa aynı komut yeniden verilir (biten koşular atlanır). Sonuç `
 Gece 1'i başlatmadan hemen önce Avast'ın ayarlarındaki istisnalar (hariç tutulanlar) listesine yalnız şu klasörü ekle: `/Users/apple/karadul_olcum/runs/hiz-avast-dislama/<kısa-commit>/` (ana oturum klasörü `--avast-hazirla` ile oluşturup tam yolunu sana verir). Bütün `karadul_olcum`'u ya da masaüstünü dışlama: deneme yalnız bu klasörde, iki açık kaynak programın (Debian `sort` ve `tmux`) analiziyle koşar. Gece 1 bitip `ozet.json` yazılınca (sabah) istisnayı sil. Dışlama yapmak istemezsen hiçbir şey yapma: o kol atlanır ve "Berke onayı yok" diye kayda geçer, öbür ölçümler etkilenmez.
 
 ### Riskler (gece öncesi bilinmesi gereken)
+
+- **Boş makine şartı:** o gece bu Mac'te başka ağır iş (başka Claude oturumlarının benzetimleri, derlemeler, Ghidra) koşmamalı; 1 dk yük 3,5'i aşarsa koşu başlatılmaz ya da geçersiz sayılır (en çok 2 yineleme, sonra kayda geçer). Gündüz ölçülen yük 4–18 (bu oturum, 5 ajan): gündüz koşulursa hepsi geçersiz çıkar.
 
 - **JFR ile AppCDS aynı koşuda olmaz:** JVM, arşiv dökülürken JFR'ı kapatıyor (`java -version` denemesi: "JFR will be disabled during CDS dumping"). Bu yüzden `b_jfr` ve `k_appcds` ayrı gruplar; duman yalnız JFR'ı sınadı.
 - **T100 / T300 / PAKET öntanım ayarla koşar:** "Objective-C Message Analyzer" açık. Gösteri 1. denemede bu çözümleyici tek fonksiyonda 22+ dk takıldı; C++ ağırlıklı T100 / T300'te ObjC kodu beklenmez, FreeCAD'de olabilir. 2 saatlik duvar her durumda bağlar; nerede kaldığı künyede.
