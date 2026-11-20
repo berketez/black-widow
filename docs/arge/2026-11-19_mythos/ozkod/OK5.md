@@ -41,6 +41,9 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
 
 **Bekleme (08:2x):** şu an `kos-hepsi` arka planda; önce ayar (9), sonra kör (76). TAHMİNİ bitiş: kuyrukta başka paket yoksa 10:15–12:35 arası; başka paketler sıraya girdikçe kayar. Beklerken `ozkod_olc.py`, testler ve ön kayıt yazılıyor.
 
+**Sayaç (08:42):** ayar 6 / 9 bitti (6 tamam; toplam 649 sn, yük altında), kör 0 / 76. Kuyrukta HZ1 ve OLCEK paketleri de var (işler aralanıyor). Disk: 742,5 GB kullanılan (başta 739,6); koşu kökü 1,2 GB.
+**Bekleme (08:43):** şu an ayar tarafının son üç işini bekliyorum (pidgin, neomutt, postgresql-17; postgresql-17 TAHMİN 1 052–2 628 sn). TAHMİNİ ayar bitişi 09:10–09:45; ardından `ozkod_olc.py kur --taraf ayar` ve `ayar` (G1 kapısı + K1 karakter eki dondurma).
+
 ## 3. ÖK-5 adım 1–2 — `ozkod_olc.py` ve geliştirme setinde eşdeğerlik
 
 - `scripts/measurement/ozkod_olc.py` (yeni): kurallar `scripts/arge/ozkod/`'dan **içe aktarılır** (`ek_kurali.adaylar` / `tahmin` / `_ek_oyu` / `olc`, `kayit_cifti.say` / `gt_esit` / `ek_cikar`, `oz_ad_ayrim.ozellikler` / `kural_tut`, `oz_ad_uretici.g1`, `tavan.main`); yüklemeden önce beş dondurulmuş betiğin sha256'sı denetlenir (tutmazsa `DondurmaHatasi`, hiçbir şey sayılmaz). Parametre olan yalnız modül düzeyi veri kökleri ve birim listeleri (`etkin` bağlam yöneticisi; çıkışta eski değerler geri yüklenir). Ölçüm döngüleri (`ek_kurali_belirtec.py`, `ek_kurali_capa.py`, `oz_ad_harf.py` tanımları) betikte; her biri yalnız görünür tarafta döner.
