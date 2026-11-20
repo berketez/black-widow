@@ -118,3 +118,11 @@ okuyucu bu üç alanı yanlış okur. Giriş, ad, dosya etkilenmez (ilk 36 bayt)
 ayrımı (`flag`) ve K8 (`funcID`) bozulabilir: en kötü durumda `tutarsiz` (ad yok) — yanıltıcı ad
 değil. Kabul setindeki 11 dilimin hepsi Go ≥ 1.23. Plan gereği ezberden genişletilmedi; P-ÜV7 /
 P-ÜV9 gerçek bir 1.18–1.19 ikilisiyle ve resmî kaynakla doğrulamalı.
+
+## Bekleme (11:10)
+
+Şu an: P-ÜV0'ın main'e girişi bekleniyor (ana oturum mesajı; arka planda ana ağaçta `goruntu.py`
+var mı diye bakılıyor). Aynı sürede tam takımın ön koşusu (rebase öncesi, yamasız; bilinen
+`test_inert_registry_is_accurate` dışarıda) arka planda; günlük
+`~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/tam_takim_on.log`. Hazır betikler: `kabul.py`
+(11 dilim, GT, Go olmayan 5), `bozma_e.py` (H5 için E türü kopya). Tahmini bitiş: P-ÜV0'a bağlı.
