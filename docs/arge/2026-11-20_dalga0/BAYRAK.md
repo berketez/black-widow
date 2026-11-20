@@ -10,7 +10,7 @@
 - [x] 1. Envanter
 - [x] 2. Alanları ekle
 - [x] 3. `INERT_SETTINGS` + bağlama tablosu
-- [ ] 4. `naming_labels.py` sabitleri
+- [x] 4. `naming_labels.py` sabitleri
 - [ ] 5. Testler
 - [ ] 6. Davranış değişmedi kanıtı
 - [ ] 7. Mutasyon
@@ -236,3 +236,16 @@ Tablo `config.py`'den betikle üretildi (49 satır). Dalga `SONRAKI_OTURUM.md` �
 | `perf.ortak_havuz` | HZ-7d | 4 | `"perf.ortak_havuz": _pending_binding("HZ-7d"),` |
 | `perf.forkserver` | HZ-7d | 4 | `"perf.forkserver": _pending_binding("HZ-7d"),` |
 | `analysis.dokum_java_yardimci` | HZ-4b | — | `"analysis.dokum_java_yardimci": _pending_binding("HZ-4b"),` |
+
+## 4. `karadul/core/naming_labels.py`: ad eşiği tek yerde
+
+- Dosyanın sonuna iki sabit (var olan satır değişmedi; `MEASURED_PRE_NAME_PRECISION` dahil):
+  `MALIYET_ORANI_L: int = 10`, `AD_ESIGI: float = MALIYET_ORANI_L / (MALIYET_ORANI_L + 1)` (= 10 / 11 = 0,909090…).
+  Ana oturum hükmü (2026-11-20): A-13'teki "0,909" bu kesrin yuvarlanmış yazımı; sabit kesirle tanımlı.
+- Belge dizgisi (sabitin altındaki dizgi): A-2 / A-13 / A-14 kuralı — Wilson %95 alt sınırı ≥ `AD_ESIGI`, örnek düzeyi,
+  yön başına, en az 3 bağımsız programda ölçülmüş; şartı sağlamayan kanal kanıt satırı yazar ya da bayrak arkasında;
+  `1 − e / L` (0,900) kullanılmaz; var olan ön ad kanalları geriye dönük susturulmaz.
+- Yerleşim: dosya sonu. PK-4 / ÖK-4b `MEASURED_PRE_NAME_PRECISION`'a, P-ÜV6 etiket sözlüğüne satır ekleyecek;
+  yeni satırlar onların değiştireceği yerlere bitişik değil.
+- Eşiği başka yerde yazan kod: §1.5 (`scripts/arge/ustveri/tablo.py:186` `0.909`; değiştirilmedi).
+- Doğrulama: `naming_labels`'ı içe aktaran 12 test dosyası 199 geçti.

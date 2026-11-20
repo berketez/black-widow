@@ -114,3 +114,23 @@ def provenance_evidence(record: Optional[Mapping[str, Any]]) -> Any:
         return {"rol": ks1.get("rol"), "kanit_sayisi": len(ks1.get("kanitlar") or [])}
     evidence = record.get("evidence")
     return evidence if isinstance(evidence, str) and evidence else None
+
+
+# Bayrak ön paketi (KARARLAR A-2, A-13, A-14; 2026-11-20): ad eşiğinin TEK tanımı. Kanal
+# paketleri (PK-1, PK-4, P-ÜV6, ÖK-4b …) bu iki sabiti içe aktarır, kendi eşiğini yazmaz.
+MALIYET_ORANI_L: int = 10
+"""Maliyet oranı L (KARARLAR A-2): yanlış ad, eksik adın L katı kötü sayılır."""
+
+AD_ESIGI: float = MALIYET_ORANI_L / (MALIYET_ORANI_L + 1)
+"""Ad eşiği = L / (L + 1) = 10 / 11 = 0,90909… (KARARLAR A-2, A-13, A-14).
+
+A-13'teki "0,909" bu kesrin yuvarlanmış yazımıdır; karşılaştırma kesrin kendisiyle yapılır.
+``1 − e / L`` (0,900) kullanılmaz: kanıt satırının değeri (e) ölçülmedi.
+
+Kural: bir kanal öntanımda ad yazar ancak ölçülmüş tam ad kesinliğinin Wilson %95 alt
+sınırı ≥ AD_ESIGI ise; sayım örnek düzeyinde ve yön başına (hedef → başvuru) yapılır ve
+kanal en az 3 bağımsız programda ölçülmüş olmalıdır. Şartı sağlamayan kanal ad yerine
+kanıt satırı yazar ya da bayrak arkasında kalır (A-14). Var olan ön ad kanalları (gnulib,
+ELF önyükü, ``main``) set dışı ölçümler gelene kadar ad yazmayı sürdürür; geriye dönük
+susturma yok.
+"""
