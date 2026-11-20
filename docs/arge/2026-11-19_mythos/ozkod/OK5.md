@@ -42,6 +42,8 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
 **Bekleme (08:2x):** şu an `kos-hepsi` arka planda; önce ayar (9), sonra kör (76). TAHMİNİ bitiş: kuyrukta başka paket yoksa 10:15–12:35 arası; başka paketler sıraya girdikçe kayar. Beklerken `ozkod_olc.py`, testler ve ön kayıt yazılıyor.
 
 **Sayaç (08:42):** ayar 6 / 9 bitti (6 tamam; toplam 649 sn, yük altında), kör 0 / 76. Kuyrukta HZ1 ve OLCEK paketleri de var (işler aralanıyor). Disk: 742,5 GB kullanılan (başta 739,6); koşu kökü 1,2 GB.
+**Bekleme (12:04):** kör 75 / 76 bitti (75 tamam, zaman aşımı 0, hata 0). Son iş python3.13-minimal (6,7 MB) 12:02'de başladı; TAHMİNİ bitiş 12:25–12:45 (sınır 13:02). Biten 75 kör ELF'in önbelleği kuruldu (hata 0); kör sayım bu işi bekliyor.
+
 **Sayaç (11:38):** kör 69 / 76 bitti (69 tamam). Ana oturumun sert sınırı 15:15 (Berke'nin oturumu 16:00'da bitiyor): kalan 7 iş (en büyüğü python3.13-minimal) TAHMİNEN 12:10'a kadar biter; sonra kör önbellek, kör sayım, hükümler, döküm, tam takım. Yetişmeyen kalem olursa "kalan" diye yazılır; hükümler yalnız koşulan ELF'lerle ve kısmi olduğu belirtilerek verilir.
 
 **Sayaç (11:17):** kör 40 / 76 bitti (40 tamam; 838 sn). 10:48'de ana oturum KIMLIK'in yeni koşularını OK5 kör işleri bitene kadar bekletti; 11:12'den beri kuyruk OK5'te. TAHMİNİ kör bitişi 11:50–12:20.
