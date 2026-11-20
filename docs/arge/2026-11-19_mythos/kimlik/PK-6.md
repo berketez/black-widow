@@ -12,7 +12,7 @@
 |---|---|---|
 | 1 Ön kayıtlar (`PK-6_on_kayit.md`, `PK-11_on_kayit.md`, grup tanımları) | bitti | `93788e5` |
 | 2 PK-6 `mimari`, `derleyici_surumu` | koşu sırada | — |
-| 3 PK-6 `surum_esli` (V1) | bitti: 4 / 4 program; (e) 4 / 4 → "tmux'a özgü değil"; (b) kararsız; (d) tree tutmadı | (bu commit) |
+| 3 PK-6 `surum_esli` (V1) | bitti: 4 / 4 program; (e) 4 / 4 → "tmux'a özgü değil"; (b) kararsız; (d) tree tutmadı | `1ceed86` |
 | 4 `iyilestirme` | veri yok (tabaka C Dalga 2'de) | — |
 | 5 PK-11 | bitti (`PK-11.md`): kural 242 / 1, alt 0,977 → (a) hat hedefi; (b) kapsam %33,6 tutmadı; (c) 0 / 199 tuttu | `ee8d78d` |
 | 6 Kilit süzgeci sınaması + mutant | bitti: 14 / 14 sınama, mutant 3 / 3 öldü | `329e9bc` |
@@ -64,6 +64,13 @@ verdi: kural 3 908 / 38, tutucu 3 709 / 28, kural_v2 4 281 / 36, tutucu_v2 4 170
 ## Bekleme (09:20)
 
 - Şu an Ghidra kuyruğunu bekliyorum: ilk işim `kitaplik/libzstd` 09:07'den beri sırada (önde OK5 postgresql-17, ANA S8-AA, HZ1 S8). Sonra V1 10 koşu, ardından `mimari` 19 ve `derleyici_surumu` 38. TAHMİNİ bitiş 12:00–13:30 (yük altında; kuyruk paylaşımlı).
+
+## Bekleme (10:49)
+
+- Ana oturum KIMLIK'in yeni koşularını OK5'in kısa işleri bitene kadar bekletti (`ghidra_kuyruk.bekle.KIMLIK`;
+  en geç ~12:05). Sürücü durdurulmadı; bekletme kalkınca kendiliğinden sürer. Şu an bekliyorum: tabaka A'nın son
+  iki ikilisi (openssl, zstd; tmux 10:42'de başladı), sonra tabaka B 38 koşu. TAHMİNİ bitiş 13:00–14:00.
+  Bu sürede Ghidra gerektirmeyen işler (belge, hüküm hesapları) sürüyor.
 
 ## Kalem 3 — `surum_esli` (V1) sonucu (10:23)
 
