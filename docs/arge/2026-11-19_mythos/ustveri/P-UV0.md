@@ -17,7 +17,7 @@
 | 5 PE iskeleti | **bitti** | `0a3a122` |
 | 6 Sağlamlık | **bitti** | `6e7f0d8` (+ `adec5c5`) |
 | 7 `python -m … goruntu` özeti | **bitti** | `f97054c` |
-| Kabul / test / mutasyon / tam takım | H1–H4 tuttu; 40 test; 16 / 16 mutant; tam takım koşuyor | `fd7ccd3` |
+| Kabul / test / mutasyon / tam takım | H1–H4 tuttu; 41 test; 17 / 17 mutant; tam takım: 7 kalan, hepsi worktree'de olmayan çalışma verisinden (bağla 7 / 7 geçti) | `fd7ccd3`, `5a0041f`, son commit |
 
 ## Arayüz (kalem 1) — `b049837`
 
@@ -100,3 +100,28 @@ Ek (ön kayıtta yoktu, bilgi): Rectangle (`LC_DYLD_INFO`) bağ işlem kodların
 - Dosya görüntülerinde `bolum_baytlari(bolum)` bölümü dosyadaki yerinden okur (yüklenmeyen bölüm dahil).
 - Biçime özgü yardımcılar: Mach-O `duzeltmeler()`, `ice_aktarimlar()`, `dyld_info_baglari()`, `goruntu_tabani`, `bolutler`, `bolut_adli()`, `kitapliklar`; ELF `yeniden_konumlamalar()`; PE `ice_aktarim_baglari()`, `goruntu_tabani`; modül düzeyinde `dilimler(veri)`, `urun_dilimi(veri)`, `uleb128`, `sleb128`, `ozet_cikar`.
 - `karadul.analyzers.ustveri` paketi adları tembel yükler (`python -m …goruntu` runpy uyarısı vermesin diye); `from karadul.analyzers.ustveri import Goruntu, Bag` çalışır.
+
+## Ek onarım — okunamayan ad uydurulmaz — `5a0041f`
+
+- Zincirli içe aktarımın adı okunamazsa (ad ofseti tablo dışında, sıkıştırılmış sembol biçimi) önceki sürüm `Bag("#n")`, PE'de `"#i"` / `"kitaplık#?"` yer tutucusu veriyordu; yer tutucu sembol adı gibi aşağı akışa geçebilirdi. Artık ad `None`, `gosterici` o yerde `None`; PE'de adı okunamayan thunk bağ olarak yazılmaz. Sıkıştırılmış sembol biçiminin `desteklenmiyor` durumu zincir okumasının sonunda ezilmiyor.
+- Gerçek 19 dilimde 12 274 içe aktarımın 0'ı adsız; bütün bağ yerleri `Bag` döndürüyor (değişiklik gerçek veride sonucu değiştirmedi). H1 19 / 19, H3 5 / 5, H4 istisna 0, PE yerel denetimi yeniden koşuldu: aynı.
+- Test 41; mutant 17 (yeni: adı okunamayan içe aktarım yine `Bag` döner).
+
+## Tam takım (yük altında; `uptime` 11:17 yük ortalaması 11,99 / 8,76 / 7,44)
+
+`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökü; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/PUV0/tam_takim.log`): **7 kaldı / 10 494 geçti / 81 atlandı / 152 seçilmedi, 368,9 sn.**
+
+- 7 kalanın hepsi worktree'de olmayan, git'in izlemediği çalışma verisinden: `scripts/node_modules` (`@babel/parser` yok: `test_deobfuscator` ×2, `test_pipeline::test_identify_and_static`, `test_project_reconstructor::test_reconstruct_with_explicit_modules_dir`) ve `vendor/gnulib-ref` (`test_ps3b_full_write`, `test_ps3b_gnulib_varlik`, `test_ps3b_ic_ad`). İki bağ (`vendor`, `scripts/node_modules` → ana ağaç) kurulup bu 7 test yeniden koşuldu: **7 / 7 geçti**; bağlar sonra kaldırıldı (commit'lenmedi). Bu paketin değişikliğiyle ilgisiz: paket yalnız yeni dosya ekliyor; `karadul/` ve `tests/` altında `karadul.analyzers.ustveri`'yi kendi testi dışında içe aktaran dosya yok.
+- Tam takım `5a0041f`'ten (ad uydurma onarımı) önce başladı; o commit yalnız `goruntu.py` + `tests/test_puv0_goruntu.py`'yi değiştirdi, ikincisi sonra ayrıca koşuldu (41 geçti).
+- Mutasyon (tam takım bittikten sonra, tek koşu): **17 / 17 öldü**, `git diff` temiz.
+
+## Riskler / açık noktalar
+
+- Plan "18 dilim" diyor; `envanter.json`'da 19 dilim var (ön kayıt notu 1). 19'u da aynı.
+- `LC_DYLD_INFO` bağları (Rectangle, gh, docker-cli, docker-compose) bağımsız bir sayımla karşılaştırılmadı; P-ÜV2 kalem 6 Rectangle'da doğrulayacak.
+- PE: Go PE ve MSVC RTTI kabulü P-ÜV9'da; arm64 `.pdata` `pefile` okumadığı için karşılaştırılmadı. PE'de taban yeniden konumlaması (`.reloc`) uygulanmaz (tercih edilen taban varsayılır; dosyadaki mutlak değer zaten o tabana göre).
+- ELF: `IRELATIVE` ve tanımadığı yeniden konumlama türleri `gosterici`'de `None` (sayaçta); `.eh_frame`'de `datarel` / dolaylı kodlama `hata` durumu verir (5 Debian ELF'te görülmedi). Yalnız 64 bit ELF ve 64 bit Mach-O (32 bit: `desteklenmiyor`).
+- Evrensel dosyada `ac()` bütün dosyayı belleğe okur, sonra dilimi kopyalar (iTerm2 140 MB). Ürün ince dilimi (`raw/<ad>_<mimari>`) kullandığından ürün yolunda bu olmaz.
+- Süreler yük altında ölçüldü (dilim başına 0,00–1,95 sn); boş makine ölçümü yapılmadı.
+
+## PAKET BİTTİ

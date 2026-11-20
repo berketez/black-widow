@@ -122,6 +122,14 @@
    "replace": "self._baglar[tb + kaynak + gb * j] = bag"
   },
   {
+   "id": "puv0_okunamayan_ad_bag_olur",
+   "desc": "adı okunamayan içe aktarım yine Bag olarak döner (ad uydurma)",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_ice_aktarim_adi_okunamazsa_ad_uydurulmaz",
+   "find": "                return None  # bağ var ama içe aktarım adı okunamadı: ad uydurulmaz\n",
+   "replace": "                pass\n"
+  },
+  {
    "id": "puv0_evrensel_dilim_zorunlu_degil",
    "desc": "evrensel dosyada dilim verilmezse ürün dilimi sessizce seçilir",
    "module": "karadul/analyzers/ustveri/goruntu.py",
