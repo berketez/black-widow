@@ -137,3 +137,21 @@ atlandı. **Not:** P-ÜV1'in yaması bir önceki satırı (`enable_go_metadata_r
   (`@babel/parser`) ve `vendor/gnulib-ref` yoktu (deobfuscator ×2, pipeline, project_reconstructor, ps3b ×3). ORTAK §2
   bağları kurulunca 7 test (ve dosyalarının kalanı) 21 / 21 geçti. P-ÜV2 değişikliğinden kalan test yok.
 - Yama geri alındı (`git diff` temiz). Kesin tam takım rebase'ten sonra yinelenecek.
+
+## SINAMA GT — iTerm2 arm64 (bir kez; okuyucu `b160a04`'te dondurulduktan sonra, 11:1x)
+
+`…/PUV2/gt.py --ad iTerm2 --sinama-izni`; çıktı `…/PUV2/gt_iTerm2.json`. GT: HEDEF paketinin çıkarımı
+(`ustveri_set/iTerm2/gt/`), sayım HEDEF'in kuralıyla (`ustveri_olc.kanal_olc`, `objc_yazimi`).
+
+- Özgün dilim ve soyulmuş kopyada ad haritası aynı (41 305 IMP).
+- **H2 tuttu:** ObjC GT sembolü olan IMP 33 611; **33 611 / 33 611 doğru, yanlış (farklı ad) 0** (birebir 31 431,
+  kategori yazımı 2 180); Wilson %95 alt sınırı **0,999886 ≥ 0,999**. `ad_yazilabilir` alt kümesi aynı (33 611 / 33 611).
+- **H3 tuttu:** ObjC GT sembolü olmayan IMP 7 694; bunların 7 420'si Swift sınıfı kaydı → **%96,44 ≥ %95**.
+- Bilgi (ön kayıtta hüküm yok): bütün GT ile (adres başına, HEDEF kuralı) 41 305 adresin 33 611'i doğru, 7 694'ü
+  "yanlış": o adreslerde GT'nin adı ObjC değil (çoğu Swift köprüsü; okuyucu `swift = true` işaretliyor). GT'de ObjC
+  adı olup okuyucunun listesinde IMP'i olmayan 994 adres var (yöntem listesinde olmayan ObjC sembolleri).
+- **P-ÜV6 için risk:** `swift = true` kayıtlar ve Swift işaretsiz 274 kayıt (7 694 − 7 420) GT'de ObjC adı taşımıyor;
+  ad kanalı bunlara ObjC tam adını yazarsa HEDEF ölçüsünde "yanlış" sayılır. Bu iki kümenin GT ad türü dökümü
+  bakılmadı (sınama GT'si bir kez açıldı; ikinci bakış yok).
+
+Ön kayıt hükümleri: **H1 tuttu, H2 tuttu, H3 tuttu, H4 tuttu (Ollama x86_64'te veri yok), H5 tuttu.**
