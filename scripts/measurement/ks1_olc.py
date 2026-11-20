@@ -34,6 +34,15 @@ Birimler
 - Mac: ``<koşu>/<program>/ws/workspaces/<program>/<zaman>/static`` (tmux, htop).
 - Debian: ``<koşu>/<program>/<elf>/ws/workspaces/<elf>/<zaman>/static``; ``BITTI`` dosyası olmayan
   ELF "bekliyor" sayılır. Bir program (ör. coreutils) birden çok ELF'ten oluşur; birim programdır.
+- Bitmişlik (OLCUM kalem 2, 2026-11-20; ``bitti_durumu``): ``BITTI``'nin İÇERİĞİ okunur. Yalnız
+  başarı işareti bitmiş sayılır: ``0`` (``urun_kos``: ``analyze`` çıkışı 0) ve eski N1 koşucusunun
+  ``ok <saniye>``'si. ``3`` (``urun_kos`` kısmi koşu) ``kismi``, başka her içerik ``hatali``; ikisi de
+  bitmemiş sayılır ve ``nufus_denetle`` özetine ayrı sayaçla girer. Mac birimi de ``BITTI``'ye bakılarak
+  sınanır; ``BITTI`` yoksa eski ol7 koşucusunun ``run.json``'u (``status`` ``ok``, ``exit_code`` 0)
+  okunur; ``urun_kos`` düzeninde (``kosu.log`` var) ``BITTI`` yoksa koşu bitmemiştir. İşaretsiz
+  (``BITTI``, ``run.json`` ve ``kosu.log`` olmayan) Mac dizini ve içi boş ``BITTI`` gerçek koşu
+  düzeni değildir (yalnız sentetik sınama kökleri); bitmiş sayılır ama işaret biçimi özete ayrı
+  yazılır (``bitti_isareti``: ``isaretsiz`` / ``bos``), sessizce geçmez.
 
 Kullanım
 --------
@@ -96,6 +105,20 @@ SABIT_DOSYALAR = OLCUM_DOSYALARI + (
 PLATFORM_MAC = "mac"
 PLATFORM_DEBIAN = "debian"
 BITTI = "BITTI"
+# BITTI içeriği (``urun_kos.calistir``: çıkış 0 → "0", çıkış 3 → "3"; eski N1 koşucusu: "ok <sn>")
+BITTI_TAMAM = "0"
+BITTI_KISMI = "3"
+BITTI_ESKI_TAMAM = "ok"
+GUNLUK_DOSYASI = "kosu.log"     # urun_kos düzeni: koşu başlarken yazılır
+ESKI_MAC_KUNYESI = "run.json"   # ol7 Mac koşucusu: {"status": "ok", "exit_code": 0, ...}
+DURUM_TAMAM = "tamam"
+DURUM_KISMI = "kismi"
+DURUM_HATALI = "hatali"
+DURUM_BEKLIYOR = "bekliyor"
+DURUM_CIKTISIZ = "ciktisiz"     # işaret bitti diyor ama ölçülecek çıktı yok (ör. ad haritası)
+BITME_DURUMLARI = (DURUM_TAMAM, DURUM_KISMI, DURUM_HATALI, DURUM_BEKLIYOR, DURUM_CIKTISIZ)
+BITME_ADLARI = {DURUM_TAMAM: "tamam", DURUM_KISMI: "kısmi", DURUM_HATALI: "hatalı",
+                DURUM_BEKLIYOR: "bekliyor", DURUM_CIKTISIZ: "çıktısız"}   # özet metni
 ONDALIK = 6
 # Nüfusun beklenen büyüklüğü (ön kayıt §7), birim (platform/program) başına: ölçüm yalnız biten
 # ELF'leri sayıp yarım koşuyu geçirmesin. Mac 2, Debian 117 ELF.
@@ -268,6 +291,43 @@ class Elf:
     ad: str
     static: Optional[Path]   # bitmediyse None
     kosu: Path               # ws/ ve raw/ içeren çalışma alanı (static'in üstü)
+    durum: str = DURUM_TAMAM  # ``bitti_durumu``: tamam | kismi | hatali | bekliyor
+    isaret: str = ""          # bitmişliğin dayandığı işaret: 0 | ok | bos | run.json | isaretsiz | …
+
+
+def bitti_durumu(dizin: Path, platform_: str = PLATFORM_DEBIAN) -> tuple[str, str]:
+    """İkili dizininin bitmişliği: (durum, işaret). Yalnız başarı işareti ``tamam`` döner.
+
+    ``BITTI`` içeriği: ``0`` ve ``ok …`` tamam; ``3`` kısmi; başka içerik hatalı; boş içerik
+    (yalnız sentetik kökler) tamam ama işareti ``bos``. ``BITTI`` yoksa Debian'da bekliyor; Mac'te
+    eski ``run.json`` okunur, ``urun_kos`` düzeninde (``kosu.log`` var) bekliyor, hiçbir işaret
+    yoksa (sentetik kök) tamam ama işareti ``isaretsiz``.
+    """
+    dizin = Path(dizin)
+    yol = dizin / BITTI
+    if yol.is_file():
+        ic = yol.read_text(encoding="utf-8", errors="replace").strip()
+        if ic == BITTI_TAMAM:
+            return DURUM_TAMAM, BITTI_TAMAM
+        if not ic:
+            return DURUM_TAMAM, "bos"
+        if ic.split()[0] == BITTI_ESKI_TAMAM:
+            return DURUM_TAMAM, BITTI_ESKI_TAMAM
+        if ic == BITTI_KISMI:
+            return DURUM_KISMI, BITTI_KISMI
+        return DURUM_HATALI, "icerik:" + ic.split()[0][:20]
+    if platform_ == PLATFORM_MAC:
+        kunye = dizin / ESKI_MAC_KUNYESI
+        if kunye.is_file():
+            try:
+                rj = _json(kunye)
+            except (OSError, ValueError):
+                return DURUM_HATALI, ESKI_MAC_KUNYESI
+            tamam = isinstance(rj, dict) and rj.get("status") == "ok" and rj.get("exit_code") == 0
+            return (DURUM_TAMAM if tamam else DURUM_HATALI), ESKI_MAC_KUNYESI
+        if not (dizin / GUNLUK_DOSYASI).exists():
+            return DURUM_TAMAM, "isaretsiz"
+    return DURUM_BEKLIYOR, "yok"
 
 
 def _tek_static(kok: Path) -> Path:
@@ -288,8 +348,12 @@ def mac_elfleri(kosu: Path) -> list[Elf]:
     for d in sorted(p for p in Path(kosu).iterdir() if p.is_dir()):
         if not (d / "ws").is_dir():
             continue
+        durum, isaret = bitti_durumu(d, PLATFORM_MAC)
+        if durum != DURUM_TAMAM:
+            out.append(Elf(PLATFORM_MAC, d.name, d.name, None, d, durum, isaret))
+            continue
         st = _tek_static(d)
-        out.append(Elf(PLATFORM_MAC, d.name, d.name, st, st.parent))
+        out.append(Elf(PLATFORM_MAC, d.name, d.name, st, st.parent, durum, isaret))
     return out
 
 
@@ -297,11 +361,12 @@ def debian_elfleri(kosu: Path) -> list[Elf]:
     out = []
     for prog in sorted(p for p in Path(kosu).iterdir() if p.is_dir()):
         for d in sorted(p for p in prog.iterdir() if p.is_dir()):
-            if not (d / BITTI).is_file():
-                out.append(Elf(PLATFORM_DEBIAN, prog.name, d.name, None, d))
+            durum, isaret = bitti_durumu(d, PLATFORM_DEBIAN)
+            if durum != DURUM_TAMAM:
+                out.append(Elf(PLATFORM_DEBIAN, prog.name, d.name, None, d, durum, isaret))
                 continue
             st = _tek_static(d)
-            out.append(Elf(PLATFORM_DEBIAN, prog.name, d.name, st, st.parent))
+            out.append(Elf(PLATFORM_DEBIAN, prog.name, d.name, st, st.parent, durum, isaret))
     return out
 
 
@@ -787,12 +852,24 @@ def nufus_denetle(elfler: list[Elf], beklenen: Optional[dict[str, int]] = BEKLEN
             if bulunan.get(b, 0) != beklenen.get(b, 0):
                 sorun.append(f"{b}: {bulunan.get(b, 0)} ELF bulundu, beklenen {beklenen.get(b, 0)}")
     bekleyen = sorted(f"{birim_anahtari(e)}/{e.ad}" for e in elfler if e.static is None)
+    durumlar = Counter(bitme_durumu(e) for e in elfler)
     if bekleyen:
-        sorun.append(f"{len(bekleyen)} ELF bitmemiş ya da hatalı: {bekleyen[:5]}")
+        dokum = ", ".join(f"{BITME_ADLARI[d]} {durumlar[d]}" for d in BITME_DURUMLARI[1:] if durumlar[d])
+        sorun.append(f"{len(bekleyen)} ELF bitmemiş ya da hatalı ({dokum}): {bekleyen[:5]}")
     if sorun and not eksik_izinli:
         raise OnkosulHatasi("nüfus eksik: " + "; ".join(sorun))
     return {"bulunan": dict(sorted(bulunan.items())), "biten": dict(sorted(biten.items())),
-            "beklenen": beklenen, "eksik_izinli": eksik_izinli, "sorunlar": sorun}
+            "beklenen": beklenen, "eksik_izinli": eksik_izinli, "sorunlar": sorun,
+            "durumlar": {d: durumlar[d] for d in BITME_DURUMLARI},
+            "bitti_isareti": dict(sorted(Counter(e.isaret for e in elfler if e.static is not None).items()))}
+
+
+def bitme_durumu(e: Elf) -> str:
+    """ELF'in özetteki durumu: işareti bitti dediği hâlde çıktısı ölçülemeyen (``static`` None) ELF
+    ``ciktisiz`` sayılır (ör. ``urun_olc.haritasizlari_isaretle``)."""
+    if e.static is None and e.durum == DURUM_TAMAM:
+        return DURUM_CIKTISIZ
+    return e.durum
 
 
 def ghidra_surumu(kosu: Path) -> Optional[str]:

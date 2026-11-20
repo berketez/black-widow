@@ -1,0 +1,69 @@
+{
+ "_comment": "Dalga 0 OLCUM paketi (ölçüm aracı kusurları, kalem 2-7) mutasyon koruması: ks1_olc BITTI içeriği. Her mutant onarımı geri alır ya da bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı); find metni dosyada tekil. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_olcum_araci.json",
+ "mutants": [
+  {
+   "id": "k2_kismi_tamam_sayilir",
+   "desc": "kalem 2: BITTI '3' (kısmi koşu) yeniden bitmiş sayılır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_kismi_ve_hatali_bitmis_sayilmaz_ozete_girer",
+   "find": "return DURUM_KISMI, BITTI_KISMI",
+   "replace": "return (DURUM_TAMAM), BITTI_KISMI"
+  },
+  {
+   "id": "k2_hatali_icerik_tamam",
+   "desc": "kalem 2: tanınmayan BITTI içeriği (zaman_asimi, 1) bitmiş sayılır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_kismi_ve_hatali_bitmis_sayilmaz_ozete_girer",
+   "find": "return DURUM_HATALI, \"icerik:\" + ic.split()[0][:20]",
+   "replace": "return DURUM_TAMAM, \"icerik:\" + ic.split()[0][:20]"
+  },
+  {
+   "id": "k2_eski_ok_taninmaz",
+   "desc": "kalem 2: eski N1 koşucusunun 'ok <sn>' işareti tanınmaz (n1_debian13 tabanı hatalı sayılır)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_bitti_durumu_icerik",
+   "find": "if ic.split()[0] == BITTI_ESKI_TAMAM:",
+   "replace": "if ic == BITTI_ESKI_TAMAM:"
+  },
+  {
+   "id": "k2_mac_bitti_okunmaz",
+   "desc": "kalem 2: Mac birimi yine BITTI'ye bakmadan bitmiş sayılır (eski davranış)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_kismi_ve_hatali_bitmis_sayilmaz_ozete_girer",
+   "find": "durum, isaret = bitti_durumu(d, PLATFORM_MAC)",
+   "replace": "durum, isaret = DURUM_TAMAM, \"\""
+  },
+  {
+   "id": "k2_mac_urun_kos_bittisiz_tamam",
+   "desc": "kalem 2: urun_kos düzenindeki (kosu.log) BITTI'siz Mac koşusu bitmiş sayılır",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_bitti_durumu_dosyasiz",
+   "find": "if not (dizin / GUNLUK_DOSYASI).exists():",
+   "replace": "if True:"
+  },
+  {
+   "id": "k2_debian_icerik_okunmaz",
+   "desc": "kalem 2: Debian'da yalnız BITTI'nin varlığına bakılır (eski davranış)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_kismi_ve_hatali_bitmis_sayilmaz_ozete_girer",
+   "find": "durum, isaret = bitti_durumu(d, PLATFORM_DEBIAN)",
+   "replace": "durum, isaret = (DURUM_TAMAM, \"0\") if (d / BITTI).is_file() else (DURUM_BEKLIYOR, \"yok\")"
+  },
+  {
+   "id": "k2_ozet_durumlar_yok",
+   "desc": "kalem 2: nufus_denetle özetine durum sayaçları yazılmaz (sessizce düşer)",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_kismi_ve_hatali_bitmis_sayilmaz_ozete_girer",
+   "find": "\"durumlar\": {d: durumlar[d] for d in BITME_DURUMLARI},",
+   "replace": "\"durumlar\": {},"
+  },
+  {
+   "id": "k2_ciktisiz_tamam_sayilir",
+   "desc": "kalem 2: ad haritası olmayan 'bitmiş' ikili özette tamam görünür",
+   "module": "scripts/measurement/ks1_olc.py",
+   "test": "tests/test_olcum_araci_d0.py::test_urun_olc_bitmislik_ozeti",
+   "find": "        return DURUM_CIKTISIZ\n",
+   "replace": "        return DURUM_TAMAM\n"
+  }
+ ]
+}

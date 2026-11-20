@@ -723,6 +723,17 @@ def _makro_satiri(makro: dict[str, Any]) -> str:
     return " | ".join(yuzde(makro[a]["makro"]) for a in KARAR_OLCULERI)
 
 
+def bitmislik_cumlesi(nufus: dict[str, Any]) -> str:
+    """``ks1_olc.nufus_denetle`` özetinden: tamam / kısmi / hatalı / bekliyor / çıktısız ve bitmiş
+    ikililerin işaret biçimi (OLCUM kalem 2). Alan yoksa (önceki çıktı) "veri yok"."""
+    durumlar = nufus.get("durumlar")
+    if not isinstance(durumlar, dict):
+        return "veri yok (kalem 2'den önceki çıktı)"
+    isaret = "; ".join(f"`{k}` × {v}" for k, v in (nufus.get("bitti_isareti") or {}).items()) or "—"
+    return (", ".join(f"{ks1.BITME_ADLARI.get(d, d)} {n}" for d, n in durumlar.items())
+            + f" (işaret: {isaret})")
+
+
 def bicim_cumlesi(f: dict[str, Any]) -> str:
     """P-Ö1 duyarlılık cümlesi: "tam + biçim" hükmüyle doğru (havuz) ve yanlış (program makrosu).
     Alan yoksa (P-Ö1'den önceki çıktı) "veri yok" yazılır; sayı uydurulmaz."""
@@ -745,6 +756,7 @@ def olc_markdown(s: dict[str, Any]) -> str:
            f"{', '.join(f'{k} ({v} ikili)' for k, v in arac['ghidra_surumleri'].items()) or '—'}.",
            f"- İkililer: {sum(s['nufus']['biten'].values())} bitti; sorunlar: "
            f"{'; '.join(s['nufus']['sorunlar']) or 'yok'}.",
+           f"- Bitmişlik (`BITTI` içeriği; yalnız başarı işareti bitmiş sayılır): {bitmislik_cumlesi(s['nufus'])}.",
            "- Kol kimliği (köken kaydından; C++ dışı ikili sayısı): "
            + ("; ".join(f"`{k}` × {v}" for k, v in s["kol_kimligi"].items()) or "—") + ".",
            "- Hüküm tam eşitliktir (Mach-O'da baştaki tek `_` soyulur; klon ekli GT'de taban eşitliği; "

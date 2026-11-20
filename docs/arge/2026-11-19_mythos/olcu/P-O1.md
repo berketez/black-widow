@@ -25,6 +25,15 @@ Komut (iki kol; worktree kökünden): `PYTHONDONTWRITEBYTECODE=1 python scripts/
 
 **Altı sayının altısı tuttu** (makro ön kayıttaki kuralla 4 ondalığa yuvarlanarak karşılaştırıldı; program değerleri de PLAN'daki a62f15e dökümüyle aynı). Zemin denetimi (ad, tam doğru) iki kolda da tuttu.
 
+**OLCUM kalem 2 (`ks1_olc` `BITTI` içeriği) sonrası yeniden koşu** (ön kayıt değiştirilmedi; satır sonradan eklendi):
+
+| Kol | Bitmişlik (tamam / kısmi / hatalı / bekliyor / çıktısız) | `BITTI` işareti | Ad | Tam doğru | Biçim | Tam + biçim yanlış | Makro | P-Ö1 çıktısıyla |
+|---|---|---|---|---|---|---|---|---|
+| a62f15e | 119 / 0 / 0 / 0 / 0 | `0` × 119 | 1 800 | 1 681 | 40 | 79 | 0,1914 | `nufus` ve `arac` dışında metin eşit; `nufus`'un eski alanları eşit |
+| f30ac9a | 119 / 0 / 0 / 0 / 0 | `0` × 119 | 2 261 | 1 589 | 47 | 625 | 0,4077 | aynı |
+
+Sayı değişmedi: iki kökte de kısmi (`3`) ya da hatalı birim yok (bütün `BITTI`'ler `0`). Kısmi birim bulunmadığı için "hangi birim kısmiydi" listesi boş.
+
 Ön kayıttaki ayrıntı (a62f15e): biçim 40'ın birimleri zstd 37, coreutils 1, openssl 1, mac/tmux 1 — **tuttu**; kanalı 40 / 40 `string_context/oz_ad` — **tuttu** (kanal dağılımı `urun_olc.degerlendir_elf` ile ayrıca sayıldı). f30ac9a'da biçim 47'nin birimleri: zstd 43, openssl 2, coreutils 1, mac/tmux 1 (ön kayıtta beklenti yoktu; yalnız kayıt).
 
 ## Var olan alanlar: bayt düzeyinde eski çıktıyla
