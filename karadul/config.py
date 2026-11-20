@@ -758,7 +758,7 @@ class BinaryReconstructionConfig:
     # ÖK-6: komşu adlı fonksiyonlardan modül öneki kanıt satırı (ad vermez).
     enable_module_prefix_evidence: bool = False  # ETKİSİZ: ÖK-6 bağlayacak (INERT_SETTINGS)
     # ÜST VERİ. P-ÜV1: Go pclntab üretici adımı (Faz 1 listesine P-ÜV6 ekler).
-    enable_go_metadata_recovery: bool = False  # ETKİSİZ: P-ÜV1 bağlayacak (INERT_SETTINGS)
+    enable_go_metadata_recovery: bool = False  # okuyan: pipeline/steps/go_metadata_recovery.py (P-ÜV1)
     # P-ÜV2: Objective-C yöntem listesi üretici adımı.
     enable_objc_metadata_recovery: bool = False  # okuyan: pipeline/steps/objc_metadata_recovery.py (P-ÜV2)
     # P-ÜV3: Swift tip üst verisi üretici adımı.
@@ -1326,7 +1326,6 @@ INERT_SETTINGS: dict[str, str] = {
     # ÖK-2 (Dalga 2)
     "binary_reconstruction.oz_ad_uniqueness_gate": _pending_binding("ÖK-2"),
     # P-ÜV1 / P-ÜV2 / P-ÜV3 (Dalga 2; üretici adımı okuyan ilk kod; Faz 1 listesine P-ÜV6 ekler)
-    "binary_reconstruction.enable_go_metadata_recovery": _pending_binding("P-ÜV1"),
     "binary_reconstruction.enable_swift_metadata_recovery": _pending_binding("P-ÜV3"),
     # ÖL-2 (Dalga 2)
     "timeouts.ghidra_adim": _pending_binding("ÖL-2"),
