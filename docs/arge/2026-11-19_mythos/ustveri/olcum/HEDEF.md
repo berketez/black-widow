@@ -15,8 +15,8 @@ Paket metni: `docs/arge/2026-11-20_dalga0/gonderim/HEDEF.md`. Ortak brif: `docs/
 | 2 ad eşitliği | bitti (`c16a315`) |
 | 3 kanal ölçümü | bitti: keşifte HK tuttu, H1 25 / 25 aynı |
 | 4 bütçe + ürün "önce" sayısı | bütçe bitti (16 / 16 aynı); ürün koşusu Ghidra kuyruğunda |
-| 5 P-ÜV9 kalem 1 | yön ön kaydı commit'li (`bbda937`, §5) |
-| 6 test + mutasyon | 23 test geçti; mutant 13 / 13 öldü (`c16a315`) |
+| 5 P-ÜV9 kalem 1 | bitti (`7f75192`): G1–G3 tuttu; G4 ObjC adı Ghidra'da yalnız seçici |
+| 6 test + mutasyon | 23 test geçti; mutant 14 / 14 öldü (`a260351`) |
 
 ## Koşu listesi (Ghidra kuyruğu) ve TAHMİNİ süre
 
@@ -95,3 +95,18 @@ Soyulmuş kopyada kanal çıktısı ↔ özgünün sembol tablosu (`ustveri_olc.
 ## Bekleme (Ghidra kuyruğu)
 
 - **09:40 — şu an bekliyorum:** `urun:terminal-notifier` kuyrukta (09:33:28'den beri; önde OK5 `postgresql-17:e00` 09:05:41'den beri koşuyor, HZ1 ve KIMLIK bekliyor). Kendi koşu TAHMİNİ 1–5 dk; kuyruk bekleyişi bilinmiyor (TAHMİN 20–90 dk). Bu arada P-ÜV9 kalem 1 (Ghidra'sız; gösteri çıktısı salt okur) yapılıyor.
+
+## P-ÜV9 kalem 1 — özet (ayrıntı `../acik_olcum/PUV9_K1.md`, commit `7f75192`)
+
+| Soru | Sonuç | Ön kayıt |
+|---|---|---|
+| G1 `LC_FUNCTION_STARTS` ↔ Ghidra | 12 916 / 12 952 başlangıç Ghidra'da fonksiyon (%99,72) | tuttu (≥ %99) |
+| G2 Go girişi Ghidra'da jenerik adlı (kanal yazabilir) | 10 457 / 10 600 (%98,65); yok 28, thunk 112, adlı 3 | tuttu (≥ 9 540) |
+| G3 Ghidra'nın Go girişine verdiği ad | 3 (thunk'larla 96; thunk adları libc hedefi, Go adıyla eşit 0) | tuttu (≤ %1) |
+| G4 ObjC yöntemi (151) | Ghidra 148'ini adlandırıyor, adı yalnız seçici: kalem 2 eşitliği 0 / 148, seçici eşitliği 148 / 148 | açık soru → P-ÜV6'ya girdi |
+| G5 Ghidra adlı ∩ üst veri | 245 (program 151, thunk 94); üst veri dışında 802 | açık soru |
+
+## Ürün ölçüm aracının doğrulaması
+
+- `ustveri_olc.urun_kayitlari` (süzgeç + hüküm) Mac tmux koşusunda (`~/karadul_olcum/runs/urun-onarim-a62f15e/mac/tmux`, GT `workspaces/olcum_mac/corpus/tmux/gt`) `urun_olc.degerlendir_elf` ile aynı sonucu verdi: 236 ad / 205 doğru, yalnız bir yanda 0, hüküm farkı 0 (commit `a260351`; ilk sürümde klon satırı kuralı yoktu, eklendi).
+- Tam takım arka planda koşuyor (`a260351`; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/HEDEF/tam_takim/`).
