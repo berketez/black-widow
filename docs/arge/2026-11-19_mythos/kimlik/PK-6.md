@@ -14,7 +14,7 @@
 | 2 PK-6 `mimari`, `derleyici_surumu` | koşu sırada | — |
 | 3 PK-6 `surum_esli` (V1) | 4 / 4 program iki derleyiciyle derlendi, soyuldu, GT çıktı; koşu sırada | — |
 | 4 `iyilestirme` | veri yok (tabaka C Dalga 2'de) | — |
-| 5 PK-11 | koşu sırada (iş listesinde ilk) | — |
+| 5 PK-11 | bitti (`PK-11.md`): kural 242 / 1, alt 0,977 → (a) hat hedefi; (b) kapsam %33,6 tutmadı; (c) 0 / 199 tuttu | `ee8d78d` |
 | 6 Kilit süzgeci sınaması + mutant | bitti: 14 / 14 sınama, mutant 3 / 3 öldü | `329e9bc` |
 
 ## Ghidra koşu planı (kuyruğa girmeden önce)
