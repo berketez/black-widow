@@ -344,6 +344,179 @@ def rapor_elf(nufus: dict[str, Any]) -> str:
     return "\n".join(sat)
 
 
+# ---------------------------------------------------------------------------
+# ÖK-V adım 5: taban ürün koşusu (Dalga 0, OK5 paketi; 2026-11-20)
+# ---------------------------------------------------------------------------
+# Her ölçülecek ELF ayrı bir iştir. Koşu ``urun_kos.calistir`` ile yapılır (aynı komut:
+# ``python -m karadul analyze <ikili> --skip-dynamic --output-dir <d>/ws --output <d>/out``; cwd ve
+# PYTHONPATH ürün ağacı). Yerleşim ``ks1_olc.debian_elfleri``'nin okuduğu biçimdir:
+#     <kosu_kok>/debian/<paket>/eNN/{ws,out,kosu.log,BITTI,kunye.json}
+# ELF dizini adı paket içindeki sıra numarasıdır (``e00`` …): "kör" ELF'in dosya adı hiçbir yere
+# (kuyruk günlüğü dahil) yazılmasın diye. Sıra: paket içinde ``yol``'a göre (belirlenimci).
+# Koşu sırası (gönderim metni): önce "ayar", sonra "kör"; her tarafta küçükten büyüğe.
+
+KUYRUK = Path.home() / "karadul_olcum" / "ghidra_kuyruk.sh"
+KUYRUK_PAKETI = "OK5"
+KOS_ZAMAN_ASIMI_SN = 3600          # gönderim metni: ikili başına 3 600 sn
+KOS_KUNYE_DOSYASI = "kunye.json"
+SON_DURUMLAR = ("tamam", "kismi", "zaman_asimi", "girdi_degismis")   # yeniden koşulmaz
+# TAHMİN modeli (yalnız kuyruk öncesi bildirim için; ölçüm değildir): bugünkü (2026-11-20 sabah,
+# yük altında, paralel 1) S8 taban koşularından okunan kaba değerler — küçük ikili ≈ 35–50 sn,
+# 1,1 MB ≈ 207 sn, 1,3 MB ≈ 291 sn. Alt / üst: (25 sn + 100 sn/MB) / (60 sn + 250 sn/MB).
+TAHMIN_ALT = (25.0, 100.0)
+TAHMIN_UST = (60.0, 250.0)
+
+
+def olculecek_isler(kok: Path, nufus: dict[str, Any]) -> list[dict[str, Any]]:
+    """NUFUS.md §3'ün "ölçülecek" ELF'leri (seçilmiş, BuildID eşleşmiş, ``extract_gt`` tamam, C++ değil),
+    koşu sırasıyla. Her iş: anahtar, girdi, sha256 (dizinden), boyut, paket, taraf, etiket, debug."""
+    out = []
+    for r in nufus["paketler"]:
+        b = r.get("buildid")
+        if not b:
+            continue
+        olc = sorted((s for s in b["satirlar"] if s.get("secildi") and s.get("eslesme") == "eşleşti"
+                      and s.get("extract_gt") == "tamam" and not s.get("cpp")), key=lambda s: s["yol"])
+        for i, s in enumerate(olc):
+            out.append({"anahtar": f"debian/{r['paket']}/e{i:02d}", "paket": r["paket"], "taraf": r["taraf"],
+                        "sira": i, "paket_elf_sayisi": len(olc), "etiket": f"{r['paket']}:e{i:02d}",
+                        "girdi": kok / f"x_{r['paket']}" / s["yol"], "sha256": s["sha256"],
+                        "boyut": s["boyut"], "build_id": s["build_id"],
+                        "debug": kok / s["debug_kok"] / s["debug_yol"], "debug_build_id": s.get("debug_build_id")})
+    out.sort(key=lambda i: (0 if i["taraf"] == AYAR else 1, i["boyut"], i["anahtar"]))
+    return out
+
+
+def tahmin_sn(boyut: int) -> tuple[float, float]:
+    mb = boyut / 1e6
+    return TAHMIN_ALT[0] + TAHMIN_ALT[1] * mb, TAHMIN_UST[0] + TAHMIN_UST[1] * mb
+
+
+def is_durumu(kosu_kok: Path, is_: dict[str, Any]) -> Optional[str]:
+    """Bitmiş işin durumu (``kunye.json``), yoksa None."""
+    y = kosu_kok / is_["anahtar"] / KOS_KUNYE_DOSYASI
+    if not y.is_file():
+        return None
+    try:
+        return json.loads(y.read_text(encoding="utf-8")).get("durum")
+    except (OSError, ValueError):
+        return None
+
+
+def _yuk() -> str:
+    import os
+    return " ".join(f"{x:.2f}" for x in os.getloadavg())
+
+
+def kos_tek(kok: Path, kosu_kok: Path, agac: Path, anahtar: str, zaman_asimi: int) -> dict[str, Any]:
+    """Tek bir ELF'i koşar (kuyruk sarmalayıcısının İÇİNDE çağrılır) ve künyesini yazar."""
+    uk = _modul("urun_kos", OLCUM / "urun_kos.py")
+    nufus = json.loads((kok / "nufus.json").read_text(encoding="utf-8"))
+    is_ = next((i for i in olculecek_isler(kok, nufus) if i["anahtar"] == anahtar), None)
+    if is_ is None:
+        raise SystemExit(f"iş yok: {anahtar}")
+    agac_k = uk.agac_kunyesi(agac)
+    if agac_k["kirli"]:
+        raise SystemExit(f"ürün ağacı kirli: {len(agac_k['kirli'])} dosya")
+    bas = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    yuk0 = _yuk()
+    s = uk.calistir({"anahtar": anahtar, "girdi": is_["girdi"], "sha256": is_["sha256"]}, agac, kosu_kok,
+                    zaman_asimi)
+    kunye = {"anahtar": anahtar, "paket": is_["paket"], "taraf": is_["taraf"], "durum": s["durum"],
+             "sure_sn": s["sure_sn"], "baslangic": bas, "bitis": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+             "yuk_bas": yuk0, "yuk_son": _yuk(), "yuk_notu": "yük altında (gündüz, ortak makine)",
+             "boyut": is_["boyut"], "sha256": is_["sha256"], "build_id": is_["build_id"],
+             "agac_commit": agac_k["commit"], "karadul_surumu": agac_k["karadul_surumu"],
+             "zaman_asimi_sn": zaman_asimi,
+             "bitti_dosyasi": (kosu_kok / anahtar / "BITTI").read_text(encoding="utf-8").strip()
+             if (kosu_kok / anahtar / "BITTI").is_file() else None}
+    (kosu_kok / anahtar / KOS_KUNYE_DOSYASI).write_text(json.dumps(kunye, ensure_ascii=False, indent=1) + "\n",
+                                            encoding="utf-8")
+    return kunye
+
+
+def kos_ozet(kosu_kok: Path, isler: list[dict[str, Any]]) -> dict[str, Any]:
+    """Taraf başına sayaç: bitti / tamam / kısmi / zaman aşımı / hatalı / bekleyen (yalnız sayı)."""
+    out: dict[str, Any] = {}
+    for tr in (AYAR, KOR):
+        say: dict[str, int] = {"is": 0, "bekleyen": 0}
+        sure = 0.0
+        for i in isler:
+            if i["taraf"] != tr:
+                continue
+            say["is"] += 1
+            d = is_durumu(kosu_kok, i)
+            if d is None:
+                say["bekleyen"] += 1
+                continue
+            anah = d if d in ("tamam", "kismi", "zaman_asimi") else "hatali"
+            say[anah] = say.get(anah, 0) + 1
+            try:
+                sure += json.loads((kosu_kok / i["anahtar"] / KOS_KUNYE_DOSYASI).read_text(encoding="utf-8"))["sure_sn"]
+            except (OSError, ValueError, KeyError):
+                pass
+        say["toplam_sure_sn"] = round(sure, 1)
+        out[tr] = say
+    return out
+
+
+def kos_hepsi(kok: Path, kosu_kok: Path, agac: Path, zaman_asimi: int, taraf: Optional[str]) -> int:
+    """Bekleyen her ELF'i AYRI bir kuyruk çağrısıyla koşar (kilidi tek komutla uzun tutmaz)."""
+    import os
+    import subprocess
+    nufus = json.loads((kok / "nufus.json").read_text(encoding="utf-8"))
+    isler = olculecek_isler(kok, nufus)
+    if taraf:
+        isler = [i for i in isler if i["taraf"] == taraf]
+    kosu_kok.mkdir(parents=True, exist_ok=True)
+    ortam = dict(os.environ, PYTHONHASHSEED="0", PYTHONDONTWRITEBYTECODE="1",
+                 KARADUL_CACHE_DIR=str(kosu_kok / "cache"))
+    for n, i in enumerate(isler, 1):
+        if is_durumu(kosu_kok, i) in SON_DURUMLAR:
+            continue
+        komut = [str(KUYRUK), KUYRUK_PAKETI, i["etiket"], sys.executable, "-I", str(Path(__file__).resolve()),
+                 "kos", "--kok", str(kok), "--kosu-kok", str(kosu_kok), "--agac", str(agac),
+                 "--anahtar", i["anahtar"], "--zaman-asimi", str(zaman_asimi)]
+        r = subprocess.run(komut, env=ortam, cwd=str(REPO))
+        if is_durumu(kosu_kok, i) is None:   # künye yazılamadıysa (ör. ağaç denetimi): hatalı diye kaydet
+            d = kosu_kok / i["anahtar"]
+            d.mkdir(parents=True, exist_ok=True)
+            (d / KOS_KUNYE_DOSYASI).write_text(json.dumps({"anahtar": i["anahtar"], "paket": i["paket"], "taraf": i["taraf"],
+                                               "durum": f"surucu_cikis_{r.returncode}", "sure_sn": 0.0},
+                                              ensure_ascii=False) + "\n", encoding="utf-8")
+        oz = kos_ozet(kosu_kok, olculecek_isler(kok, nufus))
+        (kosu_kok / "ilerleme.json").write_text(json.dumps({"zaman": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                                                            "ozet": oz}, ensure_ascii=False, indent=1) + "\n",
+                                                encoding="utf-8")
+        # yalnız paket adı, sıra ve sayı (kör ELF'in yolu basılmaz)
+        print(f"[{n}/{len(isler)}] {i['etiket']} {is_durumu(kosu_kok, i)} | "
+              + "; ".join(f"{tr}: {v}" for tr, v in oz.items()), flush=True)
+    return 0
+
+
+def kos_plan(kok: Path, kosu_kok: Optional[Path]) -> str:
+    nufus = json.loads((kok / "nufus.json").read_text(encoding="utf-8"))
+    isler = olculecek_isler(kok, nufus)
+    sat = ["| taraf | paket | ELF | toplam bayt | en büyük ELF (bayt) | TAHMİN süre (sn; alt–üst) | bitmiş |",
+           "|---|---|---:|---:|---:|---|---:|"]
+    for tr in (AYAR, KOR):
+        paketler = sorted({i["paket"] for i in isler if i["taraf"] == tr},
+                          key=lambda p: min(i["boyut"] for i in isler if i["paket"] == p))
+        ta = tu = 0.0
+        for p in paketler:
+            pi = [i for i in isler if i["paket"] == p]
+            a = sum(tahmin_sn(i["boyut"])[0] for i in pi)
+            u = sum(tahmin_sn(i["boyut"])[1] for i in pi)
+            ta, tu = ta + a, tu + u
+            bit = sum(1 for i in pi if kosu_kok and is_durumu(kosu_kok, i) in SON_DURUMLAR)
+            sat.append(f"| {tr} | {p} | {len(pi)} | {sum(i['boyut'] for i in pi)} | "
+                       f"{max(i['boyut'] for i in pi)} | {a:.0f}–{u:.0f} | {bit} |")
+        n = sum(1 for i in isler if i["taraf"] == tr)
+        sat.append(f"| **{tr} toplam** | {len(paketler)} | {n} | {sum(i['boyut'] for i in isler if i['taraf'] == tr)} "
+                   f"| | {ta:.0f}–{tu:.0f} ({ta / 3600:.1f}–{tu / 3600:.1f} sa) | |")
+    return "\n".join(sat)
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     alt = ap.add_subparsers(dest="komut", required=True)
@@ -351,9 +524,41 @@ def main(argv: Optional[list[str]] = None) -> int:
     for ad in ("dizin", "kur", "rapor"):
         a = alt.add_parser(ad)
         a.add_argument("--kok", type=Path, required=True)
+    a = alt.add_parser("kos-plan", help="ÖK-V adım 5: iş listesi ve TAHMİNİ süre (yalnız sayı)")
+    a.add_argument("--kok", type=Path, required=True)
+    a.add_argument("--kosu-kok", type=Path)
+    for ad in ("kos", "kos-hepsi"):
+        a = alt.add_parser(ad, help="ÖK-V adım 5: taban ürün koşusu (tek ELF / bekleyenlerin hepsi)")
+        a.add_argument("--kok", type=Path, required=True)
+        a.add_argument("--kosu-kok", type=Path, required=True)
+        a.add_argument("--agac", type=Path, required=True)
+        a.add_argument("--zaman-asimi", type=int, default=KOS_ZAMAN_ASIMI_SN)
+        if ad == "kos":
+            a.add_argument("--anahtar", required=True)
+        else:
+            a.add_argument("--taraf", choices=(AYAR, KOR))
+    a = alt.add_parser("kos-ozet", help="taraf başına sayaç (yalnız sayı)")
+    a.add_argument("--kok", type=Path, required=True)
+    a.add_argument("--kosu-kok", type=Path, required=True)
     ns = ap.parse_args(argv)
     if ns.komut == "bolme":
         print(rapor_bolme())
+        return 0
+    if ns.komut == "kos-plan":
+        print(kos_plan(ns.kok.expanduser(), ns.kosu_kok.expanduser() if ns.kosu_kok else None))
+        return 0
+    if ns.komut == "kos":
+        k = kos_tek(ns.kok.expanduser(), ns.kosu_kok.expanduser(), ns.agac.expanduser().resolve(),
+                    ns.anahtar, ns.zaman_asimi)
+        print(f"{k['anahtar']} {k['durum']} {k['sure_sn']} sn")
+        return 0
+    if ns.komut == "kos-hepsi":
+        return kos_hepsi(ns.kok.expanduser(), ns.kosu_kok.expanduser(), ns.agac.expanduser().resolve(),
+                         ns.zaman_asimi, ns.taraf)
+    if ns.komut == "kos-ozet":
+        kok = ns.kok.expanduser()
+        isler = olculecek_isler(kok, json.loads((kok / "nufus.json").read_text(encoding="utf-8")))
+        print(json.dumps(kos_ozet(ns.kosu_kok.expanduser(), isler), ensure_ascii=False))
         return 0
     kok = ns.kok.expanduser()
     secim_yolu = kok / "indir" / "secim.json"

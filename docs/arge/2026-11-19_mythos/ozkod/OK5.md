@@ -21,6 +21,26 @@ Paket metni: `docs/arge/2026-11-20_dalga0/gonderim/OK5.md`. Plan: `ozkod/PLAN.md
 - Disk (08:15): `739.6 GB (739641937920 Bytes)` kullanılan.
 - Yük (08:15): `load averages: 3.98 5.12 5.08`.
 
+## 1. ÖK-V adım 5 — taban ürün koşusu
+
+- Koşucu: `scripts/measurement/ozkod_nufus_kur.py` yeni alt komutlar `kos-plan`, `kos` (tek ELF; kuyruğun içinde), `kos-hepsi` (bekleyen her ELF'i **ayrı** `~/karadul_olcum/ghidra_kuyruk.sh OK5 <paket>:eNN …` çağrısıyla), `kos-ozet`. Koşu `urun_kos.calistir` ile (içe aktarılır; komut `python -m karadul analyze <ikili> --skip-dynamic --output-dir <d>/ws --output <d>/out`, cwd ve `PYTHONPATH` = sabit ağaç), ikili başına sınır 3 600 sn; girdinin sha256'sı `nufus.json`'daki değerle karşılaştırılır.
+- Ürün ağacı: `~/karadul_olcum/urun-b6aceb9` (`urun_kos.agac_kunyesi`: commit `b6aceb9bdad5…`, kirli 0, `karadul.__file__` = `~/karadul_olcum/urun-b6aceb9/karadul/__init__.py`, sürüm 1.24.1). Her koşudan önce yeniden denetlenir.
+- Kök: `~/karadul_olcum/ozkod_nufus/runs/taban-b6aceb9/debian/<paket>/eNN/` (`ks1_olc.debian_elfleri` yerleşimi). ELF dizini adı paket içindeki sıra numarası: kör ELF'in dosya adı kuyruk günlüğüne de yazılmaz. `PYTHONHASHSEED=0`, `PYTHONDONTWRITEBYTECODE=1`, `KARADUL_CACHE_DIR=<kök>/cache`.
+- Her koşu bitince `<d>/kunye.json` (durum, süre, yük başı / sonu, ağaç commit'i, BITTI içeriği); `BITTI` `urun_kos.calistir`'ın kuralıyla (0 tam, 3 kısmi; zaman aşımında yok, künyede `zaman_asimi`).
+- `nufus.json` sha256: `65513ae4a8627e0d…` (NUFUS.md §7 ile aynı).
+
+**İş listesi ve TAHMİNİ süre** (`kos-plan`; model: bugünkü S8 taban koşularından kaba okuma, alt 25 sn + 100 sn/MB, üst 60 sn + 250 sn/MB; ölçüm değildir):
+
+| taraf | paket | ELF | toplam bayt | TAHMİN (sn) |
+|---|---:|---:|---:|---|
+| ayar | 9 | 9 | 17 032 912 | 1 928–4 798 (0,5–1,3 sa) |
+| kör | 14 | 76 | 22 635 072 | 4 164–10 219 (1,2–2,8 sa) |
+| **toplam** | 23 | 85 | 39 668 024 | 1,7–4,1 sa (kuyrukta başka paketlerin beklemesi hariç) |
+
+En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve python3.13-minimal (kör, 6,7 MB; 692–1 728 sn). TAHMİN 6 saatin altında: BİLDİRİM gerekmedi. Disk TAHMİNİ (a62f15e çalışma alanlarından: ≈ 190–250 MB / MB ikili + küçük ikili başına onlarca MB) 8–14 GB; 20 GB sınırına yaklaşırsa durulur.
+
+**Bekleme (08:2x):** şu an `kos-hepsi` arka planda; önce ayar (9), sonra kör (76). TAHMİNİ bitiş: kuyrukta başka paket yoksa 10:15–12:35 arası; başka paketler sıraya girdikçe kayar. Beklerken `ozkod_olc.py`, testler ve ön kayıt yazılıyor.
+
 ## Kalemler
 
 | # | kalem | durum |
