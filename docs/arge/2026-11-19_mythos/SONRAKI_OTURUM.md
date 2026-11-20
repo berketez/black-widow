@@ -164,3 +164,26 @@ KARŞI'nın sayımıyla 74 iş paketi. Tahmin: 4–5 tam Opus günü ve 2–3 ge
 - [ ] MCP sunucusu ve KaradulLM gerçek modelle çalışıyor (duman listeleri tam).
 - [ ] Uygulama derlendi, Berke'nin Mac'ine kuruldu, gerçek büyük bir uygulamada uçtan uca çalıştı.
 - [ ] Tam takım, mutasyonlar, push.
+
+## 8. 2026-11-20 sonrası (uygulama oturumu 1'in teslimi) — SONRAKİ OTURUM BURADAN
+
+Canlı kayıt `docs/arge/2026-11-20_dalga0/DURUM.md`; kararlar A-21 … A-30 (`KARARLAR.md`). Ortak brif `docs/arge/2026-11-20_dalga0/ORTAK_D0.md` sonraki dalgalarda da geçerli (Ghidra kuyruğu sarmalayıcısı, paket bekletme, scratchpad kuralı).
+
+**Biten:** Dalga 0'ın gündüz işleri (BAYRAK, OLCUM, OLCEK, HZ1, HEDEF, MUTBAKIM, OK5, KIMLIK) + üst veri hızlı hattı (P-ÜV0, P-ÜV1, P-ÜV2); hepsi main'de, bağımsız test + mutasyonla doğrulandı. **Ertelenen:** gece koşusu (HZ-0 + ÖLÇ-1; A-26; sabit ürün `be9550e`). **Mythos'a:** ÖL-10 tasarımı (A-24).
+
+**Sonraki oturumun sırası (öneri; gerçek uygulama ölçütüyle — A-17, A-27):**
+1. **P-ÜV6 — üst veri adlarını ürün çıktısına bağlama** (ilk iş; bugün ürün kodu Ollama'da 10 600 Go + 151 ObjC, terminal-notifier'da 32 ObjC adı okuyor ama çıktıya yazmıyor). Kabul: terminal-notifier 0 → ~32, Ollama 17 → ≥ 9 540 (P-ÜV8 H4), 119'da yeni yanlış 0. Notlar: A-28 (ObjC tam ad seçici adının yerine); iTerm2'de 7 420 Swift köprüsü + 274 işaretsiz adres ObjC adı almamalı; Go `pcsp_kapsama` `kisa` / `tasan` fonksiyona ad yazılmaz (E türü bozma); durum sabitleri `goruntu.py`'de tek tanım; INERT satırları yama ile.
+2. **PK-1** (BinaryDiffer 34 doğru / 93 yanlış: yanlış ad yazan yolun kapısı) ║ **OKUMA-ENVANTERİ** (`gonderim/OKUMA.md`, A-27) ║ **P-ÜV5** (`gonderim/PUV5.md`; `stages.py` → P-ÜV6 ile sıralı).
+3. P-ÜV3 (Swift) ║ P-ÜV4 (C++ RTTI) ║ P-ÜV7 (Go tutarlılık).
+4. KİMLİK ürün: PK-2 → PK-3 → PK-4 (A-30; PK-4 öntanımı `TUTUCU`).
+5. Dalga 1'in kalanı: P12d → ÖK-1, ÖL-1 ║ ÖL-4 (HZ-1'in `GHIDRA_ADIMLARI`'nı kullanır), D1, D4, P24, P18 + bugün eklenen **P16e** (çağıran sırası belirlenimciliği) ve **MUTBAKIM-2** (8 tanımda 11 bayat mutant, 9 çoklu eşleşme, 30 aynı uzunluk; `mutation_probe.py` sıkılaştırması).
+6. P03b'ye ek: x86-64'te capa süreç içinde ve süre sınırsız koşuyor (`capa_timeout` etkisiz).
+7. Berke'nin izniyle gece koşusu (`gece_kosusu.py --commit be9550e --gece 1`, sonra `--gece 2`); KIMLIK'in kalan 35 çifti (`~/karadul_olcum/runs/dalga0-2026-11-20/KIMLIK/isler.txt`).
+
+**Yazılmayacaklar (A-29):** ÖK-3, ÖK-4b, ÖK-6 (ÖZ KOD kuralları kör nüfusta tutmadı). ÖK-2 R1 sonucuyla (%79,8) yeniden ele alınır.
+
+**Bugünün dersleri (uygulayan oturum için):**
+- Ajan dalını main'e alırken aralık tabanı `git merge-base main <dal>` ile bulunur (ajan `--ff-only main`'i gönderimden biraz sonra yapınca taban kayar; bugün bir kez çakıştı, geri alındı).
+- Kuyrukta kısa işler uzun işlerin arkasında aç kalıyor: `~/karadul_olcum/ghidra_kuyruk.bekle.<PAKET>` ile uzun işli paket geçici bekletilir. Süre ölçmeyen koşular için 2 yuva önerildi (Berke'nin kararı bekliyor).
+- Her gönderimde sert son (saat) yazılır; ajanlar "kalan" listesiyle döner.
+- Gerçek uygulama sayısı her raporun ilk satırıdır ([[feedback-gercek-uygulamada-olc]] hafıza kaydı).
