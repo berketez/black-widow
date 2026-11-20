@@ -94,6 +94,8 @@ class Bolum:
 
     ``bolut`` Mach-O bölüt adıdır (``__DATA_CONST``); ELF / PE'de boş. ``dosya_ofseti`` bölümün
     dosyadaki yeri; dosyada karşılığı yoksa (sıfır dolgulu ``__bss`` / ``SHT_NOBITS``) ``None``.
+    ``bellekte`` yanlışsa bölüm yüklenmez (ELF'te ``SHF_ALLOC`` yok: ``.symtab``, ``.comment`` …);
+    adresi anlamsızdır, hiçbir adresi içermez.
     """
 
     ad: str
@@ -102,13 +104,14 @@ class Bolum:
     kod: bool
     bolut: str = ""
     dosya_ofseti: int | None = None
+    bellekte: bool = True
 
     @property
     def tam_ad(self) -> str:
         return f"{self.bolut},{self.ad}" if self.bolut else self.ad
 
     def icerir(self, adres: int) -> bool:
-        return self.adres <= adres < self.adres + self.boyut
+        return self.bellekte and self.adres <= adres < self.adres + self.boyut
 
 
 @dataclass(frozen=True)
@@ -501,6 +504,14 @@ class _DosyaGoruntusu(Goruntu):
             return None
         ofs = e[2] + (adres - e[0])
         return self._veri[ofs:ofs + min(n, e[1] - adres)]
+
+    def bolum_baytlari(self, bolum: Bolum) -> bytes | None:
+        """Bölümün baytları dosyadaki yerinden (yüklenmeyen bölüm dahil); karşılığı yoksa ``None``."""
+        if bolum.boyut == 0:
+            return b""
+        if bolum.dosya_ofseti is None:
+            return None
+        return self._dosya_dilimi(bolum.dosya_ofseti, bolum.boyut)
 
     def _dosya_dilimi(self, ofs: int, boy: int) -> bytes | None:
         """Dosyadan ``[ofs, ofs+boy)``; dosya dışına taşıyorsa ``None``."""
@@ -1151,6 +1162,493 @@ def urun_dilimi(veri: bytes) -> str | None:
     return s["arch"] if s else None
 
 
+# =====================================================================================
+# ELF 64 (kaynak: System V gABI; AArch64 ELF psABI; x86-64 psABI; DWARF 5 §6.4 + LSB
+# .eh_frame işaretçi kodlaması)
+# =====================================================================================
+ELF_IMZA = b"\x7fELF"
+_ELFCLASS64 = 2
+_ELFDATA2LSB, _ELFDATA2MSB = 1, 2
+EM_X86_64 = 62
+EM_AARCH64 = 183
+_EM_ADLARI = {EM_X86_64: "x86_64", EM_AARCH64: "arm64"}
+PT_LOAD = 1
+SHT_SYMTAB = 2
+SHT_RELA = 4
+SHT_NOBITS = 8
+SHT_REL = 9
+SHT_DYNSYM = 11
+SHT_RELR = 19
+SHF_ALLOC = 0x2
+SHF_EXECINSTR = 0x4
+SHN_UNDEF = 0
+SHN_ABS = 0xFFF1
+SHN_COMMON = 0xFFF2
+SHN_XINDEX = 0xFFFF
+_STB_GLOBAL, _STB_WEAK, _STB_GNU_UNIQUE = 1, 2, 10
+_STT_SECTION, _STT_FILE = 3, 4
+_STV_DEFAULT, _STV_PROTECTED = 0, 3
+_ELF_SYM_64 = 24
+_ELF_RELA_64 = 24
+_ELF_REL_64 = 16
+
+# yeniden konumlama türleri: (göreli, sembol bağları, dolaylı işlev)
+_RK_TURLERI = {
+    EM_AARCH64: {"goreli": {1027}, "sembol": {257, 1025, 1026}, "dolayli": {1032}},
+    EM_X86_64: {"goreli": {8}, "sembol": {1, 6, 7}, "dolayli": {37}},
+}
+
+# .eh_frame işaretçi kodlaması (DW_EH_PE_*)
+_PE_OMIT = 0xFF
+_PE_BICIM = 0x0F
+_PE_UYGULAMA = 0x70
+_PE_PCREL = 0x10
+_PE_DOLAYLI = 0x80
+_PE_BOYUT = {0x00: 8, 0x02: 2, 0x03: 4, 0x04: 8, 0x0A: 2, 0x0B: 4, 0x0C: 8}
+_PE_ISARETLI = {0x0A: "h", 0x0B: "i", 0x0C: "q"}
+_PE_ISARETSIZ = {0x00: "Q", 0x02: "H", 0x03: "I", 0x04: "Q"}
+
+
+class ElfGoruntu(_DosyaGoruntusu):
+    """ELF 64 (küçük ya da büyük sonlu). Yeniden konumlamalar ``gosterici`` içinde çözülür."""
+
+    def __init__(self, veri: bytes, kaynak: str = "") -> None:
+        super().__init__(veri, kaynak)
+        self.e_type = 0
+        self.e_machine = 0
+        self.e_entry = 0
+        self.bolum_basligi_sayisi = 0
+        self._bolumler: list[Bolum] = []
+        self._shdr: list[tuple[int, ...]] = []  # (ad_ofs, tür, bayrak, adres, ofset, boy, link, info, entsize)
+        self._semboller: list[Sembol] | None = None
+        self._sym_tablolari: dict[int, list[tuple[str, int, int]]] = {}
+        self._rk: dict[int, Any] | None = None
+        self._rk_sayac: dict[str, int] = {}
+        self._fb: list[int] | None = None
+        self._fb_okundu = False
+        self._baslik_oku()
+
+    # ---- başlık, program ve bölüm başlıkları ------------------------------------------
+    def _baslik_oku(self) -> None:
+        d = self._veri
+        if len(d) < 64 or d[:4] != ELF_IMZA:
+            self._durum_yaz(KISIM_BASLIK, DURUM_HATA, "ELF başlığı kesik")
+            return
+        if d[4] != _ELFCLASS64 or d[5] not in (_ELFDATA2LSB, _ELFDATA2MSB):
+            self._durum_yaz(KISIM_BASLIK, DURUM_DESTEKLENMIYOR, f"ELF sınıfı {d[4]} / veri {d[5]}")
+            return
+        self.bayt_sirasi = "<" if d[5] == _ELFDATA2LSB else ">"
+        e = self.bayt_sirasi
+        (self.e_type, self.e_machine, _v, self.e_entry, phoff, shoff, _fl, _eh, phentsize, phnum,
+         shentsize, shnum, shstrndx) = struct.unpack_from(e + "HHIQQQIHHHHHH", d, 16)
+        hata = []
+        eslemler = []
+        if phoff and phentsize >= 56:
+            for i in range(phnum):
+                q = phoff + i * phentsize
+                if q + 56 > len(d):
+                    hata.append(f"program başlığı {i} / {phnum} kesik")
+                    break
+                p_type, _pf, p_off, p_vaddr, _pa, p_filesz, _pm, _al = struct.unpack_from(e + "IIQQQQQQ", d, q)
+                if p_type == PT_LOAD and p_filesz:
+                    eslemler.append((p_vaddr, p_vaddr + p_filesz, p_off))
+        self._eslem_kur(eslemler)
+        if shoff and shentsize >= 64:
+            if shnum == 0 and shoff + 64 <= len(d):  # genişletilmiş numaralama: sayı 0. bölümde
+                shnum = struct.unpack_from(e + "Q", d, shoff + 32)[0]
+            if shstrndx == SHN_XINDEX and shoff + 64 <= len(d):
+                shstrndx = struct.unpack_from(e + "I", d, shoff + 40)[0]
+            self.bolum_basligi_sayisi = shnum
+            for i in range(shnum):
+                q = shoff + i * shentsize
+                if q + 64 > len(d):
+                    hata.append(f"bölüm başlığı {i} / {shnum} kesik")
+                    break
+                (ad_ofs, tur, bayrak, adres, ofs, boy, link, info, _al, entsize) = struct.unpack_from(
+                    e + "IIQQQQIIQQ", d, q)
+                self._shdr.append((ad_ofs, tur, bayrak, adres, ofs, boy, link, info, entsize))
+            str_ofs = self._shdr[shstrndx][4] if shstrndx < len(self._shdr) else None
+            str_boy = self._shdr[shstrndx][5] if shstrndx < len(self._shdr) else 0
+            for i, (ad_ofs, tur, bayrak, adres, ofs, boy, *_r) in enumerate(self._shdr):
+                if i == 0:
+                    continue  # SHN_UNDEF boş bölümü
+                ad = ""
+                if str_ofs is not None and ad_ofs < str_boy:
+                    q = str_ofs + ad_ofs
+                    son = d.find(b"\0", q, min(len(d), str_ofs + str_boy))
+                    ad = d[q:son if son >= 0 else min(len(d), str_ofs + str_boy)].decode("utf-8", "replace")
+                dosyada = tur != SHT_NOBITS and ofs + boy <= len(d)
+                self._bolumler.append(Bolum(ad, adres, boy, bool(bayrak & SHF_EXECINSTR), "",
+                                            ofs if dosyada else None, bool(bayrak & SHF_ALLOC)))
+        if hata:
+            self._durum_yaz(KISIM_BASLIK, DURUM_HATA, "; ".join(hata))
+        elif not self._shdr:
+            self._durum_yaz(KISIM_BASLIK, DURUM_VERI_YOK, "bölüm başlık tablosu yok")
+        else:
+            self._durum_yaz(KISIM_BASLIK, DURUM_CALISTI)
+
+    # ---- kimlik ----------------------------------------------------------------------
+    @property
+    def bicim(self) -> str:
+        return BICIM_ELF
+
+    @property
+    def mimari(self) -> str:
+        if not self.e_machine:
+            return ""
+        return _EM_ADLARI.get(self.e_machine, f"em_{self.e_machine}")
+
+    @property
+    def gosterici_boyutu(self) -> int:
+        return 8
+
+    @property
+    def giris_adresi(self) -> int | None:
+        return self.e_entry or None
+
+    @property
+    def bolumler(self) -> list[Bolum]:
+        return list(self._bolumler)
+
+    # ---- semboller -------------------------------------------------------------------
+    def _bolum_bayragi(self, shndx: int) -> int | None:
+        return self._shdr[shndx][2] if 0 < shndx < len(self._shdr) else None
+
+    def _sembol_tablosu(self, sira: int) -> list[tuple[str, int, int]]:
+        """Bölüm ``sira``'daki sembol tablosu: girdi başına (ad, değer, shndx); 0. girdi dahil."""
+        if sira in self._sym_tablolari:
+            return self._sym_tablolari[sira]
+        out: list[tuple[str, int, int]] = []
+        self._sym_tablolari[sira] = out
+        if not 0 < sira < len(self._shdr):
+            return out
+        d, e = self._veri, self.bayt_sirasi
+        _ad, tur, _b, _a, ofs, boy, link, _i, _es = self._shdr[sira]
+        if tur not in (SHT_SYMTAB, SHT_DYNSYM):
+            return out
+        s_ofs = self._shdr[link][4] if 0 < link < len(self._shdr) else None
+        s_son = min(len(d), s_ofs + self._shdr[link][5]) if s_ofs is not None else 0
+        for i in range(boy // _ELF_SYM_64):
+            q = ofs + i * _ELF_SYM_64
+            if q + _ELF_SYM_64 > len(d):
+                break
+            st_name, _info, _other, shndx, value, _size = struct.unpack_from(e + "IBBHQQ", d, q)
+            ad = ""
+            if s_ofs is not None and st_name and s_ofs + st_name < s_son:
+                a = s_ofs + st_name
+                z = d.find(b"\0", a, s_son)
+                ad = d[a:z if z >= 0 else s_son].decode("utf-8", "replace")
+            out.append((ad, value, shndx))
+        return out
+
+    def semboller(self) -> list[Sembol]:
+        if self._semboller is None:
+            self._semboller = self._semboller_oku()
+        return list(self._semboller)
+
+    def _semboller_oku(self) -> list[Sembol]:
+        d, e = self._veri, self.bayt_sirasi
+        out: list[Sembol] = []
+        tablolar = [i for i, h in enumerate(self._shdr) if h[1] in (SHT_SYMTAB, SHT_DYNSYM)]
+        if not tablolar:
+            self._durum_yaz(KISIM_SEMBOL, DURUM_VERI_YOK, ".symtab / .dynsym yok")
+            return out
+        kesik = False
+        for sira in tablolar:
+            tablo_adi = self._bolumler[sira - 1].ad if sira - 1 < len(self._bolumler) else ""
+            girdiler = self._sembol_tablosu(sira)
+            ofs, boy = self._shdr[sira][4], self._shdr[sira][5]
+            if len(girdiler) < boy // _ELF_SYM_64:
+                kesik = True
+            for i, (ad, value, shndx) in enumerate(girdiler):
+                if i == 0:
+                    continue  # STN_UNDEF boş girdi
+                _n, info, other, _sh, _v, size = struct.unpack_from(e + "IBBHQQ", d, ofs + i * _ELF_SYM_64)
+                bag_, tip = info >> 4, info & 0xF
+                if shndx == SHN_UNDEF:
+                    tur = SEMBOL_TANIMSIZ
+                elif shndx == SHN_ABS:
+                    tur = SEMBOL_MUTLAK
+                elif tip in (_STT_SECTION, _STT_FILE):
+                    tur = SEMBOL_DIGER
+                elif shndx == SHN_COMMON:
+                    tur = SEMBOL_VERI
+                else:
+                    bayrak = self._bolum_bayragi(shndx)
+                    tur = SEMBOL_KOD if bayrak is not None and bayrak & SHF_EXECINSTR else SEMBOL_VERI
+                disa = bag_ in (_STB_GLOBAL, _STB_WEAK, _STB_GNU_UNIQUE) and (other & 3) in (
+                    _STV_DEFAULT, _STV_PROTECTED)
+                out.append(Sembol(ad, value, tur, disa, size, tablo_adi))
+        if kesik:
+            self._durum_yaz(KISIM_SEMBOL, DURUM_HATA, "sembol tablosu kesik")
+        else:
+            self._durum_yaz(KISIM_SEMBOL, DURUM_CALISTI)
+        return out
+
+    # ---- yeniden konumlama -----------------------------------------------------------
+    def yeniden_konumlamalar(self) -> dict[int, Any]:
+        """Yer → hedef (``int``), ``Bag`` ya da ``None`` (statik çözülemez: dolaylı işlev / bilinmeyen tür).
+
+        Yalnız yüklenen (``SHF_ALLOC``) ``SHT_RELA`` / ``SHT_REL`` / ``SHT_RELR`` tabloları
+        (dinamik bağlayıcının uyguladıkları). İlk istekte kurulur.
+        """
+        if self._rk is None:
+            self._rk = {}
+            self._rk_sayac = {"goreli": 0, "bag": 0, "tanimli_sembol": 0, "dolayli": 0,
+                              "bilinmeyen": 0, "toplam": 0}
+            try:
+                self._rk_oku()
+            except (struct.error, IndexError, ValueError) as exc:
+                self._rk = {}
+                self._durum_yaz(KISIM_DUZELTME, DURUM_HATA, f"yeniden konumlama okunamadı: {exc}")
+        return self._rk
+
+    def _rk_oku(self) -> None:
+        d, e = self._veri, self.bayt_sirasi
+        turler = _RK_TURLERI.get(self.e_machine)
+        tablolar = [h for h in self._shdr if h[1] in (SHT_RELA, SHT_REL, SHT_RELR) and h[2] & SHF_ALLOC]
+        if not tablolar:
+            self._durum_yaz(KISIM_DUZELTME, DURUM_VERI_YOK, "yüklenen yeniden konumlama tablosu yok")
+            return
+        if turler is None:
+            self._durum_yaz(KISIM_DUZELTME, DURUM_DESTEKLENMIYOR, f"mimari {self.mimari}")
+            return
+        sayac = self._rk_sayac
+        for _ad, tur, _b, _a, ofs, boy, link, _i, _es in tablolar:
+            if ofs + boy > len(d):
+                raise ValueError("yeniden konumlama tablosu dosya dışında")
+            if tur == SHT_RELR:
+                self._relr_oku(ofs, boy)
+                continue
+            rela = tur == SHT_RELA
+            kayit = _ELF_RELA_64 if rela else _ELF_REL_64
+            semboller = self._sembol_tablosu(link)
+            for i in range(boy // kayit):
+                q = ofs + i * kayit
+                if rela:
+                    yer, info, r_addend = struct.unpack_from(e + "QQq", d, q)
+                else:
+                    yer, info = struct.unpack_from(e + "QQ", d, q)
+                    r_addend = 0
+                sayac["toplam"] += 1
+                rtur, sym = info & 0xFFFFFFFF, info >> 32
+                ek = r_addend if rela else (self.sozcuk(yer) or 0)
+                if rtur in turler["goreli"]:
+                    self._rk[yer] = ek & _U64
+                    sayac["goreli"] += 1
+                elif rtur in turler["sembol"]:
+                    if sym == 0:
+                        self._rk[yer] = ek & _U64
+                        sayac["tanimli_sembol"] += 1
+                    elif sym < len(semboller):
+                        ad, deger, shndx = semboller[sym]
+                        if shndx == SHN_UNDEF:
+                            self._rk[yer] = Bag(ad, ek)
+                            sayac["bag"] += 1
+                        else:
+                            self._rk[yer] = (deger + ek) & _U64
+                            sayac["tanimli_sembol"] += 1
+                    else:
+                        self._rk[yer] = None
+                        sayac["bilinmeyen"] += 1
+                elif rtur in turler["dolayli"]:
+                    self._rk[yer] = None  # IRELATIVE: değer çözücü işlevin çalışmasıyla belli olur
+                    sayac["dolayli"] += 1
+                else:
+                    self._rk[yer] = None
+                    sayac["bilinmeyen"] += 1
+        neden = f"bilinmeyen tür {sayac['bilinmeyen']}" if sayac["bilinmeyen"] else ""
+        self._durum_yaz(KISIM_DUZELTME, DURUM_CALISTI, neden)
+
+    def _relr_oku(self, ofs: int, boy: int) -> None:
+        d, e = self._veri, self.bayt_sirasi
+        taban = 0
+        for i in range(boy // 8):
+            w = struct.unpack_from(e + "Q", d, ofs + 8 * i)[0]
+            if w & 1 == 0:
+                yerler = [w]
+                taban = w + 8
+            else:
+                yerler = [taban + 8 * (b - 1) for b in range(1, 64) if (w >> b) & 1]
+                taban += 63 * 8
+            for yer in yerler:
+                v = self.sozcuk(yer)
+                if v is None:
+                    raise ValueError(f"RELR yeri {yer:#x} dosyada yok")
+                self._rk[yer] = v  # örtük ek: dosyadaki sözcük (yükleme tabanı 0)
+                self._rk_sayac["goreli"] += 1
+                self._rk_sayac["toplam"] += 1
+
+    # ---- göstericiler ----------------------------------------------------------------
+    def gosterici(self, adres: int) -> int | Bag | None:
+        rk = self.yeniden_konumlamalar()
+        if adres in rk:
+            v = rk[adres]
+            return v if v != 0 else None
+        w = self.sozcuk(adres)
+        return w if w else None
+
+    # ---- .eh_frame FDE başlangıçları --------------------------------------------------
+    def fonksiyon_baslangiclari(self) -> list[int] | None:
+        if not self._fb_okundu:
+            self._fb_okundu = True
+            b = self.bolum_adli(".eh_frame")
+            if b is None or b.dosya_ofseti is None:
+                self._durum_yaz(KISIM_FONKSIYON_BASLANGICI, DURUM_VERI_YOK, ".eh_frame yok")
+                self._fb = None
+            else:
+                self._fb = self._eh_frame_oku(b)
+        return list(self._fb) if self._fb is not None else None
+
+    def _isaretci_oku(self, veri: bytes, pos: int, kod: int, alan_adresi: int) -> tuple[int, int] | None:
+        """DW_EH_PE kodlu değeri oku: ``(değer, yeni konum)``; desteklenmeyen kodlamada ``None``."""
+        if kod == _PE_OMIT or kod & _PE_DOLAYLI:
+            return None
+        bicim = kod & _PE_BICIM
+        if bicim == 0x01:
+            r = uleb128(veri, pos)
+        elif bicim == 0x09:
+            r = sleb128(veri, pos)
+        elif bicim in _PE_BOYUT:
+            boy = _PE_BOYUT[bicim]
+            if pos + boy > len(veri):
+                return None
+            harf = _PE_ISARETLI.get(bicim) or _PE_ISARETSIZ[bicim]
+            r = (struct.unpack_from(self.bayt_sirasi + harf, veri, pos)[0], pos + boy)
+        else:
+            return None
+        if r is None:
+            return None
+        deger, yeni = r
+        uyg = kod & _PE_UYGULAMA
+        if uyg == _PE_PCREL:
+            deger += alan_adresi
+        elif uyg != 0:
+            return None  # textrel / datarel / funcrel / aligned: bağlamsız çözülmez
+        return deger & _U64, yeni
+
+    def _cie_oku(self, veri: bytes, bas: int, son: int) -> int | None:
+        """CIE'nin FDE işaretçi kodlaması ('R'); yoksa mutlak (0); okunamazsa ``None``."""
+        pos = bas
+        if pos >= son:
+            return None
+        surum = veri[pos]
+        pos += 1
+        z = veri.find(b"\0", pos, son)
+        if z < 0:
+            return None
+        art = veri[pos:z].decode("ascii", "replace")
+        pos = z + 1
+        if "eh" in art:
+            pos += self.gosterici_boyutu
+        for oku in (uleb128, sleb128):
+            r = oku(veri, pos, son)
+            if r is None:
+                return None
+            pos = r[1]
+        if surum == 1:
+            pos += 1
+        else:
+            r = uleb128(veri, pos, son)
+            if r is None:
+                return None
+            pos = r[1]
+        kod = 0
+        if art.startswith("z"):
+            r = uleb128(veri, pos, son)
+            if r is None:
+                return None
+            pos = r[1]
+            for ch in art[1:]:
+                if pos >= son:
+                    return None
+                if ch == "R":
+                    kod = veri[pos]
+                    pos += 1
+                elif ch == "L":
+                    pos += 1
+                elif ch == "P":
+                    pk = veri[pos]
+                    r2 = self._isaretci_oku(veri, pos + 1, pk & ~_PE_DOLAYLI & 0xFF, 0)
+                    if r2 is None:
+                        return None
+                    pos = r2[1]
+                elif ch in "SBG":
+                    continue
+                else:
+                    return kod
+        return kod
+
+    def _eh_frame_oku(self, b: Bolum) -> list[int] | None:
+        veri = self.bolum_baytlari(b)
+        if veri is None:
+            self._durum_yaz(KISIM_FONKSIYON_BASLANGICI, DURUM_HATA, ".eh_frame dosya dışında")
+            return None
+        e = self.bayt_sirasi
+        cieler: dict[int, int | None] = {}
+        out: set[int] = set()
+        pos = 0
+        sorun = ""
+        while pos + 4 <= len(veri):
+            uzunluk = struct.unpack_from(e + "I", veri, pos)[0]
+            if uzunluk == 0:
+                break  # sonlandırıcı
+            if uzunluk == 0xFFFFFFFF:
+                if pos + 12 > len(veri):
+                    sorun = "64 bit uzunluk kesik"
+                    break
+                uzunluk = struct.unpack_from(e + "Q", veri, pos + 4)[0]
+                bas, kimlik_boy = pos + 12, 8
+            else:
+                bas, kimlik_boy = pos + 4, 4
+            son = bas + uzunluk
+            if son > len(veri) or uzunluk < kimlik_boy:
+                sorun = f"kayıt {pos:#x} bölüm dışına taşıyor"
+                break
+            kimlik = struct.unpack_from(e + ("Q" if kimlik_boy == 8 else "I"), veri, bas)[0]
+            if kimlik == 0:
+                cieler[pos] = self._cie_oku(veri, bas + kimlik_boy, son)
+            else:
+                cie_pos = bas - kimlik
+                if cie_pos not in cieler and 0 <= cie_pos < len(veri):
+                    cu = struct.unpack_from(e + "I", veri, cie_pos)[0]
+                    cb = cie_pos + (12 if cu == 0xFFFFFFFF else 4)
+                    cs = cb + (struct.unpack_from(e + "Q", veri, cie_pos + 4)[0] if cu == 0xFFFFFFFF else cu)
+                    cieler[cie_pos] = self._cie_oku(veri, cb + kimlik_boy, min(cs, len(veri)))
+                kod = cieler.get(cie_pos)
+                alan = bas + kimlik_boy
+                r = None if kod is None else self._isaretci_oku(veri, alan, kod, b.adres + alan)
+                if r is None:
+                    sorun = f"FDE {pos:#x}: işaretçi kodlaması çözülemedi"
+                elif r[0]:
+                    out.add(r[0])
+            pos = son
+        if sorun:
+            self._durum_yaz(KISIM_FONKSIYON_BASLANGICI, DURUM_HATA, sorun)
+        else:
+            self._durum_yaz(KISIM_FONKSIYON_BASLANGICI, DURUM_CALISTI)
+        return sorted(out)
+
+    # ---- özet ------------------------------------------------------------------------
+    def ozet(self) -> dict[str, Any]:
+        o = super().ozet()
+        self.yeniden_konumlamalar()
+        tablolar: dict[str, int] = {}
+        for s in self.semboller():
+            tablolar[s.tablo] = tablolar.get(s.tablo, 0) + 1
+        o.update({
+            "e_type": self.e_type,
+            "bolum_basligi": self.bolum_basligi_sayisi,
+            "sembol_tablolari": tablolar,
+            "yeniden_konumlama": self._rk_sayac.get("goreli", 0),
+            "bag": self._rk_sayac.get("bag", 0),
+            "yeniden_konumlama_kaydi": self._rk_sayac.get("toplam", 0),
+            "yeniden_konumlama_sayac": dict(self._rk_sayac),
+            "durum": self.durum,
+        })
+        return o
+
+
 # --- giriş noktaları -----------------------------------------------------------------------
 
 def baytlardan(veri: bytes, dilim: str | None = None, kaynak: str = "") -> Goruntu:
@@ -1197,6 +1695,10 @@ def _bicim_sec(veri: bytes, dilim: str | None, kaynak: str) -> Goruntu:
         return g
     if le == MH_MAGIC or be in (MH_MAGIC_64, MH_MAGIC):
         raise GoruntuHatasi("32 bit ya da büyük sonlu Mach-O desteklenmiyor", DURUM_DESTEKLENMIYOR)
+    if veri[:4] == ELF_IMZA:
+        if len(veri) > 4 and veri[4] != _ELFCLASS64:
+            raise GoruntuHatasi("32 bit ELF desteklenmiyor", DURUM_DESTEKLENMIYOR)
+        return ElfGoruntu(veri, kaynak)
     raise GoruntuHatasi(f"biçim tanınmadı (imza {veri[:4].hex()})", DURUM_DESTEKLENMIYOR)
 
 
