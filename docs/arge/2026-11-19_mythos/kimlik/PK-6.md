@@ -15,7 +15,7 @@
 | 3 PK-6 `surum_esli` (V1) | 4 / 4 program iki derleyiciyle derlendi, soyuldu, GT çıktı; koşu sırada | — |
 | 4 `iyilestirme` | veri yok (tabaka C Dalga 2'de) | — |
 | 5 PK-11 | koşu sırada (iş listesinde ilk) | — |
-| 6 Kilit süzgeci sınaması + mutant | başlamadı | — |
+| 6 Kilit süzgeci sınaması + mutant | bitti: 14 / 14 sınama, mutant 3 / 3 öldü | `329e9bc` |
 
 ## Ghidra koşu planı (kuyruğa girmeden önce)
 
@@ -60,3 +60,7 @@
 `python scripts/arge/kimlik/d0_olc.py hepsi --grup derleyici --etiket denetim_derleyici` tur 1 sayılarını birebir
 verdi: kural 3 908 / 38, tutucu 3 709 / 28, kural_v2 4 281 / 36, tutucu_v2 4 170 / 26; hata sınıfları
 4 / 13 / 16 / 3 / 2 (BULGULAR §3.6). Yükleyici eki eski kimlikleri değiştirmiyor.
+
+## Bekleme (09:20)
+
+- Şu an Ghidra kuyruğunu bekliyorum: ilk işim `kitaplik/libzstd` 09:07'den beri sırada (önde OK5 postgresql-17, ANA S8-AA, HZ1 S8). Sonra V1 10 koşu, ardından `mimari` 19 ve `derleyici_surumu` 38. TAHMİNİ bitiş 12:00–13:30 (yük altında; kuyruk paylaşımlı).
