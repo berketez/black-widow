@@ -14,10 +14,10 @@
 | 2 Mach-O 64 | **bitti** | `f97054c` |
 | 3 Evrensel dosya | **bitti** | `f97054c` |
 | 4 ELF 64 | **bitti** | `d3a940a` |
-| 5 PE iskeleti | bekliyor | — |
-| 6 Sağlamlık | bekliyor | — |
+| 5 PE iskeleti | **bitti** | `0a3a122` |
+| 6 Sağlamlık | **bitti** | `6e7f0d8` (+ `adec5c5`) |
 | 7 `python -m … goruntu` özeti | **bitti** | `f97054c` |
-| Kabul / test / mutasyon / tam takım | bekliyor | — |
+| Kabul / test / mutasyon / tam takım | H1–H4 tuttu; 40 test; 16 / 16 mutant; tam takım koşuyor | `fd7ccd3` |
 
 ## Arayüz (kalem 1) — `b049837`
 
@@ -71,3 +71,32 @@ Ek (ön kayıtta yoktu, bilgi): Rectangle (`LC_DYLD_INFO`) bağ işlem kodların
 | coreutils/ls | `0c062cc32ec1` | 29 / 29 | 139 / 139 | 218 / 218 | 318 / 318 | 133 | aynı |
 | tree/tree | `62810aca2954` | 28 / 28 | 72 / 72 | 422 / 422 | 116 / 116 | 72 | aynı |
 | zstd/pzstd | `77866a8bf262` | 31 / 31 | 113 / 113 | 111 / 111 | 858 / 858 | 129 | aynı |
+
+## Kalem 5 — PE iskeleti — `0a3a122`
+
+- `PeGoruntu`: DOS / COFF / isteğe bağlı başlık (PE32 ve PE32+), bölüm tablosu (uzun ad COFF dizgi tablosundan), başlık + bölüm eşlemesi, `gosterici`: IAT yuvası → `Bag(ad)` (sıra numarasıyla aktarımda `kitaplık#n`), öbür yerde mutlak sözcük (görüntü tabanı dosyada yazılı; taban yeniden konumlaması uygulanmaz: tercih edilen taban); `.pdata` başlangıçları (x86_64 12, arm64 8 baytlık kayıt); COFF sembolleri; tanımlayıcı / thunk üst sınırı 100 000.
+- Yerel denetim (kabul değil; depoya girmez): anaconda'daki 6 distlib başlatıcısında (`t32/t64/t64-arm/w32/w64/w64-arm.exe`) bölüm adları + adresleri, giriş, IAT bağları `pefile` ile 6 / 6 aynı (85–94 bağ); x86_64 `.pdata` 240 / 240 ve 235 / 235 aynı; arm64 `.pdata` `pefile` okumadığı için karşılaştırılmadı. Çıktı `~/karadul_olcum/runs/dalga0-2026-11-20/PUV0/pe_yerel.json`.
+- Go PE ve MSVC RTTI kabulü P-ÜV9'da (planda öyle).
+
+## Kalem 6 — sağlamlık — `6e7f0d8`, `adec5c5`
+
+- Bütün yük komutu / bölüm / sembol / tablo okumaları sınır denetimli; kesik ya da bozuk kısım `None` / boş + `durum[kısım] = hata` + neden; istisna yalnız görüntü kurulamazsa `GoruntuHatasi` (tanınmayan imza, evrensel dosyada dilim yok).
+- Sonsuz döngü koruması: zincir yürüyüşü bölüt başına adım sınırı (bölüt boyu / 4); `LC_DYLD_INFO` bağ yeri sınırı min(2^22, bölüt boyları / 8); PE thunk / tanımlayıcı sınırı; `.eh_frame` kaydı her adımda ilerler.
+- Bozuk zincirli düzeltme ya da bozuk bağ işlem kodu: yarım sözlük atılır; zincirli görüntüde `gosterici` hep `None` (dosyadaki sözcükler kodlu, ham değer yanıltır).
+- Bellek: dosya tek `bytes`; zincirli düzeltme sözlüğü, semboller, fonksiyon başlangıçları, yeniden konumlamalar ilk istekte kurulur.
+
+### H4 (ölçüm: `kabul_kesik.py` → `kabul_kesik.json`)
+
+**H4: 24 kesik girdide (19 Mach-O dilimi + 5 ELF, her birinin ilk 4 096 baytı) istisna 0 → TUTTU.** Bütün girdilerde görüntü kuruldu; kısımların durumu `hata` / `veri_yok` (ör. Ollama arm64: başlık `hata`, sembol `hata`, düzeltme `hata`, fonksiyon başlangıcı `veri_yok`).
+
+## Testler ve mutasyon — `adec5c5`, `fead983`, `0a3a122`, `6e7f0d8`, `fd7ccd3`
+
+- `tests/test_puv0_goruntu.py`: **40 test** (hepsi sentetik `struct.pack`; gerçek ikiliye bağlı test yok): arayüz (soyut sınıf, `Bag` eşitliği, `BellekGoruntu`, `cstr`, ULEB/SLEB), Mach-O (tek zincir: iki yeniden konumlama + bir bağ; biçim 2 / 6; arm64e ve çok başlangıçlı sayfa `desteklenmiyor`; ULEB fonksiyon başlangıcı; semboller; `LC_DYLD_INFO` bağı ve sayaç sınırı; dosya dışına taşan zincir), evrensel dosya (dilim zorunlu, ürün dilimi, ince dosyada yanlış dilim, `ac` + CLI), ELF (`R_AARCH64_RELATIVE` ek alanından, `GLOB_DAT` → `Bag`, REL / RELR örtük ek, semboller, `.eh_frame`, 32 bit desteklenmiyor), PE (iskelet, mutlak gösterici + IAT bağı, `.pdata`), sağlamlık (5 görüntü × 15 kesim noktası, 5 görüntü × 150 belirlenimci rastgele bozma, bozuk yük komutu, tanınmayan biçim). Sentetik ELF ve PE ayrıca `pyelftools` / `pefile` ile okunup kurgunun geçerli olduğu denetlendi.
+- `scripts/measurement/mutation_specs_puv0.json`: **16 mutant, 16 öldü** (planın 6'sı: `high8` kaydırması, biçim 6 tabanı, sonraki × 8, ULEB devam biti, RELA ek alanı, bağ biti; ek 10: `LC_FUNCTION_STARTS` tabanı, içe aktarım ad kayması, desteklenmeyen aralıkta ham sözcük, bozuk zincirde ham sözcük, yüklenmeyen bölüm adres içerir, eh_frame pcrel, `GLOB_DAT` bağı, RELR bit kayması, PE ILT/IAT, evrensel dosyada dilim zorunluluğu). İlk koşuda RELR mutantı hayatta kaldı (RELR'de hedef = dosyadaki sözcük; yalnız değere bakan test yeri ayırt edemiyordu); teste yer kümesi eklendi, sonra öldü. Günlük: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV0/mutasyon.log`; koşum sonrası `git diff` temiz.
+
+## Arayüz eklemeleri (b049837'den sonra; geriye uyumlu)
+
+- `Bolum.bellekte: bool = True` (sona eklendi; ELF'te `SHF_ALLOC` olmayan bölüm `False`, adres içermez).
+- Dosya görüntülerinde `bolum_baytlari(bolum)` bölümü dosyadaki yerinden okur (yüklenmeyen bölüm dahil).
+- Biçime özgü yardımcılar: Mach-O `duzeltmeler()`, `ice_aktarimlar()`, `dyld_info_baglari()`, `goruntu_tabani`, `bolutler`, `bolut_adli()`, `kitapliklar`; ELF `yeniden_konumlamalar()`; PE `ice_aktarim_baglari()`, `goruntu_tabani`; modül düzeyinde `dilimler(veri)`, `urun_dilimi(veri)`, `uleb128`, `sleb128`, `ozet_cikar`.
+- `karadul.analyzers.ustveri` paketi adları tembel yükler (`python -m …goruntu` runpy uyarısı vermesin diye); `from karadul.analyzers.ustveri import Goruntu, Bag` çalışır.
