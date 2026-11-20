@@ -11,7 +11,7 @@
 - [x] 2. Alanları ekle
 - [x] 3. `INERT_SETTINGS` + bağlama tablosu
 - [x] 4. `naming_labels.py` sabitleri
-- [ ] 5. Testler
+- [x] 5. Testler
 - [ ] 6. Davranış değişmedi kanıtı
 - [ ] 7. Mutasyon
 
@@ -249,3 +249,21 @@ Tablo `config.py`'den betikle üretildi (49 satır). Dalga `SONRAKI_OTURUM.md` �
   yeni satırlar onların değiştireceği yerlere bitişik değil.
 - Eşiği başka yerde yazan kod: §1.5 (`scripts/arge/ustveri/tablo.py:186` `0.909`; değiştirilmedi).
 - Doğrulama: `naming_labels`'ı içe aktaran 12 test dosyası 199 geçti.
+
+## 5. Testler: `tests/test_bayrak_on_paketi.py` (160 test)
+
+| Grup | Ne denetler | Sayı |
+|---|---|---|
+| (a) | 49 alan var; **bağlanmamışken** tür (`_field_type_hints`) ve öntanım (değer + tam tür: `False` ≠ `0`, `0` ≠ `0.0`) envanterdeki gibi; yeni bölümlerin sınıf adı planınki | 49 + 2 |
+| (b) | bağlanmamış alan INERT'te, gerekçe `_pending_binding(<paket>)`, satırda `# ETKİSİZ: <paket> bağlayacak`; bağlanmışsa işaret de kalkmış olmalı; `_pending_binding` gerekçeli her kayıt envanterde | 49 + 2 |
+| (c) | boş YAML: yeni alanlar dışındaki görünüm `Config()` ile aynı, yeni alanlar öntanımda, `yaml_keys` boş, uyarı yok; depodaki örnek ayar dosyası (`docker/measurement/karadul.yaml`): `yaml_keys` = dosyanın anahtarları, görünüm = öntanım + dosyanın değerleri (var olan `_coerce_value` ile), yeni anahtar uyarısı yok | 2 |
+| (d) | her yeni alana YAML'dan öntanım dışı değer → alan değişir, `yaml_keys`'te, bağlanmamışsa paket adlı "etkisiz" uyarısı; beş yeni bölüm tek dosyada; yeni bölümde tür hatası, bilinmeyen anahtar (öneriyle), bool dizgi hatası; `config validate` CLI yeni alanı "etkisiz" basıyor | 49 + 3 |
+| (e) | `MALIYET_ORANI_L == 10` (int); `AD_ESIGI == L / (L + 1) == 10 / 11`; yuvarlanmış değil (`> 0.909`, `≠ 0.9`); belge dizgisi A-2 / A-13 / A-14 kuralını yazıyor | 4 |
+
+- **Bağlama dostu:** tür / öntanım kilidi alan INERT'teyken geçerli; bağlayan paket INERT satırını ve `# ETKİSİZ`
+  yorumunu birlikte kaldırınca test kendiliğinden uyar (bu dosyaya dokunması gerekmez); yalnız birini kaldırırsa
+  kırmızı.
+- **Eski kodda kırmızı:** taban `e996200`'ün `config.py` + `naming_labels.py`'siyle 159 kaldı / 1 geçti (yalnız
+  envanter sayımı); yeni kodla 160 geçti. Dosyalar geri alındı (`git status` temiz).
+- (c) için not: "önce ↔ sonra" eşitliği kalıcı testte değil (§6'da taban koduyla bir kez karşılaştırıldı); kalıcı bir
+  anlık görüntü, sonraki paketlerin meşru öntanım değişikliklerinde (ÖL-1, HZ-5 …) bu dosyayı değiştirmeyi zorlardı.
