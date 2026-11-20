@@ -80,6 +80,30 @@
       "test": "tests/test_hz1_olcum_kancasi.py::test_her_adimin_suresi_kendi_araligindan_ve_liste_sirasinda",
       "find": "\"adim_sureleri\": saat.sozluk(),",
       "replace": "\"adim_sureleri\": {},"
+    },
+    {
+      "id": "hz1_s8_mutlak_yol_haric_degil",
+      "desc": "Kalem 5: s8_esitlik decompiled_dir'i (mutlak yol) hariç tutmaz; her koşu farklı görünür",
+      "module": "scripts/arge/hiz/s8_esitlik.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_s8_esitlik_haric_alanlar_ve_yeni_durum_alanlari_fark_sayilmaz",
+      "find": "    \"decompiled_dir\",                # decompiled.json — mutlak yol\n",
+      "replace": ""
+    },
+    {
+      "id": "hz1_s8_aa_ayrilmaz",
+      "desc": "Kalem 5: A/A'da da görülen fark 'sonraya yüklenebilir' sayılır (belirlenimsizlik ayrılmaz)",
+      "module": "scripts/arge/hiz/s8_esitlik.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_s8_esitlik_farki_birimiyle_bulur_ve_aa_ile_ayirir",
+      "find": "satir[\"sonraya_yuklenebilir\"] = sorted(b_hz - b_aa)",
+      "replace": "satir[\"sonraya_yuklenebilir\"] = sorted(b_hz)"
+    },
+    {
+      "id": "hz1_s8_toplam_denetlenmez",
+      "desc": "Kalem 5: adım toplamının köprü süresini aşması denetlenmez (H4)",
+      "module": "scripts/arge/hiz/s8_esitlik.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_s8_esitlik_toplam_sure_asilirsa_h4_tutmaz",
+      "find": "and toplam <= d[\"duration_seconds\"] + TOPLAM_PAYI_SN)",
+      "replace": "and toplam >= 0)"
     }
   ]
 }
