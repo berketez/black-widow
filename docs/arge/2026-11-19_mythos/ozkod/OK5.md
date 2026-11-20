@@ -42,6 +42,8 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
 **Bekleme (08:2x):** şu an `kos-hepsi` arka planda; önce ayar (9), sonra kör (76). TAHMİNİ bitiş: kuyrukta başka paket yoksa 10:15–12:35 arası; başka paketler sıraya girdikçe kayar. Beklerken `ozkod_olc.py`, testler ve ön kayıt yazılıyor.
 
 **Sayaç (08:42):** ayar 6 / 9 bitti (6 tamam; toplam 649 sn, yük altında), kör 0 / 76. Kuyrukta HZ1 ve OLCEK paketleri de var (işler aralanıyor). Disk: 742,5 GB kullanılan (başta 739,6); koşu kökü 1,2 GB.
+**Sayaç (11:17):** kör 40 / 76 bitti (40 tamam; 838 sn). 10:48'de ana oturum KIMLIK'in yeni koşularını OK5 kör işleri bitene kadar bekletti; 11:12'den beri kuyruk OK5'te. TAHMİNİ kör bitişi 11:50–12:20.
+
 **Sayaç (10:50):** kör 27 / 76 bitti (27 tamam, zaman aşımı 0, hata 0; 538 sn). Kuyrukta KIMLIK'in uzun işleri (redis-cli, tmux) arasında bekleniyor; TAHMİNİ kör bitişi 12:00–13:30.
 
 **Sayaç (10:22):** kör 11 / 76 bitti (11 tamam; 218 sn). Kuyruk payı arttı (10:12–10:22: OK5 ve KIMLIK sırayla); bu hızla kalan 65 iş TAHMİNEN 1,5–3 saat. Tam takım (ara, kod değişmedikçe son sayılır): 10 316 geçti / 11 atlandı / 0 kaldı (531 sn, yük altında; `~/karadul_olcum/runs/dalga0-2026-11-20/OK5/tam_takim_1.log`; çalışma verisi bağları worktree'de, commit'lenmedi).
