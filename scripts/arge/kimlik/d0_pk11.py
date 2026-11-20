@@ -96,7 +96,7 @@ def main() -> int:
                "ad yazabilir (A-2)": "ad yazabilir"}.get(a_h, a_h)
         kapsam = kit["dogru"] / kit["nufus"] if kit["nufus"] else None
         b_h = ("veri yok" if kapsam is None else
-               "A2'nin kitaplık kolu için kullanılabilir" if kapsam >= KAPSAM_ESIGI else "kullanılamaz (< %40)")
+               "A2'nin kitaplık kolu için kullanılabilir" if kapsam >= KAPSAM_ESIGI else "tutmadı (kapsam < %40)")
         verilen = prg["dogru"] + prg["yanlis"]
         c_oran = verilen / prg["nufus"] if prg["nufus"] else None
         c_h = ("veri yok" if c_oran is None else
