@@ -14,7 +14,7 @@ Paket metni: `docs/arge/2026-11-20_dalga0/gonderim/HEDEF.md`. Ortak brif: `docs/
 | 1 set + GT + bölme | bitti (aşağıda) |
 | 2 ad eşitliği | bitti (`c16a315`) |
 | 3 kanal ölçümü | bitti: keşifte HK tuttu, H1 25 / 25 aynı |
-| 4 bütçe + ürün "önce" sayısı | bütçe bitti (16 / 16 aynı); ürün koşusu Ghidra kuyruğunda |
+| 4 bütçe + ürün "önce" sayısı | bitti: bütçe 16 / 16 aynı; ürün taban tablosu aşağıda (1 ikili koşuldu, 4'ü süre nedeniyle gece kuyruğuna) |
 | 5 P-ÜV9 kalem 1 | bitti (`7f75192`): G1–G3 tuttu; G4 ObjC adı Ghidra'da yalnız seçici |
 | 6 test + mutasyon | 23 test geçti; mutant 14 / 14 öldü (`a260351`) |
 
@@ -118,3 +118,19 @@ Soyulmuş kopyada kanal çıktısı ↔ özgünün sembol tablosu (`ustveri_olc.
 ## Bekleme (09:57)
 
 - Kuyruk: OK5 bitti; KIMLIK `D0:kitaplik/libzstd` koşuyor, HZ1 S8 ikililerini tek tek kuyruğa sokuyor; `urun:terminal-notifier` 09:33:28'den beri bekliyor. TAHMİNİ başlama 10:00–11:00, koşu 1–5 dk.
+
+## Kalem 4 — bugünkü ürünün "önce" sayısı (taban; P-ÜV8 kalem 5'in "bayrak kapalı" koluyla aynı tanım)
+
+Koşu: `~/karadul_olcum/ghidra_kuyruk.sh HEDEF urun:terminal-notifier python scripts/measurement/ustveri_olc.py urun-kos …`; ürün ağacı `~/karadul_olcum/urun-b6aceb9` (commit `b6aceb9`, kirli dosya yok, `karadul` o ağaçtan; imza veritabanı `data_root:signatures.lmdb`); bayraklar öntanımlı; `PYTHONHASHSEED=0`; `KARADUL_CACHE_DIR=~/karadul_olcum/runs/dalga0-2026-11-20/HEDEF/urun/cache`; süre sınırı 3 600 sn. Kuyruk: 09:33:28 bekledi → 09:58:25 başladı → 09:59:19 bitti. Künye `…/HEDEF/urun/mac/terminal-notifier.kunye.json`; ölçüm `…/HEDEF/urun_terminal-notifier.json` (`ustveri_olc.py urun`).
+
+| İkili | Durum | Süre | Ürünün ad verdiği fonksiyon | Doğru | Yanlış | GT'siz | Kanal kırılımı | Ad bekleyen nüfus → doğru kapsam | Ghidra'nın kendisi (GT'li 92 fonksiyonda) |
+|---|---|---|---|---|---|---|---|---|---|
+| terminal-notifier (soyulmuş) | tamam (`BITTI` 0) | 53,4 sn (yük altında; `load averages: 5.45 7.38 7.83`) | **0** (ad haritasının `global` bölümü boş) | 0 | 0 | 0 | — (ad yok) | 40 → 0 / 40 (Wilson üst %8,8) | 92 / 92'sinde fonksiyon açtı; 31'ine jenerik olmayan ad verdi: 31'i de ObjC yöntemi, ad **yalnız seçici** (kalem 2 eşitliği 0 / 31, seçici eşitliği 31 / 31) |
+| llama-server arm64 | ölçülmedi: süre (TAHMİN 164–215 dk) — gece kuyruğuna önerildi | | | | | | | | |
+| docker-cli | ölçülmedi: süre (TAHMİN 334–983 dk) — gece kuyruğuna önerildi | | | | | | | | |
+| docker-compose | ölçülmedi: süre (TAHMİN 859–7 378 dk) — gece kuyruğuna önerildi | | | | | | | | |
+| iTerm2 arm64 | ölçülmedi: süre (TAHMİN 1 046–11 219 dk) — gece kuyruğuna önerildi; ayrıca soyulmuş kopyada sembol kaldı (kalem 1) | | | | | | | | |
+
+- **HÜ tuttu:** ürünün ad verdiği fonksiyon 0 (< 10); üst veri kanalından ad 0. Doğru ad 0 (ilk ölçüm).
+- Ölçüm aracı tmux'ta `urun_olc` ile aynı hükmü verdiği için (yukarıda) bu sıfır araç hatası değil: ürünün bu ikilide hiçbir ad kanalı tetiklenmedi.
+- **ObjC kanalı için önemli sayı (P-ÜV6'ya):** aynı koşuda (`acik_ghidra_ustveri.py`, `…/HEDEF/ghidra_ustveri_terminal-notifier.json`) yöntem listesindeki 32 IMP'nin 31'i Ghidra'da zaten adlı (yalnız seçiciyle), 1'i jenerik. P13b kuralı ("aday yalnız Ghidra'nın adsız bıraktığı fonksiyona") olduğu gibi kalırsa ObjC kanalı burada **1** ad yazar; P-ÜV6 ön kaydı H4'teki "32 yöntemin Ghidra'nın adsız bıraktıklarına ad yazar" beklentisi bu veriyle tutmaz (Ollama'da da 148 / 151 aynı durum). Ayrıca Ghidra 173 program fonksiyonunu `LC_FUNCTION_STARTS` dışında açmış (264 `ANALYSIS` adlı; GT `__text` dışında, ölçüme girmez).
