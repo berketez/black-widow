@@ -1,0 +1,133 @@
+{
+ "_comment": "P-ÜV1 (2026-11-20): Go pclntab okuyucu ve go_metadata_recovery adımı. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv1.json",
+ "mutants": [
+  {
+   "id": "puv1_metin_tabani_basliktan",
+   "desc": "metin tabanı moduledata.text yerine başlıktaki textStart'tan alınır",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_go120_okunur_metin_tabani_moduledata",
+   "find": "        md_text = self.md.get(\"text\")\n",
+   "replace": "        md_text = self.baslik_text\n"
+  },
+  {
+   "id": "puv1_textstart_ham_sozcuk",
+   "desc": "başlıktaki textStart düzeltme çözülmeden ham sözcükten okunur",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_go118_baslik_textstart_dolu_ayni",
+   "find": "        self.baslik_text = _gosterici(self.g, self.adres + 24) or 0\n",
+   "replace": "        self.baslik_text = struct.unpack_from(\"<Q\", h, 24)[0]\n"
+  },
+  {
+   "id": "puv1_funcoff_basliga",
+   "desc": "_func ofseti pclnOffset yerine başlığa eklenir",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_go120_okunur_metin_tabani_moduledata",
+   "find": "\"<IiiIIIIIIiBBBB\", d, base + funcoff)",
+   "replace": "\"<IiiIIIIIIiBBBB\", d, funcoff)"
+  },
+  {
+   "id": "puv1_ftab_nfunc",
+   "desc": "ftab nfunc + 1 yerine nfunc girişle okunur",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_go120_okunur_metin_tabani_moduledata",
+   "find": "ftab = struct.unpack_from(f\"<{2 * (n + 1)}I\", d, base)",
+   "replace": "ftab = struct.unpack_from(f\"<{2 * n}I\", d, base)"
+  },
+  {
+   "id": "puv1_zikzak_ters",
+   "desc": "zikzak çözümü ters (tek değer pozitif, çift değer tümleyen)",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_pc_tablosu_zikzak_ve_minlc",
+   "find": "    return -(uv & 1) ^ (uv >> 1)\n",
+   "replace": "    return (uv >> 1) if uv & 1 else ~(uv >> 1)\n"
+  },
+  {
+   "id": "puv1_minlc_yok",
+   "desc": "pc farkı minLC ile çarpılmaz",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_pc_tablosu_zikzak_ve_minlc",
+   "find": "            npc = pc + pcdelta * self.min_lc\n",
+   "replace": "            npc = pc + pcdelta\n"
+  },
+  {
+   "id": "puv1_nameoff_sifir_okunur",
+   "desc": "nameOff 0 iken funcnametab'ın ilk dizgisi ad diye okunur",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_nameoff_sifir_adsiz",
+   "find": "        if name_off == 0:\n            return \"\"\n",
+   "replace": "        if name_off == -999:\n            return \"\"\n"
+  },
+  {
+   "id": "puv1_k1_esitlik_gecer",
+   "desc": "K1 karşılaştırması < yerine <= (eşit giriş ihlal sayılmaz)",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_k1_esit_giris_tutarsiz_ad_listesi_yok",
+   "find": "if not girisler[i - 1] < girisler[i])",
+   "replace": "if not girisler[i - 1] <= girisler[i])"
+  },
+  {
+   "id": "puv1_vendor_kurali_yok",
+   "desc": "ana modülün vendor/ dizini üçüncü taraf sayılmaz",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_paket_sinifi_kurallari",
+   "find": "    if ana_modul and paket.startswith(ana_modul + \"/vendor/\"):\n",
+   "replace": "    if ana_modul and paket.startswith(ana_modul + \"/vendor/\") and False:\n"
+  },
+  {
+   "id": "puv1_tutarsiz_liste_dondurur",
+   "desc": "tutarsız kararı ad listesini yine de döndürür",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_k1_esit_giris_tutarsiz_ad_listesi_yok",
+   "find": "return GoSonuc(durum=DURUM_TUTARSIZ, neden=neden, fonksiyonlar=[], buildinfo=bi,",
+   "replace": "return GoSonuc(durum=DURUM_TUTARSIZ, neden=neden, fonksiyonlar=list(fs), buildinfo=bi,"
+  },
+  {
+   "id": "puv1_bayrak_dogruluk_degeri",
+   "desc": "bayrak denetimi `is True` yerine doğruluk değeri",
+   "module": "karadul/pipeline/steps/go_metadata_recovery.py",
+   "test": "tests/test_puv1_adim.py::test_bayrak_gercek_true_degilse_kapali",
+   "find": "    return getattr(recon, \"enable_go_metadata_recovery\", False) is True\n",
+   "replace": "    return bool(getattr(recon, \"enable_go_metadata_recovery\", False))\n"
+  },
+  {
+   "id": "puv1_k4_esigi_gevsek",
+   "desc": "K4 karar eşiği %1 yerine %50",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_k4_esik_yuzde_bir",
+   "find": "K4_IHLAL_ORANI = 0.01\n",
+   "replace": "K4_IHLAL_ORANI = 0.5\n"
+  },
+  {
+   "id": "puv1_k5_kararda_yok",
+   "desc": "K5 (findfunctab) ihlali tutarsız kararına girmez",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_k5_bozuk_findfunctab_tutarsiz",
+   "find": "(\"K0_giris_uyumu\", \"K1_artan\", \"K2_kod_icinde\", \"K5_findfunctab\", \"K9_minpc_maxpc\")",
+   "replace": "(\"K0_giris_uyumu\", \"K1_artan\", \"K2_kod_icinde\", \"K9_minpc_maxpc\")"
+  },
+  {
+   "id": "puv1_k0_kararda_yok",
+   "desc": "K0 (ftab ↔ _func giriş uyumu) ihlali tutarsız kararına girmez",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_k0_ftab_func_giris_uyusmazligi_tutarsiz",
+   "find": "(\"K0_giris_uyumu\", \"K1_artan\", \"K2_kod_icinde\", \"K5_findfunctab\", \"K9_minpc_maxpc\")",
+   "replace": "(\"K1_artan\", \"K2_kod_icinde\", \"K5_findfunctab\", \"K9_minpc_maxpc\")"
+  },
+  {
+   "id": "puv1_dosya_yok_atlanir",
+   "desc": "cutab'daki 0xffffffff (dosya yok) denetimi atlanır",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_dosya_yolu_cutab_ve_yok",
+   "find": "        if fileoff == DOSYA_YOK:\n",
+   "replace": "        if fileoff == -DOSYA_YOK:\n"
+  },
+  {
+   "id": "puv1_imza_akli_yok",
+   "desc": "imza taramasında başlık akıl sağlığı atlanır (Go olmayan veride sahte pclntab)",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_go_degil_veri_yok",
+   "find": "                    if self._baslik_akli(blob[pos:pos + PCHEADER_BOYU]):\n",
+   "replace": "                    if True or self._baslik_akli(blob[pos:pos + PCHEADER_BOYU]):\n"
+  }
+ ]
+}

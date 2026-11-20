@@ -10,9 +10,9 @@ Geçici dosyalar: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/`.
 |---|---|---|
 | Ön kayıt (`on_kayit_PUV1.md`) | yazıldı | 42fdd11 |
 | 1–4, 6 okuyucu + yapı denetimleri + karar + satır içi sayaç | yazıldı, sentetik 36 test yeşil | 800f930 |
-| 5 üretici adım | yazıldı, 16 test yeşil | (bu commit) |
-| Mutasyon (≥ 10) | bekliyor | — |
-| Yama `PUV1__config.py.patch` | yazıldı; yamalı kopyada kayıt testleri yeşil | (bu commit) |
+| 5 üretici adım | yazıldı, 16 test yeşil | 8c6cf58 |
+| Mutasyon (≥ 10) | 16 / 16 öldü | (bu commit) |
+| Yama `PUV1__config.py.patch` | yazıldı; yamalı kopyada kayıt testleri yeşil | 8c6cf58 |
 | Rebase (PUV0 gelince) + 11 dilim kabulü + docker-cli GT | PUV0 mesajı bekleniyor | — |
 | Okuyucu dondurma + docker-compose SINAMA GT | bekliyor | — |
 | 7 süre ve bellek | bekliyor | — |
@@ -83,3 +83,11 @@ Geçici dosyalar: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/`.
 - Not: `config.py`'ye geçici yama uygulamak (gönderim metnindeki yöntem) bu oturumun izin
   sınıflandırıcısınca reddedildi; bu yüzden yamalı denetim worktree dışındaki kopyada yapıldı,
   worktree'deki `config.py`'ye hiç dokunulmadı.
+
+## Mutasyon (`scripts/measurement/mutation_specs_puv1.json`)
+
+16 mutant, 16 öldü, 0 kaldı, 0 hata (`git status` sonrası temiz). Plandaki 10 mutantın hepsi
+(metin tabanı başlıktan; `funcoff` başlığa; ftab `nfunc`; zikzak ters; `minLC` yok; `nameOff 0`
+okunur; K1 `<=`; `vendor/` kuralı yok; tutarsızda liste döner; bayrak doğruluk değeri) + 6 ek
+(başlık `textStart` ham sözcükten; K4 eşiği %50; K5 ve K0 karardan çıkar; `0xffffffff` denetimi
+yok; imza taramasında akıl sağlığı yok).
