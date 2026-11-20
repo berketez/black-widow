@@ -1,0 +1,133 @@
+{
+ "_comment": "P-ÜV0 (2026-11-20): ikili görüntü okuyucu (Goruntu). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv0.json",
+ "mutants": [
+  {
+   "id": "puv0_high8_kaydirma_yok",
+   "desc": "high8 56. bite konmaz (plan mutantı 1)",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_zincir_iki_yeniden_konumlama_bir_bag",
+   "find": "self._duzeltme[vm] = hedef | (high8 << 56)",
+   "replace": "self._duzeltme[vm] = hedef"
+  },
+  {
+   "id": "puv0_bicim6_taban_eklenmez",
+   "desc": "biçim 6'da görüntü tabanı eklenmez (plan mutantı 2)",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_zincir_iki_yeniden_konumlama_bir_bag",
+   "find": "                            hedef += taban\n",
+   "replace": "                            hedef += 0\n"
+  },
+  {
+   "id": "puv0_sonraki_x8",
+   "desc": "zincirde sonraki x 4 yerine x 8 (plan mutantı 3)",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_zincir_iki_yeniden_konumlama_bir_bag",
+   "find": "vm += nxt * _ZINCIR_ADIMI",
+   "replace": "vm += nxt * 8"
+  },
+  {
+   "id": "puv0_uleb_devam_biti_yok",
+   "desc": "ULEB devam biti yok sayılır (plan mutantı 4)",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_fonksiyon_baslangiclari_uleb",
+   "find": "        deger |= (b & 0x7F) << kayma\n        if not b & 0x80:\n            return deger, konum",
+   "replace": "        deger |= (b & 0x7F) << kayma\n        if True:\n            return deger, konum"
+  },
+  {
+   "id": "puv0_rela_ek_yerine_sozcuk",
+   "desc": "RELA ek alanı yerine dosyadaki sözcük okunur (plan mutantı 5)",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestElf::test_rela_relative_ek_alanindan",
+   "find": "ek = r_addend if rela else (self.sozcuk(yer) or 0)",
+   "replace": "ek = (self.sozcuk(yer) or 0)"
+  },
+  {
+   "id": "puv0_bag_biti_ters",
+   "desc": "bağ biti ters yorumlanır (plan mutantı 6)",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_zincir_iki_yeniden_konumlama_bir_bag",
+   "find": "if ham >> _ZINCIR_BAG_BITI:",
+   "replace": "if not ham >> _ZINCIR_BAG_BITI:"
+  },
+  {
+   "id": "puv0_fs_taban_yok",
+   "desc": "LC_FUNCTION_STARTS __TEXT tabanından değil 0'dan sayılır",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_fonksiyon_baslangiclari_uleb",
+   "find": "        adres = taban\n",
+   "replace": "        adres = 0\n"
+  },
+  {
+   "id": "puv0_ice_aktarim_ad_kaymasi",
+   "desc": "DYLD_CHAINED_IMPORT ad ofseti 9 yerine 8 bit kaydırılır",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_zincir_iki_yeniden_konumlama_bir_bag",
+   "find": "ad_ofs, ek = v >> 9, 0",
+   "replace": "ad_ofs, ek = (v >> 8), 0"
+  },
+  {
+   "id": "puv0_desteksiz_aralik_ham",
+   "desc": "desteklenmeyen gösterici biçiminde ham (kodlu) sözcük gösterici diye döner",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_arm64e_ve_cok_baslangicli_sayfa_desteklenmiyor",
+   "find": "return None  # bu aralıkta gösterici biçimi çözülemiyor: ham değer yanıltır",
+   "replace": "pass"
+  },
+  {
+   "id": "puv0_bozuk_zincir_ham",
+   "desc": "bozuk zincirde gosterici ham sözcüğe düşer",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestMachO::test_zincir_dosya_disina_tasarsa_hata_istisna_yok",
+   "find": "if self._duzeltme_bozuk:",
+   "replace": "if False:"
+  },
+  {
+   "id": "puv0_yuklenmeyen_bolum_adres_icerir",
+   "desc": "yüklenmeyen ELF bölümü (adres 0) adres içerir",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestElf::test_kimlik_bolumler",
+   "find": "return self.bellekte and self.adres <= adres < self.adres + self.boyut",
+   "replace": "return self.adres <= adres < self.adres + self.boyut"
+  },
+  {
+   "id": "puv0_eh_pcrel_yok",
+   "desc": "eh_frame pcrel kodlamasında alan adresi eklenmez",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestElf::test_eh_frame_fde_baslangici",
+   "find": "            deger += alan_adresi\n",
+   "replace": "            deger += 0\n"
+  },
+  {
+   "id": "puv0_glob_dat_bag_yok",
+   "desc": "tanımsız sembole GLOB_DAT bağı Bag yerine sembol değeri (0) olur",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestElf::test_glob_dat_tanimsiz_sembol_bag",
+   "find": "self._rk[yer] = Bag(ad, ek)",
+   "replace": "self._rk[yer] = deger"
+  },
+  {
+   "id": "puv0_relr_bit_kaymasi",
+   "desc": "RELR bit eşleminde bit b, taban + 8*(b-1) yerine 8*b",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestElf::test_rel_ve_relr_ortuk_ek",
+   "find": "yerler = [taban + 8 * (b - 1) for b in range(1, 64) if (w >> b) & 1]",
+   "replace": "yerler = [taban + 8 * b for b in range(1, 64) if (w >> b) & 1]"
+  },
+  {
+   "id": "puv0_pe_bag_ilt_yuvasina",
+   "desc": "PE bağı IAT yerine ILT yuvasına yazılır",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestPe::test_mutlak_gosterici_ve_iat_bagi",
+   "find": "self._baglar[tb + iat + gb * j] = bag",
+   "replace": "self._baglar[tb + kaynak + gb * j] = bag"
+  },
+  {
+   "id": "puv0_evrensel_dilim_zorunlu_degil",
+   "desc": "evrensel dosyada dilim verilmezse ürün dilimi sessizce seçilir",
+   "module": "karadul/analyzers/ustveri/goruntu.py",
+   "test": "tests/test_puv0_goruntu.py::TestEvrensel::test_dilim_zorunlu",
+   "find": "raise GoruntuHatasi(f\"evrensel dosya: dilim adı zorunlu ({', '.join(adlar)})\", DURUM_HATA)",
+   "replace": "dilim = urun_dilimi(veri)"
+  }
+ ]
+}

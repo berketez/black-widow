@@ -384,6 +384,7 @@ class TestElf:
         assert g.gosterici(E_DATA) == E_EK
         g = baytlardan(elf_kur("relr"))
         assert (g.gosterici(E_DATA), g.gosterici(E_DATA + 8)) == (E_EK, E_EK + 0x10)
+        assert set(g.yeniden_konumlamalar()) == {E_DATA, E_DATA + 8}  # bit eşleminin 1. biti = taban + 0
         assert g.ozet()["yeniden_konumlama"] == 2
 
     def test_semboller(self):
