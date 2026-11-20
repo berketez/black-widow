@@ -12,7 +12,7 @@
 - [x] 3. `INERT_SETTINGS` + bağlama tablosu
 - [x] 4. `naming_labels.py` sabitleri
 - [x] 5. Testler
-- [ ] 6. Davranış değişmedi kanıtı
+- [x] 6. Davranış değişmedi kanıtı
 - [ ] 7. Mutasyon
 
 ## 1. Envanter
@@ -267,3 +267,46 @@ Tablo `config.py`'den betikle üretildi (49 satır). Dalga `SONRAKI_OTURUM.md` �
   envanter sayımı); yeni kodla 160 geçti. Dosyalar geri alındı (`git status` temiz).
 - (c) için not: "önce ↔ sonra" eşitliği kalıcı testte değil (§6'da taban koduyla bir kez karşılaştırıldı); kalıcı bir
   anlık görüntü, sonraki paketlerin meşru öntanım değişikliklerinde (ÖL-1, HZ-5 …) bu dosyayı değiştirmeyi zorlardı.
+
+## 6. Davranış değişmedi kanıtı
+
+### 6.1 Taban ↔ yeni ayar karşılaştırması (bir defalık betik; Ghidra yok)
+
+Taban `e996200`'ün `karadul/config.py` ve `karadul/core/naming_labels.py`'si ayrı modül olarak yüklendi, yeni ağacınkiyle
+karşılaştırıldı (betik `scratchpad/taban_karsilastir.py`; `KARADUL_SIG_DATA_DIR` sabit — `data_root` öntanımı modül
+dosyasının yerine bağlı olduğu için; `PYTHONPATH` worktree — betik başka dizinden koşunca `karadul` ana ağaçtan
+yükleniyordu, ilk koşu bu yüzden geçersiz sayıldı).
+
+| Denetim | Boş YAML | `docker/measurement/karadul.yaml` |
+|---|---|---|
+| Var olan alan (bölüm.alan) | 237 | 237 |
+| Değeri farklı | 0 | 0 |
+| Türü farklı | 0 | 0 |
+| Eksik | 0 | 0 |
+| Eklenen | 49 | 49 |
+| Bölüm içi alan sırası bozulan | 0 | 0 |
+| `yaml_keys` eşit | evet | evet |
+| Etkisizlik uyarıları eşit | evet | evet |
+
+- Bölümler: eski 18 aynı sırada başta; sonda 5 yeni (`paket`, `kaynak`, `reconstruct`, `onbellek`, `buyuk_ikili`).
+- `INERT_SETTINGS`: eski 54 kaydın hiçbiri değişmedi; 54 → 103 (+49).
+- Modül düzeyi sabitler: yalnız `INERT_SETTINGS` (büyüdü), `_TYPE_HINT_CACHE` (önbellek içeriği) ve `logger` (nesne
+  kimliği) farklı; `GHIDRA_HEAP_MB`, `CPU_PERF_CORES` vb. aynı.
+- `naming_labels`: var olan her ad aynı değerde; yeni adlar yalnız `AD_ESIGI`, `MALIYET_ORANI_L`.
+- `git diff e996200 -- karadul/config.py karadul/core/naming_labels.py`: yalnız ekleme satırları (silinen / değişen 0).
+
+### 6.2 Yeni alanlar hiçbir yerde okunmuyor
+
+- `grep -rlw --include=*.py <ad> karadul ui scripts` (`karadul/config.py` hariç), 49 ad: 47 adda isabet yok. İki isabet
+  okuma değil: `ghidra_adim` → `scripts/arge/hiz/taban_ayrinti.py:52`, `zaman_cizelgesi.py:363,391` (zaman çizelgesi
+  JSON'unda sözlük anahtarı; ayar nesnesiyle ilgisi yok); `tembel` → `karadul/decompilers/ghidra_backend.py:40`,
+  `ui/server.py:181` (Türkçe yorum sözcüğü).
+- Kod tarafında mekanik denetim: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` (kayıttaki hiçbir alan
+  `karadul/` ya da `ui/` altında `.ad` ya da `getattr(…, "ad")` ile okunmuyor) yeşil.
+
+### 6.3 Testler
+
+- `tests/test_p15a_etkisiz.py`, `test_p15b_etkisiz_bayraklar.py`, `test_config_*.py`, `test_p17_ayar.py` ve öbür
+  `test_p15a_*.py`: 140 geçti (kalem 2-3'ten sonra); `naming_labels`'ı içe aktaran 12 dosya: 199 geçti (kalem 4'ten
+  sonra); `tests/test_bayrak_on_paketi.py`: 160 geçti.
+- Tam takım: §8'de (sonda bir kez).
