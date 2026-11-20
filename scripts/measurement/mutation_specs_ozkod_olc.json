@@ -114,6 +114,14 @@
       "replace": "DONUSUM_ESIGI_N = 50 "
     },
     {
+      "id": "ok5_gnu_buildid",
+      "desc": "stapsdt notlu ELF'te BuildID GNU notundan alınmaz (read_elf_info aynen)",
+      "module": "scripts/measurement/ozkod_olc.py",
+      "test": "tests/test_ozkod_olc.py::test_gnu_buildid_baglami",
+      "find": "        return dict(r, build_id=b) if b else r",
+      "replace": "        return r"
+    },
+    {
       "id": "ok5_dondurulmus_denetim",
       "desc": "dondurulmuş betiğin sha256 sapması yakalanmaz",
       "module": "scripts/measurement/ozkod_olc.py",
