@@ -126,4 +126,15 @@ Kaldırılan mutant: yok. Yeni mutant: 1 (`p20_k6_dize_false_acik`, eski bir mut
 
 ## Tam takım
 
-- 10:0x: tam takım başlıyor (`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`, worktree kökünden; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/MUTBAKIM/tam_takim.log`). Yük altında tahmini bitiş 10–20 dk (TAHMİN).
+- 09:58: tam takım başlıyor (`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`, worktree kökünden; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/MUTBAKIM/tam_takim.log`). Yük altında tahmini bitiş 10–20 dk (TAHMİN).
+- Sonuç (09:58:19 → 10:08:21, yük altında: `uptime` yük ortalaması başta 5,40, sonda 8,21): **10 520 geçti / 11 atlandı / 0 kaldı / 0 hata** (152 seçilmedi: öntanımlı işaret süzgeci), 600,5 sn. Çıkış kodu 0. İki yeni test dahil.
+
+## Riskler / ana oturuma notlar
+
+- `p20_k6_bayrak_ontanimli_acik` artık `karadul/config.py`'yi (yalnız koşu süresince) değiştiriyor. `config.py`'de `    deep_synchrony_prepass: bool = False` satırı değişirse (A-19, BAYRAK) bu `find` bozulur.
+- `p13a`'nın iki mutantı `karadul/ghidra/headless.py`'de (dizgi xref sırası, `entry["function"]`); HZ1 bu dosyaya yazıyor. HZ1 main'e alınınca `p13a` yeniden koşulmalı (durağan denetim `bin/denetle.py` yeter).
+- Taban `b4e02be`; bu süre içinde main `46caa46`'ya ilerledi ama yalnız belge değişti (`DURUM.md`), tanımların modülleri aynı.
+- Probe birden çok eşleşmeyi hata saymıyor (ilkini değiştiriyor); öbür tanımlarda da sessiz çoklu eşleşme olabilir. Bu paket yalnız 9 tanımı denetledi; `bin/denetle.py` bütün `mutation_specs_*.json`'a koşulabilir (ürün kodu değişmez).
+- Bağlar (`scripts/node_modules`, `sigs`, `vendor` …) worktree'de kaldı, commit'lenmedi.
+
+## PAKET BİTTİ
