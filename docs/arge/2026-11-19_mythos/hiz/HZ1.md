@@ -35,7 +35,13 @@ Taban: `e996200` (main, `git merge --ff-only main` sonrası; `b6aceb9` ile kod f
 ## Kalem 4 — mutasyon
 
 - `scripts/measurement/mutation_specs_hz1.json`: 13 mutant (10 ürün kodu + 3 `s8_esitlik.py`), 13 öldü, hata 0.
-- Var olan tanımlar (değişiklik gerekmedi; `find` metinleri bayatlamadı): `macho` 34 / 34, `p16a` 33 / 33, `p16c` 16 / 16, `p16d` 11 / 11 öldü, hata 0. Not (bu paketten önce de böyleydi): `p16a` üç mutantta (`g10_istatistik_toplami_karisir`, `evrensel_x86_64_tercih`, `bc4_akibet_yazilmaz`) ve `p16c_analiz_suresiz`'de `replace` metni `find` ile aynı uzunlukta; `p16c` iki BSim mutantının `find` metni `bsim.py`'de iki kez geçiyor (tanım `occurrence` ile çözüyor olabilir). Bu dosyalar HZ1'in değil; dokunulmadı.
+- Var olan tanımlar (değişiklik gerekmedi; `find` metinleri bayatlamadı): `macho` 34 / 34, `p16a` 33 / 33, `p16c` 16 / 16, `p16d` 11 / 11 öldü, hata 0. Not (bu paketten önce de böyleydi): `p16a` üç mutantta (`g10_istatistik_toplami_karisir`, `evrensel_x86_64_tercih`, `bc4_akibet_yazilmaz`) ve `p16c_analiz_suresiz`'de `replace` metni `find` ile aynı uzunlukta; `p16c` iki BSim mutantının `find` metni `bsim.py`'de iki kez geçiyor (tanımda `"occurrence": 2` var, hata değil). Bu dosyalar HZ1'in değil; dokunulmadı.
+- Yeniden koşu (scratchpad ortak olduğu için sonuçlar kendi dizinimde; commit `614a8a4`, kod `959106b` ile aynı): `~/karadul_olcum/runs/dalga0-2026-11-20/HZ1/mutasyon/{hz1,macho,p16a,p16c,p16d}.log` → 13 / 13, 34 / 34, 33 / 33, 16 / 16, 11 / 11 öldü; hata 0; `git diff` temiz.
+
+## Tam takım
+
+- 1. koşu (08:35, yük 7–12): 10 200 geçti / 81 atlandı / 7 kaldı. 7'sinin hepsi worktree'de olmayan çalışma verisinden (`vendor/gnulib-ref` → `test_ps3b_*` 3 test; `scripts/node_modules` → `test_deobfuscator` 2, `test_project_reconstructor` 1, `test_pipeline::test_identify_and_static` 1); HZ1 değişikliğinden değil. ORTAK_D0 §2'deki bağlar kuruldu (`sigs`, `vendor`, `signatures_homebrew*.json`, `sigs_macos_system.json`, `signatures.lmdb`, `scripts/node_modules`; commit'lenmez — `sigs`, `vendor`, `scripts/node_modules` bağları `git status`'ta `??` görünüyor, dosyalar adıyla stage edildiği için girmez); 7 test ayrıca koşuldu: 21 / 21 geçti (dosyaların tamamı).
+- 2. koşu (08:42–08:53, yük 12–17): 10 312 geçti / 11 atlandı / 0 kaldı (152 seçilmedi; main `b6aceb9` 10 289 + bu paketin 23 testi). Günlük ortak scratchpad'teydi; ana oturumun uyarısı üzerine kesin sonuç için 3. koşu kendi dizinimde: `~/karadul_olcum/runs/dalga0-2026-11-20/HZ1/tam_takim/`.
 
 ## Kalem 5 — S8 çıktı eşitliği
 
