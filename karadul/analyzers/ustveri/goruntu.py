@@ -634,7 +634,7 @@ class MachO64Goruntu(_DosyaGoruntusu):
         self._fb: list[int] | None = None
         self._fb_okundu = False
         self._duzeltme: dict[int, Any] | None = None
-        self._ice_aktarimlar: list[str] | None = None
+        self._ice_aktarimlar: list[str | None] | None = None
         self._ice_ekler: list[int] = []
         self._duzeltme_bozuk = False
         self._desteksiz_araliklar: list[tuple[int, int]] = []
@@ -860,8 +860,8 @@ class MachO64Goruntu(_DosyaGoruntusu):
     def zincirli_duzeltme(self) -> bool:
         return self._zd_cmd is not None
 
-    def ice_aktarimlar(self) -> list[str]:
-        """Zincirli içe aktarım tablosundaki adlar (sırayla); yoksa boş."""
+    def ice_aktarimlar(self) -> list[str | None]:
+        """Zincirli içe aktarım tablosundaki adlar (sırayla; okunamayan ad ``None``); yoksa boş."""
         self.duzeltmeler()
         return list(self._ice_aktarimlar or [])
 
@@ -904,6 +904,9 @@ class MachO64Goruntu(_DosyaGoruntusu):
         seg_count = struct.unpack_from("<I", d, sbase)[0]
         nedenler: list[str] = []
         durum = DURUM_CALISTI
+        if sym_fmt != 0:
+            nedenler.append(f"içe aktarım adları: sembol biçimi {sym_fmt} (sıkıştırılmış) desteklenmiyor")
+            durum = DURUM_DESTEKLENMIYOR
         for si in range(seg_count):
             seg_info_off = struct.unpack_from("<I", d, sbase + 4 + 4 * si)[0]
             if seg_info_off == 0:
@@ -954,12 +957,13 @@ class MachO64Goruntu(_DosyaGoruntusu):
         self._durum_yaz(KISIM_DUZELTME, durum, "; ".join(nedenler))
 
     def _zincir_ice_aktarimlar(self, base: int, size: int, imports_off: int, symbols_off: int,
-                               count: int, fmt: int, sym_fmt: int) -> list[str]:
+                               count: int, fmt: int, sym_fmt: int) -> list[str | None]:
+        """İçe aktarım adları (sırayla); adı okunamayan girdi ``None`` (ad uydurulmaz)."""
         d = self._veri
         son = base + size
         if sym_fmt != 0:
-            self._durum_yaz(KISIM_DUZELTME, DURUM_DESTEKLENMIYOR, f"sembol biçimi {sym_fmt} (sıkıştırılmış)")
-            return [f"#{i}" for i in range(count)]
+            self._ice_ekler = [0] * count
+            return [None] * count
         kayit = {DYLD_CHAINED_IMPORT: 4, DYLD_CHAINED_IMPORT_ADDEND: 8,
                  DYLD_CHAINED_IMPORT_ADDEND64: 16}.get(fmt)
         if kayit is None:
@@ -967,7 +971,7 @@ class MachO64Goruntu(_DosyaGoruntusu):
         if base + imports_off + kayit * count > son:
             raise ValueError("içe aktarım tablosu düzeltme verisinin dışına taşıyor")
         self._ice_ekler = []
-        out = []
+        out: list[str | None] = []
         for i in range(count):
             q = base + imports_off + kayit * i
             if fmt == DYLD_CHAINED_IMPORT:
@@ -981,7 +985,7 @@ class MachO64Goruntu(_DosyaGoruntusu):
                 ad_ofs = v >> 32
             a = base + symbols_off + ad_ofs
             if a >= son:
-                out.append(f"#{i}")
+                out.append(None)
             else:
                 e = d.find(b"\0", a, son)
                 out.append(d[a:e if e >= 0 else son].decode("utf-8", "replace"))
@@ -1096,7 +1100,9 @@ class MachO64Goruntu(_DosyaGoruntusu):
                 return e
             _t, sira, ek = e
             imps = self._ice_aktarimlar or []
-            ad = imps[sira] if sira < len(imps) else f"#{sira}"
+            ad = imps[sira] if sira < len(imps) else None
+            if ad is None:
+                return None  # bağ var ama içe aktarım adı okunamadı: ad uydurulmaz
             ek_toplam = ek + (self._ice_ekler[sira] if sira < len(self._ice_ekler) else 0)
             return Bag(ad, ek_toplam)
         if self._dyld_info is not None:
@@ -1806,7 +1812,7 @@ class PeGoruntu(_DosyaGoruntusu):
             ilt, _ts, _fw, ad_rva, iat = struct.unpack("<IIIII", tanim)
             if not (ilt or ad_rva or iat):
                 return
-            kitaplik = self.cstr(tb + ad_rva) or f"#{i}"
+            kitaplik = self.cstr(tb + ad_rva)
             kaynak = ilt or iat
             for j in range(_PE_ICE_AKTARIM_AZAMI):
                 adim += 1
@@ -1817,11 +1823,13 @@ class PeGoruntu(_DosyaGoruntusu):
                     raise ValueError("thunk okunamadı")
                 if v == 0:
                     break
-                if v & sira_biti:
-                    bag = Bag(f"{kitaplik}#{v & 0xFFFF}")
+                if v & sira_biti:  # sıra numarasıyla aktarım: "kitaplık#sıra" (kitaplık adı okunursa)
+                    ad = f"{kitaplik}#{v & 0xFFFF}" if kitaplik else None
                 else:
                     ad = self.cstr(tb + (v & 0x7FFFFFFF) + 2)
-                    bag = Bag(ad if ad is not None else f"{kitaplik}#?")
+                if ad is None:
+                    continue  # ad okunamadı: bağ yazılmaz, ad uydurulmaz
+                bag = Bag(ad)
                 self._baglar[tb + iat + gb * j] = bag  # type: ignore[index]
         raise ValueError("tanımlayıcı sınırı aşıldı")
 

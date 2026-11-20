@@ -200,6 +200,14 @@ class TestMachO:
         assert (o["duzeltme_yeri"], o["yeniden_konumlama"], o["ice_aktarim"]) == (3, 2, 1)
         assert set(g.duzeltmeler()) == {R0, R1, B0}
 
+    def test_ice_aktarim_adi_okunamazsa_ad_uydurulmaz(self):
+        d = bytearray(macho_kur())
+        struct.pack_into("<I", d, ZD_OFS + 72, 1 | (0x7FFFFF << 9))  # ad ofseti dizgi tablosu dışında
+        g = baytlardan(bytes(d))
+        assert g.gosterici(B0) is None
+        assert g.ice_aktarimlar() == [None]
+        assert g.gosterici(R0) == MACHO_TABAN + 0x1000  # yeniden konumlamalar etkilenmez
+
     def test_bicim_2_hedef_mutlak(self):
         g = baytlardan(macho_kur(pointer_format=2))
         assert g.gosterici(R0) == MACHO_TABAN + 0x1000
