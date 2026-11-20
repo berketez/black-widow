@@ -76,6 +76,37 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
 
 - `docs/arge/2026-11-19_mythos/ozkod/on_kayit_OK5.md`, commit **`c5a57ea`** (ayar okumasından ve kör sayımdan önce; kör tarafta önbellek bile kurulmamıştı). Planın metni aynen + İ-1/3 satırı + uygulama tanımları + K1 karakter ekinin dondurma kuralı + hüküm dışı ek raporlama.
 
+## 5. ÖK-5 adım 4 — ayar tarafında dondurma (09:53; kör sayımdan önce)
+
+- Ayar ürün koşusu bitti: 9 / 9 ELF tamam (toplam 4 184 sn, yük altında; postgresql-17 2 779 sn, sınırın altında). Önbellek 9 / 9 kuruldu, hata 0; ayar nüfusu 12 137 fonksiyon (evince 691, gawk 800, gedit 667, hexchat 903, jq 7, lighttpd 269, neomutt 3 360, pidgin 1 233, postgresql-17 4 207).
+- Komut: `PYTHONDONTWRITEBYTECODE=1 python scripts/measurement/ozkod_olc.py ayar` → `~/karadul_olcum/ozkod_nufus/runs/ok5/ayar.json` (sha256 `d7200b78f6f0892e3e1f410e7cfabc74306a25bcf28a1bef2a2a2934a9984c2c`, 2026-11-20T09:53:15+0300). Yalnız ayar birimleri görünür; betiklerin sha256'ları dosyada (dondurulmuş beşi DEFTER ile aynı).
+
+**(a) G1 kapısı — ön kayıt §3.6 gereği aynen donduruldu:** "ikilinin `reconstructed/kesin_capalar.json`'ında KS-1 çapası ≥ 1 ya da `__assert_fail` / `__assert_rtn` içe aktarımı" (`ozkod_olc.g1_kapisi`, commit `06ef538`'deki tanım).
+
+| | ikili | kapıdan geçen | KS-1 çapalı | assert içe aktaran | G1 ad (nüfusta) | doğru |
+|---|---:|---:|---:|---:|---:|---|
+| düz G1 | 9 | — | — | — | 1 595 | 1 462 (%91,7; Wilson %90,2–%92,9) |
+| kapılı G1 | 9 | 2 | 0 | 2 | 606 | 564 (%93,1; %90,8–%94,8) |
+
+- Bulgu (kayıt için; kapı değişmedi): bu ürün sürümünde (b6aceb9) KS-1 hiçbir ayar ikilisinde çapa vermiyor (`kesin_capalar.json` `durum: ok`, `capalar` boş; postgresql-17'de 13 `func_kalibi` adayının hepsi "zaten adlı" diye elendi). Kapı fiilen "assert içe aktarımı"na indi ve ayar tarafında 9 ikilinin 2'sinde açık (postgresql-17 595 / 564, lighttpd 11 / 0); en çok G1 adı veren neomutt (657 / 612) kapının dışında kaldı.
+- Ayrıca görüldü (K1 karakter eki hesabının yan ürünü; hiçbir K1 parametresi değişmedi): ayar tarafında K1 kâhin 282 ad, norm doğru 232.
+
+**(b) K1 karakter eki — dönüşüm kümesi (ön kayıt §4 kuralı):**
+
+| dönüşüm | kullanıldığı ad | karakter doğru | kural (n ≥ 5 ve < %50 → çıkar) |
+|---|---:|---:|---|
+| `aynen` | 137 | 113 | kalır |
+| `alt_cizgi` | 40 | 24 | kalır (%60) |
+| `bitisik` | 0 | 0 | kalır (n < 5) |
+| `kucuk_alt_cizgi` | 103 | 95 | kalır |
+| `kucuk_bitisik` | 0 | 0 | kalır |
+| `deve` | 0 | 0 | kalır |
+| `pascal` | 0 | 0 | kalır |
+| `buyuk_alt_cizgi` | 0 | 0 | kalır |
+
+- **Dondurulan küme:** sekizinin hepsi, aday sırasıyla (`aynen`, `alt_cizgi`, `bitisik`, `kucuk_alt_cizgi`, `kucuk_bitisik`, `deve`, `pascal`, `buyuk_alt_cizgi`). Ayar tarafında: norm adının karakter eşitliği 227 / 282, yüzey öğrenilmiş adın karakter eşitliği 232 / 282 (yüzey 280 adda öğrenildi).
+- Kör sayım bu dosyayı (`ayar.json`, yukarıdaki sha256) okur; K1'in grup tanımı, `MIN_DESTEK` = 2, `MIN_ORAN` = 0,5 değişmedi.
+
 ## 8. Hedef erişimi (KARŞI İ-1 düzeltme 3) — Ollama, gösteri koşusu (salt okur)
 
 - Komut: `PYTHONDONTWRITEBYTECODE=1 python scripts/measurement/ozkod_olc.py hedef` → `~/karadul_olcum/runs/dalga0-2026-11-20/OK5/hedef/hedef.json`. Girdi `~/karadul_olcum/runs/gosteri-2026-11-19/ollama/girdi/Ollama` (sha256 `233793c7cab5afa4…`, 0.40.3, universal); analiz edilen arm64 dilimi (Karadul'un `raw/Ollama_arm64`'ü, sha256 `7d5b1e847e1b1e93…`). Ürün çıktısı gösteri koşusununki (1.23.x, 2026-11-19); Ghidra koşulmadı.
