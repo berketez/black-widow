@@ -35,11 +35,11 @@
     },
     {
       "id": "p05_k1_esik_yok",
-      "desc": "MUH-11: ürün eşiği uygulanmaz",
+      "desc": "MUH-11: ürün eşiği uygulanmaz (MUTBAKIM 2026-11-20: 590c8c9 / P05c K1 kanıtsız aday dalını öne aldı, eşik satırı elif oldu)",
       "module": "karadul/reconstruction/engineering/semantic_namer.py",
       "test": "tests/test_p05_kapi.py::test_esik_altindaki_aday_verilmez",
-      "find": "                if cand.confidence < self._min_confidence:",
-      "replace": "                if cand.confidence < -1.0:"
+      "find": "                elif cand.confidence < self._min_confidence:",
+      "replace": "                elif cand.confidence < -1.0:"
     },
     {
       "id": "p05_k1_govde_cakismasi_yok",
@@ -59,11 +59,11 @@
     },
     {
       "id": "p05_k1_bildirim_sarti_yok",
-      "desc": "MUH-01: çağıranda bildirilmemiş ad (küresel _stdout) yayılır",
+      "desc": "MUH-01: çağıranda bildirilmemiş ad (küresel _stdout) yayılır (MUTBAKIM 2026-11-20: fe2e25e / P05b K3 gerçek çağrı aramasında değişken arg_name → arg, girinti 4 az)",
       "module": "karadul/reconstruction/engineering/semantic_namer.py",
       "test": "tests/test_p05_kapi.py::test_yayilim_yalniz_cagiranin_degiskeninden",
-      "find": "                            and arg_name in declared\n",
-      "replace": "                            and arg_name not in ()\n"
+      "find": "                        and arg in declared\n",
+      "replace": "                        and arg not in ()\n"
     },
     {
       "id": "p05_k1_ayrac_dengesi_yok",
@@ -91,19 +91,19 @@
     },
     {
       "id": "p05_k1_adim_ilk_yineleme",
-      "desc": "MUH-11: köken bölümü c_namer'ın son yinelemesi yerine ilkine yazılır",
+      "desc": "MUH-11: köken bölümü c_namer'ın son yinelemesi yerine ilkine yazılır (MUTBAKIM 2026-11-20: replace özgünüyle aynı uzunluktaydı (max → min), .pyc tuzağına karşı farklı uzunlukta eşdeğeri)",
       "module": "karadul/pipeline/steps/semantic_naming.py",
       "test": "tests/test_p05_kapi.py::test_adim_son_yinelemenin_kaydina_yazar",
       "find": "        return max(candidates, key=lambda item: item[0])[1]",
-      "replace": "        return min(candidates, key=lambda item: item[0])[1]"
+      "replace": "        return sorted(candidates, key=lambda item: item[0])[0][1]"
     },
     {
       "id": "p05_k1_adim_yazmaz",
-      "desc": "MUH-11: adım köken bölümünü yazmaz",
+      "desc": "MUH-11: adım köken bölümünü yazmaz (MUTBAKIM 2026-11-20: replace özgünüyle aynı uzunluktaydı, farklı uzunlukta eşdeğeri)",
       "module": "karadul/pipeline/steps/semantic_naming.py",
       "test": "tests/test_p05_kapi.py::test_adim_calisinca_koken_bolumu_ve_sayac",
       "find": "            data[PARAM_PROVENANCE_SECTION] = section\n",
-      "replace": "            data.pop(PARAM_PROVENANCE_SECTION, None)\n"
+      "replace": "            data.pop(PARAM_PROVENANCE_SECTION, {})\n"
     },
     {
       "id": "p05_k2_if_dongu_sayilir",
@@ -139,19 +139,19 @@
     },
     {
       "id": "p05_k2_kanit_yok_paralel",
-      "desc": "MUH-02: paralel yolda double * şablonu kayan noktalı kanıt istemez",
+      "desc": "MUH-02: paralel yolda double * şablonu kayan noktalı kanıt istemez (MUTBAKIM 2026-11-20: 711119b / P05b K2 denetimi _pointer_template_evidence'a taşıdı; mutant paralel çağrı yerinde float_ok yerine True)",
       "module": "karadul/reconstruction/engineering/semantic_namer.py",
       "test": "tests/test_p05_dongu.py::test_ulong_isaretci_kayan_nokta_kanitiyla_matris",
-      "find": "\n            if tup.c_type == \"double *\" and not float_ok:",
-      "replace": "\n            if tup.c_type == \"double *\" and False:"
+      "find": "\n                tup.c_type, param_type, func_code, param_name, float_ok,\n            ):",
+      "replace": "\n                tup.c_type, param_type, func_code, param_name, True,\n            ):"
     },
     {
       "id": "p05_k2_kanit_yok_dizisel",
-      "desc": "MUH-02: dizisel yolda double * şablonu kayan noktalı kanıt istemez",
+      "desc": "MUH-02: dizisel yolda double * şablonu kayan noktalı kanıt istemez (MUTBAKIM 2026-11-20: 711119b / P05b K2 denetimi _pointer_template_evidence'a taşıdı; mutant dizisel çağrı yerinde float_ok yerine True)",
       "module": "karadul/reconstruction/engineering/semantic_namer.py",
       "test": "tests/test_p05_dongu.py::test_ulong_isaretci_kayan_nokta_kanitiyla_matris",
-      "find": "\n                if tup.c_type == \"double *\" and not float_ok:",
-      "replace": "\n                if tup.c_type == \"double *\" and False:"
+      "find": "\n                    tup.c_type, param_type, func_code, param_name, float_ok,\n                ):",
+      "replace": "\n                    tup.c_type, param_type, func_code, param_name, True,\n                ):"
     },
     {
       "id": "p05_k2_isaretci_tipi_kanit_sayilmaz",

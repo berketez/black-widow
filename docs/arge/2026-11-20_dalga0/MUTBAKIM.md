@@ -86,3 +86,11 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
 - **Hata: `cn_ks1_stratejisi_yazilmaz`** (KS-1 ön adının stratejisi `binary_extract` yazılır). Kodu değiştiren commit: `07d81e8`: satır içi `STRATEGY_KS1 if kind == … else "binary_extract"` `pre_name_strategy(meta)` işlevine taşındı. Mutant ön ad yolundaki çağrı yerinde (`strategy = pre_name_strategy(meta)` → `strategy = "binary_extract"`); güven hesabı (`measured_pre_name_confidence`) etkilenmez, yalnız yazılan strateji bozulur. Öldü.
 - **Çoklu eşleşme: `cn_hepsi_sustu_sayilmaz`.** `if not kept and prov is not None:` dosyada 2 kez (ikincisi `93a2956`'nın ad geçerliliği süzgecinde); probe ilkini (susturma süzgeci, doğru yer) değiştiriyordu. `find` sayaç adıyla (`"all_candidates_silenced"`) genişletilip tekilleştirildi. Öldü.
 - Kaldırılan mutant yok.
+
+### p05 — önce 16 öldü / 0 hayatta / 4 hata → sonra 20 / 0 / 0 (20 mutant)
+
+- **Hata: `p05_k1_esik_yok`** (MUH-11: ürün eşiği uygulanmaz). Kodu değiştiren commit: `590c8c9` (P05c K1-K2): kanıtsız aday (`candidate_only`) dalı öne alındı, eşik satırı `if` → `elif` oldu. Niyet aynı. Öldü.
+- **Hata: `p05_k1_bildirim_sarti_yok`** (MUH-01: çağıranda bildirilmemiş ad yayılır). Kodu değiştiren commit: `fe2e25e` (P05b K3: gerçek çağrılar dizgi ve yorum örtülü aranıyor): değişken `arg_name` → `arg`, girinti 4 az. Niyet aynı. Öldü.
+- **Hata: `p05_k2_kanit_yok_paralel`, `p05_k2_kanit_yok_dizisel`** (MUH-02: `double *` şablonu kayan noktalı kanıt istemez). Kodu değiştiren commit: `711119b` (P05b K2): satır içi `tup.c_type == "double *" and not float_ok` denetimi `_pointer_template_evidence(…, float_ok)`'a taşındı (iki yol aynı işlevi çağırıyor). Mutant her yolun kendi çağrı yerinde `float_ok` yerine `True` verir (yalnız o yolu bozar; işlevin içini bozmak iki yolu birden bozardı). Test parametreli (`dizisel` / `paralel`), aynı. İkisi de öldü.
+- **Aynı uzunluk düzeltmesi:** `p05_k1_adim_ilk_yineleme` (`max(` → `min(`; şimdi `sorted(…)[0][1]`, eşdeğer, kararlı sıralama eşitlikte ilkini verir), `p05_k1_adim_yazmaz` (`data.pop(…, None)` → `data.pop(…, {})`). İkisi de öldü.
+- Kaldırılan mutant yok; yeni test yok.
