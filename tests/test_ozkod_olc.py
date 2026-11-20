@@ -146,7 +146,14 @@ def test_k1a_paket_sarti():
     # dört pakette ≥ 10 ad: hacim şartı tutmaz (kesinlik yüksek)
     h = Z.hukum_k1a(_k1_birim([(98, 100)] * 4 + [(9, 9)] * 20))
     assert h["paket_10_ad"] == 4 and h["tuttu"] is False
-    assert "hacim" in h["karar"]
+    assert "planın üç kolu dışında" in h["karar"]
+
+
+def test_k1a_wilson_tamam_kesinlik_eksik_kol_disi():
+    # Wilson alt ≥ %80 ama kesinlik < %85 (büyük n): "hacim" değil, kol dışı diye yazılır
+    h = Z.hukum_k1a(_k1_birim([(1674, 2048)] + [(10, 10)] * 4))
+    assert h["tuttu"] is False and h["oran"]["alt"] >= 0.80
+    assert "planın üç kolu dışında" in h["karar"] and "kesinlik ya da hacim" in h["karar"]
 
 
 def test_k1a_ad_sayisi_sarti():

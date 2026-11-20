@@ -702,8 +702,9 @@ def hukum_k1a(birim: dict[str, dict[str, int]], e: dict[str, Any] = ESIKLER["K1-
     elif o["alt"] is None:
         karar = "veri yok"
     elif o["alt"] >= e["wilson_alt"]:
-        # kesinlik şartları tuttu, hacim şartı (ad sayısı / paket) tutmadı: planın üç kolunda yok
-        karar = "hacim şartı tutmadı: ÖK-4b kapalı kalır (yeniden ön kayıt ana oturumun kararı)"
+        # Wilson şartı tuttu, kesinlik ya da hacim şartı tutmadı: planın üç kolunda yok
+        karar = ("tutmadı (Wilson alt ≥ %80; kesinlik ya da hacim şartı tutmadı): planın üç kolu dışında; "
+                 "ÖK-4b kapalı kalır, yeniden ön kayıt ana oturumun kararı")
     elif o["alt"] >= e["acik_alt"]:
         karar = "K1 yalnız 'ek yüzey biçimi + tablo türü' kısıtlarıyla yeniden ön kayıt"
     else:
