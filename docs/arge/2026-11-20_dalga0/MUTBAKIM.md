@@ -100,3 +100,30 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
 - **Hata: `ui8_bayat_liste_korumasiz`, `ui8_label_listeye_gecmez`, `ui8_label_alani_listede_yok`** (`ui/server.py` fonksiyon listesindeki etiket). Kodu değiştiren commit: `2be7e90` (ARAYUZ-11): Ghidra adlı fonksiyona etiket vermeyen koşul eklendi; ifade `"label": (_record_label(_name_record(cmap, addr, name))\n … if cls != "ghidra" else None)})` biçiminde iki satır oldu. Üç mutantın niyeti ve testi aynı; `find`'lar yeni iki satırlık ifadeye göre (birincisi yalnız ilk satırı, öbür ikisi bütün ifadeyi değiştirir). Üçü de öldü.
 - `ui8_js_sozluk_yazimi` (`ui/index.html`): karakter sayısı aynı ama bayt uzunluğu farklı (`ğ`, `ı` iki bayt); HTML derlenmez, `.pyc` tuzağı yok → değiştirilmedi.
 - Kaldırılan mutant yok; yeni test yok.
+
+## Yeni testlerin kırmızı nedeni (mutant elle uygulanıp geri yazıldı; `bin/neden.py`)
+
+- `p13a_ad04_on_ad_iki_kez` → `test_ad04_olculmus_on_ad_bindiff_ile_iki_kaynak_sayilmaz`: `assert stats["name_merger_exact_multi"] == 0` → `1 == 0` (ön ad ikinci kaynak olarak girdi; amaçlanan neden).
+- `cn_tam_ad_bicim_denetimsiz` → `test_gecersiz_tam_ad_temizlenip_on_ad_olarak_verilir`: `'telemetry_sampler_queue' == 'iki_sozcuk'` (elle verilen ad reddedildi, anahtar dizgi adayından ad aldı; amaçlanan neden).
+- Her iki koşudan sonra `git status` temiz (yalnız `??` bağlar).
+
+## Toplam (9 tanım, sonra)
+
+| Tanım | önce öldü / hayatta / hata | sonra öldü / hayatta / hata | mutant | commit |
+|---|---|---|---|---|
+| p20 | 25 / 1 / 0 | 27 / 0 / 0 | 27 (+1 bölünme) | `5bcf5b2` |
+| ps1 | 33 / 0 / 1 | 34 / 0 / 0 | 34 | `f47423b` |
+| adim3_hat | 47 / 0 / 3 | 50 / 0 / 0 | 50 | `27a6334` |
+| p13a | 21 / 1 / 0 | 22 / 0 / 0 | 22 | `c47832d` |
+| p12a | 14 / 0 / 1 | 15 / 0 / 0 | 15 | `e86fff1` |
+| ad_gecerliligi | 51 / 0 / 2 | 53 / 0 / 0 | 53 | `799dc2c` |
+| adim3_c_namer | 19 / 1 / 1 | 21 / 0 / 0 | 21 | `40cadf2` |
+| p05 | 16 / 0 / 4 | 20 / 0 / 0 | 20 | `5176c52` |
+| adim3_ui | 27 / 0 / 3 | 30 / 0 / 0 | 30 | `0f6dc5b` |
+| **toplam** | 253 / 3 / 15 | **272 / 0 / 0** | 272 | |
+
+Kaldırılan mutant: yok. Yeni mutant: 1 (`p20_k6_dize_false_acik`, eski bir mutantın ikiye bölünmesi). Yeni test dosyası: 2 (`tests/test_mutbakim_p13a.py`, `tests/test_mutbakim_adim3_c_namer.py`; birer test).
+
+## Tam takım
+
+- 10:0x: tam takım başlıyor (`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`, worktree kökünden; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/MUTBAKIM/tam_takim.log`). Yük altında tahmini bitiş 10–20 dk (TAHMİN).
