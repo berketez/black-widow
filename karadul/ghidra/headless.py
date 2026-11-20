@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import re
+import statistics
 import time
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,67 @@ logger = logging.getLogger(__name__)
 
 # AutoAnalysisManager.getTaskTimesString() satırı: "<çözümleyici>   1.234 secs" (P16c).
 _TASK_TIME_LINE = re.compile(r"^\s*(.+?)\s+([0-9]+(?:\.[0-9]+)?)\s+secs?\s*$")
+
+# HZ-1: Ghidra köprüsünün (``_analyze_pyghidra``) adımları. Her adımın süresi (``time.monotonic``;
+# çıkarım + JSON yazımı, düşen adımda düşene kadar) ``adim_sureleri`` sözlüğüne bu adlarla girer
+# ve ``static/ghidra_status.json``'a yazılır. Adlar ilerleme olayı sözleşmesiyle aynıdır
+# (``docs/arge/2026-11-19_mythos/olcek/PLAN.md`` §1: ``adim=ghidra.<adım>``); ÖL-1 olaylarını bu
+# listeden üretir, ikinci bir liste ya da zamanlayıcı tanımlanmaz. Çıktı dosyası üreten adım
+# dosyanın adını, öbürleri sözleşmenin Türkçe adlandırmasını taşır; ``xref`` ve ``bsim``
+# sözleşmedeki gibi. Sıra köprüdeki çalışma sırasıdır. Koşmayan adım (ayarı kapalı ya da köprü
+# daha önce düştü) sözlükte yer almaz; yarıda düşen köprünün yarım adımı yazılmaz.
+ADIM_JVM = "ghidra.jvm_baslatma"
+ADIM_ICE_AKTARMA = "ghidra.ice_aktarma"
+ADIM_OTOMATIK_ANALIZ = "ghidra.otomatik_analiz"
+ADIM_GDT = "ghidra.gdt"
+ADIM_PDB = "ghidra.pdb"
+ADIM_FUNCTIONS = "ghidra.functions"
+ADIM_STRINGS = "ghidra.strings"
+ADIM_CALL_GRAPH = "ghidra.call_graph"
+ADIM_DECOMPILE = "ghidra.decompile"
+ADIM_TYPES = "ghidra.types"
+ADIM_XREF = "ghidra.xref"
+ADIM_PCODE = "ghidra.pcode"
+ADIM_CFG = "ghidra.cfg"
+ADIM_FUNCTION_ID = "ghidra.function_id"
+ADIM_BSIM_INGEST = "ghidra.bsim.ingest"
+ADIM_BSIM_QUERY = "ghidra.bsim.query"
+ADIM_COMBINED = "ghidra.combined"
+ADIM_KAPATMA = "ghidra.kapatma"
+GHIDRA_ADIMLARI: tuple[str, ...] = (
+    ADIM_JVM, ADIM_ICE_AKTARMA, ADIM_OTOMATIK_ANALIZ, ADIM_GDT, ADIM_PDB,
+    ADIM_FUNCTIONS, ADIM_STRINGS, ADIM_CALL_GRAPH, ADIM_DECOMPILE, ADIM_TYPES, ADIM_XREF,
+    ADIM_PCODE, ADIM_CFG, ADIM_FUNCTION_ID, ADIM_BSIM_INGEST, ADIM_BSIM_QUERY, ADIM_COMBINED,
+    ADIM_KAPATMA,
+)
+# HZ-1: köprü sonucundan ``static/ghidra_status.json``'a aynen geçen süre alanları
+# (``MachOAnalyzer._record_ghidra_outcome``). ``analysis``: otomatik analizin durumu, süresi,
+# sınırı, çözümleyici başına süreleri, kapatılan çözümleyiciler (P16c). ``adim_sureleri``:
+# yukarıdaki adımların süresi. ``decompile_parcalari``: decompile parçalarının süre özeti.
+DURUM_SURE_ALANLARI: tuple[str, ...] = ("analysis", "adim_sureleri", "decompile_parcalari")
+
+
+class _AdimSaati:
+    """HZ-1: köprü adımlarının süresi; yalnız ``GHIDRA_ADIMLARI``'ndaki adlar kabul edilir."""
+
+    def __init__(self) -> None:
+        self._baslangic: dict[str, float] = {}
+        self._sureler: dict[str, float] = {}
+
+    def basla(self, adim: str) -> None:
+        if adim not in GHIDRA_ADIMLARI:
+            raise ValueError("bilinmeyen Ghidra adımı: %r" % (adim,))
+        self._baslangic[adim] = time.monotonic()
+
+    def bitti(self, adim: str) -> None:
+        """Başlamış adımın süresini yaz; başlamamış ya da bitmiş adımda bir şey yapmaz."""
+        t0 = self._baslangic.pop(adim, None)
+        if t0 is not None:
+            self._sureler[adim] = round(time.monotonic() - t0, 3)
+
+    def sozluk(self) -> dict[str, float]:
+        """Biten adımlar, ``GHIDRA_ADIMLARI`` sırasında."""
+        return {a: self._sureler[a] for a in GHIDRA_ADIMLARI if a in self._sureler}
 
 # PyGhidra kontrol
 _PYGHIDRA_AVAILABLE: bool | None = None
@@ -281,6 +343,9 @@ class GhidraHeadless:
 
         ghidra_install = self.analyze_headless.parent.parent
         start = time.monotonic()
+        # HZ-1: adım süreleri (yalnız ölçüm; adımların gövdesi ve çıktısı değişmez).
+        saat = _AdimSaati()
+        decompile_parcalari: dict[str, Any] | None = None
         log_lines: list[str] = []
         scripts_output: dict[str, Any] = {}
         # Adım adı -> hata metni. Bir adımın düşmesi analizi durdurmaz ama sessiz de kalmaz:
@@ -299,28 +364,34 @@ class GhidraHeadless:
         analysis_info: dict[str, Any] = {"status": "not_run", "timeout_s": int(timeout)}
 
         try:
+            saat.basla(ADIM_JVM)
             _ensure_pyghidra_started(
                 ghidra_install,
                 heap_mb=getattr(getattr(self.config, "analysis", None), "ghidra_max_heap_mb", None),
             )
+            saat.bitti(ADIM_JVM)
 
             # P16c (GHIDRA-06 kalanı): otomatik analiz artık süreli. open_program(analyze=True)
             # süresizdi; analiz Karadul tarafında TimeoutTaskMonitor ile koşar.
+            saat.basla(ADIM_ICE_AKTARMA)
             with pyghidra.open_program(
                 binary_path=str(binary_path),
                 project_location=str(project_dir),
                 project_name=project_name,
                 analyze=False,
             ) as flat_api:
+                saat.bitti(ADIM_ICE_AKTARMA)
                 program = flat_api.getCurrentProgram()
                 log_lines.append("Program acildi: %s" % program.getName())
 
+                saat.basla(ADIM_OTOMATIK_ANALIZ)
                 try:
                     analysis_info = self._run_auto_analysis(program, timeout)
                 except Exception as exc:
                     analysis_info = {"status": "failed", "timeout_s": int(timeout),
                                      "error": "%s: %s" % (type(exc).__name__, exc)}
                     _step_failed("analysis", exc)
+                saat.bitti(ADIM_OTOMATIK_ANALIZ)
                 if analysis_info.get("status") == "timeout":
                     msg = (
                         "zaman aşımı: Ghidra otomatik analizi %d sn'de durduruldu; "
@@ -338,13 +409,16 @@ class GhidraHeadless:
                 # GDT Data Type Archive yukleme
                 gdt_paths = self.config.binary_reconstruction.ghidra_data_type_archives
                 if gdt_paths:
+                    saat.basla(ADIM_GDT)
                     loaded = self._load_gdt_archives_pyghidra(
                         program, ghidra_install, gdt_paths,
                     )
+                    saat.bitti(ADIM_GDT)
                     log_lines.append("GDT arsivleri: %d yuklendi" % loaded)
 
                 # PDB otomatik yukleme (Windows PE icin)
                 if self.config.binary_reconstruction.pdb_auto_load:
+                    saat.basla(ADIM_PDB)
                     try:
                         pdb_loaded = self._load_pdb_if_available(
                             program, binary_path,
@@ -355,8 +429,10 @@ class GhidraHeadless:
                             )
                     except Exception as exc:
                         _step_failed("pdb", exc)
+                    saat.bitti(ADIM_PDB)
 
                 # 1. Fonksiyon listesi
+                saat.basla(ADIM_FUNCTIONS)
                 try:
                     func_data = self._extract_functions(program)
                     scripts_output["functions"] = func_data
@@ -366,8 +442,10 @@ class GhidraHeadless:
                     )
                 except Exception as exc:
                     _step_failed("functions", exc, "FAIL")
+                saat.bitti(ADIM_FUNCTIONS)
 
                 # 2. String extraction (basarisizlik analizi durdurmaz)
+                saat.basla(ADIM_STRINGS)
                 try:
                     str_data = self._extract_strings(program)
                     scripts_output["strings"] = str_data
@@ -375,8 +453,10 @@ class GhidraHeadless:
                     log_lines.append("String'ler: %d" % str_data["total"])
                 except Exception as exc:
                     _step_failed("strings", exc)
+                saat.bitti(ADIM_STRINGS)
 
                 # 3. Call graph
+                saat.basla(ADIM_CALL_GRAPH)
                 try:
                     cg_data = self._extract_call_graph(program)
                     scripts_output["call_graph"] = cg_data
@@ -389,8 +469,10 @@ class GhidraHeadless:
                     )
                 except Exception as exc:
                     _step_failed("call_graph", exc, "FAIL")
+                saat.bitti(ADIM_CALL_GRAPH)
 
                 # 4. Decompilation (basarisizlik analizi durdurmaz)
+                saat.basla(ADIM_DECOMPILE)
                 try:
                     # v1.5: JSONL pcode enabled ise decompile sirasinda selective pcode topla
                     _br_cfg = self.config.binary_reconstruction
@@ -409,6 +491,9 @@ class GhidraHeadless:
                     )
                     # _all_functions buyuk olabilir, decompiled.json'a yazmadan once ayir
                     _all_funcs_for_pcode = decomp_data.pop("_all_functions", None)
+                    # HZ-1: parça süre özeti decompiled.json'a girmez (çıktı aynı kalır);
+                    # ghidra_status.json'a gider.
+                    decompile_parcalari = decomp_data.pop("_decompile_parcalari", None)
                     scripts_output["decompiled"] = decomp_data
                     self._save_output(output_dir, "decompiled.json", decomp_data)
                     log_lines.append(
@@ -420,8 +505,10 @@ class GhidraHeadless:
                 except Exception as exc:
                     _all_funcs_for_pcode = None
                     _step_failed("decompile", exc, "FAIL")
+                saat.bitti(ADIM_DECOMPILE)
 
                 # 5. Type recovery (basarisizlik analizi durdurmaz)
+                saat.basla(ADIM_TYPES)
                 try:
                     type_data = self._extract_types(program)
                     scripts_output["types"] = type_data
@@ -435,8 +522,10 @@ class GhidraHeadless:
                     )
                 except Exception as exc:
                     _step_failed("types", exc)
+                saat.bitti(ADIM_TYPES)
 
                 # 6. Cross-reference analysis (basarisizlik analizi durdurmaz)
+                saat.basla(ADIM_XREF)
                 try:
                     xref_data = self._extract_xrefs(program)
                     scripts_output["xrefs"] = xref_data
@@ -450,8 +539,10 @@ class GhidraHeadless:
                     )
                 except Exception as exc:
                     _step_failed("xrefs", exc)
+                saat.bitti(ADIM_XREF)
 
                 # 8. P-Code (v1.5: decompile icinde toplandiysa JSONL yaz)
+                saat.basla(ADIM_PCODE)
                 try:
                     _br_cfg2 = getattr(getattr(self, 'config', None), 'binary_reconstruction', None)
                     _pcode_enabled = getattr(_br_cfg2, 'enable_pcode_extraction', False) if _br_cfg2 else False
@@ -482,8 +573,10 @@ class GhidraHeadless:
                     )
                 except Exception as exc:
                     _step_failed("pcode", exc)
+                saat.bitti(ADIM_PCODE)
 
                 # 9. CFG extraction (basarisizlik analizi durdurmaz)
+                saat.basla(ADIM_CFG)
                 try:
                     cfg_data = self._extract_cfg(program)
                     scripts_output["cfg"] = cfg_data
@@ -497,9 +590,11 @@ class GhidraHeadless:
                     )
                 except Exception as exc:
                     _step_failed("cfg", exc)
+                saat.bitti(ADIM_CFG)
 
                 # 11. FunctionID matches (basarisizlik analizi durdurmaz)
                 if self.config.binary_reconstruction.enable_function_id:
+                    saat.basla(ADIM_FUNCTION_ID)
                     try:
                         fid_data = self._extract_function_id_matches(program)
                         scripts_output["function_id"] = fid_data
@@ -512,9 +607,13 @@ class GhidraHeadless:
                         )
                     except Exception as exc:
                         _step_failed("function_id", exc)
+                    saat.bitti(ADIM_FUNCTION_ID)
 
                 # 11.5 BSim ingest + sorgu (opsiyonel)
                 if self.config.bsim.enabled:
+                    # HZ-1: ingest = depo açılışı + hash'leme; query = sorgu + shadow dökümü +
+                    # depo kapanışı. Düşen alt adımın süresi düştüğü ana kadar yazılır.
+                    saat.basla(ADIM_BSIM_INGEST)
                     try:
                         from karadul.ghidra.bsim import BSimDatabase
                         bsim_db = BSimDatabase(self.config)
@@ -525,7 +624,9 @@ class GhidraHeadless:
                             "BSim: %d fonksiyon hash'lendi (kip: %s, durum: %s)"
                             % (ingested, bsim_db.status.get("mode"), bsim_db.status.get("status"))
                         )
+                        saat.bitti(ADIM_BSIM_INGEST)
                         if self.config.bsim.auto_query:
+                            saat.basla(ADIM_BSIM_QUERY)
                             bsim_result = bsim_db.query_all_functions(
                                 program, self.config.bsim.min_similarity,
                                 db_name=self.config.bsim.default_database,
@@ -572,8 +673,11 @@ class GhidraHeadless:
                         bsim_db.close()
                     except Exception as exc:
                         _step_failed("bsim", exc)
+                    saat.bitti(ADIM_BSIM_INGEST)
+                    saat.bitti(ADIM_BSIM_QUERY)
 
                 # 10. Program bilgileri + birlesik sonuc
+                saat.basla(ADIM_COMBINED)
                 try:
                     prog_info = self._get_program_info(program)
                     combined = {
@@ -604,6 +708,10 @@ class GhidraHeadless:
                     self._save_output(output_dir, "combined_results.json", combined)
                 except Exception as exc:
                     _step_failed("combined_results", exc, "FAIL")
+                saat.bitti(ADIM_COMBINED)
+                # HZ-1: ``open_program`` bağlamının çıkışı (programın kaydı, projenin kapanışı).
+                saat.basla(ADIM_KAPATMA)
+            saat.bitti(ADIM_KAPATMA)
 
         except Exception as exc:
             _step_failed("fatal", exc, "FATAL")
@@ -614,7 +722,7 @@ class GhidraHeadless:
         if error:
             log_lines.append("SONUC: basarisiz: %s" % error)
 
-        return {
+        sonuc: dict[str, Any] = {
             "success": success,
             "error": error,
             "step_errors": step_errors,
@@ -627,7 +735,13 @@ class GhidraHeadless:
             # P16c: otomatik analizin durumu (ok / timeout / already_analyzed / failed /
             # not_run), süresi, sınırı ve Ghidra'nın çözümleyici başına süreleri.
             "analysis": analysis_info,
+            # HZ-1: biten köprü adımlarının süresi (``GHIDRA_ADIMLARI`` adlarıyla, sn).
+            "adim_sureleri": saat.sozluk(),
         }
+        # HZ-1: decompile parçalarının süre özeti; decompile hiç sonuç vermediyse alan yok.
+        if decompile_parcalari is not None:
+            sonuc["decompile_parcalari"] = decompile_parcalari
+        return sonuc
 
     @staticmethod
     def _analyzer_task_times(program) -> dict[str, float]:
@@ -1255,11 +1369,21 @@ class GhidraHeadless:
                 decomp.dispose()
             return chunk_results
 
+        # HZ-1: parça başına duvar süresi (iş parçacığında koştuğu süre; kuyrukta bekleme hariç).
+        chunk_seconds: list[float | None] = [None] * len(chunks)
+
+        def _timed_chunk(chunk_idx, chunk_funcs):
+            t_chunk = time.monotonic()
+            try:
+                return _process_chunk(chunk_funcs)
+            finally:
+                chunk_seconds[chunk_idx] = round(time.monotonic() - t_chunk, 3)
+
         chunk_outputs: list[list[dict[str, Any]] | None] = [None] * len(chunks)
         chunk_errors: list[dict[str, Any]] = []
         with ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures = {
-                executor.submit(_process_chunk, chunk): i
+                executor.submit(_timed_chunk, i, chunk): i
                 for i, chunk in enumerate(chunks)
             }
 
@@ -1304,7 +1428,36 @@ class GhidraHeadless:
         # (functions key'i decompiled.json icin sinirla kesilir, _all_functions tam liste)
         if selective_ops is not None:
             result_dict["_all_functions"] = results
+        # HZ-1: _analyze_pyghidra bunu decompiled.json'a yazmadan önce ayırır (ghidra_status.json).
+        result_dict["_decompile_parcalari"] = GhidraHeadless._chunk_time_summary(
+            chunk_seconds, path="paralel", threads=n_threads, chunk_size=chunk_size,
+        )
         return result_dict
+
+    @staticmethod
+    def _chunk_time_summary(
+        chunk_seconds: list[float | None], path: str, threads: int, chunk_size: int,
+    ) -> dict[str, Any]:
+        """HZ-1: decompile parçalarının süre özeti (``ghidra_status.json`` → ``decompile_parcalari``).
+
+        ``parca_sn`` parça sırasındadır (parçalar adres sırasında kesilir). ``sure_sn`` ölçülen
+        parçaların en küçüğü / ortancası / en büyüğü; ölçülen parça yoksa alan yazılmaz.
+        """
+        olculen = [s for s in chunk_seconds if s is not None]
+        ozet: dict[str, Any] = {
+            "yol": path,
+            "parca_sayisi": len(chunk_seconds),
+            "is_parcacigi": threads,
+            "parca_boyu": chunk_size,
+            "parca_sn": list(chunk_seconds),
+        }
+        if olculen:
+            ozet["sure_sn"] = {
+                "en_kucuk": min(olculen),
+                "ortanca": round(statistics.median(olculen), 3),
+                "en_buyuk": max(olculen),
+            }
+        return ozet
 
     # decompiled.json'a yazilan fonksiyon kaydi siniri (dosya boyutu). Kayitlar adres sirasinda;
     # kesilen sayi ``functions_truncated`` ile yazilir (B-B4). Tam liste pcode.jsonl'dedir.
@@ -1648,6 +1801,10 @@ class GhidraHeadless:
         # v1.5: JSONL pcode icin tum fonksiyon sonuclarina erisim
         if selective_ops is not None:
             result_dict["_all_functions"] = results
+        # HZ-1: seri yolda tek parça; süresi decompile'ın kendi ölçtüğü toplam süre.
+        result_dict["_decompile_parcalari"] = GhidraHeadless._chunk_time_summary(
+            [round(total_time, 3)], path="seri", threads=1, chunk_size=func_index,
+        )
         return result_dict
 
     @staticmethod

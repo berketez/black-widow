@@ -31,7 +31,7 @@ from karadul.core.safe_subprocess import resolve_tool, safe_run
 from karadul.core.subprocess_runner import SubprocessRunner
 from karadul.core.target import TargetInfo, TargetType
 from karadul.core.workspace import Workspace
-from karadul.ghidra.headless import GhidraHeadless
+from karadul.ghidra.headless import DURUM_SURE_ALANLARI, GhidraHeadless
 from karadul.ghidra.project import GhidraProject
 
 logger = logging.getLogger(__name__)
@@ -1108,7 +1108,8 @@ class MachOAnalyzer(BaseAnalyzer):
 
         ``static/ghidra_log.txt``: her çıkarım adımının OK/WARN/FAIL/FATAL satırı (eskiden hiçbir
         yere yazılmıyordu). ``static/ghidra_status.json``: başarı, neden, düşen adımlar, fonksiyon
-        sayıları (program / thunk / dış) ve decompile kayıp sayaçları.
+        sayıları (program / thunk / dış) ve decompile kayıp sayaçları; HZ-1'den beri ayrıca
+        ``analysis``, ``adim_sureleri``, ``decompile_parcalari`` (süre kaydı; sonuçta varsa).
         """
         log_text = ghidra_result.get("ghidra_log")
         if log_text:
@@ -1144,6 +1145,12 @@ class MachOAnalyzer(BaseAnalyzer):
             # B-C4: Ghidra projesinin akıbeti (öntanım: analiz sonunda silinir).
             "project": ghidra_result.get("project"),
         }
+        # HZ-1: köprünün kendi süre kaydı (otomatik analiz ve çözümleyici başına süreleri, köprü
+        # adımlarının süresi, decompile parçaları; ``DURUM_SURE_ALANLARI``). Yalnız sonuçta varsa
+        # yazılır: CLI ve başka arka uç yolunda alan yoktur, dosyanın geri kalanı değişmez.
+        for key in DURUM_SURE_ALANLARI:
+            if key in ghidra_result:
+                status[key] = ghidra_result[key]
         try:
             artifacts["ghidra_status"] = workspace.save_json("static", "ghidra_status", status)
         except Exception as exc:
