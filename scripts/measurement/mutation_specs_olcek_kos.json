@@ -120,6 +120,22 @@
       "test": "tests/test_olcek_kos.py::test_kuyruk_komutu_kosucunun_ayristiricisiyla_okunur",
       "find": "ic += [f\"--java-ek={k.java_ek}\"]",
       "replace": "ic += [\"--java-ek\", k.java_ek]"
+    },
+    {
+      "id": "olcek_kos_gc_ana_jvm_secimi",
+      "desc": "ana JVM'in GC günlüğü karadul pid'iyle değil ilk dosyayla seçilir (yan JVM'in sayısı yazılır)",
+      "module": "scripts/measurement/olcek_kos.py",
+      "test": "tests/test_olcek_kos.py::test_gc_kunyesi_ana_jvm_karadul_pid",
+      "find": "ana = kok / f\"gc_{karadul_pid}.log\" if karadul_pid else None",
+      "replace": "ana = dosyalar[0] if dosyalar else None"
+    },
+    {
+      "id": "gece_jfr_depo_saklanmaz",
+      "desc": "JFR deposu çıkışta silinir: PyGhidra JVM'inde boş kalan döküm yerine okunacak kayıt kalmaz",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_kuyruk_sirasi_ve_tanimlari",
+      "find": "preserve-repository=true\")",
+      "replace": "preserve-repository=false\")"
     }
   ]
 }

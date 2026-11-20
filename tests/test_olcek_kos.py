@@ -76,8 +76,13 @@ _SAHTE = textwrap.dedent("""
     if kip == "ws":
         time.sleep(1.0)  # pid.json'nin karadul sürecini görmesi için
         m = re.search(r"file=(\\S+?):time", os.environ["JAVA_TOOL_OPTIONS"])
-        with open(m.group(1), "w") as f:
+        # yan JVM (pyghidra başlatıcısının kısa ömürlü java'sı) kendi süreç numarasıyla
+        with open(m.group(1).replace("%p", "1"), "w") as f:
+            f.write("[2026-11-20T01:00:00.000+0300][0.004s] Version: 21.0.13.1 (release)\\n")
+        # ana JVM süreç içinde: pid = bu süreç (karadul)
+        with open(m.group(1).replace("%p", str(os.getpid())), "w") as f:
             f.write("[2026-11-20T01:00:00.000+0300][0.100s] Using G1\\n")
+            f.write("[2026-11-20T01:00:00.000+0300][0.100s] Version: 27.0.1.0.2+1 (release)\\n")
             f.write("[2026-11-20T01:00:00.200+0300][0.200s] GC(0) Pause Young (Normal) "
                     "(G1 Evacuation Pause) 24M->4M(260M) 3.250ms\\n")
             f.write("[2026-11-20T01:00:00.300+0300][0.300s] GC(0) User=0.01s Sys=0.00s Real=0.00s\\n")
@@ -244,7 +249,7 @@ def test_kunye_alanlari_kismi_koşu(tmp_path):
     assert len(k["yuk_bas"]) == 3 and len(k["yuk_son"]) == 3
     assert k["ortam"]["PYTHONHASHSEED"] == "0"
     assert k["ortam"]["KARADUL_CACHE_DIR"] == str(kok / "cache")
-    assert f"file={kok / 'gc.log'}:time,uptime" in k["ortam"]["JAVA_TOOL_OPTIONS"]
+    assert f"file={kok / 'gc_%p.log'}:time,uptime" in k["ortam"]["JAVA_TOOL_OPTIONS"]
     assert k["time_l"]["maximum_resident_set_size"] > 0
     assert k["hedef"]["sha256"] and k["hedef"]["tur"] == "dosya"
     g = k["ghidra"]
@@ -258,8 +263,13 @@ def test_kunye_alanlari_kismi_koşu(tmp_path):
     assert b["toplam_sn"] == 60.5 and b["asama_sn"] == {"static": 50.0, "reconstruct": 9.0}
     assert b["reconstruct_timing"] == {"c_naming": 2.5}
     assert b["ilk_rapor_sn"] is not None and b["ilk_rapor_sn"] >= 0
+    pj = json.loads((kok / "pid.json").read_text())
+    # ana JVM'in günlüğü karadul sürecinin numarasıyla seçilir; yan JVM ayrı listelenir
+    assert k["gc"]["gc_log"] == str(kok / f"gc_{pj['karadul_pid']}.log")
     assert k["gc"]["gc_log_var"] and k["gc"]["duraklama_sayisi"] == 2
     assert k["gc"]["duraklama_toplam_ms"] == pytest.approx(5.0)
+    assert k["gc"]["jvm_surumu"] == "27.0.1.0.2+1"
+    assert k["gc"]["yan_jvm_gc_loglari"] == ["gc_1.log"]
     assert k["disk_son"]["ws"]["dosya"] >= 10
     assert k["paket"] is None
     pj = json.loads((kok / "pid.json").read_text())
@@ -339,7 +349,20 @@ def test_gc_ozeti_yalniz_duraklama_satirlari(tmp_path):
     assert o["duraklama_sayisi"] == 2
     assert o["duraklama_toplam_ms"] == pytest.approx(13.75)
     assert o["duraklama_en_uzun_ms"] == 10.5
-    assert ok.gc_ozeti(tmp_path / "yok.log") == {"gc_log_var": False}
+    assert o["jvm_surumu"] is None
+    assert ok.gc_ozeti(tmp_path / "yok.log") == {"gc_log_var": False, "gc_log": str(tmp_path / "yok.log")}
+
+
+def test_gc_kunyesi_ana_jvm_karadul_pid(tmp_path):
+    (tmp_path / "gc_100.log").write_text("[a][0.0s] Version: 21.0.13.1 (release)\n")
+    (tmp_path / "gc_200.log").write_text("[a][0.2s] Version: 27.0.1.0.2+1 (release)\n"
+                                         "[a][0.3s] GC(0) Pause Young (Normal) 2M->1M(8M) 1.500ms\n")
+    g = ok.gc_kunyesi(tmp_path, 200)
+    assert g["gc_log"] == str(tmp_path / "gc_200.log") and g["jvm_surumu"] == "27.0.1.0.2+1"
+    assert g["duraklama_sayisi"] == 1 and g["yan_jvm_gc_loglari"] == ["gc_100.log"]
+    # karadul pid'i bilinmiyorsa ana günlük seçilmez (yanlış JVM'in sayısı yazılmaz)
+    g = ok.gc_kunyesi(tmp_path, None)
+    assert g["gc_log_var"] is False and len(g["yan_jvm_gc_loglari"]) == 2
 
 
 def test_paket_kunyesi_biten_bilesenler(tmp_path):
@@ -356,11 +379,20 @@ def test_paket_kunyesi_biten_bilesenler(tmp_path):
     assert ok.paket_kunyesi(tmp_path / "bos") is None
 
 
-def test_java_ek_dosyalari():
+def test_java_ek_dosyalari(tmp_path):
     o = ok._java_ek_dosyalari("-XX:StartFlightRecording=filename=/yok/k.jfr,settings=profile "
                               "-XX:SharedArchiveFile=/yok/a.jsa")
     assert o["jfr"] == {"yol": "/yok/k.jfr", "var": False, "bayt": None}
-    assert o["cds"]["yol"] == "/yok/a.jsa"
+    assert o["cds"]["yol"] == "/yok/a.jsa" and "jfr_depo" not in o
+    depo = tmp_path / "jfr_repo"
+    for alt, bayt in (("2026_11_20_09_05_00_111", 10), ("2026_11_20_09_05_03_222", 30)):
+        (depo / alt).mkdir(parents=True)
+        (depo / alt / "parca.jfr").write_bytes(b"x" * bayt)
+    o = ok._java_ek_dosyalari(f"-XX:StartFlightRecording=filename={tmp_path}/k_%p.jfr,disk=true "
+                              f"-XX:FlightRecorderOptions=repository={depo},preserve-repository=true", 222)
+    assert o["jfr"]["yol"] == f"{tmp_path}/k_222.jfr"
+    assert o["jfr_depo"]["parca"] == 2 and o["jfr_depo"]["ana_jvm_bayt"] == 30
+    assert o["jfr_depo"]["ana_jvm_parcalari"] == [str(depo / "2026_11_20_09_05_03_222" / "parca.jfr")]
 
 
 # --------------------------------------------------------------------------------------------
@@ -635,7 +667,10 @@ def test_kuyruk_sirasi_ve_tanimlari(tmp_path):
     assert len(cds) == 4 and all("AutoCreateSharedArchive" in k.java_ek and "FlightRecording" not in k.java_ek
                                  for k in cds)
     jfr = next(k for k in kuy if k.grup == "b_jfr")
-    assert f"filename={jfr.kok / 'kayit.jfr'}," in jfr.java_ek and "SharedArchive" not in jfr.java_ek
+    assert f"filename={jfr.kok / 'kayit_%p.jfr'} " in jfr.java_ek and "SharedArchive" not in jfr.java_ek
+    # çıkış dökümü PyGhidra JVM'inde boş kalıyor: diske kayıt + saklanan depo + 250 MB sınırının üstü
+    assert "disk=true" in jfr.java_ek and "maxsize=3g" in jfr.java_ek
+    assert f"repository={jfr.kok / 'jfr_repo'},preserve-repository=true" in jfr.java_ek
     assert next(k for k in kuy if k.grup == "duman").etiket == "duman:cat"
 
 
@@ -651,6 +686,12 @@ def test_kuyruk_komutu_kosucunun_ayristiricisiyla_okunur(tmp_path):
         assert arg.java_ek == k.java_ek and arg.duvar_sn == k.duvar and arg.kok == k.kok
         assert arg.ayar == k.ayar and arg.kill_bekle_sn == ok.KILL_BEKLE_SN
     assert gk._komut(k, tmp_path, "P", 2)[2] == f"{k.etiket}/d2"
+    # Boşluksuz tek seçenek (dumanın 1. denemesindeki biçim): argparse boşluklu değeri kabul ediyor,
+    # boşluksuz "-XX:..." değerini seçenek sanıyor; bu durum ayrıca sınanır.
+    tek = gk.Kosu(grup="duman", kod="cat", tekrar=1, kok=tmp_path / "d", hedef=tmp_path / "h", duvar=9,
+                  etiket="duman:cat", java_ek="-XX:StartFlightRecording=filename=/x/k.jfr,settings=profile")
+    arg = ok.ayristirici().parse_args(gk._komut(tek, tmp_path / "agac", "P", 1)[5:])
+    assert arg.java_ek == tek.java_ek
 
 
 def test_kuru_kip_hicbir_sey_olusturmaz(tmp_path, capsys):

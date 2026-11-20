@@ -12,7 +12,7 @@ Kullanım (depo kökünden; Ghidra başlatan her komut ``~/karadul_olcum/ghidra_
 
 Koşu: ``/usr/bin/time -l <python> -m karadul analyze <hedef> --skip-dynamic --output-dir <kök>/ws
 --output <kök>/out [--config <yaml>]``; ortam ``PYTHONHASHSEED=0``, ``KARADUL_CACHE_DIR=<kök>/cache``,
-``JAVA_TOOL_OPTIONS=-Xlog:gc*:file=<kök>/gc.log:time,uptime`` (+ ``--java-ek``). Çıktı ``<kök>/kosu.log``.
+``JAVA_TOOL_OPTIONS=-Xlog:gc*:file=<kök>/gc_%p.log:time,uptime`` (JVM başına; + ``--java-ek``). Çıktı ``<kök>/kosu.log``.
 
 Kökte oluşanlar:
 - ``pid.json``: ``time`` süreci ve ``karadul`` süreci (eşlik eden örnekleyiciler için; ör. HZ-0 ``hz0_ek.py``);
@@ -90,6 +90,7 @@ _TIME_KV = re.compile(r"^\s*(\d+)\s+([a-z][a-z ]*[a-z])\s*$", re.M)
 # "[..][..] GC(12) Pause Young (Normal) (G1 Evacuation Pause) 100M->50M(200M) 12.345ms"
 _GC_DURAKLAMA = re.compile(r"GC\((\d+)\)\s+Pause\b.*?\d+[KMG]->\d+[KMG]\(\d+[KMG]\)\s+(\d+(?:\.\d+)?)ms\s*$",
                            re.M)
+_JVM_SURUM = re.compile(r"\]\s*Version:\s*(\S+)")
 
 
 def _simdi() -> str:
@@ -135,16 +136,32 @@ def time_l_ayristir(metin: str | None) -> dict[str, Any]:
 
 
 def gc_ozeti(yol: Path) -> dict[str, Any]:
-    """JVM ``-Xlog:gc*`` günlüğünden duraklama sayısı ve toplamı (ms)."""
+    """JVM ``-Xlog:gc*`` günlüğünden duraklama sayısı ve toplamı (ms) ve JVM sürümü."""
     try:
         metin = yol.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return {"gc_log_var": False}
+        return {"gc_log_var": False, "gc_log": str(yol)}
     sureler = [float(ms) for _, ms in _GC_DURAKLAMA.findall(metin)]
-    return {"gc_log_var": True, "gc_log_bayt": len(metin.encode("utf-8")),
+    surum = _JVM_SURUM.search(metin)
+    return {"gc_log_var": True, "gc_log": str(yol), "gc_log_bayt": len(metin.encode("utf-8")),
+            "jvm_surumu": surum.group(1) if surum else None,
             "duraklama_sayisi": len(sureler),
             "duraklama_toplam_ms": round(sum(sureler), 3),
             "duraklama_en_uzun_ms": max(sureler) if sureler else None}
+
+
+def gc_kunyesi(kok: Path, karadul_pid: int | None) -> dict[str, Any]:
+    """Ana JVM'in (PyGhidra JVM'i karadul sürecinin İÇİNDE: pid = karadul_pid) GC özeti; yan JVM'ler ayrı.
+
+    ``gc_%p.log``: pyghidra'nın başlatıcısı ayrıca kısa ömürlü ``java`` süreçleri açıyor ve onlar da
+    ``JAVA_TOOL_OPTIONS``'ı okuyor (duman koşusu: 2 yan JVM). Tek dosya adında sonra başlayan JVM öncekinin
+    günlüğünü döndürür; süreç numarasıyla ayrılır.
+    """
+    dosyalar = sorted(kok.glob("gc_*.log"))
+    ana = kok / f"gc_{karadul_pid}.log" if karadul_pid else None
+    out = gc_ozeti(ana) if ana is not None else {"gc_log_var": False, "gc_log": None}
+    out["yan_jvm_gc_loglari"] = [p.name for p in dosyalar if p != ana]
+    return out
 
 
 def ghidra_adim_sureleri(go: Path, ghidra_sn: float | None) -> dict[str, Any]:
@@ -366,15 +383,29 @@ def paket_kunyesi(ws: Path) -> dict[str, Any] | None:
             "bundle_analysis_var": (ws / "static" / "bundle_analysis.json").exists()}
 
 
-def _java_ek_dosyalari(java_ek: str) -> dict[str, Any]:
-    """``--java-ek`` içindeki dosya yolları (JFR kaydı, CDS arşivi): koşu sonunda var mı, boyutu."""
-    out = {}
+def _java_ek_dosyalari(java_ek: str, karadul_pid: int | None = None) -> dict[str, Any]:
+    """``--java-ek`` içindeki dosya yolları (JFR kaydı ve deposu, CDS arşivi): koşu sonunda var mı, boyutu.
+
+    ``%p`` ana JVM'in süreç numarasıyla (karadul) açılır. JFR deposunda (``repository=``) JVM başına
+    ``<zaman>_<pid>/`` alt dizini ve ``*.jfr`` parçaları: PyGhidra JVM'inde çıkışta döküm (``dumponexit``)
+    "Unable to complete I/O operation" ile boş kalıyor (duman koşusu ve JPype denemesi); saklanan depo
+    parçaları okunabilir kayıttır.
+    """
+    out: dict[str, Any] = {}
     for anahtar, desen in (("jfr", r"filename=([^,\s]+)"), ("cds", r"SharedArchiveFile=(\S+)")):
         m = re.search(desen, java_ek)
         if m:
-            p = Path(m.group(1))
+            p = Path(m.group(1).replace("%p", str(karadul_pid)))
             out[anahtar] = {"yol": str(p), "var": p.exists(),
                             "bayt": p.stat().st_size if p.exists() else None}
+    m = re.search(r"repository=([^,\s]+)", java_ek)
+    if m:
+        depo = Path(m.group(1))
+        parcalar = sorted(depo.glob("*/*.jfr"))
+        ana = [p for p in parcalar if karadul_pid and p.parent.name.endswith(f"_{karadul_pid}")]
+        out["jfr_depo"] = {"yol": str(depo), "parca": len(parcalar),
+                           "ana_jvm_parcalari": [str(p) for p in ana],
+                           "ana_jvm_bayt": sum(p.stat().st_size for p in ana)}
     return out
 
 
@@ -440,7 +471,7 @@ def kos(a: argparse.Namespace) -> int:
     kok.mkdir(parents=True, exist_ok=True)
     (kok / "cache").mkdir(exist_ok=True)
 
-    java = f"-Xlog:gc*:file={kok / 'gc.log'}:time,uptime"
+    java = f"-Xlog:gc*:file={kok / 'gc_%p.log'}:time,uptime"  # %p: JVM başına ayrı günlük
     if a.java_ek:
         java += " " + a.java_ek
     ortam = dict(os.environ, PYTHONPATH=str(agac), PYTHONHASHSEED="0",
@@ -529,6 +560,7 @@ def _bitis_kunyesi(kok: Path, agac: Path, t0_epoch: float, sure: float, durum: s
         gunluk = (kok / "kosu.log").read_text(encoding="utf-8", errors="replace")
     except OSError:
         gunluk = ""
+    karadul_pid = (_oku_json(kok / "pid.json") or {}).get("karadul_pid")
     out: dict[str, Any] = {
         "durum": durum, "sonlandirma": yol, "cikis_kodu": kod, "bitis": _simdi(),
         "sure_sn": round(sure, 1), "yuk_son": list(os.getloadavg()),
@@ -538,8 +570,8 @@ def _bitis_kunyesi(kok: Path, agac: Path, t0_epoch: float, sure: float, durum: s
         "tepe_rss_sn": ornekleyici.tepe_rss_sn if ornekleyici else None,
         "tepe_disk_bayt": ornekleyici.tepe_disk if ornekleyici else None,
         "disk_tarama_en_uzun_sn": round(ornekleyici.disk_en_uzun_sn, 3) if ornekleyici else None,
-        "gc": gc_ozeti(kok / "gc.log"),
-        "java_ek_dosyalari": _java_ek_dosyalari(java_ek),
+        "gc": gc_kunyesi(kok, karadul_pid),
+        "java_ek_dosyalari": _java_ek_dosyalari(java_ek, karadul_pid),
         "disk_son": {"kok": _disk(kok), "ws": _disk(kok / "ws"), "out": _disk(kok / "out")},
     }
     alanlar = _calisma_alanlari(kok)

@@ -237,9 +237,7 @@ def kuyruk_olustur(gruplar: tuple[str, ...], kok: Path, avast_kok: Path, kuru: b
                 for kod in ("K", "O"):
                     ekle(grup, kod, n, DUVAR_HZ0_SN, taban=avast_kok, hz0_ek=True)
         elif grup == "b_jfr":
-            k_kok = kok / grup / "B" / "1"
-            ekle(grup, "B", 1, DUVAR_HZ0_SN, hz0_ek=True, java_ek=(
-                f"-XX:StartFlightRecording=filename={k_kok / 'kayit.jfr'},settings=profile,dumponexit=true"))
+            ekle(grup, "B", 1, DUVAR_HZ0_SN, hz0_ek=True, java_ek=jfr_secenekleri(kok / grup / "B" / "1"))
         elif grup == "olc1":
             for kod in ("T100", "T300", "PAKET"):
                 ekle(grup, kod, 1, DUVAR_OLC1_SN)
@@ -248,11 +246,24 @@ def kuyruk_olustur(gruplar: tuple[str, ...], kok: Path, avast_kok: Path, kuru: b
         elif grup == "duman":
             # JFR ile AutoCreateSharedArchive aynı koşuda olmaz: arşiv dökülürken JVM JFR'ı kapatır
             # ("JFR will be disabled during CDS dumping"; `java -version` ile denendi). Duman JFR'ı sınar.
-            k_kok = kok / grup / "cat" / "1"
-            ekle(grup, "cat", 1, DUVAR_DUMAN_SN, hz0_ek=True, java_ek=(
-                f"-XX:StartFlightRecording=filename={k_kok / 'kayit.jfr'},settings=profile,dumponexit=true"))
+            ekle(grup, "cat", 1, DUVAR_DUMAN_SN, hz0_ek=True, java_ek=jfr_secenekleri(kok / grup / "cat" / "1"))
             out[-1].etiket = "duman:cat"
     return out
+
+
+def jfr_secenekleri(k_kok: Path) -> str:
+    """JFR: çıkışta döküm + diske kayıt ve saklanan depo.
+
+    PyGhidra JVM'inde (JPype) çıkıştaki döküm "Unable to complete I/O operation" ile 0 baytta kalıyor
+    (duman koşusu 2026-11-20 09:05; Ghidra'sız JPype + JDK 27 denemesinde de aynı). ``disk=true`` +
+    ``preserve-repository=true`` ile kayıt parçaları ``jfr_repo/<zaman>_<pid>/*.jfr`` olarak kalır ve
+    ``jfr`` ile okunur (denendi: 3 sn'lik parça, ``jdk.ExecutionSample`` var). ``maxsize``: öntanım 250 MB
+    sınırı uzun koşuda eski parçaları siler (CFG / xref aralıkları koşunun ortasında).
+    ``%p``: pyghidra başlatıcısının kısa ömürlü JVM'leri de JAVA_TOOL_OPTIONS'ı okur; dosya ayrı kalsın.
+    """
+    return (f"-XX:StartFlightRecording=settings=profile,disk=true,maxsize=3g,dumponexit=true,"
+            f"filename={k_kok / 'kayit_%p.jfr'} "
+            f"-XX:FlightRecorderOptions=repository={k_kok / 'jfr_repo'},preserve-repository=true")
 
 
 def tahmin_ozeti(kuyruk: list[Kosu]) -> dict[str, Any]:

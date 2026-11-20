@@ -86,7 +86,11 @@ def donanim_kunyesi(ghidra: Path = GHIDRA) -> dict[str, Any]:
         k["bellek"] = _cmd("free", "-m").strip().splitlines()
     java_home = os.environ.get("JAVA_HOME")
     java = str(Path(java_home) / "bin" / "java") if java_home else (shutil.which("java") or "java")
-    k["jdk"] = {"java": java, "surum": _cmd(java, "-version").strip().splitlines()[:3]}
+    k["jdk"] = {"java": java, "surum": _cmd(java, "-version").strip().splitlines()[:3],
+                "not": "JAVA_HOME / PATH java'sı; PyGhidra'nın süreç içi JVM'i başka olabilir (duman "
+                       "2026-11-20: 27.0.1.0.2+1). Koşunun gerçek JVM'i: kunye.json → gc.jvm_surumu"}
+    if sys.platform == "darwin":
+        k["jdk"]["macos_varsayilan"] = _cmd("/usr/libexec/java_home").strip()
     k["ghidra"] = {"yol": str(ghidra), "surum": None}
     try:
         for satir in (ghidra / "Ghidra" / "application.properties").read_text().splitlines():
