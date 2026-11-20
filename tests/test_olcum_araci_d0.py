@@ -137,3 +137,69 @@ def test_urun_olc_bitmislik_ozeti(tmp_path, monkeypatch):
     s = uo.olc(ks1.elfleri_topla(None, deb), None, None, beklenen=beklenen, eksik_izinli=True)
     assert s["nufus"]["durumlar"]["ciktisiz"] == 1 and s["nufus"]["durumlar"]["tamam"] == 0
     assert "veri yok" in uo.bitmislik_cumlesi({})
+
+
+# --------------------------------------------------------------------------------------------
+# Kalem 3 — masum_kapi sarif katmanı: bilgi düzeyi YARA isabeti yara'nın doğru iddia kuralıyla
+
+mk = _yukle("masum_kapi_d0_under_test", "masum_kapi.py")
+
+
+def _yara_sonucu(kural_id, yara_kurali, duzey="note"):
+    return {"ruleId": kural_id, "level": duzey, "message": {"text": f"YARA rule {yara_kurali} matched"},
+            "properties": {"yara_rule": yara_kurali, "source": "yara"}}
+
+
+def _sarif_kayit(tmp_path, anahtar, sonuclar):
+    ws = tmp_path / anahtar.replace("/", "_") / "ws"
+    (ws / "reports").mkdir(parents=True)
+    (ws / "reports/report.sarif.json").write_text(json.dumps({"runs": [{"results": sonuclar}]}))
+    return {"anahtar": anahtar, "katmanlar": {"sarif": mk.cikti_sarif(ws, ws.parent / "out", set())}}
+
+
+def _hukumler(kayit):
+    return {i["etiket"]: i["hukum"] for i in kayit["katmanlar"]["sarif"]["iddialar"]}
+
+
+def test_sarif_bilgi_duzeyi_yara_dogru_bilinen(tmp_path):
+    """a62f15e'nin 12 iddiasının deseni: KRDL001 / KRDL007 YARA isabeti, ikili ``yara`` katmanının doğru
+    iddia kuralındaysa doğru bilinir; şüpheli kategorideki (KRDL003) aynı isabet ve kuralın ikili
+    listesinde olmayan ikilideki isabet yanlış kalır. Kural dosyası gerçek ``masum_kapi_esik.json``."""
+    esik = mk.esik_yukle(mk.ESIK_DOSYASI)
+    kayitlar = {"gelistirme": [
+        _sarif_kayit(tmp_path, "debian/openssl/openssl", [_yara_sonucu("KRDL001", "OpenSSL_Library")]),
+        _sarif_kayit(tmp_path, "debian/zstd/zstd", [
+            _yara_sonucu("KRDL007", "GCC_Compiler"), _yara_sonucu("KRDL007", "Zstd_Library"),
+            _yara_sonucu("KRDL007", "LZ4_Library")]),
+        _sarif_kayit(tmp_path, "debian/tree/tree", [
+            _yara_sonucu("KRDL003", "GCC_Compiler", "warning"),      # 1.22.1 deseni: şüpheli diye
+            _yara_sonucu("KRDL007", "Zlib_Library")]),                # tree'de zlib bağlı değil
+        _sarif_kayit(tmp_path, "debian/sqlite3/sqlite3", [_yara_sonucu("KRDL001", "AES_SBox")]),
+    ]}
+    mk.hukumle(kayitlar, esik)
+    l = kayitlar["gelistirme"]
+    assert _hukumler(l[0]) == {"KRDL001:OpenSSL_Library": "dogru_bilinen"}
+    assert _hukumler(l[1]) == {"KRDL007:GCC_Compiler": "dogru_bilinen", "KRDL007:Zstd_Library": "dogru_bilinen",
+                               "KRDL007:LZ4_Library": "dogru_bilinen"}
+    assert _hukumler(l[2]) == {"KRDL003:GCC_Compiler": "yanlis", "KRDL007:Zlib_Library": "yanlis"}
+    assert _hukumler(l[3]) == {"KRDL001:AES_SBox": "yanlis"}
+    o = mk.ozetle(kayitlar)["sarif"]["gelistirme"]
+    assert (o["iddia"], o["yanlis"], o["dogru_bilinen"]) == (7, 3, 4)
+
+
+def test_sarif_yara_kurali_alani(tmp_path):
+    """YARA kuralı iddiaya yazılır (P07 sonrası ``yara_rule``; öncesi ``technology_name``); aynı etikette
+    YARA dışı bir sonuç da varsa yazılmaz (hüküm yalnız etiketle verilir)."""
+    k = _sarif_kayit(tmp_path, "debian/zstd/zstd", [
+        _yara_sonucu("KRDL007", "Zstd_Library"),
+        {"ruleId": "KRDL003", "level": "warning", "message": {"text": "t"},
+         "properties": {"technology_name": "MPRESS_Packed (packer,mpress)"}},
+        _yara_sonucu("KRDL004", "UPX"),
+        {"ruleId": "KRDL004", "level": "error", "message": {"text": "p"}, "properties": {"packer_name": "UPX"}}])
+    alan = {i["etiket"]: i.get("yara_kurali") for i in k["katmanlar"]["sarif"]["iddialar"]}
+    assert alan == {"KRDL007:Zstd_Library": "Zstd_Library", "KRDL003:MPRESS_Packed": "MPRESS_Packed",
+                    "KRDL004:UPX": None}
+    # pozitif sette hüküm değişmez
+    kayitlar = {"pozitif": [k]}
+    mk.hukumle(kayitlar, mk.esik_yukle(mk.ESIK_DOSYASI))
+    assert {i["hukum"] for i in k["katmanlar"]["sarif"]["iddialar"]} == {"pozitif_set"}

@@ -64,6 +64,46 @@
    "test": "tests/test_olcum_araci_d0.py::test_urun_olc_bitmislik_ozeti",
    "find": "        return DURUM_CIKTISIZ\n",
    "replace": "        return DURUM_TAMAM\n"
+  },
+  {
+   "id": "k3_suphe_kategorisi_dogru",
+   "desc": "kalem 3: şüpheli kategorideki (KRDL003) YARA isabeti de doğru bilinir",
+   "module": "scripts/measurement/masum_kapi.py",
+   "test": "tests/test_olcum_araci_d0.py::test_sarif_bilgi_duzeyi_yara_dogru_bilinen",
+   "find": "_SARIF_YARA_BILGI_KURALLARI = frozenset({\"KRDL001\", \"KRDL007\"})",
+   "replace": "_SARIF_YARA_BILGI_KURALLARI = frozenset({\"KRDL001\", \"KRDL003\", \"KRDL007\"})"
+  },
+  {
+   "id": "k3_sarif_yara_hukmu_yok",
+   "desc": "kalem 3: sarif katmanına yara'nın doğru iddia kuralı uygulanmaz (eski kusur: 12 doğru iddia yanlış)",
+   "module": "scripts/measurement/masum_kapi.py",
+   "test": "tests/test_olcum_araci_d0.py::test_sarif_bilgi_duzeyi_yara_dogru_bilinen",
+   "find": "elif _sarif_yara_dogru(set_adi, kayit[\"anahtar\"], katman, i, dogrular):",
+   "replace": "elif False and _sarif_yara_dogru(set_adi, kayit[\"anahtar\"], katman, i, dogrular):"
+  },
+  {
+   "id": "k3_ikili_listesi_yok_sayilir",
+   "desc": "kalem 3: yara kuralının ikili listesi yok sayılır (zlib'e bağlı olmayan ikili de doğru)",
+   "module": "scripts/measurement/masum_kapi.py",
+   "test": "tests/test_olcum_araci_d0.py::test_sarif_bilgi_duzeyi_yara_dogru_bilinen",
+   "find": "_uyar(d, set_adi, anahtar, \"yara\", f\"kural:{kural}\")",
+   "replace": "_uyar(dict(d, ikili=[\"*\"]), set_adi, anahtar, \"yara\", f\"kural:{kural}\")"
+  },
+  {
+   "id": "k3_karisik_kaynak_yara_sayilir",
+   "desc": "kalem 3: aynı etikette YARA dışı sonuç varken de YARA kuralı yazılır",
+   "module": "scripts/measurement/masum_kapi.py",
+   "test": "tests/test_olcum_araci_d0.py::test_sarif_yara_kurali_alani",
+   "find": "if len(v[\"yara\"]) == 1 and None not in v[\"yara\"]:\n            ek[\"yara_kurali\"] = next(iter(v[\"yara\"]))",
+   "replace": "if v[\"yara\"] - {None}:\n            ek[\"yara_kurali\"] = next(iter(v[\"yara\"] - {None}))"
+  },
+  {
+   "id": "k3_eski_technology_name_okunmaz",
+   "desc": "kalem 3: P07 öncesi SARIF'in technology_name alanı YARA kuralı diye okunmaz",
+   "module": "scripts/measurement/masum_kapi.py",
+   "test": "tests/test_olcum_araci_d0.py::test_sarif_yara_kurali_alani",
+   "find": "        return str(p[\"technology_name\"]).split(\" (\")[0]\n",
+   "replace": "        return None\n"
   }
  ]
 }

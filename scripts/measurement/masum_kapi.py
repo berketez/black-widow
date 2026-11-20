@@ -507,6 +507,18 @@ def _kanit_uyar(kural: dict, iddia: dict) -> bool:
     return any(re.search(kural["kanit_re"], str(o)) for o in ogeler if o is not None)
 
 
+def _sarif_yara_dogru(set_adi: str, anahtar: str, katman: str, iddia: dict, dogrular: list) -> bool:
+    """``sarif`` katmanındaki bilgi düzeyi YARA iddiası, ``yara`` katmanının doğru iddia kuralına
+    (``kural:<ad>``) uyuyor mu (``_SARIF_YARA_BILGI_KURALLARI``)."""
+    kural = iddia.get("yara_kurali")
+    if katman != "sarif" or not kural:
+        return False
+    if iddia["etiket"].split(":", 1)[0] not in _SARIF_YARA_BILGI_KURALLARI:
+        return False
+    return any(_uyar(d, set_adi, anahtar, "yara", f"kural:{kural}") and _kanit_uyar(d, iddia)
+               for d in dogrular)
+
+
 def hukumle(kayitlar: dict[str, list[dict]], esik: dict) -> None:
     """Her iddiaya ``hukum`` yazar: yanlis | dogru_bilinen | pozitif_set."""
     dogrular = esik.get("dogru_iddialar", [])
@@ -518,6 +530,8 @@ def hukumle(kayitlar: dict[str, list[dict]], esik: dict) -> None:
                         i["hukum"] = "pozitif_set"
                     elif any(_uyar(d, set_adi, kayit["anahtar"], katman, i["etiket"])
                              and _kanit_uyar(d, i) for d in dogrular):
+                        i["hukum"] = "dogru_bilinen"
+                    elif _sarif_yara_dogru(set_adi, kayit["anahtar"], katman, i, dogrular):
                         i["hukum"] = "dogru_bilinen"
                     else:
                         i["hukum"] = "yanlis"
@@ -958,6 +972,27 @@ def _sarif_adi(sonuc: dict) -> str:
 # Bu katman YARA, paketleyici izi ve IOC sonuçlarını sayar.
 _SARIF_BASKA_KATMAN_KAYNAGI = frozenset({"reconstructed/algorithms.json", "anti_debug_findings"})
 _SARIF_IDDIA_DEGIL = frozenset({"KRDL002"})
+# SARIF'teki bir YARA isabeti iki iddia taşır: kuralın ikilide eşleştiği (``yara`` katmanının
+# ``kural:<ad>`` iddiası) ve SARIF kategorisi (``ruleId``). Kategori bilgi düzeyindeyse (KRDL001 kripto
+# kitaplığı / sabiti, KRDL007 derleyici / kitaplık parmak izi: "şüpheli değil") iddia, ``yara``
+# katmanının ``dogru_iddialar`` kurallarıyla hükme bağlanır (OLCUM kalem 3: P07'den sonra 12 doğru
+# iddia yanlış sayılıyordu). Şüpheli / paketli / gizlenmiş / zararlı kategorisindeki (KRDL003-006)
+# aynı isabet yanlış suçlamadır: kural doğru olsa da yanlış kalır.
+_SARIF_YARA_BILGI_KURALLARI = frozenset({"KRDL001", "KRDL007"})
+
+
+def _sarif_yara_kurali(sonuc: dict) -> str | None:
+    """SARIF sonucu bir YARA isabetiyse kuralın adı; değilse None.
+
+    P07 sonrası: ``properties.source == "yara"`` ve ``yara_rule``. Öncesi (1.22.1): ``technology_name``
+    (``detected_tech`` dizgisi ``"<kural> (<etiketler>)"``).
+    """
+    p = sonuc.get("properties", {}) or {}
+    if p.get("source") == "yara" and p.get("yara_rule"):
+        return str(p["yara_rule"])
+    if p.get("technology_name"):
+        return str(p["technology_name"]).split(" (")[0]
+    return None
 
 
 def cikti_sarif(ws: Path, out: Path, _s) -> dict:
@@ -972,12 +1007,19 @@ def cikti_sarif(ws: Path, out: Path, _s) -> dict:
                     (r.get("properties") or {}).get("source") in _SARIF_BASKA_KATMAN_KAYNAGI):
                 continue
             d = sayac.setdefault(f"{r.get('ruleId')}:{_sarif_adi(r)}",
-                                 {"adet": 0, "duzey": r.get("level"), "ornek": []})
+                                 {"adet": 0, "duzey": r.get("level"), "ornek": [], "yara": set()})
             d["adet"] += 1
+            d["yara"].add(_sarif_yara_kurali(r))
             if len(d["ornek"]) < 2:
                 d["ornek"].append(r.get("message", {}).get("text", "")[:160])
-    return {"durum": "calisti", "iddialar": [
-        _iddia(e, v["ornek"], adet=v["adet"], duzey=v["duzey"]) for e, v in sorted(sayac.items())]}
+    iddialar = []
+    for e, v in sorted(sayac.items()):
+        ek = {"adet": v["adet"], "duzey": v["duzey"]}
+        # aynı etikette YARA dışı bir sonuç da varsa YARA kuralı yazılmaz (hüküm yalnız etiketle)
+        if len(v["yara"]) == 1 and None not in v["yara"]:
+            ek["yara_kurali"] = next(iter(v["yara"]))
+        iddialar.append(_iddia(e, v["ornek"], **ek))
+    return {"durum": "calisti", "iddialar": iddialar}
 
 
 def cikti_intel(ws: Path, out: Path, _s) -> dict:
