@@ -42,6 +42,8 @@ Taban: `e996200` (main, `git merge --ff-only main` sonrası; `b6aceb9` ile kod f
 
 - 1. koşu (08:35, yük 7–12): 10 200 geçti / 81 atlandı / 7 kaldı. 7'sinin hepsi worktree'de olmayan çalışma verisinden (`vendor/gnulib-ref` → `test_ps3b_*` 3 test; `scripts/node_modules` → `test_deobfuscator` 2, `test_project_reconstructor` 1, `test_pipeline::test_identify_and_static` 1); HZ1 değişikliğinden değil. ORTAK_D0 §2'deki bağlar kuruldu (`sigs`, `vendor`, `signatures_homebrew*.json`, `sigs_macos_system.json`, `signatures.lmdb`, `scripts/node_modules`; commit'lenmez — `sigs`, `vendor`, `scripts/node_modules` bağları `git status`'ta `??` görünüyor, dosyalar adıyla stage edildiği için girmez); 7 test ayrıca koşuldu: 21 / 21 geçti (dosyaların tamamı).
 - 2. koşu (08:42–08:53, yük 12–17): 10 312 geçti / 11 atlandı / 0 kaldı (152 seçilmedi; main `b6aceb9` 10 289 + bu paketin 23 testi). Günlük ortak scratchpad'teydi; ana oturumun uyarısı üzerine kesin sonuç için 3. koşu kendi dizinimde: `~/karadul_olcum/runs/dalga0-2026-11-20/HZ1/tam_takim/`.
+- **3. koşu (kesin; 08:59–09:09, yük 11–16, kod `959106b` + yalnız belge commit'leri): 10 312 geçti / 11 atlandı / 0 kaldı** (577 sn; `pytest.log`, `commit.txt`, `yuk.txt` aynı dizinde).
+- **09:10 — bekliyorum:** S8 sonra kolu 4 / 8 bitti (cat, sort, tree, sqlite3); htop kuyrukta (önde OK5 ve KIMLIK). Kalan dört ikilinin taban süresi toplam ≈ 10 dk + kuyruk; TAHMİNİ bitiş 09:45–10:30. A/A koşusu da sürüyor.
 
 ## Kalem 5 — S8 çıktı eşitliği
 
