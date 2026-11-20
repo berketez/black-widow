@@ -41,6 +41,28 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
 
 **Bekleme (08:2x):** şu an `kos-hepsi` arka planda; önce ayar (9), sonra kör (76). TAHMİNİ bitiş: kuyrukta başka paket yoksa 10:15–12:35 arası; başka paketler sıraya girdikçe kayar. Beklerken `ozkod_olc.py`, testler ve ön kayıt yazılıyor.
 
+## 3. ÖK-5 adım 1–2 — `ozkod_olc.py` ve geliştirme setinde eşdeğerlik
+
+- `scripts/measurement/ozkod_olc.py` (yeni): kurallar `scripts/arge/ozkod/`'dan **içe aktarılır** (`ek_kurali.adaylar` / `tahmin` / `_ek_oyu` / `olc`, `kayit_cifti.say` / `gt_esit` / `ek_cikar`, `oz_ad_ayrim.ozellikler` / `kural_tut`, `oz_ad_uretici.g1`, `tavan.main`); yüklemeden önce beş dondurulmuş betiğin sha256'sı denetlenir (tutmazsa `DondurmaHatasi`, hiçbir şey sayılmaz). Parametre olan yalnız modül düzeyi veri kökleri ve birim listeleri (`etkin` bağlam yöneticisi; çıkışta eski değerler geri yüklenir). Ölçüm döngüleri (`ek_kurali_belirtec.py`, `ek_kurali_capa.py`, `oz_ad_harf.py` tanımları) betikte; her biri yalnız görünür tarafta döner.
+- Taraf eşlemesi: ayar → araştırma betiklerinin `kesif`, kör → `sinama`. Kör sayımında ayar birim listesi boş (ve tersi): karışma yapısal olarak olanaksız.
+- **Eşdeğerlik (zorunlu: keşif 754 / 740, sınama 126 / 103).** Komut `PYTHONDONTWRITEBYTECODE=1 python scripts/measurement/ozkod_olc.py esdeger --onbellek yeniden`. Olgu önbelleği a62f15e koşusundan **yeniden kuruldu** (araştırma turunun önbelleği kopyalanmadı; çıktı `~/karadul_olcum/runs/dalga0-2026-11-20/OK5/gelistirme/esdeger.json`). Sonuç:
+
+| ölçü | araştırma turu | `ozkod_olc.py` | aynı |
+|---|---|---|---|
+| K1 kâhin, keşif (ad / doğru) | 754 / 740 | 754 / 740 | evet |
+| K1 kâhin, sınama | 126 / 103 | 126 / 103 | evet |
+| G1 düz, keşif | 484 / 454 | 484 / 454 | evet |
+| G1 düz, sınama | 143 / 114 | 143 / 114 | evet |
+| nüfus / V ∪ C (iki taraf) | 20 747 / 1 279 | 20 747 / 1 279 | evet |
+| sandviç ≤ 32 (karar / doğru) | 1 454 / 1 212 | 1 454 / 1 212 | evet |
+| sandviç sınırsız | 2 545 / 2 216 | 2 545 / 2 216 | evet |
+| K1 kip A (ad / doğru) | 98 / 95 | 98 / 95 | evet |
+| K1 kip C (A + G1) | 242 / 239 | 242 / 239 | evet |
+| R1 + harf koruma (tutulan / doğru) | 111 / 106 | 111 / 106 | evet |
+
+  10 / 10 aynı; zorunlu iki satır tuttu. Kaynak: DEFTER §3–§14, BULGULAR §1.2, §2.1; `tavan.json` ve `ek_kurali_capa.txt` (araştırma turu çıktıları, salt okur).
+- Testler: `tests/test_ozkod_olc.py` 25 test (dondurma denetimi, taraf ayrımı ve geri yükleme, Wilson, ön kayıtlı eşiklerin sınırları, kip A / C / C-kapılı / D, G1 kapısı, K1 karakter eki, körlük temizliği) — 25 geçti.
+
 ## Kalemler
 
 | # | kalem | durum |
