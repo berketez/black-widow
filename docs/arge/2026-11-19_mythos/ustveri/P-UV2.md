@@ -92,3 +92,10 @@ atlandı. **Not:** P-ÜV1'in yaması bir önceki satırı (`enable_go_metadata_r
 - Şu an bekleniyor: P-ÜV0 gerçek `Goruntu` uygulamasının main'e girmesi (ana oturum haber verecek). Bu sürede tam takım (yama
   geçici uygulanmış, rebase öncesi) arka planda koşuyor; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/PUV2/tam_takim_on.log`.
   Tahmini bitiş 11:30 (yük altında). Kabul betikleri hazır: `…/PUV2/kabul.py` (6 hedef + gh + H4), `…/PUV2/gt.py` (H2 / H3).
+
+## Tam takım — ön koşu (rebase öncesi, yama geçici uygulanmış; 11:03–11:09, yük altında, load 8,8)
+
+- `10 504 geçti / 82 atlandı / 152 seçilmedi / 7 kaldı` (365 sn). 7 kalanın 7'si ortam: worktree'de `scripts/node_modules`
+  (`@babel/parser`) ve `vendor/gnulib-ref` yoktu (deobfuscator ×2, pipeline, project_reconstructor, ps3b ×3). ORTAK §2
+  bağları kurulunca 7 test (ve dosyalarının kalanı) 21 / 21 geçti. P-ÜV2 değişikliğinden kalan test yok.
+- Yama geri alındı (`git diff` temiz). Kesin tam takım rebase'ten sonra yinelenecek.
