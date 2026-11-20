@@ -134,3 +134,20 @@ Koşu: `~/karadul_olcum/ghidra_kuyruk.sh HEDEF urun:terminal-notifier python scr
 - **HÜ tuttu:** ürünün ad verdiği fonksiyon 0 (< 10); üst veri kanalından ad 0. Doğru ad 0 (ilk ölçüm).
 - Ölçüm aracı tmux'ta `urun_olc` ile aynı hükmü verdiği için (yukarıda) bu sıfır araç hatası değil: ürünün bu ikilide hiçbir ad kanalı tetiklenmedi.
 - **ObjC kanalı için önemli sayı (P-ÜV6'ya):** aynı koşuda (`acik_ghidra_ustveri.py`, `…/HEDEF/ghidra_ustveri_terminal-notifier.json`) yöntem listesindeki 32 IMP'nin 31'i Ghidra'da zaten adlı (yalnız seçiciyle), 1'i jenerik. P13b kuralı ("aday yalnız Ghidra'nın adsız bıraktığı fonksiyona") olduğu gibi kalırsa ObjC kanalı burada **1** ad yazar; P-ÜV6 ön kaydı H4'teki "32 yöntemin Ghidra'nın adsız bıraktıklarına ad yazar" beklentisi bu veriyle tutmaz (Ollama'da da 148 / 151 aynı durum). Ayrıca Ghidra 173 program fonksiyonunu `LC_FUNCTION_STARTS` dışında açmış (264 `ANALYSIS` adlı; GT `__text` dışında, ölçüme girmez).
+
+## Özet (10:05)
+
+- **Set:** 5 sembollü ikili; keşif terminal-notifier, docker-cli; sınama docker-compose, iTerm2 arm64, llama-server arm64. sha256 ve GT sayıları kalem 1 tablosunda; künye `~/karadul_olcum/ustveri_set/manifest.json` (depo dışı, 381 MB).
+- **Ön kayıt** `bbda937` (ölçümden önce). Hipotezler: HS **2 / 5 tutmadı** (iTerm2, llama-server soyulmuş kopyasında sembol kaldı); H1 **tuttu** (25 / 25); HK **tuttu** (docker-cli Go 35 048 / 35 048, terminal-notifier ObjC 32 / 32; A-2 terminal-notifier'da beklendiği gibi "hayır", n küçük); HB **tuttu** (16 / 16); HÜ **tuttu** (0 ad); G1–G3 **tuttu**; G4 / G5 açık sorulardı.
+- **Araç:** `ustveri_set.py`, `ustveri_olc.py`, `scripts/arge/ustveri/acik_ghidra_ustveri.py`; test `tests/test_puv8_olcum.py` 23; mutant 14 / 14 öldü; tam takım 10 505 geçti / 0 kaldı.
+- **Disk:** 746,5 → 752,5 GB (Volume Used; ~6 GB'ın çoğu bu paketin dışından; bu paketin verisi 381 MB + 33 MB).
+
+## Riskler ve ana oturuma notlar
+
+1. **Soyma sızıntısı (iTerm2, llama-server):** `/usr/bin/strip` öntanımı dışa açık sembolleri bırakıyor (5 + 1, 151 + 63). Gece kuyruğunda bu ikililerde ürün koşulacaksa ya kalan adresler ölçümden çıkarılmalı ya da başka bir soyma yolu seçilmeli; `ustveri_olc.py urun-kos` bu ikililerde koşmayı reddeder (`soyma.temiz` yanlış).
+2. **ObjC kanalı ve P13b kuralı:** Ghidra ObjC yöntemlerini yalnız seçiciyle zaten adlandırıyor (Ollama 148 / 151, terminal-notifier 31 / 32). Kural değişmezse ObjC kanalı neredeyse hiç ad yazamaz; P-ÜV6 H4 ("32 yönteme ad yazar") bu haliyle tutmaz. P-ÜV6 kararı gerekli: Ghidra'nın seçici adını tam adla zenginleştirmek ya da ad alanını dışa aktarmak.
+3. **Taban tek ikilide:** ürünün "önce" sayısı yalnız terminal-notifier'da alındı (92 fonksiyon). Asıl hedef boyutundaki dört ikili (17 k – 110 k fonksiyon) gece kuyruğunda; TAHMİN aralıkları güç yasası (üs 2,14) ve doğrusal alt sınırdan, iki ölçülmüş noktaya dayanıyor (yük altında).
+4. **Sınama dokunulmadı:** sınama ikililerinde kanal kesinliği hesaplanmadı (araç reddeder); yalnız GT sayıları, H1 ve bütçe (GT'siz) alındı.
+5. Worktree'de çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules` …) `git status`'ta izlenmeyen olarak görünüyor; commit'lenmedi.
+
+## PAKET BİTTİ
