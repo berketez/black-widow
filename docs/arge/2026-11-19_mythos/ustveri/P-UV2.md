@@ -86,3 +86,9 @@ pipeline/steps/objc_metadata_recovery.py (P-ÜV2)" olur. Yamasız dalda `test_p1
 kırmızı (doğrulandı); yamalı hâlde `test_p15a_etkisiz` + `test_bayrak_on_paketi` + `test_puv2_objc` 220 geçti / 1
 atlandı. **Not:** P-ÜV1'in yaması bir önceki satırı (`enable_go_metadata_recovery`) siliyor; iki yama art arda
 `git apply` ile bağlam çakışması verebilir: `git apply --3way` ya da elle uygulanmalı (iki satır).
+
+## Bekleme (11:1x)
+
+- Şu an bekleniyor: P-ÜV0 gerçek `Goruntu` uygulamasının main'e girmesi (ana oturum haber verecek). Bu sürede tam takım (yama
+  geçici uygulanmış, rebase öncesi) arka planda koşuyor; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/PUV2/tam_takim_on.log`.
+  Tahmini bitiş 11:30 (yük altında). Kabul betikleri hazır: `…/PUV2/kabul.py` (6 hedef + gh + H4), `…/PUV2/gt.py` (H2 / H3).
