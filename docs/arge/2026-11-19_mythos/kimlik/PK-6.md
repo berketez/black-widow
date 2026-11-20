@@ -179,3 +179,11 @@ desteklenmiyor). `tabA/tmux` süre sınırına takıldı, Ghidra çıktısı tam
 - (b) yanlış toplamı 4 (< 10) → "sayı yetmedi" (tek taraflı 0). A-14 tekil düzey 2 563 / 2 ve 2 575 / 2 (alt 0,997).
 - Okuma: aynı paket sürümü + aynı derleyici sürümünde yalnız mimari değişince eşleyici neredeyse hatasız; kanıt
   türleri (dizgi, içe aktarım, P-code sabitleri, çağrı grafiği) mimariden bağımsız.
+
+## Tam takım (11:54–12:03, commit `2d3cbea`, yük altında)
+
+- `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökü): **10 463 geçti / 11 atlandı /
+  0 kaldı** (152 seçim dışı; 561 sn). Günlük `~/karadul_olcum/runs/dalga0-2026-11-20/KIMLIK/tam_takim2.log`.
+- İlk deneme (09:19, `d900cc4`) 7 kaldı: hepsi worktree'de çalışma verisi bağlarının yokluğundan (`scripts/node_modules`
+  → `@babel/parser`, `vendor/gnulib-ref`); ORTAK_D0 §2'deki bağlar kurulunca 7 / 7 geçti. Paketin değişikliğiyle ilgisi
+  yok. Bu ölçüm koşusundan sonra yalnız `d0_*` sarmalayıcıları ve belgeler değişecek (takımın içe aktarmadığı dosyalar).
