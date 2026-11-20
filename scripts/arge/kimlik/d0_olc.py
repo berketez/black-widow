@@ -91,8 +91,12 @@ def betikler(grup: str, etiket: str) -> None:
     for n in nk:
         _yakala(hata_dok.main, [grup, "--nokta", n, "--json", str(OLCUM_DIZINI / f"hata_{etiket}_{n}.json")],
                 OLCUM_DIZINI / f"hata_{etiket}_{n}.txt")
-    _yakala(ciplak.main, [grup, "--json", str(OLCUM_DIZINI / f"ciplak_{etiket}.json")],
-            OLCUM_DIZINI / f"ciplak_{etiket}.txt")
+    try:   # ek satır (hükme girmez): çökerse nedeni yazılır, ölçüm sürer
+        _yakala(ciplak.main, [grup, "--json", str(OLCUM_DIZINI / f"ciplak_{etiket}.json")],
+                OLCUM_DIZINI / f"ciplak_{etiket}.txt")
+    except Exception as e:  # noqa: BLE001
+        (OLCUM_DIZINI / f"ciplak_{etiket}.txt").write_text(f"ciplak koşulamadı: {type(e).__name__}: {e}\n",
+                                                          encoding="utf-8")
 
 
 # ------------------------------------------------------------------------------------------------
