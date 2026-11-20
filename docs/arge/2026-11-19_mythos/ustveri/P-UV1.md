@@ -107,3 +107,14 @@ yok; imza taramasında akıl sağlığı yok).
   içermez). Okuyucu `bellekte` yanlış bölümleri tarama ve bulmada atlar (`getattr(…, True)`).
 - Kabul betiği hazır: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/kabul.py` (`dilim` / `gt` /
   `gogo`; dilim başına ayrı süreç, tepe bellek süreç başına).
+
+## Risk: Go 1.18–1.19 (`0xfffffff0`) `_func` düzeni doğrulanmadı
+
+Planın biçimi (44 baytlık `_func`, `startLine` dahil) araştırmada `release-branch.go1.26` / `go1.27`
+kaynağından okundu; 1.18–1.19 kaynağı okunmadı ve bu oturumda erişilebilir değil (ağ yok, yerel Go
+ağacı yok). Bilinen (doğrulanmamış, TAHMİN): `startLine` 1.20'de eklendi ve imza bu yüzden
+`0xfffffff1` oldu; öyleyse 1.18–1.19'da `funcID` / `flag` / `nfuncdata` 36. bayttan başlar ve
+okuyucu bu üç alanı yanlış okur. Giriş, ad, dosya etkilenmez (ilk 36 bayt), ama K4'ün birleştirici
+ayrımı (`flag`) ve K8 (`funcID`) bozulabilir: en kötü durumda `tutarsiz` (ad yok) — yanıltıcı ad
+değil. Kabul setindeki 11 dilimin hepsi Go ≥ 1.23. Plan gereği ezberden genişletilmedi; P-ÜV7 /
+P-ÜV9 gerçek bir 1.18–1.19 ikilisiyle ve resmî kaynakla doğrulamalı.
