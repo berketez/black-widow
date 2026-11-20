@@ -11,7 +11,7 @@
 | Kalem | Durum | Commit |
 |---|---|---|
 | 1 Ön kayıtlar (`PK-6_on_kayit.md`, `PK-11_on_kayit.md`, grup tanımları) | bitti | `93788e5` |
-| 2 PK-6 `mimari`, `derleyici_surumu` | koşu sırada | — |
+| 2 PK-6 `mimari`, `derleyici_surumu` | KISMİ (kapanış 12:23, Berke kararı): `mimari` 17 / 19 çift, `derleyici_surumu` 5 / 38 çift; kalanlar "sonraki oturum" | (son bölüm) |
 | 3 PK-6 `surum_esli` (V1) | bitti: 4 / 4 program; (e) 4 / 4 → "tmux'a özgü değil"; (b) kararsız; (d) tree tutmadı | `1ceed86` |
 | 4 `iyilestirme` | veri yok (tabaka C Dalga 2'de) | — |
 | 5 PK-11 | bitti (`PK-11.md`): kural 242 / 1, alt 0,977 → (a) hat hedefi; (b) kapsam %33,6 tutmadı; (c) 0 / 199 tuttu | `ee8d78d` |
@@ -187,3 +187,72 @@ desteklenmiyor). `tabA/tmux` süre sınırına takıldı, Ghidra çıktısı tam
 - İlk deneme (09:19, `d900cc4`) 7 kaldı: hepsi worktree'de çalışma verisi bağlarının yokluğundan (`scripts/node_modules`
   → `@babel/parser`, `vendor/gnulib-ref`); ORTAK_D0 §2'deki bağlar kurulunca 7 / 7 geçti. Paketin değişikliğiyle ilgisi
   yok. Bu ölçüm koşusundan sonra yalnız `d0_*` sarmalayıcıları ve belgeler değişecek (takımın içe aktarmadığı dosyalar).
+
+## Kapanış (12:23; ana oturum: Berke'nin kararıyla KAPAN)
+
+- Sürücü (`d0_kos.py`, PID 17478) sonlandırıldı; o an kilitte olan `tabB12/sqlite3` koşusunun bitmesi beklendi
+  (12:23:10, çıkış 0; sürücü öldüğü için `BITTI` işareti kuyruk günlüğündeki `cikis=0` satırına dayanarak elle
+  yazıldı, `ghidra_status.success` denetlendi). Kendi bekleyen kuyruk çağrım kalmadı; başka paketin sürecine
+  dokunulmadı. Toplam Dalga 0 koşusu: 34 (PK-11 1, V1 10, tabaka A 17, tabaka B 5; capa kapalı olanlar 29.–34.).
+- Hükümler YALNIZ koşulan çiftlerle (`d0_olc.py --kismi`); "KISMİ" etiketli satırlar kısmi veridir.
+
+### `mimari` — KISMİ 17 / 19 çift (son hâli; ara sonuçla aynı veri)
+
+- `KIMLIK/olcum/hukum_mimari_ara.{md,json}`. `kural` 6 146 / 4 = 0,999 [0,998–1,000], kapsam %77,2; iki yön de
+  alt 0,998 → **(a) hat hedefi tuttu**; altı programın hepsi (coreutils, tmux, sqlite3, redis, htop, tree) zayıf
+  yön alt 0,955–0,998 → hat hedefi. **(b) sayı yetmedi** (toplam yanlış 4 < 10; tek taraflı 0). **(d) desteklenmiyor**
+  (x86-64 yuvası okunmuyor). A-14 tekil 2 563 / 2 ve 2 575 / 2.
+- Kalan (sonraki oturum): `tabA/openssl/openssl`, `tabA/zstd/zstd` (capa kapalıyla birkaç dakikalık koşular).
+
+### `derleyici_surumu` — KISMİ 5 / 38 çift (Debian 12: coreutils `[`, tree, sqlite3; Ubuntu 24.04: coreutils `[`, tree)
+
+- `KIMLIK/olcum/hukum_derleyici_surumu{,_d12,_u24}.{md,json}`.
+- Havuz `kural`: 876 / 31 = 0,966 [0,952–0,976], kapsam %60,7; zayıf yön alt 0,944 → **(a) ad yazabilir (A-2)**;
+  `tutucu_v2` 1 047 / 19 = 0,982 (alt 0,966) → hat hedefi.
+- Program (`kural`, zayıf yön): sqlite3 0,962 hat hedefi; tree 0,889 ve coreutils (`[`) 0,819 **kanıt satırı**.
+  `tutucu_v2`'de tree 0,956 hat hedefi, coreutils 0,811 kanıt satırı (n küçük: 57 + 60 eşleşme).
+- Alt satırlar: Debian 12 (GCC 12.2, program sürümleri de eski) 747 / 18 = 0,976, zayıf yön alt 0,956 → hat hedefi;
+  **Ubuntu 24.04 (GCC 13, LTO'lu coreutils) 129 / 13 = 0,908, zayıf yön alt 0,815 → kanıt satırı** (n küçük).
+- (b) bu grupta ön kayıtlı değil (bilgi): tek taraflı 8 / 31 = %25,8. (d): tree ve sqlite3 tuttu (tree v2 237 / 14
+  → 319 / 6: kapsam artı, yanlış azaldı); coreutils `[` tutmadı (kapsam artmadı, 108 / 9 → 108 / 9).
+- A-14 tekil: 374 / 15 ve 369 / 15 öğe (alt 0,937).
+- **Okuma (yön gösterici, kısmi):** derleyici sürümü + program sürümü birlikte değişince kesinlik 0,91–0,98 bandına
+  iniyor; tur 1'in sürüm farkı ölçümleriyle (0,935–0,949) aynı düzey. Ubuntu satırı eşiğin altında ama tek program
+  çifti + coreutils `[` ile; hüküm için az.
+- Kalan (sonraki oturum): 33 çift — Debian 12: htop, openssl, zstd, redis-cli, redis-benchmark, tmux, coreutils'in
+  10 ikilisi; Ubuntu 24.04: aynıları + sqlite3. İş listesi `KIMLIK/isler.txt` (genişlik önce sıralı); sürücü aynı
+  komutla (`--ayar capa_kapali.yaml`) kaldığı yerden sürer.
+
+### Koşulamayan
+
+- `iyilestirme` (tabaka C, ÖLÇÜ P-Ö6): **veri yok** → (c) hükmü verilmedi (Dalga 2).
+
+## Ön kayıtlı hükümlerin dökümü (PK-6)
+
+| Hüküm | Grup | Sonuç |
+|---|---|---|
+| (a) | `surum_esli` | grup hat hedefi (alt 0,957); program: tree hat hedefi, zstd / sqlite3 / redis ad yazabilir (0,940–0,947) |
+| (a) | `mimari` (KISMİ 17 / 19) | grup ve 6 / 6 program hat hedefi (alt 0,955–0,998) |
+| (a) | `derleyici_surumu` (KISMİ 5 / 38) | grup ad yazabilir (0,944); sqlite3 hat hedefi, tree ve coreutils kanıt satırı |
+| (b) | `surum_esli` | kararsız (tek taraflı %23,4; aynı kaynakta yeniden adlandırma olamaz → satır içi asimetrisi) |
+| (b) | `mimari` (KISMİ) | sayı yetmedi (4 yanlış; tek taraflı 0) |
+| (b) | `iyilestirme` | veri yok |
+| (c) | `iyilestirme` | veri yok |
+| (d) | `surum_esli` | zstd, sqlite3, redis tuttu; **tree tutmadı (kapsam artmadı)** → ön kayıt metni gereği "PK-4 öntanımı `TUTUCU`'ya döner" tetiklendi (yanlış artmadı; karar ana oturumun) |
+| (d) | `derleyici_surumu` (KISMİ) | tree, sqlite3 tuttu; coreutils `[` tutmadı (kapsam artmadı) |
+| (d) | `mimari` | desteklenmiyor (x86-64) |
+| (e) | `surum_esli` | **4 / 4 program Wilson alt ≥ 0,909 → "tmux'a özgü değil"** (ikincil `tutucu_v2`: 4 / 4) |
+| durma ölçütü (a) | — | tetiklenmedi: sürümü eşli çiftlerde (surum_esli, mimari) hiçbir program < 0,909 değil |
+
+## Riskler
+
+- `mimari` ve `derleyici_surumu` kısmi; `derleyici_surumu`'nun hükmü 5 çifte, Ubuntu satırı 2 çifte dayanıyor.
+- (d)'de tree'nin "tutmadı"sı kapsamın 2–6 fonksiyon azalmasından; kesinlik değişmedi. Ön kayıt metni kesin
+  ("tutmayan program çıkarsa PK-4 öntanımı `TUTUCU`'ya döner"); bu bir ürün kararıdır, burada uygulanmadı.
+- A6 ek satırı (Linux GCC ↔ macOS clang): zstd ve redis eşik altı, ama yapılandırma eşlenmedi; platform etkisi
+  ayrıştırılmadı.
+- Ürün bulgusu: x86-64 ELF statik aşamada süreç içi capa taraması süre sınırı olmadan çalışıyor (tmux > 29 dk).
+- Debian 13 arm64 tarafı a62f15e tam koşusu, yeni koşular b6aceb9 `--stage static`; koşu 29'dan sonra capa kapalı
+  (eşleyici girdisini değiştirmez; grep ile doğrulandı).
+
+## PAKET BİTTİ
