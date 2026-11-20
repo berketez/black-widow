@@ -67,11 +67,11 @@
     },
     {
       "id": "p12a_kanal_turu_yok",
-      "desc": "AD-07: kanal anahtarına ön ad türü verilmez (her ön ad ölçülmemiş görünür)",
+      "desc": "AD-07: kanal anahtarına ön ad türü verilmez (her ön ad ölçülmemiş görünür) (MUTBAKIM 2026-11-20: 07d81e8 kuralı measured_pre_name_confidence'a taşıdı; strateji artık pre_name_strategy(meta))",
       "module": "karadul/reconstruction/c_namer.py",
       "test": "tests/test_p12a_on_ad_guveni.py::test_on_ad_turune_gore_guven_ve_ad_degismez",
-      "find": "\"strategy\": strategy, \"pre_name_kind\": kind,",
-      "replace": "\"strategy\": strategy, \"pre_name_kind\": None,"
+      "find": "\"strategy\": pre_name_strategy(meta), \"pre_name_kind\": kind,",
+      "replace": "\"strategy\": pre_name_strategy(meta), \"pre_name_kind\": (None),"
     },
     {
       "id": "p12a_kayit_float_zorla",

@@ -64,3 +64,8 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
   - Yeni kilit: `tests/test_mutbakim_p13a.py::test_ad04_olculmus_on_ad_bindiff_ile_iki_kaynak_sayilmaz` — aynı senaryo gnulib künyeli (ölçülmüş) ön adla: `exact_multi == 0`, `name_merger_total == 1`, harita `{"FUN_00104000": "ref_ad"}`. Bugünkü kodda yeşil, mutantla kırmızı. Tanımın testi buna çevrildi.
 - **Aynı uzunluk (`.pyc` tuzağı) düzeltmesi:** `p13a_ad06_cift_ad` (`naming_map.get(orig)` → `naming_map.get(orig, None)`), `p13a_ad09_ihrac_dali` (`return bool(` → `return not not (`, eşdeğer). Niyet aynı; ikisi de öldü.
 - Kaldırılan mutant yok.
+
+### p12a — önce 14 öldü / 0 hayatta / 1 hata → sonra 15 / 0 / 0 (15 mutant)
+
+- **Hata: `p12a_kanal_turu_yok`** (AD-07: kanal anahtarına ön ad türü verilmez). Kodu değiştiren commit: `07d81e8` (ön ad güveni tek kuraldan): `{"strategy": strategy, "pre_name_kind": kind, …}` sözlüğü `c_namer.measured_pre_name_confidence(meta)`'ya taşındı, strateji `pre_name_strategy(meta)`. Niyet aynı (`pre_name_kind` → `None`); eski `replace` özgünüyle aynı uzunluktaydı (`kind` / `None`), şimdi `(None)`. c_namer'ın ön ad yolu (`pre_conf = measured_pre_name_confidence(meta)`) bu işlevi kullanıyor; test aynı. Öldü.
+- Kaldırılan mutant yok; yeni test yok.
