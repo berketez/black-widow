@@ -14,9 +14,9 @@ Geçici dosyalar: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/`.
 | Mutasyon (≥ 10) | 19 / 19 öldü | a6af752, 29fce0f |
 | Yama `PUV1__config.py.patch` | yazıldı; yamalı kopyada kayıt testleri yeşil | b00fae8 |
 | Rebase (main 8844a08) + 11 dilim kabulü + docker-cli GT | yapıldı: 11 / 11 satır farkı 0; docker-cli 35 048 / 35 048 | 29fce0f |
-| Okuyucu dondurma + docker-compose SINAMA GT | dondurma 29fce0f; SINAMA 90 077 / 90 077 | (bu commit) |
+| Okuyucu dondurma + docker-compose SINAMA GT | dondurma 29fce0f; SINAMA 90 077 / 90 077 | af38ab8 |
 | 7 süre ve bellek | ölçüldü (yük altında) | 29fce0f |
-| Tam takım | bekliyor | — |
+| Tam takım | 10 660 geçti / 11 atlandı / 1 kaldı (beklenen: yama ister) | (bu commit) |
 
 ## Kalem 1–4, 6: okuyucu (`karadul/analyzers/ustveri/go_pclntab.py`)
 
@@ -242,3 +242,33 @@ doğru 90 077, yanlış 0, GT'siz 0; yazım: birebir 89 699, `.abi0` eki 360, or
 Çalışma verisi bağları kuruldu (`sigs`, `vendor`, `scripts/node_modules`, `signatures*.json`,
 `sigs_macos_system.json`, `signatures.lmdb`; commit'lenmez). Ön koşuda (bağlar yokken)
 `test_deobfuscator::test_extract_webpack_modules` `@babel/parser` bulunamadığı için kalmıştı.
+
+## Tam takım (11:16–11:27, yük altında)
+
+Worktree kökünden, yamasız dal (`a6579e6`): **10 660 geçti / 11 atlandı / 1 kaldı** (152 seçim dışı,
+639 sn). Kalan tek test `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate`: "kayıtta ama
+okunuyor: binary_reconstruction.enable_go_metadata_recovery → go_metadata_recovery.py" — bu paketin
+beklenen sonucu; `yamalar/PUV1__config.py.patch` uygulanınca geçer (yamalı kopyada 278 geçti / 1
+atlandı / 0 kaldı, yukarıda). Başka kalan yok.
+
+## Özet: hipotezler
+
+| | Hüküm | Sayı |
+|---|---|---|
+| H1 | TUTTU | 11 / 11 dilim, satır farkı 0 |
+| H2 | TUTTU | 125 125 / 125 125 (docker-cli 35 048 keşif, docker-compose 90 077 sınama; Wilson alt 0,99989 / 0,999957) |
+| H3 | TUTTU | 9 / 9 dilimde textStart 0, `moduledata.text`; başlık tabanıyla doğru adres 0 |
+| H4 | TUTTU | 11 / 11 `calisti` |
+| H5 | TUTTU (bu paketin E kopyasıyla) | K4 ihlali gh 173, limactl 163 (taban 1); ama %1 eşiğinin altında → durum `calisti` (fonksiyon başına `pcsp_kapsama` eklendi) |
+| H6 | TUTTU | 5 / 5 `veri_yok`, ad 0 (+ Mac htop / tmux) |
+
+## Ana oturum için
+
+- Yama: `docs/arge/2026-11-20_dalga0/yamalar/PUV1__config.py.patch` (birleştirmede uygulanmalı; yoksa
+  `test_inert_registry_is_accurate` kırmızı).
+- Adım Faz 1 listesine eklenmedi (P-ÜV6). Ad yazmaz.
+- P-ÜV6 / P-ÜV7: `pcsp_kapsama` ∈ {`kisa`, `tasan`} olan fonksiyona ad yazılmamalı (E bozmasında
+  ~170 yanlış ad ikili düzeyindeki eşikten geçiyor).
+- Risk: Go 1.18–1.19 `_func` düzeni doğrulanmadı (yukarıda).
+
+## PAKET BİTTİ
