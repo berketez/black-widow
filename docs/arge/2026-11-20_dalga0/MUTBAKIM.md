@@ -55,3 +55,12 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
 - **Hata: `hat_kunye_c_namera_gecmez`, `hat_kunye_yokken_de_gecer`** (`_feedback_naming.py`, ön ad künyesinin c_namer'a geçişi). Kodu değiştiren commit: `1811b8d` (AD-12, K-3 A5: ölü paralel ad koşucusu silindi). Künye iletimi eskiden paralel koşucunun `else` dalındaydı; dal silinince satırlar 4 boşluk sola kaydı. Niyet ve `replace` aynı, yalnız girinti güncellendi. İkisi de öldü.
 - **Hata: `hat_merger_esik_uygulanmaz`** (`_feedback_naming_merger.py`, NameMerger çıktısına ürün eşiği). Kodu değiştiren commit: `2450c0e` (AD-04 / AD-05): eşik artık c_namer kararlarıyla birleşmiş `final_naming_map`'e değil, birleştiricinin kendi haritasına (`merged_map`) uygulanıyor. Mutant aynı çağrıda eşiği `None` yapar. Öldü.
 - Kaldırılan mutant yok; yeni test yok.
+
+### p13a — önce 21 öldü / 1 hayatta / 0 hata → sonra 22 / 0 / 0 (22 mutant)
+
+- **Hayatta: `p13a_ad04_on_ad_iki_kez` — karar: GERÇEK TEST AÇIĞI (test fikstürü bayat).**
+  - Mutant (`_feedback_naming_candidates.collect_candidates`): `if not pre_names_via_c_namer:` → `if pre_names_via_c_namer or True:`; c_namer koşmuşken ön ad (`binary_extractor`) birleştiriciye ikinci kez girer (AD-04). Davranış hâlâ üründe ve anlamlı.
+  - Kanıt: `07d81e8` (P12c kalem 5 / AD-07) `_add_binary_extractor`'a ölçülmüş güven kuralını koydu: künyesiz (ölçülmemiş kanaldaki) ön ad birleştiriciye hiç girmez. Hedef test `test_ad04_bindiff_adi_on_ad_olarak_ikinci_kez_sayilmaz` künyesiz ön ad (`_ctx()` künyesiz) kullanıyor → mutantla da ön ad aday olmuyor, test boşa geçiyor. Aynı dosyadaki öbür testler o commit'te `_gnulib_kunyesi` ile güncellenmiş, bu test atlanmış.
+  - Yeni kilit: `tests/test_mutbakim_p13a.py::test_ad04_olculmus_on_ad_bindiff_ile_iki_kaynak_sayilmaz` — aynı senaryo gnulib künyeli (ölçülmüş) ön adla: `exact_multi == 0`, `name_merger_total == 1`, harita `{"FUN_00104000": "ref_ad"}`. Bugünkü kodda yeşil, mutantla kırmızı. Tanımın testi buna çevrildi.
+- **Aynı uzunluk (`.pyc` tuzağı) düzeltmesi:** `p13a_ad06_cift_ad` (`naming_map.get(orig)` → `naming_map.get(orig, None)`), `p13a_ad09_ihrac_dali` (`return bool(` → `return not not (`, eşdeğer). Niyet aynı; ikisi de öldü.
+- Kaldırılan mutant yok.

@@ -31,7 +31,7 @@
       "module": "karadul/reconstruction/binary_name_extractor.py",
       "test": "tests/test_p13a_faz1_secim.py::test_boru_hatti_cikaricinin_secimini_on_ad_yapar",
       "find": "                del naming_map[orig]\n",
-      "replace": "                naming_map.get(orig)\n"
+      "replace": "                naming_map.get(orig, None)\n"
     },
     {
       "id": "p13a_ad09_dizgi_kanali_yok",
@@ -47,7 +47,7 @@
       "module": "karadul/reconstruction/binary_name_extractor.py",
       "test": "tests/test_p13a_dizgi_kanali.py::test_dizgi_kanali_siniflamasi",
       "find": "    return not (name.source == \"debug_string\"\n",
-      "replace": "    return bool(name.source == \"debug_string\"\n"
+      "replace": "    return not not (name.source == \"debug_string\"\n"
     },
     {
       "id": "p13a_ad09_secime_girer",
@@ -59,9 +59,9 @@
     },
     {
       "id": "p13a_ad04_on_ad_iki_kez",
-      "desc": "AD-04: c_namer koşmuşken ön ad ve c_namer adı yine iki kaynak olarak girer",
+      "desc": "AD-04: c_namer koşmuşken ön ad ve c_namer adı yine iki kaynak olarak girer (MUTBAKIM 2026-11-20: 07d81e8 sonrası künyesiz ön ad birleştiriciye hiç girmiyor, eski test künyesiz ön adla bu kapıyı sınamıyordu; test ölçülmüş kanaldaki ön adla yeni dosyada)",
       "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
-      "test": "tests/test_p13a_birlestirici.py::test_ad04_bindiff_adi_on_ad_olarak_ikinci_kez_sayilmaz",
+      "test": "tests/test_mutbakim_p13a.py::test_ad04_olculmus_on_ad_bindiff_ile_iki_kaynak_sayilmaz",
       "find": "    if not pre_names_via_c_namer:\n",
       "replace": "    if pre_names_via_c_namer or True:\n"
     },
