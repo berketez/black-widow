@@ -85,8 +85,60 @@ def isleri_topla(taban_debian: Path, taban_mac: Path) -> list[dict]:
     return isler
 
 
+# İmza veritabanının künyesi, ürün ağacının kendi çözücüsüyle (OLCUM kalem 6): ürün hangi
+# veritabanını açacaksa (``karadul.config.resolve_sig_lmdb_path``: ayar → KARADUL_SIG_LMDB_PATH →
+# veri kökündeki signatures.lmdb → ~/.karadul) onun yolu ve ``meta`` kayıtları. Açılış salt
+# okur ve kilitsiz (ürünün salt okur açılışı gibi); bütünlük karması hesaplanmaz. Okunamayan alan
+# uydurulmaz: None kalır, neden ``hata``'ya yazılır.
+IMZA_VT_META = ("schema_version", "build_id", "source_hash", "build_time")
+_IMZA_VT_YOKLAMA = r"""
+import json
+from pathlib import Path
+o = {"yol": None, "kaynak": None, "schema_version": None, "build_id": None, "source_hash": None,
+     "build_time": None, "hata": None}
+try:
+    from karadul.config import resolve_data_root, resolve_sig_lmdb_path
+    kok, _ = resolve_data_root()
+    yol, kaynak = resolve_sig_lmdb_path(None, kok)
+    o["yol"], o["kaynak"] = str(Path(yol).expanduser().resolve()), kaynak
+    import lmdb
+    env = lmdb.open(o["yol"], readonly=True, lock=False, subdir=True, max_dbs=8, readahead=False)
+    try:
+        db = env.open_db(b"meta", create=False)
+        with env.begin(db=db) as txn:
+            for k in ("schema_version", "build_id", "source_hash", "build_time"):
+                v = txn.get(k.encode("utf-8"))
+                o[k] = bytes(v).decode("utf-8") if v else None
+    finally:
+        env.close()
+except Exception as e:
+    o["hata"] = f"{type(e).__name__}: {e}"
+print(json.dumps(o, ensure_ascii=False))
+"""
+
+
+def imza_vt_kunyesi(agac: Path) -> dict:
+    """Ağacın ürününün açacağı imza veritabanı: yol, yolun kaynağı ve şema künyesi (``meta``).
+
+    Ürünün koşu ortamıyla aynı ortamda (``PYTHONPATH`` = ağaç, cwd = ağaç) ayrı süreçte okunur.
+    Hiçbir durumda hata fırlatmaz; okunamazsa alanlar None, neden ``hata``'da.
+    """
+    ortam = dict(os.environ, PYTHONPATH=str(agac))
+    try:
+        r = subprocess.run([sys.executable, "-c", _IMZA_VT_YOKLAMA], cwd=agac, env=ortam,
+                           capture_output=True, text=True, timeout=120)
+        satir = (r.stdout.strip().splitlines() or [""])[-1]
+        return json.loads(satir)
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
+        return {"yol": None, "kaynak": None, **{k: None for k in IMZA_VT_META},
+                "hata": f"yoklama çalışmadı: {type(e).__name__}: {e}"}
+
+
 def agac_kunyesi(agac: Path) -> dict:
-    """Ağacın commit'i, kirli dosyaları ve ``karadul``'un gerçekten oradan yüklendiği."""
+    """Ağacın commit'i, kirli dosyaları ve ``karadul``'un gerçekten oradan yüklendiği.
+
+    OLCUM kalem 6: ``imza_vt`` alanı eklendi (``imza_vt_kunyesi``); var olan alanlar ve imza aynı.
+    """
     ortam = dict(os.environ, PYTHONPATH=str(agac))
     yoklama = subprocess.run(
         [sys.executable, "-c", "import karadul; print(karadul.__file__); print(karadul.__version__)"],
@@ -100,7 +152,8 @@ def agac_kunyesi(agac: Path) -> dict:
     kirli = _git(agac, "status", "--porcelain", "--untracked-files=no")
     return {"agac": str(agac), "commit": _git(agac, "rev-parse", "HEAD"),
             "kirli": kirli.splitlines() if kirli else [],
-            "karadul_dosyasi": str(paket), "karadul_surumu": yoklama[1]}
+            "karadul_dosyasi": str(paket), "karadul_surumu": yoklama[1],
+            "imza_vt": imza_vt_kunyesi(agac)}
 
 
 def calistir(is_: dict, agac: Path, kok: Path, zaman_asimi: int) -> dict:
@@ -158,6 +211,8 @@ def main(argv=None) -> int:
              "taban_debian": str(a.taban_debian), "taban_mac": str(a.taban_mac),
              "paralel": a.paralel, "zaman_asimi_sn": a.zaman_asimi,
              "PYTHONHASHSEED": os.environ.get("PYTHONHASHSEED"),
+             # OLCUM kalem 6: koşunun önbellek dizini (None: ortamda yok, ürünün öntanımlısı)
+             "KARADUL_CACHE_DIR": os.environ.get("KARADUL_CACHE_DIR"),
              "tabandaki_is": toplam, "secilen_is": len(isler), "bekleyen_is": len(bekleyen),
              "baslangic": _simdi()}
     kunye_yolu = kok / "kosu_kunyesi.json"
@@ -180,7 +235,9 @@ def main(argv=None) -> int:
     kunye.update({"bitis": _simdi(), "sonuclar": sonuclar, "bitmeyen": bitmeyen,
                   "agac_bitiste": son,
                   "agac_degisti": (son["commit"], son["kirli"]) != (kunye["agac"]["commit"],
-                                                                   kunye["agac"]["kirli"])})
+                                                                   kunye["agac"]["kirli"]),
+                  # OLCUM kalem 6: koşu sırasında imza veritabanı (yol ya da şema künyesi) değişti mi
+                  "imza_vt_degisti": son.get("imza_vt") != kunye["agac"].get("imza_vt")})
     kunye_yolu.write_text(json.dumps(kunye, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     print(f"[kos] bitti: {len(sonuclar) - len(bitmeyen)} tamam, {len(bitmeyen)} bitmeyen", flush=True)
     return 1 if bitmeyen else 0

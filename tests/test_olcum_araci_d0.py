@@ -266,3 +266,95 @@ def test_read_elf_info_stapsdt_notu_build_id_sanilmaz(tmp_path):
     # yalnız stapsdt notu varsa BuildID yok (uydurulmaz)
     tek = _iki_notlu_elf(tmp_path / "tek.elf", [(b".note.stapsdt", _not(b"stapsdt\0", 3, STAPSDT))])
     assert f1.read_elf_info(tek)["build_id"] is None
+
+
+# --------------------------------------------------------------------------------------------
+# Kalem 6 — urun_kos künyesi: KARADUL_CACHE_DIR ve imza veritabanının şeması
+
+uk = _yukle("urun_kos_d0_under_test", "urun_kos.py")
+
+_SAHTE_CONFIG = '''
+import os
+from pathlib import Path
+def resolve_data_root():
+    return Path(__file__).resolve().parent.parent, "package"
+def resolve_sig_lmdb_path(config_path=None, data_root=None):
+    return Path(data_root) / "signatures.lmdb", "data_root:signatures.lmdb"
+'''
+
+
+def _sahte_agac(kok: Path, meta: dict | None, config: str = _SAHTE_CONFIG) -> Path:
+    """Ürün yerine geçen en küçük ağaç: ``karadul`` paketi (sürüm + çözücü) ve gerçek bir LMDB."""
+    import lmdb
+    (kok / "karadul").mkdir(parents=True)
+    (kok / "karadul" / "__init__.py").write_text('__version__ = "9.9.9"\n')
+    (kok / "karadul" / "config.py").write_text(config)
+    if meta is not None:
+        env = lmdb.open(str(kok / "signatures.lmdb"), max_dbs=8, subdir=True, map_size=1 << 20)
+        db = env.open_db(b"meta")
+        with env.begin(db=db, write=True) as txn:
+            for k, v in meta.items():
+                txn.put(k.encode(), v.encode())
+        env.close()
+    return kok
+
+
+def test_imza_vt_kunyesi_urun_cozucusuyle(tmp_path):
+    agac = _sahte_agac(tmp_path / "agac", {"schema_version": "2", "build_id": "s2-deneme"})
+    k = uk.imza_vt_kunyesi(agac)
+    assert k == {"yol": str((agac / "signatures.lmdb").resolve()), "kaynak": "data_root:signatures.lmdb",
+                 "schema_version": "2", "build_id": "s2-deneme", "source_hash": None, "build_time": None,
+                 "hata": None}
+    # şema 1 (künyesiz) veritabanı: alan yok → None, uydurulmaz
+    eski = _sahte_agac(tmp_path / "eski", {"build_id": "eski"})
+    assert uk.imza_vt_kunyesi(eski)["schema_version"] is None
+    # çözücüsü olmayan eski ürün: hata yazılır, alanlar None
+    cozucusuz = _sahte_agac(tmp_path / "cozucusuz", None, config="X = 1\n")
+    k = uk.imza_vt_kunyesi(cozucusuz)
+    assert k["yol"] is None and k["schema_version"] is None and "ImportError" in k["hata"]
+
+
+def test_agac_kunyesi_imzasi_ve_alanlari(tmp_path):
+    """``agac_kunyesi(agac)`` imzası ve var olan alanlar aynı; yalnız ``imza_vt`` eklendi."""
+    import inspect
+    import subprocess
+    assert list(inspect.signature(uk.agac_kunyesi).parameters) == ["agac"]
+    agac = _sahte_agac(tmp_path / "agac", {"schema_version": "2"})
+    for ad in uk.CALISMA_VERISI:
+        if not (agac / ad).exists():
+            (agac / ad).write_text("")
+    git = ["git", "-C", str(agac), "-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run(git[:3] + ["init", "-q"], check=True)
+    subprocess.run(git + ["add", "karadul"], check=True)
+    subprocess.run(git + ["commit", "-q", "-m", "t"], check=True)
+    k = uk.agac_kunyesi(agac)
+    assert set(k) == {"agac", "commit", "kirli", "karadul_dosyasi", "karadul_surumu", "imza_vt"}
+    assert k["karadul_surumu"] == "9.9.9" and k["kirli"] == [] and k["imza_vt"]["schema_version"] == "2"
+
+
+def test_kosu_kunyesi_onbellek_ve_imza_vt_degisimi(tmp_path, monkeypatch):
+    cagri = []
+
+    def sahte_kunye(agac):
+        cagri.append(agac)
+        return {"agac": str(agac), "commit": "c", "kirli": [], "karadul_dosyasi": "k", "karadul_surumu": "s",
+                "imza_vt": {"schema_version": "2" if len(cagri) == 1 else "1"}}
+    monkeypatch.setattr(uk, "agac_kunyesi", sahte_kunye)
+    monkeypatch.setattr(uk, "isleri_topla", lambda d, m: [])
+    monkeypatch.setenv("KARADUL_CACHE_DIR", str(tmp_path / "onbellek"))
+    kok = tmp_path / "kok"
+    assert uk.main(["--agac", str(tmp_path), "--kok", str(kok)]) == 0
+    k = json.loads((kok / "kosu_kunyesi.json").read_text(encoding="utf-8"))
+    assert k["KARADUL_CACHE_DIR"] == str(tmp_path / "onbellek")
+    assert k["agac"]["imza_vt"] == {"schema_version": "2"} and k["imza_vt_degisti"] is True
+    assert k["agac_degisti"] is False                    # var olan alan: yalnız commit + kirli
+    for alan in ("amac", "ghidra", "python", "komut", "PYTHONHASHSEED", "tabandaki_is", "bitmeyen"):
+        assert alan in k
+    # ortamda yoksa None (uydurulmaz); değişmeyen veritabanı → False
+    cagri.clear()
+    monkeypatch.delenv("KARADUL_CACHE_DIR")
+    monkeypatch.setattr(uk, "agac_kunyesi", lambda agac: {"commit": "c", "kirli": [], "karadul_dosyasi": "k",
+                                                          "imza_vt": {"x": 1}})
+    assert uk.main(["--agac", str(tmp_path), "--kok", str(kok)]) == 0
+    k = json.loads((kok / "kosu_kunyesi.json").read_text(encoding="utf-8"))
+    assert k["KARADUL_CACHE_DIR"] is None and k["imza_vt_degisti"] is False

@@ -128,6 +128,46 @@
    "test": "tests/test_olcum_araci_d0.py::test_read_elf_info_stapsdt_notu_build_id_sanilmaz",
    "find": "if note[\"n_type\"] == \"NT_GNU_BUILD_ID\" and note[\"n_name\"] == \"GNU\":",
    "replace": "if note[\"n_type\"] == \"NT_GNU_BUILD_ID\":"
+  },
+  {
+   "id": "k6_onbellek_yazilmaz",
+   "desc": "kalem 6: künyeye KARADUL_CACHE_DIR yazılmaz",
+   "module": "scripts/measurement/urun_kos.py",
+   "test": "tests/test_olcum_araci_d0.py::test_kosu_kunyesi_onbellek_ve_imza_vt_degisimi",
+   "find": "\"KARADUL_CACHE_DIR\": os.environ.get(\"KARADUL_CACHE_DIR\"),",
+   "replace": "\"KARADUL_CACHE_DIR\": None,"
+  },
+  {
+   "id": "k6_agac_kunyesinde_imza_vt_yok",
+   "desc": "kalem 6: agac_kunyesi imza veritabanı künyesini yazmaz",
+   "module": "scripts/measurement/urun_kos.py",
+   "test": "tests/test_olcum_araci_d0.py::test_agac_kunyesi_imzasi_ve_alanlari",
+   "find": ",\n            \"imza_vt\": imza_vt_kunyesi(agac)}",
+   "replace": "}"
+  },
+  {
+   "id": "k6_meta_okunmaz",
+   "desc": "kalem 6: şema künyesi (meta) okunmaz, hep None",
+   "module": "scripts/measurement/urun_kos.py",
+   "test": "tests/test_olcum_araci_d0.py::test_imza_vt_kunyesi_urun_cozucusuyle",
+   "find": "o[k] = bytes(v).decode(\"utf-8\") if v else None",
+   "replace": "o[k] = None"
+  },
+  {
+   "id": "k6_vt_degisimi_gorulmez",
+   "desc": "kalem 6: koşu sırasında imza veritabanının değişmesi künyeye girmez",
+   "module": "scripts/measurement/urun_kos.py",
+   "test": "tests/test_olcum_araci_d0.py::test_kosu_kunyesi_onbellek_ve_imza_vt_degisimi",
+   "find": "\"imza_vt_degisti\": son.get(\"imza_vt\") != kunye[\"agac\"].get(\"imza_vt\")",
+   "replace": "\"imza_vt_degisti\": False"
+  },
+  {
+   "id": "k6_yoklama_urun_agacindan_degil",
+   "desc": "kalem 6: imza VT yoklaması ürün ağacının değil kurulu karadul'un çözücüsüyle yapılır",
+   "module": "scripts/measurement/urun_kos.py",
+   "test": "tests/test_olcum_araci_d0.py::test_imza_vt_kunyesi_urun_cozucusuyle",
+   "find": "[sys.executable, \"-c\", _IMZA_VT_YOKLAMA], cwd=agac, env=ortam,",
+   "replace": "[sys.executable, \"-c\", _IMZA_VT_YOKLAMA], cwd=\"/\", env=dict(os.environ, PYTHONPATH=\"\"),"
   }
  ]
 }
