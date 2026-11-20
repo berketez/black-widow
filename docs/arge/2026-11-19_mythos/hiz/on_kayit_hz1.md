@@ -46,3 +46,12 @@ JSON kıyasında (kökten noktalı yol; dosyadan bağımsız):
 ## Süre oranı (plan kabulü "≤ 1,01")
 
 Gündüz, makine yüklüyken ölçülmez (ORTAK_D0 §3). Bu pakette "yapı gereği" yazılır: eklenen iş yalnız `time.monotonic()` çağrıları ve küçük sözlük yazımıdır; sayı ölçülmez, uydurulmaz. Ölçüm gece HZ-0 / ÖLÇ-1 koşusunda.
+
+## Ek (2026-11-20 08:35; kod commit'inden sonra, hiçbir karşılaştırma yapılmadan önce)
+
+Ana oturum tabanın A/A tekrarını koşuyor: aynı ağaç (`urun-b6aceb9`), aynı komut ve sıra, kök `~/karadul_olcum/runs/dalga0-2026-11-20/s8_taban_b6aceb9_AA/`. Bu ek yalnız sınıflamayı belirler; beklentiler, eşikler ve hariç alan listesi değişmez.
+
+- `s8_esitlik.py` iki ayrı tablo yazar: **T-AA** = taban ↔ A/A (koşudan koşuya belirlenimsizlik; kodun etkisi değil), **T-HZ1** = taban ↔ sonra.
+- Fark birimi: JSON dosyalarında (dosya, noktalı alan yolu; liste sırası `[]` ile genellenir), `.c` ve `naming_map.json`'da dosya.
+- T-HZ1'deki bir fark T-AA'da da (aynı ikili, aynı birim) görülüyorsa "belirlenimsizlik kümesinde" diye ayrı satırda adıyla yazılır; T-AA'da görülmeyen fark "HZ-1'e yüklenebilir" sayılır.
+- H1 / H2 hükmü: "HZ-1'e yüklenebilir" fark yoksa tuttu; belirlenimsizlik kümesindeki farklar da ayrıca sayılır ve adıyla raporlanır (hariç listesine eklenmez). Belirlenimsizlik kümesindeki bir alan HZ-1'in de etkileyebileceği bir alansa bu ayrıca yazılır (ayrılamadı).
