@@ -606,6 +606,7 @@ _BIND_DO_BIND_ADD_ADDR_ULEB = 0xA0
 _BIND_DO_BIND_ADD_ADDR_IMM_SCALED = 0xB0
 _BIND_DO_BIND_ULEB_TIMES_SKIPPING_ULEB = 0xC0
 _U64 = (1 << 64) - 1
+_BAG_AZAMI = 1 << 22  # LC_DYLD_INFO bağ yeri üst sınırı (bozuk sayaçla sonsuz yürüyüş yok)
 
 
 def _ad_coz(b: bytes) -> str:
@@ -999,6 +1000,7 @@ class MachO64Goruntu(_DosyaGoruntusu):
                         if boy:
                             self._bag_kodlari_oku(ofs, boy, tembel)
                 except (struct.error, IndexError, ValueError) as exc:
+                    self._dyld_baglar = {}  # yarım okunmuş bağ listesine güvenilmez
                     self._durum_yaz(KISIM_DUZELTME, DURUM_HATA, f"LC_DYLD_INFO bağları okunamadı: {exc}")
                 else:
                     if self._zd_cmd is None:
@@ -1010,7 +1012,7 @@ class MachO64Goruntu(_DosyaGoruntusu):
         if d is None:
             raise ValueError("bağ işlem kodları dosya dışında")
         gb = self.gosterici_boyutu
-        sinir = max(1, sum(b["vmsize"] for b in self.bolutler) // gb)
+        sinir = min(_BAG_AZAMI, max(1, sum(b["vmsize"] for b in self.bolutler) // gb))
         say = 0
         ad = ""
         ek = 0

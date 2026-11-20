@@ -76,8 +76,9 @@ def _zincir_veri(pointer_format: int = 6) -> bytes:
 
 
 def macho_kur(pointer_format: int = 6, page_start: int = 0, cputype: int = 0x0100000C,
-              cpusubtype: int = 0, dyld_info: bool = False) -> bytes:
+              cpusubtype: int = 0, dyld_info: bool = False, bag_kodlari: bytes | None = None) -> bytes:
     """Tek zincirli (iki yeniden konumlama + bir bağ) ya da LC_DYLD_INFO'lu sentetik Mach-O."""
+    kodlar = _DI_KODLAR if bag_kodlari is None else bag_kodlari
     text = _seg(b"__TEXT", MACHO_TABAN, 0x4000, 0, 0x4000,
                 [_bolum(b"__text", b"__TEXT", MACHO_TABAN + TEXT_OFS, 0x300, TEXT_OFS, 0x80000400)])
     data = _seg(b"__DATA", MACHO_TABAN + 0x4000, 0x4000, DATA_OFS, 0x4000,
@@ -89,7 +90,7 @@ def macho_kur(pointer_format: int = 6, page_start: int = 0, cputype: int = 0x010
     fs = struct.pack("<IIII", 0x26, 16, FS_OFS, len(FS_BLOB))
     symtab = struct.pack("<IIIIII", 0x2, 24, SYM_OFS, 2, STR_OFS, 16)
     if dyld_info:
-        bag = struct.pack("<IIIIIIIIIIII", 0x80000022, 48, 0, 0, DI_OFS, len(_DI_KODLAR),
+        bag = struct.pack("<IIIIIIIIIIII", 0x80000022, 48, 0, 0, DI_OFS, len(kodlar),
                           0, 0, 0, 0, 0, 0)
     else:
         bag = struct.pack("<IIII", 0x80000034, 16, ZD_OFS, len(_zincir_blob()))
@@ -103,7 +104,7 @@ def macho_kur(pointer_format: int = 6, page_start: int = 0, cputype: int = 0x010
         veri = bytearray(0x4000)
         struct.pack_into("<Q", veri, 0, MACHO_TABAN + 0x1000)  # eski düzen: ham sanal adres
         d[DATA_OFS:DATA_OFS + 0x4000] = veri
-        d[DI_OFS:DI_OFS + len(_DI_KODLAR)] = _DI_KODLAR
+        d[DI_OFS:DI_OFS + len(kodlar)] = kodlar
     else:
         d[DATA_OFS:DATA_OFS + 0x4000] = _zincir_veri(pointer_format)
         z = _zincir_blob(pointer_format, page_start)
@@ -227,6 +228,14 @@ class TestMachO:
         assert g.gosterici(R0) == MACHO_TABAN + 0x1000  # ham sanal adres
         o = g.ozet()
         assert (o["zincirli_duzeltme"], o["duzeltme_yeri"], o["dyld_info_bag"]) == (False, 0, 1)
+
+    def test_dyld_info_bag_sayisi_sinirli(self):
+        # "kez" sayacı 2**40: bozuk / düşman dosyada sonsuz yürüyüş yok, durum hata
+        kodlar = bytes([0x11, 0x40]) + b"_x\0" + bytes([0x71, 0x00, 0xC0]) + bytes([0x80] * 5 + [0x40]) \
+            + bytes([0x00, 0x00])
+        g = baytlardan(macho_kur(dyld_info=True, bag_kodlari=kodlar))
+        assert g.dyld_info_baglari() == {}
+        assert g.durum["duzeltme"]["durum"] == "hata"
 
     def test_zincir_dosya_disina_tasarsa_hata_istisna_yok(self):
         d = bytearray(macho_kur())
@@ -484,6 +493,26 @@ def test_kesik_dosyada_istisna_yok(kur):
                   0x150, 0x420, 0x4A0, DATA_OFS + 0x8, LINK_OFS, ZD_OFS + 30, len(tam) - 1):
         try:
             g = baytlardan(tam[:kesim])
+        except GoruntuHatasi:
+            continue
+        _hepsini_cagir(g)
+
+
+@pytest.mark.parametrize("kur", [lambda: macho_kur(), lambda: macho_kur(dyld_info=True),
+                                 lambda: elf_kur("rela"), lambda: elf_kur("relr"), lambda: pe_kur()])
+def test_rastgele_bozulmada_istisna_yok(kur):
+    """Başlık / tablo bölgesinde belirlenimci rastgele bayt bozma: yalnız GoruntuHatasi serbest."""
+    import random
+
+    tam = kur()
+    rnd = random.Random(20261120)
+    for _ in range(150):
+        d = bytearray(tam)
+        for _k in range(6):
+            i = rnd.randrange(0, min(len(d), 0x800)) if rnd.random() < 0.7 else rnd.randrange(len(d))
+            d[i] = rnd.randrange(256)
+        try:
+            g = baytlardan(bytes(d))
         except GoruntuHatasi:
             continue
         _hepsini_cagir(g)
