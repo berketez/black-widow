@@ -128,6 +128,30 @@
    "test": "tests/test_puv1_go_pclntab.py::test_go_degil_veri_yok",
    "find": "                    if self._baslik_akli(blob[pos:pos + PCHEADER_BOYU]):\n",
    "replace": "                    if True or self._baslik_akli(blob[pos:pos + PCHEADER_BOYU]):\n"
+  },
+  {
+   "id": "puv1_k4_fonksiyon_durumu",
+   "desc": "kısa pcsp'li fonksiyon başına sonuç 'tam' yazılır",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_komsu_func_takasi_k4_ihlal_verir",
+   "find": "            f.pcsp_kapsama = PCSP_KISA\n",
+   "replace": "            f.pcsp_kapsama = PCSP_TAM\n"
+  },
+  {
+   "id": "puv1_bellekte_yok_sayilir",
+   "desc": "yüklenmeyen (bellekte yanlış) bölüm de taranır",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv1_go_pclntab.py::test_yuklenmeyen_bolum_atlanir",
+   "find": "for b in g.bolumler if getattr(b, \"bellekte\", True)]",
+   "replace": "for b in g.bolumler]"
+  },
+  {
+   "id": "puv1_adim_dilim_secmez",
+   "desc": "adım evrensel dosyada ürünün dilimini seçmez",
+   "module": "karadul/pipeline/steps/go_metadata_recovery.py",
+   "test": "tests/test_puv1_adim.py::test_goruntu_ac_urunun_dilimini_secer",
+   "find": "    return goruntu.baytlardan(veri, goruntu.urun_dilimi(veri), kaynak=str(yol))\n",
+   "replace": "    return goruntu.baytlardan(veri, None, kaynak=str(yol))\n"
   }
  ]
 }

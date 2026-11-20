@@ -8,14 +8,14 @@ Geçici dosyalar: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/`.
 
 | Kalem | Durum | Commit |
 |---|---|---|
-| Ön kayıt (`on_kayit_PUV1.md`) | yazıldı | 42fdd11 |
-| 1–4, 6 okuyucu + yapı denetimleri + karar + satır içi sayaç | yazıldı, sentetik 36 test yeşil | 800f930 |
-| 5 üretici adım | yazıldı, 16 test yeşil | 8c6cf58 |
-| Mutasyon (≥ 10) | 16 / 16 öldü | 2292aa5 |
-| Yama `PUV1__config.py.patch` | yazıldı; yamalı kopyada kayıt testleri yeşil | 8c6cf58 |
-| Rebase (PUV0 gelince) + 11 dilim kabulü + docker-cli GT | PUV0 mesajı bekleniyor | — |
+| Ön kayıt (`on_kayit_PUV1.md`) | yazıldı | d8814e5 (rebase öncesi 42fdd11) |
+| 1–4, 6 okuyucu + yapı denetimleri + karar + satır içi sayaç | yazıldı | 699c97f, 0f18f64, cb1cac4, 564163e, 2594bde |
+| 5 üretici adım | yazıldı | b00fae8, 2594bde |
+| Mutasyon (≥ 10) | 19 / 19 öldü | a6af752 + (bu commit) |
+| Yama `PUV1__config.py.patch` | yazıldı; yamalı kopyada kayıt testleri yeşil | b00fae8 |
+| Rebase (main 8844a08) + 11 dilim kabulü + docker-cli GT | yapıldı: 11 / 11 satır farkı 0; docker-cli 35 048 / 35 048 | (bu commit) |
 | Okuyucu dondurma + docker-compose SINAMA GT | bekliyor | — |
-| 7 süre ve bellek | bekliyor | — |
+| 7 süre ve bellek | ölçüldü (yük altında) | (bu commit) |
 | Tam takım | bekliyor | — |
 
 ## Kalem 1–4, 6: okuyucu (`karadul/analyzers/ustveri/go_pclntab.py`)
@@ -126,3 +126,98 @@ var mı diye bakılıyor). Aynı sürede tam takımın ön koşusu (rebase önce
 `test_inert_registry_is_accurate` dışarıda) arka planda; günlük
 `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/tam_takim_on.log`. Hazır betikler: `kabul.py`
 (11 dilim, GT, Go olmayan 5), `bozma_e.py` (H5 için E türü kopya). Tahmini bitiş: P-ÜV0'a bağlı.
+
+## Rebase ve kabul (11:11–11:14, yük altında: `uptime` yük ortalaması 4,97 / 5,69 / 6,28)
+
+- Ana oturum mesajıyla bir kez `git rebase main` (main `8844a08`, P-ÜV0 dahil): çatışma yok.
+  `karadul.analyzers.ustveri.goruntu.__file__` worktree yolunda. Rebase sonrası hash'ler: ön kayıt
+  `d8814e5`, okuyucu `699c97f`, adım + yama `b00fae8`, mutasyon `a6af752`.
+- Test dosyası gerçek `BellekGoruntu` / `Bag` / `Bolum`'a bağlandı, geçici sahte sınıf silindi
+  (`564163e`). Okuyucu ortak durumları (`calisti`, `veri_yok`, `desteklenmiyor`, `hata`)
+  `goruntu`'dan içe aktarır.
+- Kabul sırasında eklenen iki onarım (`2594bde`): fonksiyon başına K4 sonucu (`pcsp_kapsama`,
+  H5'te görülen açık için); adım evrensel dosyada ürünün dilimini (`goruntu.urun_dilimi`) açar
+  (Ollama evrensel → arm64, 10 601 giriş = ince dilim).
+
+### H1 — 11 dilim, (adres, ad, dosya) ↔ `$V/go/<ad>.tsv` → TUTTU (11 / 11, satır farkı 0)
+
+Betik `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/kabul.py dilim` (dilim başına ayrı süreç),
+çıktı `kabul_dilim2.jsonl`. Girdi `$V/hedef/<ad>` (araştırma kopyaları, ince dilim).
+
+| Dilim | Go | Giriş (biz / başvuru) | Satır farkı | Metin tabanı | Başlık textStart | K1 / K2 / K5 / K9 | K4 ihlal | K7 başka gövde içi | Okuma sn | Açma sn | Tepe RSS MB | sha256 (ilk 12) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| gh | go1.27.4 | 40 384 / 40 384 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 1 | 0 | 0,331 | 0,387 | 219,9 | `ca6c859f0ff8` |
+| limactl | go1.27.3 | 40 321 / 40 321 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 1 | 0 | 0,445 | 0,181 | 240,0 | `f0b05d095116` |
+| Ollama.arm64 | go1.26.0 | 10 601 / 10 601 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 0 | 0 | 0,135 | 0,175 | 132,6 | `7d5b1e847e1b` |
+| Ollama.x86_64 | go1.26.0 | 10 676 / 10 676 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 0 | x86_64: yok | 0,119 | 0,153 | 125,7 | `72edc4c1e8cf` |
+| ollama-cli.arm64 | go1.26.0 | 25 164 / 25 164 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 0 | 0 | 0,299 | 0,13 | 179,9 | `65484dbd099f` |
+| ollama-cli.x86_64 | go1.26.0 | 25 267 / 25 267 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 0 | x86_64: yok | 0,257 | 0,15 | 151,9 | `b1ecfea3e35a` |
+| colima | go1.26.4 | 13 082 / 13 082 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 0 | 0 | 0,14 | 0,056 | 110,5 | `55278419bd42` |
+| docker-brew | go1.27.4 | 35 749 / 35 749 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 0 | 0 | 0,389 | 0,151 | 211,3 | `cd9e0b149e44` |
+| arduino-cli | go1.27.3 | 29 711 / 29 711 | 0 | moduledata.text | 0x0 | 0 / 0 / 0 / 0 | 1 | 0 | 0,366 | 0,353 | 196,2 | `e47aa40da285` |
+| docker-cli | go1.24.4 | 35 049 / 35 049 | 0 | moduledata.text | 0x100001000 | 0 / 0 / 0 / 0 | 0 | 0 | 0,279 | 0,233 | 198,5 | `1b2b4029ea6b` |
+| docker-compose | go1.23.8 | 90 078 / 90 078 | 0 | moduledata.text | 0x100002d30 | 0 / 0 / 0 / 0 | 0 | 0 | 0,754 | 0,483 | 395,7 | `fc9b9e22a113` |
+
+- Giriş sayıları plandakiyle aynı: 40 384, 40 321, 10 601, 10 676, 25 164, 25 267, 13 082, 35 749,
+  29 711, 35 049, 90 078.
+- K1, K2, K5, K9 ihlali 11 dilimde 0; K7 "başka gövde içi hedef" arm64 dilimlerinde 0 (Duff içi
+  çağrı docker-cli 6 413, docker-compose 21 159; Go ≤ 1.25'te olağan); K0 11 / 11'de 0.
+- K4 ihlali en çok 1 (gh, limactl, arduino-cli; `kisa` 1) — eşik %1'in çok altında.
+- Süre (kalem 7): okuma 0,12–0,75 sn, açma (P-ÜV0) 0,06–0,48 sn; eşik dilim başına ≤ 10 sn → TUTTU.
+  Tepe bellek (süreç RSS, Python + dosya baytları + sha256 için ikinci okuma dahil; üst sınır):
+  93–396 MB. Yük altında ölçüldü; boş makine ölçümü değil.
+
+### H3 → TUTTU
+
+Go ≥ 1.26 olan 9 dilimde (gh, limactl, Ollama ×2, ollama-cli ×2, colima, docker-brew,
+arduino-cli) başlıktaki `textStart` 0x0; okuyucu `moduledata.text` kullanıyor. Başlığa güvenen
+taban (`textStart + entryoff`) bu 9 dilimde doğru adres 0 / N verir (ölçüldü: 0 / 40 384, 0 / 40 321,
+0 / 10 601, 0 / 10 676, 0 / 25 164, 0 / 25 267, 0 / 13 082, 0 / 35 749, 0 / 29 711); mutant
+`puv1_metin_tabani_basliktan` sentetikte öldü. Go 1.23 / 1.24 (docker-compose, docker-cli)
+başlıktaki `textStart` (`gosterici()` ile çözülmüş) = `moduledata.text`.
+
+### H4 → TUTTU
+
+Bozulmamış 11 dilimin hiçbiri `tutarsiz` vermedi (11 / 11 `calisti`).
+
+### H2 (keşif yarısı) — docker-cli ad = sembol → TUTTU
+
+`kabul.py gt docker-cli`: HEDEF setinin soyulmuş kopyası (`ustveri_set/docker-cli/bin`, sha256
+`4b6b084536de`), GT `gt/docker-cli.gt.json` (`ustveri_set.gt_oku`), eşitlik
+`ustveri_olc.kanal_olc` (Go yazım kuralları). Adlı giriş 35 048 / 35 049; doğru 35 048, yanlış 0,
+GT'siz 0; yazım: birebir 34 710, `.abi0` eki 328, orta nokta 10. Wilson %95 alt sınırı 0,99989 ≥
+0,999 → eşik TUTTU.
+
+### H5 → TUTTU (bu paketin bozma betiğiyle; P-ÜV7'nin kopyası yok)
+
+`bozma_e.py` (araştırma E kolunun aynısı, tohum 20261120): gh ve limactl'de 100 komşu çiftin
+ftab `funcoff`'u takas, `_func.entryOff` yeni girişe uyduruldu (kopyalar yalnız
+`PUV1/` dizininde). K4 ihlali gh 173 (taban 1; `kisa` 87, `tasan` 86), limactl 163 (taban 1) → > 0.
+**Ek bulgu:** ihlal fonksiyonların %0,43 / %0,40'ı, ikili düzeyindeki %1 eşiğinin altında: durum
+`calisti` ve takas edilen ~170 fonksiyonun yanlış adı listede kalıyor; K0 ve K1 bu bozmayı görmez
+(entryOff uyduruldu). Bu yüzden fonksiyon başına `pcsp_kapsama` alanı eklendi; ad kanalı (P-ÜV6) ve
+damga (P-ÜV7) `kisa` / `tasan` olan fonksiyona ad yazmamalı. Karar kuralı plan gereği değişmedi.
+
+### H6 → TUTTU (5 / 5; ek 2 Mac)
+
+`kabul.py gogo`, girdiler `~/karadul_olcum/runs/urun-onarim-a62f15e/<…>/raw/<ad>` (geliştirme seti):
+
+| İkili | Biçim | Durum | Ad | sha256 (ilk 12) |
+|---|---|---|---|---|
+| debian/htop | elf | veri_yok | 0 | `9b61e8bec98f` |
+| debian/tmux | elf | veri_yok | 0 | `0ad19f45a67c` |
+| debian/coreutils | elf | veri_yok | 0 | `0d5a5dd543ed` |
+| debian/zstd | elf | veri_yok | 0 | `77866a8bf262` |
+| mac/htop | macho | veri_yok | 0 | `50d172cee23c` |
+| mac/tmux | macho | veri_yok | 0 | `10fa041195a8` |
+| debian/ls | elf | veri_yok | 0 | `0c062cc32ec1` |
+
+(debian/coreutils = `cat`, debian/zstd = `pzstd`.) Adım uçtan uca (gerçek `goruntu`, sahte çalışma
+alanı): gh `calisti` 40 384; bayrak kapalı → `kapali`, yapıt yok; debian htop → `veri_yok`.
+
+## Okuyucu dondurma
+
+Dondurulan dosyalar (bu commit'ten sonra SINAMA ölçümüne dek değişmez):
+`karadul/analyzers/ustveri/go_pclntab.py` sha256 `8b1d38ff4dc1…`, `karadul/pipeline/steps/go_metadata_recovery.py`
+sha256 `804250083dcb…` (dondurma commit'i: bu commit). SINAMA (docker-compose) GT'sine bu commit'ten
+sonra bir kez bakılır.
