@@ -121,7 +121,7 @@ HATA_SAYACLARI = (
 )
 # bilgi sayaçları (hata değil)
 B_IMP_BAG = "imp_ice_aktarim_bagi"
-B_KATEGORI_SINIFI_LISTEDE_YOK = "kategori_sinifi_listede_yok"
+B_SINIF_LISTEDE_YOK = "yerel_sinif_listede_yok"  # kategori ya da üst sınıf göstericisi
 
 
 def tip_arguman_sayisi(enc: str) -> Optional[int]:
@@ -460,7 +460,7 @@ class ObjcOkuyucu:
         if isinstance(deger, int) and not isinstance(deger, bool):
             if deger in yerel:
                 return yerel[deger]["ad"], False
-            self.sayac[B_KATEGORI_SINIFI_LISTEDE_YOK] += 1
+            self.sayac[B_SINIF_LISTEDE_YOK] += 1
             return self._sinif_adi_dogrudan(deger), False
         bag_adi = getattr(deger, "ad", None)
         if isinstance(bag_adi, str):

@@ -394,6 +394,16 @@ class TestOkuyucu:
         assert s.sayaclar[objc.H_BOLUM_DISI] == 1
         assert s.durum == objc.DURUM_TUTARSIZ
 
+    def test_kategori_listede_olmayan_yerel_sinifa(self) -> None:
+        k = Kurucu()
+        gizli = k.sinif(k.ro("Gizli"))  # sınıf listesinde yok
+        kat = k.kategori("Ek2", gizli, ornek=k.kucuk_liste([("x", "v16@0:8", F0)]))
+        k.liste("__objc_catlist", CATLIST, [kat])
+        s = objc.oku(k.goruntu(fonksiyon_baslangiclari=[F0]))
+        y = s.yontemler[0]
+        assert (y.sinif, y.kategori, y.sinif_dis, y.tam_ad) == ("Gizli", "Ek2", False, "-[Gizli x]")
+        assert s.sayaclar[objc.B_SINIF_LISTEDE_YOK] == 1 and s.okuma_hatasi == 0
+
     def test_bolumde_sinirlar(self) -> None:
         g = BellekGoruntu([("buyuk", 0x1000, b"\0" * 0x1000), ("ic", 0x1100, b"\0" * 0x10),
                            ("bitisik", 0x2000, b"\0" * 0x10), ("uzak", 0x9000, b"\0" * 0x10)])

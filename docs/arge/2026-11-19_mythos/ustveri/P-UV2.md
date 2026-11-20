@@ -48,7 +48,7 @@ Plan: `ustveri/PLAN.md` "P-ÜV2". Kararlar: A-10, A-27, A-28.
   `static/objc_methods.json` (`schema karadul.objc_methods.v1`). Faz 1 listesine ve `steps/__init__.py`'ye
   EKLENMEDİ (P-ÜV6).
 - Araştırma okuyucusundan farklar (bilerek): kategori sınıfı yerel ama sınıf listesinde değilse ad sınıfın kendi
-  `class_ro_t`'sinden okunur (başvuru `None` yazıyordu; bilgi sayacı `kategori_sinifi_listede_yok`); üst sınıf zinciri
+  `class_ro_t`'sinden okunur (başvuru `None` yazıyordu; bilgi sayacı `yerel_sinif_listede_yok`); üst sınıf zinciri
   (döngü sayaçlı) eklendi; bölüm dışı göreli ofset kaydı atlanır (başvuru adsız kayıt bırakıyordu).
 
 ## Ön deneme (KABUL DEĞİL; araştırma `macho.py` bağdaştırıcısıyla, 11:0x)
