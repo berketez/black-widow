@@ -13,7 +13,7 @@
 | 1 Arayüz (`Goruntu`, `Bag`) | **bitti** (P-ÜV1 / P-ÜV2 buna yaslanır) | `b049837` |
 | 2 Mach-O 64 | **bitti** | `f97054c` |
 | 3 Evrensel dosya | **bitti** | `f97054c` |
-| 4 ELF 64 | bekliyor | — |
+| 4 ELF 64 | **bitti** | `d3a940a` |
 | 5 PE iskeleti | bekliyor | — |
 | 6 Sağlamlık | bekliyor | — |
 | 7 `python -m … goruntu` özeti | **bitti** | `f97054c` |
@@ -53,3 +53,21 @@
 **H2 → TUTTU.** Ollama arm64: `__DATA_CONST,__objc_classlist`'in ilk girdisi için `gosterici()` = `0x1018d6598`, `__DATA,__objc_data` bölümünde (yerel adres); `__DATA_CONST,__got` 293 girdinin 293'ü `Bag` (ilk üçü `___objc_personality_v0`, `_class_addMethod`, `_class_addProtocol`).
 
 Ek (ön kayıtta yoktu, bilgi): Rectangle (`LC_DYLD_INFO`) bağ işlem kodlarından arm64 2 911, x86_64 2 739 bağ yeri; `__got` 161 / 251 girdinin 123 / 200'ü `Bag`. Bağımsız sayımla karşılaştırılmadı (P-ÜV2 kalem 6 doğrular).
+
+## Kalem 4 — ELF 64 — `d3a940a`
+
+- `ElfGoruntu`: `PT_LOAD` eşlemesi (adres okuma yalnız yüklenen baytlardan), bölüm başlıkları (`e_shnum = 0` / `SHN_XINDEX` genişletilmiş numaralama), `SHF_ALLOC` olmayan bölüm `Bolum.bellekte = False` (adres içermez; `bolum_baytlari` dosyadaki yerinden okur), `.symtab` + `.dynsym` (0. boş girdi hariç), giriş `e_entry`, mimari `arm64` / `x86_64` (Mach-O adlarıyla aynı).
+- Yeniden konumlama `gosterici()` içinde: yüklenen `SHT_RELA` / `SHT_REL` / `SHT_RELR`; `R_*_RELATIVE` → RELA'da ek alanı (dosyadaki sözcük değil), REL / RELR'de dosyadaki sözcük; `GLOB_DAT` / `JUMP_SLOT` / `ABS64` → sembol tanımsızsa `Bag(ad, ek)`, tanımlıysa `S + A`; `IRELATIVE` ve bilinmeyen tür → `None` (statik çözülemez; sayaçta).
+- Fonksiyon başlangıcı: `.eh_frame` FDE `pc_begin` (CIE `zR` kodlaması; `pcrel` / mutlak; dolaylı, `datarel` vb. → durum `hata` + neden); `.eh_frame` yoksa `None`.
+
+### Kabul (H3; ölçüm: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV0/kabul_elf.py` → `kabul_elf.json`)
+
+**H3: 5 / 5 ELF'te bölüm başlığı sayısı, bölüm adları (sırasıyla) ve sembol sayısı `pyelftools` bağımsız sayımıyla aynı → TUTTU.** `R_*_RELATIVE` sayıları da 5 / 5 aynı (hiçbirinde `SHT_RELR` yok). Ek bilgi (ön kayıtta yoktu): FDE başlangıç sayısı `pyelftools` `EH_CFI_entries` ile 5 / 5 aynı.
+
+| İkili | sha256 | Bölüm başlığı (biz / pyelftools) | Sembol | R_*_RELATIVE | FDE başlangıcı | Bağ (tanımsız sembol) | Fark |
+|---|---|---|---|---|---|---|---|
+| coreutils/cat | `0d5a5dd543ed` | 29 / 29 | 80 / 80 | 45 / 45 | 107 / 107 | 73 | aynı |
+| coreutils/expr | `56ae85a0c61b` | 29 / 29 | 84 / 84 | 34 / 34 | 112 / 112 | 77 | aynı |
+| coreutils/ls | `0c062cc32ec1` | 29 / 29 | 139 / 139 | 218 / 218 | 318 / 318 | 133 | aynı |
+| tree/tree | `62810aca2954` | 28 / 28 | 72 / 72 | 422 / 422 | 116 / 116 | 72 | aynı |
+| zstd/pzstd | `77866a8bf262` | 31 / 31 | 113 / 113 | 111 / 111 | 858 / 858 | 129 | aynı |
