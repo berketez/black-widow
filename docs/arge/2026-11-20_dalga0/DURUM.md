@@ -24,6 +24,12 @@ Yaşayan kayıt: hangi paket kimde, ne main'e girdi, hangi karar verildi. Oturum
 | 08:3x | V5 indirme (A-22) | libzstd1 + dbgsym, gpgv + sha256 → `~/karadul_olcum/n2_tabaka/kitaplik/` |
 | 08:4x | V1 indirme (A-23) | tree, libzstd, sqlite3, redis kaynakları, 31,2 MB → `~/karadul_olcum/kimlik_v1/` |
 
+## Üst veri hızlı hattı (Berke 10:5x: "her şeyi okuyacak" — A-27; "4'e kadar vaktin var")
+
+- Gece koşusu iptal olduğu için öğleden sonra boş; hedef setinde bugünkü ürün 0 / 40 (terminal-notifier) ve 17 / 13 160 (Ollama) → üst veri okuyucuları öne alındı. Sert son 15:15 (ajanlar), 16:00 oturum kapanışı.
+- Bugünkü toplam ajan sayısı **13** (Dalga 0: 8; hızlı hat: PUV0, PUV1, PUV2 şimdi + OKUMA-ENVANTERİ, P-ÜV5 OK5 / KIMLIK bitince). Aynı anda en çok 5.
+- PUV1 / PUV2, PUV0'ın plandaki `Goruntu` arayüzüne göre paralel yazılır (sentetik testler); PUV0 main'e girince ana oturum haber verir, ikisi bir kez `git rebase main` yapıp gerçek ikili kabulünü koşar.
+
 ## Paketler
 
 | Paket | Ajan | Durum | Not |
@@ -41,7 +47,7 @@ Yaşayan kayıt: hangi paket kimde, ne main'e girdi, hangi karar verildi. Oturum
 ## Sonraki dalgalara notlar (paket raporlarından)
 
 - **BAYRAK → bağlayan paketler:** bağlayan paket `config.py`'ye yazmaz; INERT satırını silen ve alan satırındaki `# ETKİSİZ` yorumunu kaldıran yamayı `docs/arge/<dalga>/yamalar/<PAKET>__config.py.patch` olarak bırakır, ana oturum uygular. Bağlama tablosu: `docs/arge/2026-11-20_dalga0/BAYRAK.md` §3.1.
-- **BAYRAK → ÜST VERİ (Dalga 2):** P-ÜV1 / P-ÜV2 / P-ÜV3 bayrağı `getattr` ile okursa `test_p15a` INERT satırını o pakette sildirir ama adım Faz 1'e ancak P-ÜV6'da girer (arada alan sessizce etkisiz). Ana oturum hükmü: okuyucu paketleri (P-ÜV1–4) bayrak OKUMAZ; bayrakları P-ÜV6 bağlar ve INERT satırlarını o siler. (`enable_rtti_recovery` için P-ÜV4'te aynı kural.)
+- **BAYRAK → ÜST VERİ (Dalga 2):** P-ÜV1 / P-ÜV2 / P-ÜV3 bayrağı `getattr` ile okursa `test_p15a` INERT satırını o pakette sildirir ama adım Faz 1'e ancak P-ÜV6'da girer (arada alan sessizce etkisiz). ~~Ana oturum hükmü: okuyucu paketleri bayrak okumaz~~ → **düzeltildi (10:5x, hızlı hat):** okuyucu paketlerinin üretici adımı bayrağı planın dediği gibi okur (`getattr(…, False) is True`) ve INERT satırını silen yamayı `yamalar/PUVn__config.py.patch` olarak bırakır; ana oturum birleştirirken uygular. Adım Faz 1'e ancak P-ÜV6'da girdiği için arada alan fiilen etkisiz kalır (yalnız uyarı çıkmaz); kabul edildi.
 - **BAYRAK → ÖL-2 / ÖL-5a:** `timeouts.ghidra_adim`, `paket.toplam_butce_sn`, `paket.bilesen_butce_sn` için 0 = sınırsız (bugünkü davranış); bağlayan paket bu anlamı uygular.
 - **BAYRAK → ÖL-9:** alan adı `onbellek.ghidra_kosusu` (plandaki `onbellek.ghidra` `test_p15a`'nın ad aramasında `timeouts.ghidra` ile çakışıyordu).
 - **OLCUM → KS-1:** `ks1_olc.py` ve `function_f1.py` KS-1 ön kaydının sha256'larıyla sabitti; KS-1 yeniden koşulacaksa yeni bir sapma kaydı gerekir (`ks1_olc.py olc` artık durur).
