@@ -1649,6 +1649,258 @@ class ElfGoruntu(_DosyaGoruntusu):
         return o
 
 
+# =====================================================================================
+# PE / PE32+ iskeleti (kaynak: Microsoft "PE Format" belgesi). Bu pakette yalnız iskelet:
+# bölümler, adres okuma, mutlak göstericiler (görüntü tabanı dosyada yazılı), IAT bağları,
+# .pdata başlangıçları, COFF sembolleri. Go PE / MSVC RTTI kabulü P-ÜV9'da.
+# =====================================================================================
+_PE_IMZA = b"PE\0\0"
+_PE32, _PE32_ARTI = 0x10B, 0x20B
+_IMAGE_FILE_MACHINE = {0x8664: "x86_64", 0xAA64: "arm64", 0x14C: "i386", 0x1C4: "arm"}
+_IMAGE_SCN_CNT_CODE = 0x20
+_IMAGE_SCN_MEM_EXECUTE = 0x20000000
+_DIZIN_ICE_AKTARIM = 1
+_DIZIN_ISTISNA = 3
+_PE_DIZIN_AZAMI = 16
+_PE_ICE_AKTARIM_AZAMI = 100_000  # tanımlayıcı / thunk üst sınırı (bozuk dosyada sonsuz yürüyüş yok)
+_COFF_SEMBOL = 18
+_IMAGE_SYM_CLASS_EXTERNAL = 2
+
+
+class PeGoruntu(_DosyaGoruntusu):
+    """PE32 / PE32+ iskeleti."""
+
+    def __init__(self, veri: bytes, kaynak: str = "") -> None:
+        super().__init__(veri, kaynak)
+        self.makine = 0
+        self.goruntu_tabani = 0
+        self._gb = 8
+        self._giris_rva = 0
+        self._dizinler: list[tuple[int, int]] = []
+        self._bolumler: list[Bolum] = []
+        self._coff: tuple[int, int] = (0, 0)
+        self._baglar: dict[int, Bag] | None = None
+        self._semboller: list[Sembol] | None = None
+        self._fb: list[int] | None = None
+        self._fb_okundu = False
+        self._baslik_oku()
+
+    def _baslik_oku(self) -> None:
+        d = self._veri
+        try:
+            if len(d) < 0x40 or d[:2] != b"MZ":
+                raise ValueError("DOS başlığı kesik")
+            pe = struct.unpack_from("<I", d, 0x3C)[0]
+            if d[pe:pe + 4] != _PE_IMZA:
+                raise ValueError("PE imzası yok")
+            (self.makine, nsec, _ts, sym_ptr, nsym, opt_boy, _ch) = struct.unpack_from("<HHIIIHH", d, pe + 4)
+            self._coff = (sym_ptr, nsym)
+            opt = pe + 24
+            magic = struct.unpack_from("<H", d, opt)[0]
+            if magic == _PE32_ARTI:
+                self._gb = 8
+                self._giris_rva = struct.unpack_from("<I", d, opt + 16)[0]
+                self.goruntu_tabani = struct.unpack_from("<Q", d, opt + 24)[0]
+                basliklar = struct.unpack_from("<I", d, opt + 60)[0]
+                ndir, dir_ofs = struct.unpack_from("<I", d, opt + 108)[0], opt + 112
+            elif magic == _PE32:
+                self._gb = 4
+                self._giris_rva = struct.unpack_from("<I", d, opt + 16)[0]
+                self.goruntu_tabani = struct.unpack_from("<I", d, opt + 28)[0]
+                basliklar = struct.unpack_from("<I", d, opt + 60)[0]
+                ndir, dir_ofs = struct.unpack_from("<I", d, opt + 92)[0], opt + 96
+            else:
+                raise ValueError(f"isteğe bağlı başlık imzası {magic:#x}")
+            for i in range(min(ndir, _PE_DIZIN_AZAMI)):
+                if dir_ofs + 8 * i + 8 > opt + opt_boy:
+                    break
+                self._dizinler.append(struct.unpack_from("<II", d, dir_ofs + 8 * i))
+            eslemler = [(self.goruntu_tabani, self.goruntu_tabani + min(basliklar, len(d)), 0)]
+            st = opt + opt_boy
+            for i in range(nsec):
+                q = st + 40 * i
+                if q + 40 > len(d):
+                    raise ValueError(f"bölüm başlığı {i} / {nsec} kesik")
+                ad_b = d[q:q + 8]
+                vsize, va, rsize, rptr = struct.unpack_from("<IIII", d, q + 8)
+                ch = struct.unpack_from("<I", d, q + 36)[0]
+                ad = self._bolum_adi(ad_b)
+                boy = vsize or rsize
+                adres = self.goruntu_tabani + va
+                self._bolumler.append(Bolum(ad, adres, boy,
+                                            bool(ch & (_IMAGE_SCN_CNT_CODE | _IMAGE_SCN_MEM_EXECUTE)), "",
+                                            rptr if rsize else None))
+                if rsize:
+                    eslemler.append((adres, adres + min(rsize, boy), rptr))
+            self._eslem_kur(eslemler)
+            self._durum_yaz(KISIM_BASLIK, DURUM_CALISTI)
+        except (struct.error, IndexError, ValueError) as exc:
+            self._durum_yaz(KISIM_BASLIK, DURUM_HATA, str(exc))
+
+    def _bolum_adi(self, ad_b: bytes) -> str:
+        ad = _ad_coz(ad_b)
+        if ad.startswith("/") and ad[1:].isdigit():  # uzun ad: COFF dizgi tablosunda
+            sym_ptr, nsym = self._coff
+            q = sym_ptr + nsym * _COFF_SEMBOL + int(ad[1:])
+            if sym_ptr and q < len(self._veri):
+                z = self._veri.find(b"\0", q)
+                return self._veri[q:z if z >= 0 else len(self._veri)].decode("utf-8", "replace")
+        return ad
+
+    @property
+    def bicim(self) -> str:
+        return BICIM_PE
+
+    @property
+    def mimari(self) -> str:
+        if not self.makine:
+            return ""
+        return _IMAGE_FILE_MACHINE.get(self.makine, f"makine_{self.makine:#x}")
+
+    @property
+    def gosterici_boyutu(self) -> int:
+        return self._gb
+
+    @property
+    def giris_adresi(self) -> int | None:
+        return self.goruntu_tabani + self._giris_rva if self._giris_rva else None
+
+    @property
+    def bolumler(self) -> list[Bolum]:
+        return list(self._bolumler)
+
+    def _dizin(self, sira: int) -> tuple[int, int] | None:
+        if sira < len(self._dizinler) and self._dizinler[sira][0] and self._dizinler[sira][1]:
+            return self._dizinler[sira]
+        return None
+
+    # ---- IAT bağları -----------------------------------------------------------------
+    def ice_aktarim_baglari(self) -> dict[int, Bag]:
+        """IAT yuvası → ``Bag(ad)`` (sıra numarasıyla aktarımda ``kitaplık#sıra``)."""
+        if self._baglar is None:
+            self._baglar = {}
+            dz = self._dizin(_DIZIN_ICE_AKTARIM)
+            if dz is None:
+                self._durum_yaz(KISIM_DUZELTME, DURUM_VERI_YOK, "içe aktarım dizini yok")
+            else:
+                try:
+                    self._iat_oku(dz[0])
+                    self._durum_yaz(KISIM_DUZELTME, DURUM_CALISTI)
+                except (struct.error, IndexError, ValueError) as exc:
+                    self._baglar = {}
+                    self._durum_yaz(KISIM_DUZELTME, DURUM_HATA, f"içe aktarım okunamadı: {exc}")
+        return dict(self._baglar)
+
+    def _iat_oku(self, rva: int) -> None:
+        tb = self.goruntu_tabani
+        gb = self._gb
+        sira_biti = 1 << (gb * 8 - 1)
+        adim = 0
+        for i in range(_PE_ICE_AKTARIM_AZAMI):
+            q = tb + rva + 20 * i
+            tanim = self.oku(q, 20)
+            if tanim is None:
+                raise ValueError("içe aktarım tanımlayıcısı okunamadı")
+            ilt, _ts, _fw, ad_rva, iat = struct.unpack("<IIIII", tanim)
+            if not (ilt or ad_rva or iat):
+                return
+            kitaplik = self.cstr(tb + ad_rva) or f"#{i}"
+            kaynak = ilt or iat
+            for j in range(_PE_ICE_AKTARIM_AZAMI):
+                adim += 1
+                if adim > _PE_ICE_AKTARIM_AZAMI:
+                    raise ValueError("thunk sınırı aşıldı")
+                v = self.sozcuk(tb + kaynak + gb * j)
+                if v is None:
+                    raise ValueError("thunk okunamadı")
+                if v == 0:
+                    break
+                if v & sira_biti:
+                    bag = Bag(f"{kitaplik}#{v & 0xFFFF}")
+                else:
+                    ad = self.cstr(tb + (v & 0x7FFFFFFF) + 2)
+                    bag = Bag(ad if ad is not None else f"{kitaplik}#?")
+                self._baglar[tb + iat + gb * j] = bag  # type: ignore[index]
+        raise ValueError("tanımlayıcı sınırı aşıldı")
+
+    def gosterici(self, adres: int) -> int | Bag | None:
+        bag = self.ice_aktarim_baglari().get(adres)
+        if bag is not None:
+            return bag
+        v = self.sozcuk(adres)  # mutlak sanal adres (görüntü tabanı dosyada yazılı)
+        return v if v else None
+
+    # ---- .pdata başlangıçları ---------------------------------------------------------
+    def fonksiyon_baslangiclari(self) -> list[int] | None:
+        if not self._fb_okundu:
+            self._fb_okundu = True
+            dz = self._dizin(_DIZIN_ISTISNA)
+            kayit = {"x86_64": 12, "arm64": 8}.get(self.mimari)
+            if dz is None:
+                self._durum_yaz(KISIM_FONKSIYON_BASLANGICI, DURUM_VERI_YOK, "istisna dizini (.pdata) yok")
+            elif kayit is None:
+                self._durum_yaz(KISIM_FONKSIYON_BASLANGICI, DURUM_DESTEKLENMIYOR, f"mimari {self.mimari}")
+            else:
+                blob = self.oku(self.goruntu_tabani + dz[0], dz[1] - dz[1] % kayit)
+                if blob is None:
+                    self._durum_yaz(KISIM_FONKSIYON_BASLANGICI, DURUM_HATA, ".pdata okunamadı")
+                else:
+                    self._fb = sorted({self.goruntu_tabani + struct.unpack_from("<I", blob, k)[0]
+                                       for k in range(0, len(blob), kayit)})
+                    self._durum_yaz(KISIM_FONKSIYON_BASLANGICI, DURUM_CALISTI)
+        return list(self._fb) if self._fb is not None else None
+
+    # ---- COFF sembolleri ------------------------------------------------------------
+    def semboller(self) -> list[Sembol]:
+        if self._semboller is None:
+            self._semboller = self._coff_oku()
+        return list(self._semboller)
+
+    def _coff_oku(self) -> list[Sembol]:
+        d = self._veri
+        sym_ptr, nsym = self._coff
+        out: list[Sembol] = []
+        if not sym_ptr or not nsym:
+            self._durum_yaz(KISIM_SEMBOL, DURUM_VERI_YOK, "COFF sembol tablosu yok")
+            return out
+        str_ofs = sym_ptr + nsym * _COFF_SEMBOL
+        i = 0
+        while i < nsym:
+            q = sym_ptr + i * _COFF_SEMBOL
+            if q + _COFF_SEMBOL > len(d):
+                self._durum_yaz(KISIM_SEMBOL, DURUM_HATA, f"COFF sembol tablosu kesik: {i} / {nsym}")
+                return out
+            ad_b = d[q:q + 8]
+            deger, bolum, _tip, sinif, ek_say = struct.unpack_from("<IhHBB", d, q + 8)
+            if ad_b[:4] == b"\0\0\0\0":
+                a = str_ofs + struct.unpack_from("<I", ad_b, 4)[0]
+                z = d.find(b"\0", a) if a < len(d) else -1
+                ad = d[a:z].decode("utf-8", "replace") if z >= 0 else ""
+            else:
+                ad = _ad_coz(ad_b)
+            if bolum == 0:
+                tur, adres = SEMBOL_TANIMSIZ, deger
+            elif bolum == -1:
+                tur, adres = SEMBOL_MUTLAK, deger
+            elif bolum < 0:
+                tur, adres = SEMBOL_HATA_AYIKLAMA, deger
+            elif bolum <= len(self._bolumler):
+                b = self._bolumler[bolum - 1]
+                tur, adres = (SEMBOL_KOD if b.kod else SEMBOL_VERI), b.adres + deger
+            else:
+                tur, adres = SEMBOL_DIGER, deger
+            out.append(Sembol(ad, adres, tur, sinif == _IMAGE_SYM_CLASS_EXTERNAL, None, "COFF"))
+            i += 1 + ek_say
+        self._durum_yaz(KISIM_SEMBOL, DURUM_CALISTI)
+        return out
+
+    def ozet(self) -> dict[str, Any]:
+        o = super().ozet()
+        o.update({"goruntu_tabani": hex(self.goruntu_tabani),
+                  "ice_aktarim": len(self.ice_aktarim_baglari()), "durum": self.durum})
+        return o
+
+
 # --- giriş noktaları -----------------------------------------------------------------------
 
 def baytlardan(veri: bytes, dilim: str | None = None, kaynak: str = "") -> Goruntu:
@@ -1699,6 +1951,8 @@ def _bicim_sec(veri: bytes, dilim: str | None, kaynak: str) -> Goruntu:
         if len(veri) > 4 and veri[4] != _ELFCLASS64:
             raise GoruntuHatasi("32 bit ELF desteklenmiyor", DURUM_DESTEKLENMIYOR)
         return ElfGoruntu(veri, kaynak)
+    if veri[:2] == b"MZ":
+        return PeGoruntu(veri, kaynak)
     raise GoruntuHatasi(f"biçim tanınmadı (imza {veri[:4].hex()})", DURUM_DESTEKLENMIYOR)
 
 

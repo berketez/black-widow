@@ -395,6 +395,67 @@ class TestElf:
 
 
 # ---------------------------------------------------------------------------------------
+# Sentetik PE32+ (x86_64) iskeleti: .text, .rdata (mutlak gösterici, IAT, .pdata)
+# ---------------------------------------------------------------------------------------
+PE_TABAN = 0x140000000
+PE_RDATA = PE_TABAN + 0x2000
+PE_IAT = PE_RDATA + 0xA0
+
+
+def pe_kur() -> bytes:
+    d = bytearray(0x800)
+    d[0:2] = b"MZ"
+    struct.pack_into("<I", d, 0x3C, 0x40)
+    d[0x40:0x44] = b"PE\0\0"
+    struct.pack_into("<HHIIIHH", d, 0x44, 0x8664, 2, 0, 0, 0, 0xF0, 0x22)
+    opt = 0x58
+    struct.pack_into("<H", d, opt, 0x20B)
+    struct.pack_into("<I", d, opt + 16, 0x1000)          # AddressOfEntryPoint
+    struct.pack_into("<Q", d, opt + 24, PE_TABAN)         # ImageBase
+    struct.pack_into("<II", d, opt + 32, 0x1000, 0x200)
+    struct.pack_into("<I", d, opt + 60, 0x200)            # SizeOfHeaders
+    struct.pack_into("<I", d, opt + 108, 16)
+    struct.pack_into("<II", d, opt + 112 + 8 * 1, 0x2040, 40)   # içe aktarım dizini
+    struct.pack_into("<II", d, opt + 112 + 8 * 3, 0x2100, 24)   # istisna dizini (.pdata)
+    st = opt + 0xF0
+    struct.pack_into("<8sIIIIIIHHI", d, st, b".text", 0x100, 0x1000, 0x200, 0x200, 0, 0, 0, 0, 0x60000020)
+    struct.pack_into("<8sIIIIIIHHI", d, st + 40, b".rdata", 0x300, 0x2000, 0x400, 0x400, 0, 0, 0, 0,
+                     0x40000040)
+    r = 0x400
+    struct.pack_into("<Q", d, r, PE_TABAN + 0x1000)                 # mutlak gösterici
+    struct.pack_into("<IIIII", d, r + 0x40, 0x2080, 0, 0, 0x20C0, 0x20A0)
+    struct.pack_into("<Q", d, r + 0x80, 0x20D0)                     # ILT
+    struct.pack_into("<Q", d, r + 0xA0, 0x20D0)                     # IAT (dosyada isim RVA'sı)
+    d[r + 0xC0:r + 0xCD] = b"KERNEL32.dll\0"
+    d[r + 0xD0:r + 0xDE] = b"\0\0ExitProcess\0"
+    struct.pack_into("<III", d, r + 0x100, 0x1000, 0x1010, 0x2200)
+    struct.pack_into("<III", d, r + 0x10C, 0x1010, 0x1020, 0x2200)
+    d[r + 0x200] = 1  # UNWIND_INFO sürüm 1 (boş)
+    return bytes(d)
+
+
+class TestPe:
+    def test_iskelet(self):
+        g = baytlardan(pe_kur())
+        kimlik = (g.bicim, g.mimari, g.gosterici_boyutu, g.giris_adresi)
+        assert kimlik == ("pe", "x86_64", 8, PE_TABAN + 0x1000)
+        bolumler = [(b.ad, b.adres, b.kod) for b in g.bolumler]
+        assert bolumler == [(".text", PE_TABAN + 0x1000, True), (".rdata", PE_RDATA, False)]
+        assert g.oku(PE_RDATA + 0xC0, 8) == b"KERNEL32"
+
+    def test_mutlak_gosterici_ve_iat_bagi(self):
+        g = baytlardan(pe_kur())
+        assert g.gosterici(PE_RDATA) == PE_TABAN + 0x1000
+        assert g.gosterici(PE_IAT) == Bag("ExitProcess")
+        assert g.gosterici(PE_IAT + 8) is None
+
+    def test_pdata_baslangiclari(self):
+        g = baytlardan(pe_kur())
+        assert g.fonksiyon_baslangiclari() == [PE_TABAN + 0x1000, PE_TABAN + 0x1010]
+        assert g.semboller() == [] and g.durum["sembol"]["durum"] == "veri_yok"
+
+
+# ---------------------------------------------------------------------------------------
 # Sağlamlık: kesik / bozuk dosya
 # ---------------------------------------------------------------------------------------
 def _hepsini_cagir(g: Goruntu) -> None:
@@ -408,7 +469,7 @@ def _hepsini_cagir(g: Goruntu) -> None:
     _ = (g.kod_bolumleri, g.giris_adresi, g.mimari, g.gosterici_boyutu, g.bicim, g.durum)
     g.semboller()
     g.fonksiyon_baslangiclari()
-    for a in (R0, R1, B0, HAM, E_DATA, E_DATA + 8, 0, -8, 1 << 70):
+    for a in (R0, R1, B0, HAM, E_DATA, E_DATA + 8, PE_RDATA, PE_IAT, 0, -8, 1 << 70):
         g.gosterici(a)
         g.oku(a, 16)
         g.cstr(a)
@@ -416,11 +477,11 @@ def _hepsini_cagir(g: Goruntu) -> None:
 
 
 @pytest.mark.parametrize("kur", [lambda: macho_kur(), lambda: macho_kur(dyld_info=True),
-                                 lambda: elf_kur("rela"), lambda: elf_kur("relr")])
+                                 lambda: elf_kur("rela"), lambda: elf_kur("relr"), lambda: pe_kur()])
 def test_kesik_dosyada_istisna_yok(kur):
     tam = kur()
     for kesim in (4, 31, 32, 63, 64, 100, 300, E_REL + 8, E_EH + 20, E_SHDR + 70, 0x1000,
-                  DATA_OFS + 0x8, LINK_OFS, ZD_OFS + 30, len(tam) - 1):
+                  0x150, 0x420, 0x4A0, DATA_OFS + 0x8, LINK_OFS, ZD_OFS + 30, len(tam) - 1):
         try:
             g = baytlardan(tam[:kesim])
         except GoruntuHatasi:
