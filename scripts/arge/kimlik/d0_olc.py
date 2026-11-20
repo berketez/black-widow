@@ -289,6 +289,12 @@ def _f(o: dict[str, Any]) -> str:
 def md(s: dict[str, Any]) -> str:
     g = s["grup"]
     out = [f"### `{g}`", "", f"- Noktalar: {', '.join(s['noktalar'])}; v2: {s['v2']}."]
+    k = s.get("kismi")
+    if k and k["kalan"]:
+        out.append(f"- **KISMİ:** {k['olculen_cift']} / {k['toplam_cift']} çift ölçüldü (sert son); kalan: "
+                   + ", ".join(c[0] for c in k["kalan"]) + ".")
+    elif k:
+        out.append(f"- Bütün çiftler ölçüldü ({k['olculen_cift']} / {k['toplam_cift']}).")
     if s.get("zaman_asimi_ghidra_tamam"):
         out.append(f"- Süre sınırına takılan (capa adımı; Ghidra çıktısı tamam, `success`): "
                    f"{', '.join(s['zaman_asimi_ghidra_tamam'])}.")
@@ -361,13 +367,44 @@ def kosu_durumu(grup: str) -> dict[str, Any]:
     return out
 
 
+YENI_KOKLER = ("tabA", "tabB12", "tabB24", "v1gcc", "v1clang", "kitaplik")
+
+
+def hazir_mi(kimlik: str) -> bool:
+    """Dalga 0 koşusu bitmiş (BITTI ya da ZAMAN_ASIMI) ve Ghidra çıktısı başarılı mı; eski kökler hep hazır."""
+    if kimlik.split("/")[0] not in YENI_KOKLER:
+        return True
+    d = d0_veri.KOSU / kimlik
+    if not any((d / i).exists() for i in ("BITTI", "ZAMAN_ASIMI")):
+        return False
+    st = sorted(d.glob("ws/workspaces/*/*/static/ghidra_status.json"))
+    return len(st) == 1 and json.loads(st[0].read_text(encoding="utf-8")).get("success") is True
+
+
+def kismi_kur(grup: str) -> dict[str, Any]:
+    """Sert son (ana oturum, 15:15): yalnız iki tarafı da hazır çiftlerle ölç; kalanları listele.
+
+    Hesaplı grubun tanımı bu süreçte hazır çiftlere daraltılır (``kc.grup`` / ``kc.yonler`` / betiklerin
+    ``ciftler.grup``'u aynı listeyi görür). Sabit gruplarda daraltma yapılmaz."""
+    tum = kc.grup(grup)
+    hazir = [c for c in tum if all(hazir_mi(k) for k in c)]
+    kalan = [c for c in tum if c not in hazir]
+    if kalan:
+        if grup not in kc._HESAPLI_GRUPLAR:
+            raise SystemExit(f"{grup}: sabit grupta kısmi ölçüm yok")
+        kc._HESAPLI_GRUPLAR[grup] = lambda: list(hazir)
+    return {"toplam_cift": len(tum), "olculen_cift": len(hazir), "kalan": [list(c) for c in kalan]}
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("adim", choices=("betikler", "hukum", "hepsi"))
     ap.add_argument("--grup", required=True)
     ap.add_argument("--etiket", default=None)
+    ap.add_argument("--kismi", action="store_true", help="yalnız hazır çiftler (sert son); kalanlar listelenir")
     a = ap.parse_args(argv)
     etiket = a.etiket or a.grup
+    kismi = kismi_kur(a.grup) if a.kismi else None
     durum = kosu_durumu(a.grup)
     if a.adim in ("betikler", "hepsi"):
         betikler(a.grup, etiket)
@@ -375,6 +412,7 @@ def main(argv=None) -> int:
         s = hukum(a.grup, etiket)
         s["kunye"] = kunye()
         s["kosu_durumu"] = durum
+        s["kismi"] = kismi
         s["zaman_asimi_ghidra_tamam"] = sorted(k for k, v in durum.items() if "ZAMAN_ASIMI" in v["isaret"])
         (OLCUM_DIZINI / f"hukum_{etiket}.json").write_text(json.dumps(s, ensure_ascii=False, indent=1, default=str),
                                                            encoding="utf-8")
