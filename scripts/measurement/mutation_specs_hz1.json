@@ -1,0 +1,85 @@
+{
+  "_comment": "HZ-1 (ölçüm kancaları: Ghidra köprüsünün adım süreleri, decompile parça özeti, ghidra_status.json'a analysis / adim_sureleri / decompile_parcalari) mutasyon koruması. Her mutant bir kancayı bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_hz1.json",
+  "mutants": [
+    {
+      "id": "hz1_durum_alani_yazilmaz",
+      "desc": "Kalem 3: _record_ghidra_outcome yeni süre alanlarını ghidra_status.json'a geçirmez",
+      "module": "karadul/analyzers/macho.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_durum_dosyasi_yeni_alanlari_aynen_tasir_gerisi_ayni",
+      "find": "            if key in ghidra_result:\n                status[key] = ghidra_result[key]",
+      "replace": "            if key in ghidra_result and False:\n                status[key] = ghidra_result[key]"
+    },
+    {
+      "id": "hz1_parca_ozeti_ciktiya_sizar",
+      "desc": "Kalem 4: decompile parça özeti ayrılmaz, decompiled.json'a (ghidra_output) yazılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_decompile_parca_ozeti_ciktiya_girmez_durum_alanina_gider",
+      "find": "decompile_parcalari = decomp_data.pop(\"_decompile_parcalari\", None)",
+      "replace": "decompile_parcalari = decomp_data.get(\"_decompile_parcalari\")"
+    },
+    {
+      "id": "hz1_cfg_bitisi_yanlis_yerde",
+      "desc": "Kalem 2: CFG adımının bitişi kaybolur (adım sözlükten düşer)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_her_adimin_suresi_kendi_araligindan_ve_liste_sirasinda",
+      "find": "                saat.bitti(ADIM_CFG)\n",
+      "replace": "                pass  # bitis yok\n"
+    },
+    {
+      "id": "hz1_sure_sifir",
+      "desc": "Kalem 2: adım süresi başlangıçtan değil bitişten hesaplanır (hep 0)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_her_adimin_suresi_kendi_araligindan_ve_liste_sirasinda",
+      "find": "self._sureler[adim] = round(time.monotonic() - t0, 3)",
+      "replace": "self._sureler[adim] = round(time.monotonic() - time.monotonic(), 3)"
+    },
+    {
+      "id": "hz1_bilinmeyen_ad_kabul",
+      "desc": "Kalem 2: sabit listede olmayan adım adı kabul edilir (anahtarlar tek yerden gelmez)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_adim_saati_bilinmeyen_adi_reddeder",
+      "find": "        if adim not in GHIDRA_ADIMLARI:\n",
+      "replace": "        if adim not in GHIDRA_ADIMLARI and False:\n"
+    },
+    {
+      "id": "hz1_bsim_ingest_dusunce_kayip",
+      "desc": "Kalem 2: BSim ingest düşünce ingest süresi kapanmaz (yazılmaz)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_bsim_ingest_duserse_sorgu_yok_ingest_yazili",
+      "find": "                    saat.bitti(ADIM_BSIM_INGEST)\n                    saat.bitti(ADIM_BSIM_QUERY)\n",
+      "replace": "                    saat.bitti(ADIM_BSIM_QUERY)\n"
+    },
+    {
+      "id": "hz1_kapatma_olculmez",
+      "desc": "Kalem 2: open_program bağlamının çıkışı (kapatma) ölçülmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_her_adimin_suresi_kendi_araligindan_ve_liste_sirasinda",
+      "find": "                saat.basla(ADIM_KAPATMA)\n",
+      "replace": "                pass  # kapatma yok\n"
+    },
+    {
+      "id": "hz1_parca_suresi_sifir",
+      "desc": "Kalem 4: decompile parça süresi ölçülmez (0 yazılır)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_parca_ozeti_paralel_yol",
+      "find": "chunk_seconds[chunk_idx] = round(time.monotonic() - t_chunk, 3)",
+      "replace": "chunk_seconds[chunk_idx] = 0.0"
+    },
+    {
+      "id": "hz1_ortanca_en_buyuk",
+      "desc": "Kalem 4: parça süresi ortancası yerine en büyüğü yazılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_parca_ozeti_en_kucuk_ortanca_en_buyuk",
+      "find": "\"ortanca\": round(statistics.median(olculen), 3),",
+      "replace": "\"ortanca\": round(max(olculen), 3),"
+    },
+    {
+      "id": "hz1_adim_sozlugu_bos",
+      "desc": "Kalem 2: sonuçta adim_sureleri boş sözlük",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz1_olcum_kancasi.py::test_her_adimin_suresi_kendi_araligindan_ve_liste_sirasinda",
+      "find": "\"adim_sureleri\": saat.sozluk(),",
+      "replace": "\"adim_sureleri\": {},"
+    }
+  ]
+}
