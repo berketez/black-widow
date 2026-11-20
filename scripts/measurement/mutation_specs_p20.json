@@ -187,11 +187,19 @@
     },
     {
       "id": "p20_k6_bayrak_ontanimli_acik",
-      "desc": "synchrony ön geçişi öntanımlı açık / dize 'false' açık sayılır",
-      "module": "karadul/deobfuscators/deep_pipeline.py",
+      "desc": "synchrony ön geçişi öntanımlı açık (MUTBAKIM 2026-11-20: öntanım ba3bfee'den beri config.py alanında; deep_pipeline'daki getattr yedeği Config ile erişilemez)",
+      "module": "karadul/config.py",
       "test": "tests/test_p20_synchrony_prepass.py::test_prepass_is_off_by_default",
+      "find": "    deep_synchrony_prepass: bool = False\n",
+      "replace": "    deep_synchrony_prepass: bool = True\n"
+    },
+    {
+      "id": "p20_k6_dize_false_acik",
+      "desc": "dize 'false' (YAML) açık sayılır: yalnız 'is True' yerine 'is not False' (MUTBAKIM 2026-11-20: eski p20_k6_bayrak_ontanimli_acik'in ikinci yarısı)",
+      "module": "karadul/deobfuscators/deep_pipeline.py",
+      "test": "tests/test_p20_synchrony_prepass.py::test_prepass_flag_requires_true_not_truthy",
       "find": "        return getattr(analysis, \"deep_synchrony_prepass\", False) is True",
-      "replace": "        return getattr(analysis, \"deep_synchrony_prepass\", True) is not False"
+      "replace": "        return getattr(analysis, \"deep_synchrony_prepass\", False) is not False"
     },
     {
       "id": "p20_k6_ayristirma_denetimi_yok",

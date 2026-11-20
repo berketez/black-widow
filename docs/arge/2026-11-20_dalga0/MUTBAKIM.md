@@ -21,4 +21,23 @@
 
 Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogrulama/p20.log`, b6aceb9): p20 25 / 1 hayatta (`p20_k6_bayrak_ontanimli_acik`).
 
+## Ortam ve yöntem
+
+- Bağlar (ORTAK_D0 §2; commit'lenmez): `scripts/node_modules`, `sigs`, `vendor`, `signatures_homebrew.json`, `signatures_homebrew_bytes.json`, `sigs_macos_system.json`, `signatures.lmdb`. `scripts/node_modules` olmadan p20'nin 15 testi atlanıyordu.
+  - Not: `scripts/node_modules`, `sigs`, `vendor` bağları `git status`'ta `??` görünüyor (`.gitignore` kalıpları dizin biçiminde, bağı kapsamıyor); dosyalar adıyla stage edildi, bağ commit'lenmedi.
+- "Önce" koşusu: worktree'de `b4e02be` koduyla, 9 tanım sırayla (`~/karadul_olcum/runs/dalga0-2026-11-20/MUTBAKIM/once_*.log`). Dokuzunun sayıları OKU.md'dekiyle birebir aynı.
+- Durağan denetim (`~/karadul_olcum/runs/dalga0-2026-11-20/MUTBAKIM/bin/denetle.py`): her `find`'in modüldeki eşleşme sayısı ve `find` / `replace` bayt uzunluğu. Probe birden çok eşleşmede hata vermiyor (ilkini değiştiriyor), bu yüzden tekillik ayrıca denetlendi. Önce: 15 eşleşmesiz, 1 çoklu (`cn_hepsi_sustu_sayilmaz`, 2 eşleşme), 5 aynı bayt uzunluklu replace. Sonra: 0 / 0 / 0.
+- "Sonra" koşusu: aynı sırayla `sonra_*.log`.
+
 ## Tanımlar
+
+### p20 — önce 25 öldü / 1 hayatta / 0 hata → sonra 27 / 0 / 0 (27 mutant)
+
+- **Hayatta: `p20_k6_bayrak_ontanimli_acik` — karar: BAYAT (gerçek açık değil).**
+  - Mutant `deep_pipeline._synchrony_prepass_enabled`'da `getattr(analysis, "deep_synchrony_prepass", False) is True` → `getattr(…, True) is not False` yapıyordu. Hedef test `test_prepass_is_off_by_default` `Config()` kuruyor.
+  - Kanıt: `ba3bfee` (P20 yaması, `karadul/config.py`) alanı `AnalysisConfig`'e öntanım `False` ile ekledi. O günden beri `Config` ile kurulan her hatta alan var; `getattr`'ın yedek değeri (mutantın "öntanımlı açık" yarısı) erişilemez. `False is not False` → `False`: test haklı olarak geçiyor.
+  - Mutantın iki niyeti ayrıldı:
+    1. **Öntanımlı açık** (aynı kimlik `p20_k6_bayrak_ontanimli_acik`): öntanım artık `config.py`'de → `deep_synchrony_prepass: bool = False` → `= True`; test aynı (`test_prepass_is_off_by_default`). Öldü.
+    2. **Dize 'false' açık sayılır** (yeni `p20_k6_dize_false_acik`): `is True` → `is not False`; test `test_prepass_flag_requires_true_not_truthy` (YAML'dan gelen `"false"` açılmamalı). Öldü.
+  - Not: mutant `karadul/config.py`'yi yalnız koşu süresince değiştirir (probe geri yazar); `config.py`'ye kalıcı yazım yok (A-19).
+- Kaldırılan mutant yok; yeni test yok.
