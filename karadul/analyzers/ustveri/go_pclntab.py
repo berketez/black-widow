@@ -174,8 +174,11 @@ class GoSonuc:
 
 
 def _bolumler(g: Any) -> list[tuple[str, int, int, bool]]:
-    """``Goruntu.bolumler`` → (ad, adres, boyut, kod mu) demetleri (``Bolum.ad`` kısa addır)."""
-    return [(b.ad, b.adres, b.boyut, b.kod) for b in g.bolumler]
+    """``Goruntu.bolumler`` → (ad, adres, boyut, kod mu) demetleri (``Bolum.ad`` kısa addır).
+
+    Yüklenmeyen bölüm (``bellekte`` yanlış: ELF ``.symtab``, ``.comment`` …) adres içermez; atlanır.
+    """
+    return [(b.ad, b.adres, b.boyut, b.kod) for b in g.bolumler if getattr(b, "bellekte", True)]
 
 
 def _kod_bolumleri(g: Any) -> list[tuple[str, int, int, bool]]:

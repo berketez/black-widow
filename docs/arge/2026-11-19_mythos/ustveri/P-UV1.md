@@ -11,7 +11,7 @@ Geçici dosyalar: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/`.
 | Ön kayıt (`on_kayit_PUV1.md`) | yazıldı | 42fdd11 |
 | 1–4, 6 okuyucu + yapı denetimleri + karar + satır içi sayaç | yazıldı, sentetik 36 test yeşil | 800f930 |
 | 5 üretici adım | yazıldı, 16 test yeşil | 8c6cf58 |
-| Mutasyon (≥ 10) | 16 / 16 öldü | (bu commit) |
+| Mutasyon (≥ 10) | 16 / 16 öldü | 2292aa5 |
 | Yama `PUV1__config.py.patch` | yazıldı; yamalı kopyada kayıt testleri yeşil | 8c6cf58 |
 | Rebase (PUV0 gelince) + 11 dilim kabulü + docker-cli GT | PUV0 mesajı bekleniyor | — |
 | Okuyucu dondurma + docker-compose SINAMA GT | bekliyor | — |
@@ -91,3 +91,19 @@ Geçici dosyalar: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/`.
 okunur; K1 `<=`; `vendor/` kuralı yok; tutarsızda liste döner; bayrak doğruluk değeri) + 6 ek
 (başlık `textStart` ham sözcükten; K4 eşiği %50; K5 ve K0 karardan çıkar; `0xffffffff` denetimi
 yok; imza taramasında akıl sağlığı yok).
+
+## Ara not (11:10): P-ÜV0 bekleniyor
+
+- **Geliştirme denetimi (KABUL DEĞİL).** Okuyucu mantığını gerçek veride erken sınamak için
+  araştırma yükleyicisi `scripts/arge/ustveri/macho.py`'yi `Goruntu` arayüzüne saran geçici
+  bağdaştırıcıyla (`~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/gelistirme_denetimi.py`, depoya
+  girmez) yalnız `gh` koşuldu: durum `calisti`, 40 384 / 40 384 giriş, (adres, ad, dosya) satır farkı
+  0, metin tabanı `moduledata.text`, başlık `textStart` 0x0; ihlal K0–K3, K5, K7, K8, K9 = 0, K4 = 1
+  (`kisa` 1; araştırmayla aynı: tam 40 370, kisa_asm 10, pcsp_yok 3); K7 252 310 / 252 310 hedef
+  giriş; satır içi ad 7 110 (araştırma 7 109: `nameOff 0` farkı, beklenen); okuma 0,34 sn (yük
+  altında). Öbür 10 dilimin aynı denetimi izin sınıflandırıcısınca durduruldu (gönderim metni:
+  "mesaj gelmeden gerçek ikili kabulüne geçme"); kabul gerçek `Goruntu` ile yapılacak.
+- P-ÜV0'ın güncel arayüzünde `Bolum.bellekte` alanı var (ELF'te `SHF_ALLOC` olmayan bölüm adres
+  içermez). Okuyucu `bellekte` yanlış bölümleri tarama ve bulmada atlar (`getattr(…, True)`).
+- Kabul betiği hazır: `~/karadul_olcum/runs/dalga0-2026-11-20/PUV1/kabul.py` (`dilim` / `gt` /
+  `gogo`; dilim başına ayrı süreç, tepe bellek süreç başına).
