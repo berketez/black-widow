@@ -148,3 +148,21 @@ redis-cli / benchmark libssl + jemalloc + systemd + lzf, sqlite3 readline + zlib
   denetler, zaman aşımına uğrayan ama Ghidra'sı başarılı koşuları künyede ayrıca listeler (başarısızsa ölçüm durur).
 - Sıra: `tabA/zstd/zstd` (x86-64, en büyük) iş listesinin en sonuna alındı ki kısa AArch64 işleri (tabaka B)
   onun arkasında beklemesin; `tabA/openssl/openssl` zaten kuyruktaydı (bekletmede).
+
+## Ana oturum yönergesi (11:3x) ve uygulanışı
+
+- **Sert son 15:15.** O saate kadar koşulamayan çiftler "kalan" diye yazılır; hüküm yalnız koşulan çiftlerle
+  verilir ve "kısmi" diye etiketlenir.
+- **capa kapalı:** sürücü durduruldu (bekletmedeki `tabA/openssl` çağrısı Ghidra'ya hiç girmeden sonlandırıldı;
+  dizininde yalnız boş `kosu.log`), `d0_kos.py`'ye `--ayar` eklendi, sürücü 11:32'de
+  `--ayar ~/karadul_olcum/runs/dalga0-2026-11-20/KIMLIK/capa_kapali.yaml` (`binary_reconstruction: {enable_capa:
+  false}`; ürün `Config.load` ile denendi: `enable_capa False`, `enable_capa_code_feed False`) ile yeniden başladı.
+  **Künye: koşu 29'dan itibaren (11:32) capa kapalı; ilk 28 koşu (libzstd 1, V1 10, tabaka A 17) öntanımla.
+  Kimlik ölçümünün girdisi değişmez:** ölçüm kodunda capa çıktısını okuyan yer yok
+  (`grep -rln "capa_scan\|capa_capabilities\|CAPAScanner\|capa_status" scripts/arge/kimlik/ scripts/measurement/
+  {ks1_olc,function_f1,macho_f1,macho_measure,kimlik_ciftler}.py` → eşleşme 0; yükleyici yalnız Ghidra JSON'larını,
+  `pcode.jsonl`'u ve `raw/target_info.json`'u okur); capa statik aşamada Ghidra'dan SONRA koşar ve AArch64 / Mach-O
+  hedeflerinde zaten "desteklenmiyor".
+- **Sıra (genişlik önce):** iş listesi yeniden kuruldu: önce `derleyici_surumu` (Debian 12 ve Ubuntu 24.04) ve
+  `mimari` için program başına ilk çift (18 koşu: 8 + 8 + tabaka A'nın eksik iki programı openssl, zstd), sonra kalan
+  22 çift (coreutils'in öbür 10 ikilisi × 2 dağıtım, redis-benchmark × 2), küçükten büyüğe.

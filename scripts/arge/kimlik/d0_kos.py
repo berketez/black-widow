@@ -62,12 +62,13 @@ def isaretli(d: Path) -> bool:
     return any((d / i).exists() for i in ISARETLER)
 
 
-def kos(kimlik: str, agac: Path, zaman_asimi: int, gunluk: Path) -> dict:
+def kos(kimlik: str, agac: Path, zaman_asimi: int, gunluk: Path, ayar: Path | None = None) -> dict:
     d = d0_veri.KOSU / kimlik
     d.mkdir(parents=True, exist_ok=True)
     ikili, beklenen = d0_veri.girdi(kimlik)
     gercek = sha256(ikili)
-    kayit = {"kimlik": kimlik, "girdi": str(ikili), "sha256": gercek, "beklenen_sha256": beklenen}
+    kayit = {"kimlik": kimlik, "girdi": str(ikili), "sha256": gercek, "beklenen_sha256": beklenen,
+             "ayar": None if ayar is None else {"yol": str(ayar), "icerik": ayar.read_text(encoding="utf-8")}}
     if beklenen and gercek != beklenen:
         (d / "HATA").write_text("girdi_degismis\n", encoding="utf-8")
         return dict(kayit, durum="girdi_degismis")
@@ -76,6 +77,8 @@ def kos(kimlik: str, agac: Path, zaman_asimi: int, gunluk: Path) -> dict:
     komut = [str(KUYRUK), KUYRUK_PAKETI, f"D0:{kimlik}", TIMEOUT, "-k", "30", str(zaman_asimi),
              sys.executable, "-m", "karadul", "analyze", str(ikili), "--skip-dynamic", "--stage", "static",
              "--output-dir", str(d / "ws"), "--output", str(d / "out")]
+    if ayar is not None:
+        komut += ["--config", str(ayar)]
     t0 = time.time()
     yuk0 = os.getloadavg()
     with open(d / "kosu.log", "w", encoding="utf-8") as g:
@@ -103,6 +106,8 @@ def main(argv=None) -> int:
     ap.add_argument("--isler", type=Path, required=True)
     ap.add_argument("--agac", type=Path, default=AGAC)
     ap.add_argument("--zaman-asimi", type=int, default=1800)
+    ap.add_argument("--ayar", type=Path, default=None,
+                    help="analyze --config YAML (ör. capa kapalı: binary_reconstruction: {enable_capa: false})")
     a = ap.parse_args(argv)
     agac = a.agac.expanduser().resolve()
     kunye = urun_kos.agac_kunyesi(agac)
@@ -118,7 +123,7 @@ def main(argv=None) -> int:
             return 0
         k = bekleyen[0]
         print(f"{time.strftime('%H:%M:%S')} başlıyor {k} (kalan {len(bekleyen)})", flush=True)
-        r = kos(k, agac, a.zaman_asimi, gunluk)
+        r = kos(k, agac, a.zaman_asimi, gunluk, a.ayar.resolve() if a.ayar else None)
         print(f"{time.strftime('%H:%M:%S')} {k} {r['durum']} {r.get('sure_sn_kuyruk_dahil')} sn", flush=True)
 
 
