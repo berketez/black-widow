@@ -28,6 +28,11 @@ Alt komutlar
     Birim başına Wilson %95; toplamda havuz ve program düzeyi makro (aynı programın platform
     birimleri önce ortalanır, sonra programlar eşit ağırlıkla). Çıktıda ad geçmez: yalnız sayılar ve
     adres başına hüküm kodu (``ogeler``; ``karsilastir`` bununla eşler).
+    Biçim satırı (P-Ö1, KARARLAR A-3; duyarlılık, karar dışı): ad tam eşit değilse ama GT adlarından
+    biriyle harf dizisi olarak aynıysa (``ad_bicimi.harf_tam``: büyük / küçük harf, ``_``, derleyici
+    eki, sondaki ``_<rakam>``) "tam + biçim" düzeyinde doğrudur. ``bicim_normallestirmesi`` (doğru)
+    ve ``bicim_yanlis_orani`` (yanlış) havuz ve program düzeyi makroyla yazılır; kararlar (a)–(c)
+    yalnız tam eşitlikle verilir.
 ``karsilastir``
     İki kolun (taban, yeni) yan yana tablosu ve farklar: birim başına yanlış ve doğru ad sayısı,
     kaybedilen ve kazanılan doğru ad. Öğeler birim, ikili ve adresle eşlenir; iki kol aynı dosyaları
@@ -81,6 +86,7 @@ def _ks1_yukle() -> ModuleType:
 
 ks1 = _ks1_yukle()
 
+import ad_bicimi  # noqa: E402  (ks1_olc'u sys.modules'tan alır; KLON_EKI_RE tek tanım)
 import karadul  # noqa: E402
 
 if REPO not in Path(karadul.__file__).resolve().parents:
@@ -142,7 +148,8 @@ KESIN_ETIKET_ESIGI = ks1.KESINLIK_ESIGI   # (b) "kesin" etiketli adların kesinl
 KAYIP_INCELEME_SINIRI = 0.15          # (c) kaybedilen doğru ad / tabandaki doğru ad > (havuz ya da birim)
 # Karar ölçüleri ve duyarlılık satırları (hepsi ``ks1.oran`` biçiminde)
 KARAR_OLCULERI = ("kesinlik", "yanlis_orani", "kapsam", "dogru_kapsam")
-DUYARLILIK_OLCULERI = ("nufus_ici_kesinlik", "proje_normallestirmesi", "tekil_kesinlik")
+DUYARLILIK_OLCULERI = ("nufus_ici_kesinlik", "proje_normallestirmesi", "tekil_kesinlik",
+                       "bicim_normallestirmesi", "bicim_yanlis_orani")
 KARAR_TUTUYOR = "tutuyor"
 KARAR_TUTMUYOR = "tutmuyor"
 KARAR_YETERSIZ = "yetersiz"           # giren program sayısı EN_AZ_PROGRAM'ın altında
@@ -275,8 +282,11 @@ def degerlendir_elf(genel: dict[str, Any], koken: dict[str, Any], gfonk: list[di
                 hukum = {"satir": ks1.SATIR_ESLENEMEDI, "durum": YANLIS, "proje": False}
             else:
                 hukum = ks1.capa_degerlendir(yeni, gt_adlari, platform_)
+            # Biçim düzeyi (P-Ö1; karar dışı): tam doğru ya da GT adıyla harf dizisi aynı
+            bicim = hukum["durum"] == DOGRU or (gt_adlari is not None and ad_bicimi.harf_tam(
+                yeni, [ks1.platform_adi(g, platform_) for g in gt_adlari]))
             kayitlar.append({"adres": adres, "ad": yeni, **hukum, "nufusta": adres in gt.nufus,
-                             "etiket": etiket_oku(kayit), "kanal": kanal})
+                             "etiket": etiket_oku(kayit), "kanal": kanal, "bicim": bicim})
     return kayitlar, sayac
 
 
@@ -305,16 +315,25 @@ def tekil_kesinlik(kayitlar: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def fonksiyon_ozeti(kayitlar: list[dict[str, Any]], nufus: int) -> dict[str, Any]:
-    """Karar ölçüleri + satır dökümü + duyarlılık satırları (karar dışı)."""
+    """Karar ölçüleri + satır dökümü + duyarlılık satırları (karar dışı).
+
+    ``bicim_normallestirmesi`` / ``bicim_yanlis_orani``: "tam + biçim" hükmüyle doğru ve yanlış
+    (P-Ö1). Karar ölçüleri (``olcu``) bu alana bakmaz.
+    """
     nf = [k for k in kayitlar if k["nufusta"]]
     satir = {}
     for s in SATIRLAR:
         ks = [k for k in kayitlar if k["satir"] == s]
         satir[s] = {"n": len(ks), "dogru": sum(1 for k in ks if k["durum"] == DOGRU)}
+    ad_sayisi = len(kayitlar)
+    # ``bicim`` alanı olmayan kayıt (başka araçların kurduğu) yalnız tam eşitlikle sayılır
+    bicim = sum(1 for k in kayitlar if k["durum"] == DOGRU or k.get("bicim"))
     return {**olcu(kayitlar, nufus), "satir": satir,
             "nufus_ici_kesinlik": ks1.oran(sum(1 for k in nf if k["durum"] == DOGRU), len(nf)),
             "proje_normallestirmesi": ks1.oran(sum(1 for k in kayitlar if k["proje"]), len(kayitlar)),
-            "tekil_kesinlik": tekil_kesinlik(kayitlar)}
+            "tekil_kesinlik": tekil_kesinlik(kayitlar),
+            "bicim_normallestirmesi": ks1.oran(bicim, ad_sayisi),
+            "bicim_yanlis_orani": ks1.oran(ad_sayisi - bicim, ad_sayisi)}
 
 
 def kirilim(kayitlar: list[dict[str, Any]], nufus: int, alan: str) -> dict[str, Any]:
@@ -704,6 +723,17 @@ def _makro_satiri(makro: dict[str, Any]) -> str:
     return " | ".join(yuzde(makro[a]["makro"]) for a in KARAR_OLCULERI)
 
 
+def bicim_cumlesi(f: dict[str, Any]) -> str:
+    """P-Ö1 duyarlılık cümlesi: "tam + biçim" hükmüyle doğru (havuz) ve yanlış (program makrosu).
+    Alan yoksa (P-Ö1'den önceki çıktı) "veri yok" yazılır; sayı uydurulmaz."""
+    havuz_, makro_ = f.get("havuz") or {}, f.get("makro") or {}
+    if "bicim_normallestirmesi" not in havuz_ or "bicim_yanlis_orani" not in makro_:
+        return "biçim satırı: veri yok (P-Ö1'den önceki çıktı)"
+    return (f"biçim normalleştirmesiyle doğru {_o(havuz_['bicim_normallestirmesi'])}; tam + biçim "
+            f"yanlış {_o(havuz_['bicim_yanlis_orani'])}, tam + biçim makro yanlış "
+            f"{yuzde(makro_['bicim_yanlis_orani']['makro'])}")
+
+
 def olc_markdown(s: dict[str, Any]) -> str:
     """Bir kolun özeti. Ad içermez."""
     kol, arac, t = s.get("kol") or {}, s["arac"], s["toplam"]
@@ -729,7 +759,8 @@ def olc_markdown(s: dict[str, Any]) -> str:
            "birimleri önce ortalanır. Duyarlılık (karar dışı), havuz: yalnız ad bekleyen nüfustaki adların "
            f"kesinliği {_o(f['havuz']['nufus_ici_kesinlik'])}; proje normalleştirmesiyle doğru "
            f"{_o(f['havuz']['proje_normallestirmesi'])}; tekil adla kesinlik "
-           f"{_o(f['havuz']['tekil_kesinlik'])}.", "",
+           f"{_o(f['havuz']['tekil_kesinlik'])}; {bicim_cumlesi(f)} (P-Ö1; büyük / küçük harf, `_`, "
+           "derleyici eki ve sondaki `_<rakam>` dışında GT ile aynı ad).", "",
            "## Kararlar (bu kol tek başına)", "",
            "| Karar | Ölçü | Makro | Eşik | Giren programlar | Küçük birimler | Sonuç |",
            "|---|---|---|---|---|---|---|"]
@@ -820,6 +851,8 @@ def karsilastir_markdown(s: dict[str, Any]) -> str:
     for kol in ("taban", "yeni"):
         f = s["kollar"][kol]["toplam"]
         sat.append(f"| {kol} | {_olcu_satiri(f['havuz'])} | {_makro_satiri(f['makro'])} |")
+    sat += [""] + [f"Duyarlılık (karar dışı), {kol}: {bicim_cumlesi(s['kollar'][kol]['toplam'])}."
+                   for kol in ("taban", "yeni")]
     sat += ["", "| Kol | \"kesin\" etiketli ad | Doğru | Kesinlik (havuz) | Makro kesinlik | Kapsam (havuz) |",
             "|---|---|---|---|---|---|"]
     for kol in ("taban", "yeni"):

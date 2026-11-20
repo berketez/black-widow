@@ -1,0 +1,61 @@
+{
+ "_comment": "ÖLÇÜ planı P-Ö1 (biçim satırı; scripts/measurement/ad_bicimi.py ve urun_olc.py duyarlılık satırı) mutasyon koruması. m1-m5 planın listesi (olcu/PLAN.md §3 P-Ö1), m6-m7 ek. Her mutant bir tanımı bozar; ilgili test KIRMIZI olmalı (killed). Mutantların uzunluğu özgününden farklı (.pyc tuzağı); find metni dosyada tekil. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_po1.json",
+ "mutants": [
+  {
+   "id": "po1_m1_kucuk_harf_yok",
+   "desc": "m1: harf dizisinde .lower() kaldırılır (deve yazımı küçük harfle eşleşmez)",
+   "module": "scripts/measurement/ad_bicimi.py",
+   "test": "tests/test_ad_bicimi.py::test_deve_yazimi_kucuk_harf_dogru",
+   "find": "return re.sub(r\"[^a-z0-9]\", \"\", govde.lower())",
+   "replace": "return re.sub(r\"[^a-z0-9]\", \"\", govde)"
+  },
+  {
+   "id": "po1_m2_cakisma_eki_soyulmaz",
+   "desc": "m2: sondaki _N çakışma eki soyulmaz",
+   "module": "scripts/measurement/ad_bicimi.py",
+   "test": "tests/test_ad_bicimi.py::test_cakisma_eki_soyulur",
+   "find": "govde = re.sub(r\"_\\d+$\", \"\", ek_soy(ad))",
+   "replace": "govde = ek_soy(ad)"
+  },
+  {
+   "id": "po1_m3_derleyici_eki_soyulmaz",
+   "desc": "m3: harf dizisinde ek_soy çağrısı kaldırılır (.part.0 / .isra.0 / .cold.1 kalır)",
+   "module": "scripts/measurement/ad_bicimi.py",
+   "test": "tests/test_ad_bicimi.py::test_derleyici_eki_soyulur",
+   "find": "\"\", ek_soy(ad))",
+   "replace": "\"\", ad)"
+  },
+  {
+   "id": "po1_m4_bos_dizi_eslesir",
+   "desc": "m4: harf_tam boş harf dizisinde doğru döner (boş ad / yalnız rakam eşleşir)",
+   "module": "scripts/measurement/ad_bicimi.py",
+   "test": "tests/test_ad_bicimi.py::test_bos_ad_ve_yalniz_rakam_eslesmez",
+   "find": "return bool(h) and any(",
+   "replace": "return not h or any("
+  },
+  {
+   "id": "po1_m5_bicim_karara_girer",
+   "desc": "m5: bicim karar ölçüsünün doğru sayımına katılır (kararlar değişir)",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_bicim_kararlari_degistirmez",
+   "find": "    dogru = sum(1 for k in kayitlar if k[\"durum\"] == DOGRU)\n",
+   "replace": "    dogru = sum(1 for k in kayitlar if k[\"durum\"] == DOGRU or k.get(\"bicim\"))\n"
+  },
+  {
+   "id": "po1_m6_gt_yoksa_bicim",
+   "desc": "m6: GT'de karşılığı olmayan ad biçim düzeyinde doğru sayılır",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_bicim_alani_degerlendirmede",
+   "find": "gt_adlari is not None and ad_bicimi.harf_tam(",
+   "replace": "gt_adlari is None or ad_bicimi.harf_tam("
+  },
+  {
+   "id": "po1_m7_eski_json_veri_yok_denetimi",
+   "desc": "m7: biçim alanı olmayan (P-Ö1 öncesi) çıktıda 'veri yok' yerine alana erişilir",
+   "module": "scripts/measurement/urun_olc.py",
+   "test": "tests/test_urun_olc.py::test_bicim_uctan_uca_ve_eski_json_karsilastir",
+   "find": "if \"bicim_normallestirmesi\" not in havuz_ or \"bicim_yanlis_orani\" not in makro_:",
+   "replace": "if False:"
+  }
+ ]
+}

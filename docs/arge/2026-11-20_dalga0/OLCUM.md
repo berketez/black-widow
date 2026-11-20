@@ -19,3 +19,10 @@ Gönderim: `docs/arge/2026-11-20_dalga0/gonderim/OLCUM.md`. Dal tabanı `e996200
 ## Kalemler
 
 (her kalem bitince aşağıya eklenir: önce → onarım (dosya:satır) → sonra → test / mutant → commit)
+
+### Kalem 1 — P-Ö1 biçim satırı (bitti)
+
+- Ön kayıt `992c9cc`. Ayrıntı ve kabul tablosu: `docs/arge/2026-11-19_mythos/olcu/P-O1.md`.
+- Onarım: yeni `scripts/measurement/ad_bicimi.py`; `urun_olc.py` `degerlendir_elf` (`bicim` alanı), `fonksiyon_ozeti` (`bicim_normallestirmesi`, `bicim_yanlis_orani`), `DUYARLILIK_OLCULERI`, `bicim_cumlesi` + iki Markdown. `ks1_olc.py`'ye dokunulmadı.
+- Sonuç: **altı sayının altısı tuttu** (a62f15e: biçim 40, yanlış 79 / 1 800, makro 0,1914; f30ac9a: biçim 47, yanlış 625 / 2 261, makro 0,4077). a62f15e'de var olan alanlar bayt düzeyinde aynı (`arac` dışında); f30ac9a'da yalnız `kanal_grubu` farklı (sınıflayıcı sürümü; kalem 7'de yeniden denetlenecek).
+- Test: `tests/test_ad_bicimi.py` 9 yeni; `tests/test_urun_olc.py` +4 (36 / 36 yeşil). Mutant: `mutation_specs_po1.json` 7 / 7 öldü; `mutation_specs_urun_olc.json` 65 / 65 öldü.

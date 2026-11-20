@@ -765,3 +765,93 @@ def test_cli_olc_ve_karsilastir(tmp_path, monkeypatch, capsys):
     assert uo.main(["olc", "--kok-debian", str(tmp_path / "taban" / "debian"), "--json", str(yok),
                     "--eksik-izinli"]) == 0
     assert json.loads(yok.read_text(encoding="utf-8"))["nufus"]["eksik_izinli"] is True
+
+
+# --------------------------------------------------------------------------------------------
+# (i) P-Ö1 biçim satırı (ÖLÇÜ planı §3; duyarlılık, karar dışı)
+
+
+def test_bicim_alani_degerlendirmede():
+    """``bicim``: tam doğru ya da GT adıyla harf dizisi aynı; GT'de karşılığı yoksa False."""
+    fl = [fonk(0x101000 + 0x1000 * i) for i in range(7)]
+    harita = {"FUN_00101000": "kume_kur",            # tam
+              "FUN_00102000": "Kume_Sil",            # büyük / küçük harf: biçim
+              "FUN_00103000": "agac_gez_2",          # çakışma eki: biçim
+              "FUN_00104000": "dosya_ac",            # derleyici ekli GT: klon satırında tam
+              "FUN_00105000": "gt_siz_ad",           # GT'de karşılığı yok
+              "FUN_00106000": "kume_kul",            # bir harf farkı: yanlış
+              "FUN_00107000": "Takma_Iki"}           # ikinci takma adla biçim
+    g = gt({0x101000: ["kume_kur"], 0x102000: ["kume_sil"], 0x103000: ["agac_gez"],
+            0x104000: ["dosya_ac.isra.0"], 0x106000: ["kume_kur"], 0x107000: ["takma_bir", "takma_iki"]})
+    ks, _ = degerlendir(harita, {}, fl, g)
+    assert {k["ad"]: (k["durum"], k["bicim"]) for k in ks} == {
+        "kume_kur": ("dogru", True), "Kume_Sil": ("yanlis", True), "agac_gez_2": ("yanlis", True),
+        "dosya_ac": ("dogru", True), "gt_siz_ad": ("yanlis", False), "kume_kul": ("yanlis", False),
+        "Takma_Iki": ("yanlis", True)}
+    # Mach-O: GT'nin baştaki ``_``'ı soyulmuş adla karşılaştırılır
+    mac, _ = degerlendir({"FUN_100001000": "Komut_Bul"}, {}, [fonk(0x100001000)],
+                         gt({0x100001000: ["_komut_bul"]}), "mac")
+    assert [(k["durum"], k["bicim"]) for k in mac] == [("yanlis", True)]
+
+
+def test_bicim_duyarlilik_satiri_ozet_ve_makro():
+    def bk(ad, durum="dogru", bicim=None):
+        return {**kayit(ad, durum), "bicim": durum == "dogru" if bicim is None else bicim}
+    o = uo.fonksiyon_ozeti([bk("a"), bk("b", "yanlis", True), bk("c", "yanlis", False), bk("d", "yanlis")], 10)
+    assert (o["bicim_normallestirmesi"]["k"], o["bicim_normallestirmesi"]["n"]) == (2, 4)
+    assert (o["bicim_yanlis_orani"]["k"], o["bicim_yanlis_orani"]["n"]) == (2, 4)
+    assert (o["kesinlik"]["k"], o["yanlis_orani"]["k"]) == (1, 3)        # karar ölçüsü tam eşitlikle
+    # ``bicim`` alanı olmayan kayıt yalnız tam eşitlikle sayılır
+    eski = uo.fonksiyon_ozeti([kayit("a"), kayit("b", "yanlis")], 10)
+    assert (eski["bicim_normallestirmesi"]["k"], eski["bicim_yanlis_orani"]["k"]) == (1, 1)
+    assert set(uo.DUYARLILIK_OLCULERI) >= {"bicim_normallestirmesi", "bicim_yanlis_orani"}
+    assert not set(uo.KARAR_OLCULERI) & {"bicim_normallestirmesi", "bicim_yanlis_orani"}
+
+    def birim(n, dogru, bicim):
+        return _birim([bk(f"a{i}", "dogru" if i < dogru else "yanlis", i < dogru + bicim) for i in range(n)], 100)
+    # tmux: iki platform önce ortalanır; tree N_MIN altında girmez
+    t = uo.toplam_ozeti({"debian/tmux": birim(10, 5, 5), "mac/tmux": birim(20, 10, 0),
+                         "debian/zstd": birim(10, 2, 6), "debian/tree": birim(5, 0, 0)})
+    m = t["fonksiyon"]["makro"]["bicim_yanlis_orani"]
+    assert m["program"] == {"tmux": 0.25, "zstd": 0.2} and m["makro"] == 0.225
+    assert m["kucuk_birimler"] == ["debian/tree"]
+    h = t["fonksiyon"]["havuz"]["bicim_yanlis_orani"]
+    assert (h["k"], h["n"]) == (17, 45)
+
+
+def test_bicim_kararlari_degistirmez():
+    """Biçim satırı karar alanlarına (``kol_kararlari``, ``olcu``) girmez."""
+    def birimler(bicim):
+        return {b: _birim([{**kayit(f"a{i}", "dogru" if i < 5 else "yanlis", etiket="kesin"), "bicim": bicim}
+                           for i in range(10)], 100) for b in ("debian/a", "debian/b")}
+    acik, kapali = birimler(True), birimler(False)
+    assert uo.kol_kararlari(acik) == uo.kol_kararlari(kapali)
+    for b in acik:
+        for alan in ("etiket", "kanal", "kanal_grubu"):
+            assert acik[b]["ozet"][alan] == kapali[b]["ozet"][alan]
+        fa, fk = acik[b]["ozet"]["fonksiyon"], kapali[b]["ozet"]["fonksiyon"]
+        assert {k: v for k, v in fa.items() if not k.startswith("bicim_")} == \
+               {k: v for k, v in fk.items() if not k.startswith("bicim_")}
+        assert fa["dogru"] == 5 and fa["bicim_normallestirmesi"]["k"] == 10
+    assert uo.kol_kararlari(acik)["yanlis_orani"]["makro"] == 0.5
+
+
+def test_bicim_uctan_uca_ve_eski_json_karsilastir(tmp_path, monkeypatch):
+    """Yeni alanlar ``olc`` çıktısında; öğe biçimi değişmez; eski (P-Ö1 öncesi) JSON'la ``karsilastir``
+    çalışır ve biçim satırı "veri yok" yazılır."""
+    taban, yeni = iki_kol(tmp_path, monkeypatch)
+    f = taban["toplam"]["fonksiyon"]
+    assert "bicim_normallestirmesi" in f["havuz"] and "bicim_yanlis_orani" in f["makro"]
+    assert taban["ogeler"]["debian/tmux"]["tmux"]["101000"] == "dogru ana 1 etiketsiz string_context/oz_ad"
+    assert "biçim normalleştirmesiyle doğru 3/5" in uo.olc_markdown(taban)
+
+    def eskit(o):
+        if isinstance(o, dict):
+            return {k: eskit(v) for k, v in o.items() if not k.startswith("bicim_")}
+        return [eskit(v) for v in o] if isinstance(o, list) else o
+    eski = eskit(taban)
+    k = uo.karsilastir(eski, yeni)
+    assert k["toplam"] == uo.karsilastir(taban, yeni)["toplam"]
+    md = uo.karsilastir_markdown(k)
+    assert "Duyarlılık (karar dışı), taban: biçim satırı: veri yok" in md
+    assert "Duyarlılık (karar dışı), yeni: biçim normalleştirmesiyle doğru" in md
