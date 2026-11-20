@@ -111,7 +111,7 @@ limactl 0 / 102, Rectangle 0 / 450; Ollama x86_64'te küçük biçimli liste yok
 
 ## Testler ve mutasyon
 
-- `tests/test_puv2_objc.py`: 51 test (okuyucu 24, tip kodlaması 15 parametre + 2, adım 10; biri gerçek `Workspace` ile). Sentetik görüntü:
+- `tests/test_puv2_objc.py`: 54 test (okuyucu 26, tip kodlaması 14 = 12 parametre + 2, adım 14 = bayrak 5 parametre dahil; biri gerçek `Workspace`, biri gerçek `goruntu.ac` ile; sonda gerçek `BellekGoruntu`). Sentetik görüntü:
   `Kedi` + meta sınıf (küçük biçim 2 yöntem seçici başvurusuyla, meta sınıfta büyük biçim 1 yöntem), Swift
   işaretli `Kopek` (`bits` yeniden konumlamayla, düşük bit 2), `NSString`'e `Ek` kategorisi (bağ, seçici doğrudan),
   `Sesli` protokolü.
@@ -155,3 +155,23 @@ atlandı. **Not:** P-ÜV1'in yaması bir önceki satırı (`enable_go_metadata_r
   bakılmadı (sınama GT'si bir kez açıldı; ikinci bakış yok).
 
 Ön kayıt hükümleri: **H1 tuttu, H2 tuttu, H3 tuttu, H4 tuttu (Ollama x86_64'te veri yok), H5 tuttu.**
+
+## Tam takım — kesin (rebase sonrası, yama geçici uygulanmış; 11:14–11:25, yük altında, load 6,9)
+
+- `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökü, ORTAK §2 bağları kurulu):
+  **10 659 geçti / 12 atlandı / 152 seçilmedi / 0 kaldı** (642 sn). Günlük `…/PUV2/tam_takim.log`.
+- Yama sonra geri alındı (`git diff` temiz). Yama post-rebase `config.py`'ye `git apply --check` ile temiz uygulanıyor.
+  Yamasız dalda tek beklenen kırmızı `test_p15a_etkisiz::test_inert_registry_is_accurate` (bayrak okunuyor, INERT
+  kaydı duruyor) — yama birleştirilince kalkar.
+
+## Ana oturum için notlar
+
+- Birleştirmede `PUV2__config.py.patch` uygulanmalı (yoksa yukarıdaki test kırmızı). P-ÜV1'in yaması komşu satırı
+  siliyor: art arda uygulanırsa `git apply --3way` ya da elle.
+- Adım Faz 1 listesine ve `karadul/pipeline/steps/__init__.py`'ye eklenmedi (P-ÜV6). Bayrak kapalıyken ürün davranışı
+  değişmez (adım kayıtlı değil, çağrılmıyor).
+- `DURUM_TUTARSIZ` / `DURUM_KAPALI` `objc.py`'de yerel; P-ÜV1 de aynı adları tanımlıyorsa tek yere (`goruntu.py`)
+  taşınması P-ÜV6'ya önerilir (§11 tek tanım).
+- P-ÜV6 riski (iTerm2): Swift köprüsü kayıtları (`swift = true`, 7 420) ve Swift işaretsiz 274 kayıtta GT adı ObjC değil.
+
+## PAKET BİTTİ
