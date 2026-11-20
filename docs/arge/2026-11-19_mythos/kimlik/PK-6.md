@@ -12,7 +12,7 @@
 |---|---|---|
 | 1 Ön kayıtlar (`PK-6_on_kayit.md`, `PK-11_on_kayit.md`, grup tanımları) | bitti | `93788e5` |
 | 2 PK-6 `mimari`, `derleyici_surumu` | koşu sırada | — |
-| 3 PK-6 `surum_esli` (V1) | 4 / 4 program iki derleyiciyle derlendi, soyuldu, GT çıktı; koşu sırada | — |
+| 3 PK-6 `surum_esli` (V1) | bitti: 4 / 4 program; (e) 4 / 4 → "tmux'a özgü değil"; (b) kararsız; (d) tree tutmadı | (bu commit) |
 | 4 `iyilestirme` | veri yok (tabaka C Dalga 2'de) | — |
 | 5 PK-11 | bitti (`PK-11.md`): kural 242 / 1, alt 0,977 → (a) hat hedefi; (b) kapsam %33,6 tutmadı; (c) 0 / 199 tuttu | `ee8d78d` |
 | 6 Kilit süzgeci sınaması + mutant | bitti: 14 / 14 sınama, mutant 3 / 3 öldü | `329e9bc` |
@@ -64,3 +64,66 @@ verdi: kural 3 908 / 38, tutucu 3 709 / 28, kural_v2 4 281 / 36, tutucu_v2 4 170
 ## Bekleme (09:20)
 
 - Şu an Ghidra kuyruğunu bekliyorum: ilk işim `kitaplik/libzstd` 09:07'den beri sırada (önde OK5 postgresql-17, ANA S8-AA, HZ1 S8). Sonra V1 10 koşu, ardından `mimari` 19 ve `derleyici_surumu` 38. TAHMİNİ bitiş 12:00–13:30 (yük altında; kuyruk paylaşımlı).
+
+## Kalem 3 — `surum_esli` (V1) sonucu (10:23)
+
+- Koşular: 10 / 10 `tamam` (`--stage static`, b6aceb9, kuyruk; tek koşu 16–120 sn, kuyruk beklemesi dahil değil).
+- Komut: `PYTHONDONTWRITEBYTECODE=1 python scripts/arge/kimlik/d0_olc.py hepsi --grup surum_esli` → `KIMLIK/olcum/
+  {yayilim,hata_*,envanter,ciplak,hukum}_surum_esli.*`. Çift: macOS arm64 Mach-O, aynı kaynak (Debian yamalı), aynı
+  bayraklar (`-O2`); yalnız derleyici farklı (GCC 16 ↔ Apple clang).
+
+| Nokta | iki yön havuzu (doğru / yanlış = kesinlik [Wilson]; kapsam) | gcc → clang | clang → gcc | grup (zayıf yön) |
+|---|---|---|---|---|
+| **kural** | 2 398 / 77 = 0,969 [0,961–0,975]; %51,6 | 1 220 / 38 = 0,970 [0,959–0,978]; %53,0 | 1 178 / 39 = 0,968 [0,957–0,977]; %50,3 | **hat hedefi tuttu** (alt 0,957) |
+| tutucu | 2 152 / 57 = 0,974 [0,967–0,980]; %46,3 | 1 096 / 28 | 1 056 / 29 | hat hedefi (0,962) |
+| kural_v2 | 2 588 / 83 = 0,969 [0,962–0,975]; %55,7 | 1 314 / 40 | 1 274 / 43 | hat hedefi (0,956) |
+| tutucu_v2 | 2 426 / 57 = 0,977 [0,970–0,982]; %52,3 | 1 229 / 28 | 1 197 / 29 | hat hedefi (0,966) |
+
+Program başına, `kural` (yön başına; hüküm zayıf yönün Wilson alt sınırıyla):
+
+| Program | gcc → clang | clang → gcc | zayıf yön alt | (a) |
+|---|---|---|---|---|
+| tree | 82 / 0 = 1,000 [0,955–1]; %74,5 | 82 / 0 = 1,000 [0,955–1]; %73,9 | 0,955 | hat hedefi tuttu |
+| zstd | 368 / 12 = 0,968 [0,946–0,982]; %41,9 | 370 / 14 = 0,964 [0,940–0,978]; %39,6 | 0,940 | ad yazabilir (A-2) |
+| sqlite3 (kabuk) | 209 / 5 = 0,977 [0,947–0,990]; %74,1 | 217 / 4 = 0,982 [0,954–0,993]; %74,8 | 0,947 | ad yazabilir (A-2) |
+| redis (cli + benchmark) | 561 / 21 = 0,964 [0,946–0,976]; %54,3 | 509 / 21 = 0,960 [0,940–0,974]; %50,6 | 0,940 | ad yazabilir (A-2) |
+
+`tutucu_v2` (ikincil): tree 0,954, zstd 0,951, sqlite3 0,950, redis 0,955 → zstd, redis, tree "hat hedefi", sqlite3
+"ad yazabilir"; hepsi ≥ 0,909.
+
+**Ön kayıtlı hükümler (`surum_esli`):**
+- **(a)** grup: hat hedefi tuttu (dört noktada da; `kural` zayıf yön alt 0,957). Program: tree hat hedefi; zstd,
+  sqlite3, redis "ad yazabilir (A-2)" (0,940–0,947; 0,95'in altında, 0,909'un üstünde).
+- **(b)** tek taraflı pay 18 / 77 = %23,4 → **kararsız** (≤ %20 değil, > %50 değil). Not: bu çiftte kaynak sürümü
+  birebir aynı; tek taraflı sınıf burada yeniden adlandırma OLAMAZ (tur 1'in "aynı sürümde 0–10, iki tarafta farklı
+  fonksiyonların satır içine alınması" okumasıyla uyumlu). Sınıflar: tek taraflı 18, satır içi 14, komşu 21,
+  aile 2, diğer 22; tavan içi kesinlik 2 398 / 2 443 = 0,982 [0,975–0,986].
+- **(d)** program başına (iki yön havuzu): zstd (738 / 26 → 862 / 35; 659 / 23 → 813 / 23), sqlite3 (426 / 9 →
+  464 / 9; 354 / 9 → 452 / 9), redis (1 070 / 42 → 1 100 / 39; 973 / 25 → 1 001 / 25) **tuttu**; **tree tutmadı
+  (kapsam artmadı)**: kural 164 / 0 → kural_v2 162 / 0, tutucu 166 / 0 → tutucu_v2 160 / 0 (kesinlik değişmedi,
+  kapsam 2 ve 6 fonksiyon düştü). Ön kayıt metni gereği: "tutmayan program çıkarsa PK-4 öntanımı `TUTUCU`'ya
+  döner" — tetiklendi (neden yalnız kapsam; yanlış artmadı). Karar ana oturumun.
+- **(e) Genelleme hükmü (birincil `kural`): ölçülen 4 programın 4'ü Wilson alt ≥ 0,909 (tree 0,955, sqlite3 0,947,
+  zstd 0,940, redis 0,940) → "tmux'a özgü değil".** İkincil `tutucu_v2`: 4 / 4, aynı hüküm. Planın durma ölçütü (a)
+  tetiklenmedi. A-14'ün "en az 3 bağımsız program" şartı bu grupta sağlandı (4).
+- A-14 tekil düzey (`kural`): gcc → clang 1 015 / 33 öğe (alt 0,956), clang → gcc 1 001 / 33 (alt 0,956); program
+  başına en düşük redis 0,930 / 0,931 — hepsi ≥ 0,909.
+- Aşama kırılımı (`kural`, havuz): tekil dizgi çapası 581 / 6 = 0,990 [0,978–…]; yayılım 1 817 / 71 = 0,962. Ad
+  ailesi küme isabeti 423 / 482 = 0,878 (tur 1 G7 ile aynı yönde: aile ad değil, kanıt satırı).
+- Çıplak yöntemler (`ciplak`): BSim "depoda başvuru yok" (her koşunun deposu yalnız kendi ikilisi; ölçülmedi);
+  CFG yapısı / CFG + komut kümesi GCC ↔ clang arasında yine çok az eşleşme (ör. zstd 4 / 0 ve 5 / 1).
+- Tur 1 ile karşılaştırma (beklenti değildi): tmux 0,990, htop 0,984 (`kural`, iki yön havuzu); bu dört programda
+  havuz 0,969. Aynı sürümde kesinlik 0,96–0,98 bandında, tmux'tan biraz düşük; kapsam %40–75.
+
+### Ek satır (A6; ön kayıtta "yalnız rapor"): `surum_esli_platform` — Debian 13 Linux GCC 14 ikilisi ↔ macOS clang derlemesi, aynı kaynak sürümü
+
+| Nokta | iki yön havuzu | debian → v1clang | v1clang → debian | grup (zayıf yön) |
+|---|---|---|---|---|
+| kural | 1 446 / 70 = 0,954 [0,942–0,963]; %36,4 | 554 / 28 = 0,952 [0,931–0,967] | 892 / 42 = 0,955 [0,940–0,967] | ad yazabilir (0,931) |
+| tutucu_v2 | 1 406 / 68 = 0,954 [0,942–0,963]; %35,4 | 570 / 30 | 836 / 38 | ad yazabilir (0,929) |
+
+Program (`kural`, zayıf yön alt): tree 0,945 ve sqlite3 0,935 "ad yazabilir"; **zstd 0,875 ve redis 0,856 "kanıt
+satırı"**. Okuma (yön gösterici): platform + derleyici + ikili biçimi birlikte değişince iki program eşiğin altına
+iniyor; Debian ikilileri macOS derlemelerinden farklı yapılandırılmış (bağlı kitaplıklar `lief` ile okundu: Debian zstd zlib + lzma + lz4,
+redis-cli / benchmark libssl + jemalloc + systemd + lzf, sqlite3 readline + zlib; V1 derlemelerinde zstd yalnız zlib, redis TLS'siz, sqlite3 readline'sız). Bu satır yapılandırmayı eşlemediği için
+"platform etkisi" diye okunmamalı; A6 kısmen açık kalır.
