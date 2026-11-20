@@ -13,7 +13,7 @@
 - [x] 4. `naming_labels.py` sabitleri
 - [x] 5. Testler
 - [x] 6. Davranış değişmedi kanıtı
-- [ ] 7. Mutasyon
+- [x] 7. Mutasyon
 
 ## 1. Envanter
 
@@ -310,3 +310,27 @@ yükleniyordu, ilk koşu bu yüzden geçersiz sayıldı).
   `test_p15a_*.py`: 140 geçti (kalem 2-3'ten sonra); `naming_labels`'ı içe aktaran 12 dosya: 199 geçti (kalem 4'ten
   sonra); `tests/test_bayrak_on_paketi.py`: 160 geçti.
 - Tam takım: §8'de (sonda bir kez).
+
+## 7. Mutasyon: `scripts/measurement/mutation_specs_bayrak.json` — 14 / 14 öldü
+
+Koşum: `PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_bayrak.json`
+→ 14 killed, 0 survived, 0 error; ardından `git status` temiz (yalnız yeni spec dosyası). Her `find` dosyada tekil,
+`replace` farklı uzunlukta (üretici betik denetledi). Ayrıca 14 hedef düğüm kimliği temiz kodda var ve geçiyor
+(14 passed): "öldü" sonucu toplama hatasından gelmiyor; m03 ve m06 `--verbose` ile "1 failed".
+
+| Mutant | Ne bozar | Öldüren test |
+|---|---|---|
+| m01 | yöntem bayrağının öntanımı açılır (`oz_ad_verbatim`) | `test_alan_var_tur_ve_ontanim[...oz_ad_verbatim]` |
+| m02 | yeni bölümdeki bayrak açılır (`paket.yonetici`) | `test_alan_var_tur_ve_ontanim[paket.yonetici]` |
+| m03 | bir alan INERT kaydından çıkar | `test_inert_kaydi_ve_isaret_birlikte[paket.toplam_butce_sn]` |
+| m04 | alanın türü değişir (`ghidra_adim` int → float) | `test_alan_var_tur_ve_ontanim[timeouts.ghidra_adim]` |
+| m05 | `AD_ESIGI` formülü `+ 1` → `+ 2.0` | `test_ad_esigi_kesirle` |
+| m06 | YAML okuyucusu yeni bölümü (`kaynak`) sessizce atlar | `test_yamldan_deger_alan_degisir[kaynak.disk_on_denetim]` |
+| m07 | `MALIYET_ORANI_L` 10 → 100 | `test_maliyet_orani_on` |
+| m08 | `AD_ESIGI` kesir yerine `0.909` | `test_ad_esigi_yuvarlanmis_degil` |
+| m09 | alan satırındaki `# ETKİSİZ` yorumu kalkar, INERT kaydı durur | `test_inert_kaydi_ve_isaret_birlikte[analysis.akis_yazimi]` |
+| m10 | bütçe öntanımı plan değeri (`bsim.ingest_butcesi_sn` 0 → 900) | `test_alan_var_tur_ve_ontanim[bsim.ingest_butcesi_sn]` |
+| m11 | yeni bölüm (`kaynak`) `Config`'ten çıkar | `test_yeni_bolumler_planin_adiyla` |
+| m12 | etkisizlik gerekçesi bağlayacak paketi söylemez | `test_gerekce_bagli_paketi_soyler` |
+| m13 | liste alanının öntanımı dolu (`debug_file_dirs`) | `test_alan_var_tur_ve_ontanim[...debug_file_dirs]` |
+| m14 | `reconstruct.ara_kopyalar` bugünkü davranıştan (True) ayrılır | `test_alan_var_tur_ve_ontanim[reconstruct.ara_kopyalar]` |

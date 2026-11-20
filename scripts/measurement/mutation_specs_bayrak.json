@@ -1,0 +1,117 @@
+{
+  "_comment": "BAYRAK (Dalga 0, 2026-11-20; KARARLAR A-19 a, A-13): bayrak ön paketinin mutasyon koruması. Alanların öntanımı / türü, INERT kaydı ile '# ETKİSİZ' yorumunun birlikteliği, YAML yükleyicisinin yeni bölümleri, AD_ESIGI = L / (L + 1). Her mutant bir korumayı bozar; ilgili test KIRMIZI olmalı (killed). find metni dosyada tekil, replace farklı uzunlukta (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_bayrak.json",
+  "mutants": [
+    {
+      "id": "m01_bayrak_ontanimi_acik",
+      "desc": "yöntem bayrağının öntanımı açılır (ÖK-1 oz_ad_verbatim)",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_alan_var_tur_ve_ontanim[binary_reconstruction.oz_ad_verbatim]",
+      "find": "    oz_ad_verbatim: bool = False  # ETKİSİZ: ÖK-1 bağlayacak (INERT_SETTINGS)",
+      "replace": "    oz_ad_verbatim: bool = True  # ETKİSİZ: ÖK-1 bağlayacak (INERT_SETTINGS)"
+    },
+    {
+      "id": "m02_yeni_bolum_bayragi_acik",
+      "desc": "yeni bölümdeki bayrak (paket.yonetici; planda 'öntanım açık') bu pakette açılır",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_alan_var_tur_ve_ontanim[paket.yonetici]",
+      "find": "    yonetici: bool = False  # ETKİSİZ: ÖL-5a bağlayacak (INERT_SETTINGS)",
+      "replace": "    yonetici: bool = True  # ETKİSİZ: ÖL-5a bağlayacak (INERT_SETTINGS)"
+    },
+    {
+      "id": "m03_inert_kaydi_silinir",
+      "desc": "bir alan INERT kaydından çıkar (alan satırındaki ETKİSİZ yorumu duruyor)",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_inert_kaydi_ve_isaret_birlikte[paket.toplam_butce_sn]",
+      "find": "    \"paket.toplam_butce_sn\": _pending_binding(\"ÖL-5a\"),\n",
+      "replace": ""
+    },
+    {
+      "id": "m04_alan_turu_degisir",
+      "desc": "alanın türü değişir (timeouts.ghidra_adim int -> float)",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_alan_var_tur_ve_ontanim[timeouts.ghidra_adim]",
+      "find": "    ghidra_adim: int = 0  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)",
+      "replace": "    ghidra_adim: float = 0  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)"
+    },
+    {
+      "id": "m05_ad_esigi_formulu_bozulur",
+      "desc": "AD_ESIGI formülünde + 1 -> + 2.0 (L / (L + 2))",
+      "module": "karadul/core/naming_labels.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_ad_esigi_kesirle",
+      "find": "AD_ESIGI: float = MALIYET_ORANI_L / (MALIYET_ORANI_L + 1)\n",
+      "replace": "AD_ESIGI: float = MALIYET_ORANI_L / (MALIYET_ORANI_L + 2.0)\n"
+    },
+    {
+      "id": "m06_yaml_yeni_bolumu_atlar",
+      "desc": "YAML okuyucusu yeni bir bölümü (kaynak) sessizce atlar",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_yamldan_deger_alan_degisir[kaynak.disk_on_denetim]",
+      "find": "            if body is None:\n                continue\n",
+      "replace": "            if body is None or section == \"kaynak\":\n                continue\n"
+    },
+    {
+      "id": "m07_maliyet_orani_degisir",
+      "desc": "maliyet oranı L = 10 -> 100",
+      "module": "karadul/core/naming_labels.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_maliyet_orani_on",
+      "find": "MALIYET_ORANI_L: int = 10\n",
+      "replace": "MALIYET_ORANI_L: int = 100\n"
+    },
+    {
+      "id": "m08_ad_esigi_yuvarlanmis_sayi",
+      "desc": "AD_ESIGI kesir yerine yuvarlanmış 0.909 yazılır",
+      "module": "karadul/core/naming_labels.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_ad_esigi_yuvarlanmis_degil",
+      "find": "AD_ESIGI: float = MALIYET_ORANI_L / (MALIYET_ORANI_L + 1)\n",
+      "replace": "AD_ESIGI: float = 0.909\n"
+    },
+    {
+      "id": "m09_etkisiz_isareti_kalkar",
+      "desc": "alan satırındaki ETKİSİZ yorumu kalkar, INERT kaydı durur",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_inert_kaydi_ve_isaret_birlikte[analysis.akis_yazimi]",
+      "find": "    akis_yazimi: bool = False  # ETKİSİZ: ÖL-3 bağlayacak (INERT_SETTINGS)",
+      "replace": "    akis_yazimi: bool = False"
+    },
+    {
+      "id": "m10_butce_ontanimi_plan_degeri",
+      "desc": "bütçe öntanımı 'sınırsız' yerine plan değeri (bsim.ingest_butcesi_sn 0 -> 900)",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_alan_var_tur_ve_ontanim[bsim.ingest_butcesi_sn]",
+      "find": "    ingest_butcesi_sn: int = 0  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)",
+      "replace": "    ingest_butcesi_sn: int = 900  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)"
+    },
+    {
+      "id": "m11_yeni_bolum_configten_cikar",
+      "desc": "yeni bölüm (kaynak) Config'ten çıkar",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_yeni_bolumler_planin_adiyla",
+      "find": "    kaynak: KaynakConfig = field(default_factory=KaynakConfig)\n",
+      "replace": ""
+    },
+    {
+      "id": "m12_gerekce_paketi_soylemez",
+      "desc": "etkisizlik gerekçesi bağlayacak paketi söylemez",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_gerekce_bagli_paketi_soyler",
+      "find": "f\"henüz hiçbir kod okumuyor: alan önceden eklendi (bayrak ön paketi), {package} bağlayacak\"",
+      "replace": "\"henüz hiçbir kod okumuyor: alan önceden eklendi (bayrak ön paketi)\""
+    },
+    {
+      "id": "m13_liste_ontanimi_dolu",
+      "desc": "liste alanının öntanımı boş değil (debug_file_dirs)",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_alan_var_tur_ve_ontanim[binary_reconstruction.debug_file_dirs]",
+      "find": "    debug_file_dirs: list[str] = field(default_factory=list) ",
+      "replace": "    debug_file_dirs: list[str] = field(default_factory=lambda: [\"/\"]) "
+    },
+    {
+      "id": "m14_ara_kopyalar_bugunku_degil",
+      "desc": "reconstruct.ara_kopyalar öntanımı bugünkü davranıştan (True) ayrılır",
+      "module": "karadul/config.py",
+      "test": "tests/test_bayrak_on_paketi.py::test_alan_var_tur_ve_ontanim[reconstruct.ara_kopyalar]",
+      "find": "    ara_kopyalar: bool = True  # ETKİSİZ: ÖL-7 bağlayacak (INERT_SETTINGS)",
+      "replace": "    ara_kopyalar: bool = False  # ETKİSİZ: ÖL-7 bağlayacak (INERT_SETTINGS)"
+    }
+  ]
+}
