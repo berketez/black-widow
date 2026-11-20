@@ -203,11 +203,11 @@
     },
     {
       "id": "kapsayici_js_hattina",
-      "desc": "P19: tanınan kapsayıcı yine JS hattına düşer",
+      "desc": "P19: tanınan kapsayıcı yine JS hattına düşer (MUTBAKIM 2026-11-20: 715f024 kapsayıcı koşulunu genel UNKNOWN dalına kattı; mutant yalnız kapsayıcıyı dışarıda bırakır, kapsayıcısız UNKNOWN atlanmaya devam eder)",
       "module": "karadul/stages.py",
       "test": "tests/test_ps1_kapsayici.py::test_synthetic_wheel_is_skipped_not_js",
-      "find": "if target.target_type == TargetType.UNKNOWN and (target.metadata or {}).get(\"container\"):",
-      "replace": "if False and (target.metadata or {}).get(\"container\"):"
+      "find": "        if target.target_type == TargetType.UNKNOWN:\n            return StageResult(\n                stage_name=self.name, success=False, skipped=True,",
+      "replace": "        if target.target_type == TargetType.UNKNOWN and not (target.metadata or {}).get(\"container\"):\n            return StageResult(\n                stage_name=self.name, success=False, skipped=True,"
     },
     {
       "id": "kapsayici_basarili_sayilir",

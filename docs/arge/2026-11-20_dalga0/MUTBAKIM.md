@@ -41,3 +41,11 @@ Ana oturumun son doğrulaması (`~/karadul_olcum/runs/dalga0-2026-11-20/son_dogr
     2. **Dize 'false' açık sayılır** (yeni `p20_k6_dize_false_acik`): `is True` → `is not False`; test `test_prepass_flag_requires_true_not_truthy` (YAML'dan gelen `"false"` açılmamalı). Öldü.
   - Not: mutant `karadul/config.py`'yi yalnız koşu süresince değiştirir (probe geri yazar); `config.py`'ye kalıcı yazım yok (A-19).
 - Kaldırılan mutant yok; yeni test yok.
+
+### ps1 — önce 33 öldü / 0 hayatta / 1 hata → sonra 34 / 0 / 0 (34 mutant)
+
+- **Hata: `kapsayici_js_hattina`** (P19: tanınan kapsayıcı yine JS hattına düşer). `find` eşleşmiyordu.
+  - Kodu değiştiren commit: `715f024` (P-S4 / BICIM-10, "dürüst durumlar"): `ReconstructionStage`'deki `if target.target_type == TargetType.UNKNOWN and (…).get("container"):` koşulu genel `if target.target_type == TargetType.UNKNOWN:` dalına katıldı (kapsayıcısız UNKNOWN da atlanıyor).
+  - Niyet korundu: mutant yalnız kapsayıcıyı dışarıda bırakır (`… == TargetType.UNKNOWN and not (target.metadata or {}).get("container")`), kapsayıcısız UNKNOWN atlanmaya devam eder; `find` üç satırlık tekil blok (`return StageResult(… skipped=True,` dahil; dosyada 4 `if target.target_type == TargetType.UNKNOWN:` var). Test aynı (`test_synthetic_wheel_is_skipped_not_js`). Öldü.
+  - Not: `mutation_specs_ps4.json`'daki `ps4` mutantı aynı bloğu öbür yönde bozuyor (yalnız kapsayıcı atlanır); ikisi birlikte dalın iki yarısını kilitliyor.
+- Kaldırılan mutant yok; yeni test yok.
