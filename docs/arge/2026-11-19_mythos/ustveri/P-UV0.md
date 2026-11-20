@@ -50,7 +50,7 @@
 
 (19 dilimin tamamı `kabul_macho.json`'da; hepsinde fark 0.)
 
-**H2 → TUTTU.** Ollama arm64: `__DATA_CONST,__objc_classlist`'in ilk girdisi için `gosterici()` = `0x1018d6598`, `__DATA,__objc_data` bölümünde (yerel adres); `__DATA_CONST,__got` 293 girdinin 293'ü `Bag` (ilk üçü `___objc_personality_v0`, `_class_addMethod`, `_class_addProtocol`).
+**H2 → TUTTU.** Ollama arm64: `__DATA_CONST,__objc_classlist`'in ilk girdisi için `gosterici()` = `0x1018d6598`, `__DATA,__objc_data` bölümünde (yerel adres); `__DATA_CONST,__got` 293 girdinin 293'ü `Bag` (depo herkese açık: çıkarılan adlar yazılmadı, yalnız sayı).
 
 Ek (ön kayıtta yoktu, bilgi): Rectangle (`LC_DYLD_INFO`) bağ işlem kodlarından arm64 2 911, x86_64 2 739 bağ yeri; `__got` 161 / 251 girdinin 123 / 200'ü `Bag`. Bağımsız sayımla karşılaştırılmadı (P-ÜV2 kalem 6 doğrular).
 
