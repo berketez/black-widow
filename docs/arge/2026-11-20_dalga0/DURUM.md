@@ -76,4 +76,4 @@ Yaşayan kayıt: hangi paket kimde, ne main'e girdi, hangi karar verildi. Oturum
 
 ## Bekleyenler
 
-- Gece koşusu (ÖLÇ-1 + HZ-0, boş makine) ve Avast dışlaması: OLCEK paketinin `GECE_PLANI.md`'si gelince Berke'ye sorulacak.
+- **Gece koşusu ertelendi (Berke 10:4x, A-26):** bu gece yok. Sabit ürün `be9550e`, ağaç `~/karadul_olcum/urun-be9550e`, Avast kökü `~/karadul_olcum/runs/hiz-avast-dislama/be9550e` (boş) silinmez. Berke izin verdiği gece: `PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 python scripts/arge/olcek/gece_kosusu.py --commit be9550e --gece 1 [--avast-dislama-yapildi]`, ertesi gece `--gece 2` (Gece 2'den önce `--yalniz duman`).
