@@ -18,6 +18,7 @@ Bağlayıcılık sırası (çelişkide üstteki geçerli): `docs/arge/2026-11-19
 
 ## 3. Ghidra kuyruğu (yeni, zorunlu)
 
+- **2026-11-20 12:5x'ten beri iki yuva (KARARLAR A-31):** ad / kimlik ölçen koşular aynı anda en çok 2; süre ölçen koşu `ghidra_kuyruk.sh --tek …` ile yalnız koşar. (Bu satırın altındaki "tek koşu" anlatımı Dalga 0 içindir.)
 - Makinede aynı anda **tek** Ghidra koşusu. Ghidra başlatan her komutu (`python -m karadul analyze`, `scripts/measurement/urun_kos.py`, pyghidra kullanan her betik) şu sarmalayıcıyla çalıştır:
 
   `~/karadul_olcum/ghidra_kuyruk.sh <PAKET> <etiket> <komut> [arg ...]`

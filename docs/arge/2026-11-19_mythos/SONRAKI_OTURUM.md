@@ -184,6 +184,6 @@ Canlı kayıt `docs/arge/2026-11-20_dalga0/DURUM.md`; kararlar A-21 … A-30 (`K
 
 **Bugünün dersleri (uygulayan oturum için):**
 - Ajan dalını main'e alırken aralık tabanı `git merge-base main <dal>` ile bulunur (ajan `--ff-only main`'i gönderimden biraz sonra yapınca taban kayar; bugün bir kez çakıştı, geri alındı).
-- Kuyrukta kısa işler uzun işlerin arkasında aç kalıyor: `~/karadul_olcum/ghidra_kuyruk.bekle.<PAKET>` ile uzun işli paket geçici bekletilir. Süre ölçmeyen koşular için 2 yuva önerildi (Berke'nin kararı bekliyor).
+- Kuyrukta kısa işler uzun işlerin arkasında aç kalıyor: `~/karadul_olcum/ghidra_kuyruk.bekle.<PAKET>` ile uzun işli paket geçici bekletilir. **A-31: kuyruk iki yuvalı** (ad / kimlik ölçen koşular 2 paralel; süre ölçümü `--tek`).
 - Her gönderimde sert son (saat) yazılır; ajanlar "kalan" listesiyle döner.
 - Gerçek uygulama sayısı her raporun ilk satırıdır ([[feedback-gercek-uygulamada-olc]] hafıza kaydı).
