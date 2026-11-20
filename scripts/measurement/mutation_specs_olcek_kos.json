@@ -1,0 +1,53 @@
+{
+  "_comment": "ÖLÇ-A ölçek koşucusu (scripts/measurement/olcek_kos.py) mutasyon koruması. Her mutant bir davranışı bozar; ilgili test KIRMIZI olmalı (killed). find metinleri dosyada tekil, replace uzunluğu farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_olcek_kos.json",
+  "mutants": [
+    {
+      "id": "olcek_kos_duvar_esigi",
+      "desc": "duvar sınırı 3 kat geç uygulanır (duvar 5 sn → 15 sn)",
+      "module": "scripts/measurement/olcek_kos.py",
+      "test": "tests/test_olcek_kos.py::test_duvar_sigterm_karadula_gider_time_l_kalir",
+      "find": "kod = surec.wait(timeout=a.duvar_sn)",
+      "replace": "kod = surec.wait(timeout=a.duvar_sn * 3)"
+    },
+    {
+      "id": "olcek_kos_sigkill_yok",
+      "desc": "bekleme payı dolunca SIGKILL yerine SIGCONT: SIGTERM'i yok sayan süreç ölmez",
+      "module": "scripts/measurement/olcek_kos.py",
+      "test": "tests/test_olcek_kos.py::test_duvar_sigterm_yok_sayan_surec_sigkill_ile_olur",
+      "find": "os.killpg(surec.pid, signal.SIGKILL)",
+      "replace": "os.killpg(surec.pid, signal.SIGCONT)"
+    },
+    {
+      "id": "olcek_kos_sigterm_time_a",
+      "desc": "SIGTERM karadul yerine time sürecine gider: time -l satırları kaybolur",
+      "module": "scripts/measurement/olcek_kos.py",
+      "test": "tests/test_olcek_kos.py::test_duvar_sigterm_karadula_gider_time_l_kalir",
+      "find": "hedefler = [p for p, (pp, _) in _ps_tablosu().items() if pp == surec.pid] or hedefler",
+      "replace": "hedefler = list(hedefler)"
+    },
+    {
+      "id": "olcek_kos_tepe_rss_secimi",
+      "desc": "tepe RSS en büyük yerine hiç güncellenmez (karşılaştırma ters)",
+      "module": "scripts/measurement/olcek_kos.py",
+      "test": "tests/test_olcek_kos.py::test_ornekleyici_agac_rss_tepesi_torunlari_icerir",
+      "find": "if rss is not None and rss[0] > self.tepe_rss_kib:",
+      "replace": "if rss is not None and rss[0] < self.tepe_rss_kib:"
+    },
+    {
+      "id": "olcek_kos_agac_rss_torunsuz",
+      "desc": "RSS yalnız kök sürecin (time) kendisi; torunlar (karadul, decompiler) sayılmaz",
+      "module": "scripts/measurement/olcek_kos.py",
+      "test": "tests/test_olcek_kos.py::test_ornekleyici_agac_rss_tepesi_torunlari_icerir",
+      "find": "pidler = [kok_pid, *torunlar(kok_pid, tablo)]",
+      "replace": "pidler = [kok_pid]"
+    },
+    {
+      "id": "olcek_kos_adim_kaynagi_onceligi",
+      "desc": "ghidra_status.adim_sureleri (HZ-1) yok sayılır, hep dosya zamanına düşülür",
+      "module": "scripts/measurement/olcek_kos.py",
+      "test": "tests/test_olcek_kos.py::test_ghidra_status_adim_sureleri_dosya_zamanindan_once_gelir",
+      "find": "if isinstance(adim, dict) and adim:",
+      "replace": "if isinstance(adim, dict) and not adim:"
+    }
+  ]
+}
