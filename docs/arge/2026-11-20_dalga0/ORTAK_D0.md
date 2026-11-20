@@ -13,6 +13,7 @@ Bağlayıcılık sırası (çelişkide üstteki geçerli): `docs/arge/2026-11-19
 - ONARIM_BRIF §2 aynen: kendi worktree'n; dalında commit yokken ilk iş `git merge --ff-only main` (sonra `git log --oneline -1` = `git rev-parse main`); komutlar worktree kökünden `python -m …`; `python -c "import karadul; print(karadul.__file__)"` worktree yolunu göstermeli; ana ağaca YAZMA; git'in izlemediği çalışma verisi gerekiyorsa symlink (`sigs`, `vendor`, `signatures_homebrew*.json`, `sigs_macos_system.json`, `signatures.lmdb`, `scripts/node_modules`; asla commit'leme); Python `/opt/anaconda3/bin/python`; paket kurma ve ağa çıkma YASAK; `PYTHONDONTWRITEBYTECODE=1`.
 - Makine: Apple M4 Max, 14 çekirdek, 36 GB bellek. Aynı anda 5 ajan + ana oturumun koşuları var; yük yüksek olabilir.
 - Kabuk zsh: komutu ya da listeyi değişkende tutma (`${=VAR}` ya da fonksiyon).
+- **Scratchpad bütün alt ajanlar arasında ORTAK** (2026-11-20 08:5x'te iki ajanın `tam_takim.log`'u birbirine karıştı). Geçici dosyalarını (tam takım günlüğü dahil) yalnız kendi alt dizininde tut: `~/karadul_olcum/runs/dalga0-2026-11-20/<PAKET>/` ya da `<scratchpad>/<PAKET>/`. Ortak bir dosya adından sonuç okuma.
 - `codex`, `gemini` ya da başka model CLI'ı çağırma; alt ajan açma.
 
 ## 3. Ghidra kuyruğu (yeni, zorunlu)
