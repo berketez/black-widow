@@ -87,3 +87,34 @@ Gönderim: `docs/arge/2026-11-20_dalga0/gonderim/OLCUM.md`. Dal tabanı `e996200
 ### Tam takım
 
 - 09:07: tam takım başlıyor (worktree kökünden; çalışma verisi bağları kuruldu, commit'lenmedi). Yük altında (`uptime` 8,1 / 12,0 / 13,4); TAHMİNİ bitiş 09:20–09:35. Günlük: `~/karadul_olcum/runs/dalga0-2026-11-20/OLCUM/tam_takim.log`.
+- Sonuç (`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`, `45fca9c`): **10 322 geçti / 11 atlandı / 0 kaldı** (152 seçim dışı; 591 sn, yük altında). Taban b6aceb9: 10 289 / 11; fark +33 = bu paketin yeni sınamaları (`test_ad_bicimi` 9, `test_urun_olc` +4, `test_olcum_araci_d0` 19, `test_saglamlik_denetle` +1).
+
+## Özet
+
+| Kalem | Durum | Önce → sonra | Test | Mutant | Commit |
+|---|---|---|---|---|---|
+| ön kayıt | — | — | — | — | `992c9cc` |
+| 1 P-Ö1 biçim satırı | bitti | altı sayının altısı tuttu; var olan alanlar iki kolda eski çıktıyla aynı (f30ac9a kalem 7'den sonra) | +13 | po1 7 / 7 | `4125a04` |
+| 2 `ks1_olc` `BITTI` | bitti | gerçek köklerde 119 tamam → 119 tamam (kısmi / hatalı yok); sentetikte kısmi / hatalı / Mac `BITTI`'siz artık bitmiş sayılmaz | +9 | 8 / 8 | `90cb08b` |
+| 3 `masum_kapi` `sarif` | bitti | a62f15e yanlış 12 → 0 (doğru bilinen 0 → 12); f30ac9a 81 → 81 (kontrol) | +2 | 5 / 5 | `d184113` |
+| 4 `saglamlik_denetle` "yazıldı" | bitti | a62f15e `log_yazildi_satiri_yok` 119 → 0, `sayi:log_*` 119 → 0 | +1 | 2 / 2 | `561b76c` |
+| 5 `read_elf_info` not sahibi | bitti | 86 ELF'te farklı BuildID 2 → 0 | +1 | 1 / 1 | `2daed48` |
+| 6 `urun_kos` künyesi | bitti | künyede önbellek dizini ve imza VT künyesi yok → var (şema 2, `s2-b32ee9f65b1a-20261118`) | +3 | 5 / 5 | `3d57fee` |
+| 7 `urun_olc` sınıflayıcı | bitti | f30ac9a sessizce yanlış sınıflanıyordu (92 alan) → durur; seçenekle eski çıktıyla aynı | +4 | 5 / 5 | `45fca9c` |
+
+Var olan tanımlar (son kodla): `urun_olc` 65 / 65, `ks1` 67 / 67, `p00` 41 / 41, `function_f1` 18 / 18 öldü.
+
+**Yamalar:** yok (her değişiklik bu paketin dosyalarında).
+
+**Riskler ve ana oturumun bilmesi gerekenler:**
+1. `ks1_olc.py` ve `function_f1.py` KS-1 ön kaydının sabitlediği dosyalar (`OLCUM_DOSYALARI`). Bu paketten önce `ks1_olc.py olc` sapma kaydı 1'in sha256'larıyla tutuyordu; şimdi durur. KS-1 ölçümü yeniden koşulacaksa yeni sapma kaydı (`ks1_sapma_2`) gerekir. `urun_olc` / `taban_dok` bu denetimi yapmaz, etkilenmez.
+2. `masum_kapi` `sarif` eşiği yazılmadı; komut kalem 3'te. Eski çıktı JSON'undan (`onarim-2026-11-19/OLCUM/masum_cikti/`) `--esik-yaz` yapılırsa `sarif` 12 yazılır; önce o, sonra `sarif`'e özel yeni çıktı (son yazan kazanır).
+3. Kalem 7'den sonra sınıflayıcısı bugünkünden farklı bir ürünün kökü (`urun-yeni2-f30ac9a`, `urun-yeni-93a2956` …) `urun_olc olc` ile seçeneksiz ölçülemez: `--siniflayici-agac <o ürünün ağacı>` gerekir. Bilerek böyle (sessiz yanlış sınıflama yerine durma). Sınıflayıcı dosyası olmayan eski kökler (`n1_debian13`, ol7) durmaz, `denetlenemedi` yazılır.
+4. `ks1_olc` BITTI kuralında iki bilerek gevşek durum (boş `BITTI`, işaretsiz Mac dizini; yalnız sentetik köklerde; özete ayrı işaretle girer). Gerçek köklerde sayısı 0.
+5. Aynı kusur deseni başka yerde: `masum_kapi.kosu_ikilileri` `BITTI`'nin yalnız varlığına bakıyor (kısmi `3` bitmiş görünür). Bu paketin kalem listesinde yoktu; dokunulmadı (ayrı küçük iş).
+6. `urun_kos.agac_kunyesi` artık imza VT künyesi için ayrı bir Python süreci açıyor (~0,2 sn; LMDB salt okur, kilitsiz, bütünlük karması yok). Çözücüsü olmayan eski ağaçta `hata` alanı doludur, işlev hata fırlatmaz.
+7. Worktree'de çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules` git'te izlenmeyen olarak görünüyor) duruyor; commit'lenmedi.
+
+Disk: 740,4 GB (08:23) → 746,0 GB (09:2x; ortak makine). Bu paketin çıktısı `~/karadul_olcum/runs/dalga0-2026-11-20/OLCUM/` 8,5 MB.
+
+## PAKET BİTTİ
