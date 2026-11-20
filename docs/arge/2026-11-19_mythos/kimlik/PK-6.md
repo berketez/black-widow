@@ -166,3 +166,16 @@ redis-cli / benchmark libssl + jemalloc + systemd + lzf, sqlite3 readline + zlib
 - **Sıra (genişlik önce):** iş listesi yeniden kuruldu: önce `derleyici_surumu` (Debian 12 ve Ubuntu 24.04) ve
   `mimari` için program başına ilk çift (18 koşu: 8 + 8 + tabaka A'nın eksik iki programı openssl, zstd), sonra kalan
   22 çift (coreutils'in öbür 10 ikilisi × 2 dağıtım, redis-benchmark × 2), küçükten büyüğe.
+
+## Ara sonuç: `mimari` 17 / 19 çift (11:36; KISMİ — openssl, zstd kuyrukta; son hüküm aşağıda yinelenecek)
+
+`python scripts/arge/kimlik/d0_olc.py hepsi --grup mimari --etiket mimari_ara --kismi` (v1 noktaları; v2
+desteklenmiyor). `tabA/tmux` süre sınırına takıldı, Ghidra çıktısı tamam (`success`).
+
+- `kural`: iki yön havuzu **6 146 / 4 = 0,999 [0,998–1,000]**, kapsam %77,2; amd64 → arm64 3 063 / 2,
+  arm64 → amd64 3 083 / 2 → grup **hat hedefi tuttu** (zayıf yön alt 0,998). `tutucu`: 5 920 / 2.
+- Program (`kural`, zayıf yön alt): coreutils 0,994, tmux 0,998, sqlite3 0,983, redis 0,976, htop 0,970, tree 0,955
+  → hepsi "hat hedefi tuttu".
+- (b) yanlış toplamı 4 (< 10) → "sayı yetmedi" (tek taraflı 0). A-14 tekil düzey 2 563 / 2 ve 2 575 / 2 (alt 0,997).
+- Okuma: aynı paket sürümü + aynı derleyici sürümünde yalnız mimari değişince eşleyici neredeyse hatasız; kanıt
+  türleri (dizgi, içe aktarım, P-code sabitleri, çağrı grafiği) mimariden bağımsız.
