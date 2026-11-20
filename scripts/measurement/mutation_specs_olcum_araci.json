@@ -104,6 +104,22 @@
    "test": "tests/test_olcum_araci_d0.py::test_sarif_yara_kurali_alani",
    "find": "        return str(p[\"technology_name\"]).split(\" (\")[0]\n",
    "replace": "        return None\n"
+  },
+  {
+   "id": "k4_yalniz_ascii_yazildi",
+   "desc": "kalem 4: günlük satırı yine yalnız ASCII 'yazildi' ile aranır (bugünkü Türkçe satır okunmaz)",
+   "module": "scripts/measurement/saglamlik_denetle.py",
+   "test": "tests/test_saglamlik_denetle.py::test_turkce_yazildi_satiri_okunur",
+   "find": "dosya yaz[ıi]ld[ıi] \\((\\d+) kaynak",
+   "replace": "dosya yazildi \\((\\d+) kaynak"
+  },
+  {
+   "id": "k4_yalniz_turkce_yazildi",
+   "desc": "kalem 4: eski (1.22.1) ASCII 'yazildi' satırı tanınmaz",
+   "module": "scripts/measurement/saglamlik_denetle.py",
+   "test": "tests/test_saglamlik_denetle.py::test_turkce_yazildi_satiri_okunur",
+   "find": "dosya yaz[ıi]ld[ıi] \\((\\d+) kaynak",
+   "replace": "dosya yazıldı \\((\\d+) kaynak"
   }
  ]
 }

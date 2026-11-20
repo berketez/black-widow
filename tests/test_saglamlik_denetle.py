@@ -197,3 +197,21 @@ def test_gercek_kosu_tree():
                   "denetci_hatasi"):
         assert kalem not in s["kusur"], kalem
     assert not [x["ad"] for x in s["k1"]["sayilar"] if x["ad"].startswith("log_") and not x["esit"]]
+
+
+# --------------------------------------------------------------------------------------------
+# OLCUM kalem 4 (2026-11-20): Türkçe "yazıldı" satırı (karadul/cli.py, 1.24'ten beri)
+# --------------------------------------------------------------------------------------------
+def test_turkce_yazildi_satiri_okunur(tmp_path):
+    """Bugünkü ürün "OK n dosya yazıldı (…)" yazar; denetim eskiden yalnız ASCII ``yazildi``'yi
+    tanıyordu (a62f15e kökünde 119 / 119 ``log_yazildi_satiri_yok``). İki yazım da okunur."""
+    assert sd.LOG_YAZILDI_RE.search("  OK 280 dosya yazıldı (275 kaynak, 2 rapor)").groups() == ("280", "275", "2")
+    assert sd.LOG_YAZILDI_RE.search("  OK 4 dosya yazildi (1 kaynak, 2 rapor)").groups() == ("4", "1", "2")
+    assert sd.LOG_YAZILDI_RE.search("  OK 4 dosya yazılamadı (1 kaynak, 2 rapor)") is None
+    d = _kosu(tmp_path, "debian/p/tr")
+    _yaz(d / "kosu.log", GUNLUK.replace("dosya yazildi", "dosya yazıldı"))
+    s = _denetle(tmp_path, "debian/p/tr", {"sonuclar": [{"anahtar": "debian/p/tr", "durum": "tamam"}]})
+    assert "log_yazildi_satiri_yok" not in s["kusur"]
+    assert (s["k1"]["log"]["yazilan"], s["k1"]["log"]["kaynak"], s["k1"]["log"]["rapor"]) == (4, 1, 2)
+    log_sayilari = {x["ad"]: x["degerler"]["log"] for x in s["k1"]["sayilar"] if x["ad"].startswith("log_")}
+    assert log_sayilari == {"log_yazilan_dosya": 4, "log_kaynak_dosya": 1}

@@ -61,6 +61,9 @@ DOGAL_CIFTLER = (
 )
 BITTI_DOSYASI = "BITTI"          # urun_kos.BITTI
 GUNLUK_DOSYASI = "kosu.log"      # urun_kos.calistir
+# ``karadul/cli.py`` özet satırı: "OK n dosya yazıldı (k kaynak, r rapor)". 1.24'ten beri Türkçe
+# (``yazıldı``); 1.22.1 ve öncesi ASCII (``yazildi``). İkisi de tanınır (OLCUM kalem 4).
+LOG_YAZILDI_RE = re.compile(r"OK (\d+) dosya yaz[ıi]ld[ıi] \((\d+) kaynak, (\d+) rapor\)")
 KUNYE_DOSYASI = "kosu_kunyesi.json"
 
 # ---------------------------------------------------------------------------
@@ -605,7 +608,7 @@ def kosu_denetle(kosu: dict):
     log_satir = log_metin.split("\n")
     k5["log_satir"] = len(log_satir)
     lg = k1["log"] = {}
-    m = re.search(r"OK (\d+) dosya yazildi \((\d+) kaynak, (\d+) rapor\)", log_metin)
+    m = LOG_YAZILDI_RE.search(log_metin)
     if m:
         lg["yazilan"], lg["kaynak"], lg["rapor"] = map(int, m.groups())
     else:
