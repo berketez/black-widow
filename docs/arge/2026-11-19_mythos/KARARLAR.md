@@ -48,6 +48,16 @@ Kaynak: `karsi/KARSI.md` (İ-1 … İ-13), `karsi/CAKISMA.md`. Hat belgeleri de�
 | A-19 | **Ortak altyapı bir kez yazılır.** (a) Bayrak ön paketi: bütün planların `karadul/config.py` alanları tek pakette, öntanımı kapalı (`CAKISMA.md` §2.1); sonraki paketler `config.py`'ye yazmaz. (b) Ortak ikili okuyucu P-ÜV0; ÖK-4a ve PK-2 onun arayüzünü kullanır. (c) Ghidra kuyruğu tek listede, ana oturum tutar. | İ-9, İ-10 | bayrak ön paketi (yeni), P-ÜV0, ÖK-4a, PK-2 |
 | A-20 | P12d (dalda; 17 doğru ad geri, 4 yeni yanlış) tek başına main'e alınmaz; ÖK-1 (harf koruma) ile aynı ajanda, sırayla alınır ve birlikte ölçülür. D2'nin gerektirdiği işçi süreç düzeltmesi (D1 commit'inde) mutlaka alınır. | — | P12d, ÖK-1, ÖK-2 |
 
+## 2026-11-20 (uygulama oturumu, Dalga 0)
+
+| No | Karar | Kimin | Sonucu |
+|---|---|---|---|
+| A-21 | **Push onaylandı.** | Berke (08:1x) | Tam takım (b6aceb9: 10 289 / 0) ve son doğrulama mutasyonlarından sonra (6 / 7 tanım temiz; p20'deki tek hayatta mutant bilinen bayat tanım → MUTBAKIM), gizli anahtar / büyük dosya taraması temiz: `a62f15e..e996200` (114 commit) push edildi. |
+| A-22 | **V5 indirme onaylandı** (KİMLİK PK-11). | Berke | `libzstd1_1.5.7+dfsg-1_arm64.deb` (266 052 B) + `libzstd1-dbgsym_…` (1 834 508 B), deb.debian.org; InRelease gpgv + sha256 doğrulandı; `~/karadul_olcum/n2_tabaka/kitaplik/` (künye `kitaplik_veri.json`). |
+| A-23 | **A-12'nin cevabı: iki işe de izin** — Go derleyicisi (go1.26.11 + go1.27.4, go.dev) ve Debian kaynak paketlerinden yerel derleme. | Berke | Koşullar A-4'teki gibi: yalnız resmî kaynak, sha256 dizinle, ağ kapalı derleme; derleme çıktıları çalıştırılmaz, yalnız analiz edilir. V1 kaynakları indirildi (tree, libzstd, sqlite3, redis; 31,2 MB; `~/karadul_olcum/kimlik_v1/`, künye `v1_veri.json`). Go derleyicisi, onu kullanan paket (P-ÜV9 kalem 3–4) sıraya girince indirilir. redis'in `deps/lua` kodu V1 ölçümünde dışarıda kalır (lua kilitli setin stres alt kümesinde; `kimlik/PLAN.md` PK-11). |
+| A-24 | **ÖL-10 tasarım turu Mythos oturumuna bırakıldı.** | Berke | Dalga 0 sekiz ajana indi (OL10 çıktı). ÖL-10 Dalga 4'ün önkoşulu olarak açık; gönderim metni `docs/arge/2026-11-20_dalga0/gonderim/OL10.md` Mythos oturumu için hazır. |
+| A-25 | `AD_ESIGI = MALIYET_ORANI_L / (MALIYET_ORANI_L + 1)` (= 0,90909…); A-13'teki "0,909" bu kesrin yuvarlanmış yazımıdır. | ana oturum (Berke'nin yetkisiyle) | Bayrak ön paketi sabiti kesirle tanımlar; Wilson alt sınırı bu değerle karşılaştırılır. |
+
 ## A-1'in dürüst sınırı (kayıt için)
 
 ÖLÇÜ hattı ölçtü: iki model hakemin birbirini öngörmesi 0,96–0,99. Yani iki model hakemin uyumu yüksek çıkacaktır, ama bu uyum hükmün doğru olduğunu göstermez; aynı yanılgıyı paylaşıyor olabilirler. Bu yüzden:
