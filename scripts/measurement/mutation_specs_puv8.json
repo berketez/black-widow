@@ -1,0 +1,109 @@
+{
+ "_comment": "HEDEF / P-ÜV8 kalem 1–4 ölçü işlevleri (2026-11-20). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv8.json",
+ "mutants": [
+  {
+   "id": "puv8_abi_her_eki_soyar",
+   "desc": ".abi0 kuralı her eki soyar (kapanış .func1 de soyulur)",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::TestGoYazimi::test_abi_kurali_baska_eki_soymaz",
+   "find": "ABI_EKI_RE = re.compile(r\"\\.abi(?:0|internal)$\")",
+   "replace": "ABI_EKI_RE = re.compile(r\"\\.[A-Za-z0-9_]+$\")"
+  },
+  {
+   "id": "puv8_kategori_sinifi_soyar",
+   "desc": "kategori kuralı sınıf adını da soyar",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::TestObjcYazimi::test_kategori_soyulur_sinif_kalir",
+   "find": "        return ad[:i] + ad[j + 1:]",
+   "replace": "        return ad[:2] + ad[j + 2:].strip()"
+  },
+  {
+   "id": "puv8_payda_gt_siz_sayar",
+   "desc": "kesinliğin paydası GT'siz adresleri de sayar",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_kanal_olc_gt_siz_paydaya_girmez",
+   "find": "\"kesinlik\": oran(dogru, dogru + yanlis)",
+   "replace": "\"kesinlik\": oran(dogru, sayac[\"ad_verilen\"])"
+  },
+  {
+   "id": "puv8_kesin_sembol_toplam",
+   "desc": "kesin ∪ sembol yerine toplam",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_butce_say_kesin_veya_sembol_birlesim",
+   "find": "\"kesin_veya_sembol\": len(kesin | sembol)",
+   "replace": "\"kesin_veya_sembol\": len(kesin) + len(sembol)"
+  },
+  {
+   "id": "puv8_wilson_n_yerine_k",
+   "desc": "A-2 satırında Wilson'a n yerine k verilir",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_a2_satiri_esik_ve_n",
+   "find": "    alt = wilson_alt_kesin(dogru, dogru + yanlis)",
+   "replace": "    alt = wilson_alt_kesin(dogru, dogru)"
+  },
+  {
+   "id": "puv8_cok_adli_herhangi",
+   "desc": "çok adlı adreste tek eşleşme yeter (bütün adlar değil)",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_cok_adli_adreste_butun_adlar_dogru_olmali",
+   "find": "            return YANLIS, None",
+   "replace": "            continue"
+  },
+  {
+   "id": "puv8_sinama_reddi_yok",
+   "desc": "sınama ikilisinde kanal kesinliği reddedilmez",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_sinama_ikilisinde_kanal_kesinligi_reddedilir",
+   "find": "    if us.bolme(ad) != us.BOLME_KESIF and not sinama_izni:",
+   "replace": "    if us.bolme(ad) == us.BOLME_KESIF and sinama_izni:"
+  },
+  {
+   "id": "puv8_gt_siz_yanlis",
+   "desc": "GT'si olmayan adres yanlış sayılır",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_kanal_olc_gt_siz_paydaya_girmez",
+   "find": "        return GT_SIZ, None",
+   "replace": "        return YANLIS, None  # gt_siz"
+  },
+  {
+   "id": "puv8_a2_esik_gevsek",
+   "desc": "A-2 kararı eşiğin altındakine 'evet' der",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_a2_satiri_esik_ve_n",
+   "find": "            \"karar\": A2_EVET if alt >= AD_ESIGI else A2_HAYIR}",
+   "replace": "            \"karar\": A2_EVET if alt >= AD_ESIGI - 0.05 else A2_HAYIR}"
+  },
+  {
+   "id": "puv8_nufus_thunk",
+   "desc": "ürün nüfusu thunk'ları ve adlıları da sayar",
+   "module": "scripts/measurement/ustveri_olc.py",
+   "test": "tests/test_puv8_olcum.py::test_urun_kayitlari_suzgec_ve_hukum",
+   "find": "    adsiz = {g[\"addr\"] for g in gfonk if not g[\"is_thunk\"] and f1.is_generic_name(g[\"name\"], [g[\"addr\"]])}",
+   "replace": "    adsiz = {g[\"addr\"] for g in gfonk}"
+  },
+  {
+   "id": "puv8_macho_onek_soyulmaz",
+   "desc": "Mach-O C öneki (baştaki _) soyulmaz",
+   "module": "scripts/measurement/ustveri_set.py",
+   "test": "tests/test_puv8_olcum.py::TestGoYazimi::test_birebir_mach_o_oneki_soyulur",
+   "find": "    return ad[1:] if ad.startswith(\"_\") else ad",
+   "replace": "    return ad"
+  },
+  {
+   "id": "puv8_dilim_ofset",
+   "desc": "evrensel dosyada dilim ofsetsiz boyla kesilir",
+   "module": "scripts/measurement/ustveri_set.py",
+   "test": "tests/test_puv8_olcum.py::test_dilim_kes_evrensel_ve_ince",
+   "find": "    return ham[ofs:ofs + boy]",
+   "replace": "    return ham[ofs:boy]"
+  },
+  {
+   "id": "puv8_rtti_yalniz_typeinfo",
+   "desc": "RTTI GT'sine yalnız __ZTI alınır (vtable düşer)",
+   "module": "scripts/measurement/ustveri_set.py",
+   "test": "tests/test_puv8_olcum.py::test_nm_ayristir_fonksiyon_ve_rtti",
+   "find": "        if ad.startswith(RTTI_ONEKLERI):",
+   "replace": "        if ad.startswith(\"__ZTI\"):"
+  }
+ ]
+}
