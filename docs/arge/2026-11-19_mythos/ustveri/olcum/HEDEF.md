@@ -109,4 +109,12 @@ Soyulmuş kopyada kanal çıktısı ↔ özgünün sembol tablosu (`ustveri_olc.
 ## Ürün ölçüm aracının doğrulaması
 
 - `ustveri_olc.urun_kayitlari` (süzgeç + hüküm) Mac tmux koşusunda (`~/karadul_olcum/runs/urun-onarim-a62f15e/mac/tmux`, GT `workspaces/olcum_mac/corpus/tmux/gt`) `urun_olc.degerlendir_elf` ile aynı sonucu verdi: 236 ad / 205 doğru, yalnız bir yanda 0, hüküm farkı 0 (commit `a260351`; ilk sürümde klon satırı kuralı yoktu, eklendi).
-- Tam takım arka planda koşuyor (`a260351`; günlük `~/karadul_olcum/runs/dalga0-2026-11-20/HEDEF/tam_takim/`).
+## Tam takım
+
+- 1. koşu (09:42, `a260351`): 7 kaldı / 10 393 geçti — hepsi worktree'de çalışma verisi bağı olmamasından (`vendor/gnulib-ref` FileNotFoundError, `scripts/node_modules`, `sigs`); benim değişikliğimle ilgisiz.
+- ORTAK_D0 §2'deki bağlar kuruldu (`sigs`, `vendor`, `signatures_homebrew*.json`, `sigs_macos_system.json`, `signatures.lmdb`, `scripts/node_modules`; commit'lenmez). 7 test yeniden: 25 / 25 geçti.
+- **2. koşu (09:48, aynı kod): 10 505 geçti / 11 atlandı / 0 kaldı, 539 sn (yük altında: `load averages: 5.92 6.55 7.73`).** Günlük `~/karadul_olcum/runs/dalga0-2026-11-20/HEDEF/tam_takim/tam_takim2.log`.
+
+## Bekleme (09:57)
+
+- Kuyruk: OK5 bitti; KIMLIK `D0:kitaplik/libzstd` koşuyor, HZ1 S8 ikililerini tek tek kuyruğa sokuyor; `urun:terminal-notifier` 09:33:28'den beri bekliyor. TAHMİNİ başlama 10:00–11:00, koşu 1–5 dk.
