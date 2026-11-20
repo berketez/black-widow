@@ -242,3 +242,25 @@ En büyük iki iş: postgresql-17 (ayar, 10,3 MB; TAHMİN 1 052–2 628 sn) ve p
 | 7 | `OK5.md` hükümleri | bitti (§7) |
 | 8 | hedef erişimi (Ollama) | bitti (§8) |
 | 9 | testler ve mutasyon | bitti (§9, §10) |
+
+## 10. Son koşular
+
+- **Yanlış dökümü (PLAN ÖK-5 adım 7; ölçüm ve hüküm commit'i `f29ef12`'den SONRA):** `PYTHONDONTWRITEBYTECODE=1 python scripts/measurement/ozkod_olc.py dokum` → yalnız `~/karadul_olcum/ozkod_nufus/runs/ok5_dokum/yanlislar.json` (depoya girmedi; okunmadı). 491 satır: K1 kâhin 374 (= 2 048 − 1 674), K1 kip A 11 (= 98 − 87), G1 kapısı kapalı ikililerde 61 ve açık ikililerde 45 (toplam 106 = 593 − 487). Ad düzensizliği / gerçek yanlış ayrımı yapılmadı (ÖLÇÜ hattının girdisi).
+- **Mutasyon (son):** `PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ozkod_olc.json` → **16 / 16 killed**, 0 survived, 0 error; ardından `git diff` temiz.
+- **Tam takım (son, kod değişikliklerinden sonra):** `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` → **10 317 geçti / 11 atlandı / 0 kaldı** (152 seçilmedi; 497 sn, yük altında; `~/karadul_olcum/runs/dalga0-2026-11-20/OK5/tam_takim_2.log`). Taban b6aceb9: 10 289; fark +28 = `tests/test_ozkod_olc.py`.
+- Çalışma verisi bağları (`sigs`, `vendor`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`, `scripts/node_modules`) worktree'de duruyor; commit'lenmedi.
+
+## 11. Commit'ler (dal `worktree-agent-a6b44e6ccb8e6088a`, taban `e996200`)
+
+`03e32f1` ilerleme dosyası · `f90253d` ÖK-V adım 5 koşucusu · `06ef538` `ozkod_olc.py` + eşdeğerlik · **`c5a57ea` ön kayıt** · `8663362` hedef erişimi, döküm, mutantlar · `6788473` ilerleme · `af2d2b2` Bug: stapsdt BuildID · `96d7d0f` mutant 16 · `6885d95`, `a0f7d81`, `db2978c` ilerleme · **`4601218` ayar dondurması** · `6de3101` BİLDİRİM · `72f1dac`, `1ba63f6`, `0416097`, `c2e488b`, `93e663b` ilerleme · `8acd791` Bug: K1-a karar metni · `f29ef12` kör sayımı, hükümler, NUFUS §9 · (bu commit) son koşular.
+
+## 12. Riskler ve açık noktalar
+
+1. **K1-a'nın kolu:** sonuç (Wilson alt %80,01, kesinlik %81,7) planın üç kolunun hiçbirine tam düşmüyor; ÖK-4b'nin yeniden ön kaydı ya da kapalı kalması ana oturumun kararı. Yeniden ön kayıt seçilirse bu nüfusun kör tarafı artık görüldü: yeni kural için yeni bağımsız nüfus gerekir.
+2. **Nüfusun bileşimi:** K1 kör adlarının %47'si Python stdlib modüllerinden (45 küçük `.so`, `PyMethodDef`), %20'si lua modüllerinden; havuz kesinliği bu iki kaynağa duyarlı (program düzeyi makro %71,7).
+3. **KS-1 bu ürün sürümünde ayar tarafında çapa vermedi** (G1 kapısının yarısı ölü); kör tarafta 12 ikilide verdi. Kapının kör tarafta düz G1'den kötü seçmesi buna bağlı olabilir — bakılmadı.
+4. **Taraf eşlemesi ve uyarlamalar:** veri katmanı (`ozkod_veri`) aynen; değişen yalnız modül düzeyi kökler / listeler (`etkin`), `read_elf_info`'nun `build_id`'si (yalnız ÖK-V'de, GNU notu) ve hedef erişiminde GT'siz / C++ süzgeçsiz bağlam. Hepsi `ozkod_olc.py`'de, bağlam yöneticisi içinde; testli ve mutantlı.
+5. **Süre:** bütün süreler yük altında (yük ortalaması 3–18); hız sonucu değildir. Kör koşular kuyruk payı yüzünden 2,5 saat sürdü (BİLDİRİM 10:09; ana oturum 10:48'de KIMLIK'i bekletti).
+6. Olgu önbelleği (pickle, `~/karadul_olcum/ozkod_nufus/runs/ok5/onbellek*`) kör tarafın adlarını içerir (makine verisi; okunmadı, depoya girmedi). Silme kararı ana oturumun.
+
+## PAKET BİTTİ
