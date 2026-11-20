@@ -25,7 +25,7 @@ Ek öngörü (planın 5b adımı ve HZ-5 adım 8 eşiği; TAHMİN `hiz/BULGULAR.
 
 | No | Öngörü | Ölçüm yolu |
 |---|---|---|
-| H0-f | AppCDS: K'de ilk Ghidra adımı eksi otomatik analiz (JVM + içe aktarma + fonksiyon listesi) oranı ≤ 0,85. TAHMİN sınıf yükleme kısmı −%15–35 (§4.2). | pay: `k_appcds/K/{2,3,4}` ortancası; payda: `hz0/K/{1,2,3}` ortancası. Adım: `ghidra.adim_sureleri["otomatik_analiz+fonksiyonlar"]` (HZ-1 varsa `functions`) − `static/ghidra_log.txt` "Otomatik analiz: N sn". `k_appcds/K/1` arşivi kurar, hesaba girmez. |
+| H0-f | AppCDS: K'de ilk Ghidra adımı eksi otomatik analiz (JVM + içe aktarma + fonksiyon listesi) oranı ≤ 0,85. TAHMİN sınıf yükleme kısmı −%15–35 (§4.2). | pay: `k_appcds/K/{2,3,4}` ortancası; payda: `hz0/K/{1,2,3}` ortancası. Adım: dosya zamanı yolu her durumda (HZ-1 alanı olsa da; HZ-1'in `functions` süresi JVM + içe aktarmayı kapsamayabilir): `olcek_kos.ghidra_adim_sureleri(<ws>/static/ghidra_output, ghidra_sn)["otomatik_analiz+fonksiyonlar"]` − `static/ghidra_log.txt` "Otomatik analiz: N sn". `k_appcds/K/1` arşivi kurar, hesaba girmez. *(Ölçüm yolu 09:0x'ta, koşudan önce netleştirildi; öngörü ve eşik değişmedi.)* |
 
 ## Kabul (planın)
 
