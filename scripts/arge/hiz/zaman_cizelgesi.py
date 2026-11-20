@@ -194,6 +194,15 @@ def gosteri(kok: Path, cikti: Path) -> dict:
     sonuc: dict = {"kok": str(kok), "calisma_alani": str(ws)}
     basladi = (kok / "BASLADI").read_text().strip() if (kok / "BASLADI").exists() else None
     t0 = dt.datetime.strptime(basladi, "%Y-%m-%d %H:%M:%S").timestamp() if basladi else None
+    sonuc["basladi_kaynagi"] = "BASLADI" if basladi else None
+    if basladi is None:
+        # ÖLÇ-A koşucusu (olcek_kos.py) BASLADI yazmaz; başlangıç kunye.json'da (ISO, saat dilimli).
+        kunye = _json(kok / "kunye.json") or {}
+        if kunye.get("baslangic"):
+            bas = dt.datetime.fromisoformat(kunye["baslangic"])
+            t0 = bas.timestamp()
+            basladi = bas.astimezone().strftime("%Y-%m-%d %H:%M:%S")
+            sonuc["basladi_kaynagi"] = "kunye.json"
     sonuc["basladi"] = basladi
     sonuc["bitti"] = (kok / "BITTI").read_text().strip() if (kok / "BITTI").exists() else None
     sonuc["cikis"] = (kok / "CIKIS").read_text().strip() if (kok / "CIKIS").exists() else None

@@ -557,7 +557,7 @@ def _bitis_kunyesi(kok: Path, agac: Path, t0_epoch: float, sure: float, durum: s
     return out
 
 
-def main(argv: list[str] | None = None) -> int:
+def ayristirici() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--agac", type=Path, required=True, help="ürünün yükleneceği git ağacı")
     ap.add_argument("--hedef", type=Path, required=True, help="analiz edilecek dosya ya da .app")
@@ -565,12 +565,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--duvar-sn", type=float, required=True, help="duvar sınırı (sn)")
     ap.add_argument("--ayar", type=Path, default=None, help="karadul --config yaml")
     ap.add_argument("--etiket", default="")
+    # Değer "-XX:..." ile başlar: komut satırında "--java-ek=<değer>" biçiminde verilmeli (argparse).
     ap.add_argument("--java-ek", default="", help="JAVA_TOOL_OPTIONS'a eklenecek JVM seçenekleri")
     ap.add_argument("--ornek-aralik", type=float, default=ORNEK_ARALIK_SN)
     ap.add_argument("--disk-aralik", type=float, default=DISK_ARALIK_SN)
     ap.add_argument("--kill-bekle-sn", type=float, default=KILL_BEKLE_SN)
     ap.add_argument("--komut", default=None, help="TEST KANCASI: analiz komutunun yerine (shlex)")
-    return kos(ap.parse_args(argv))
+    return ap
+
+
+def main(argv: list[str] | None = None) -> int:
+    return kos(ayristirici().parse_args(argv))
 
 
 if __name__ == "__main__":

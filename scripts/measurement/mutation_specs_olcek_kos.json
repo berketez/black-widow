@@ -48,6 +48,78 @@
       "test": "tests/test_olcek_kos.py::test_ghidra_status_adim_sureleri_dosya_zamanindan_once_gelir",
       "find": "if isinstance(adim, dict) and adim:",
       "replace": "if isinstance(adim, dict) and not adim:"
+    },
+    {
+      "id": "gece_bos_makine_esik_kesin",
+      "desc": "boş makine: eşiğe EŞİT yük de 'altında' sayılır",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_bekle_sessiz_esik_kesin_alt",
+      "find": "if y < esik:",
+      "replace": "if y <= esik:"
+    },
+    {
+      "id": "gece_bos_makine_baslangic_esigi",
+      "desc": "başlangıç yükü denetimi iki kat gevşek (3,6 geçerli sayılır)",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_gecerlilik_kurallari",
+      "find": "if not yuk_bas < esik:",
+      "replace": "if not yuk_bas < esik * 2:"
+    },
+    {
+      "id": "gece_bos_makine_bitis_yok_sayilir",
+      "desc": "bitişte yükün sönmesi denetlenmez (dış yük altında biten koşu geçerli sayılır)",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_bitiste_yuk_inmezse_gecersiz",
+      "find": "gecerli, neden = gecerlilik(yuk_bas, son_indi, esik)",
+      "replace": "gecerli, neden = gecerlilik(yuk_bas, True, esik)"
+    },
+    {
+      "id": "gece_bos_makine_on_bekleme",
+      "desc": "yük inmese de koşu başlatılır",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_on_bekleme_inmezse_baslatilmaz",
+      "find": "if not indi and not a.yuk_uyar:",
+      "replace": "if False:"
+    },
+    {
+      "id": "gece_surdurme_bitti_atlanmaz",
+      "desc": "sürdürme: BITTI olan koşu yeniden koşulur",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_bitti_olan_kosu_atlanir",
+      "find": "if bitti_mi(k.kok):",
+      "replace": "if False and bitti_mi(k.kok):"
+    },
+    {
+      "id": "gece_surdurme_kesildi_bitti_sayilir",
+      "desc": "sürdürme: 'kesildi' yazan (yarıda kesilen) koşu bitmiş sayılır",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_kesildi_ve_yarim_dizin_saklanip_yeniden_kosulur",
+      "find": "not in (\"\", \"kesildi\")",
+      "replace": "not in (\"\",)"
+    },
+    {
+      "id": "gece_yineleme_sayisi",
+      "desc": "geçersiz deneme 2 değil 1 kez yinelenir",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_baslangic_yuku_yuksek_iki_kez_yinelenir",
+      "find": "en_cok = 1 if a.yuk_uyar else a.en_cok_deneme",
+      "replace": "en_cok = 1 if a.yuk_uyar else a.en_cok_deneme - 1"
+    },
+    {
+      "id": "gece_hz0_yayilim_esigi",
+      "desc": "HZ-0 yayılım eşiği 0,10 yerine 0,50: yayılımı 0,30 olan hedefe ek tekrar koşulmaz",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_hz0_yayilim_ek_tekrar_en_cok_iki",
+      "find": "if y is None or y <= YAYILIM_ESIGI:",
+      "replace": "if y is None or y <= YAYILIM_ESIGI * 5:"
+    },
+    {
+      "id": "gece_java_ek_ayri_belirtec",
+      "desc": "--java-ek değeri ayrı belirteçte verilir: '-XX:' ile başlayan değer argparse'ı bozar (dumanın ilk denemesi)",
+      "module": "scripts/arge/olcek/gece_kosusu.py",
+      "test": "tests/test_olcek_kos.py::test_kuyruk_komutu_kosucunun_ayristiricisiyla_okunur",
+      "find": "ic += [f\"--java-ek={k.java_ek}\"]",
+      "replace": "ic += [\"--java-ek\", k.java_ek]"
     }
   ]
 }

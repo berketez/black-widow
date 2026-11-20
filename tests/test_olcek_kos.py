@@ -396,3 +396,331 @@ def test_analiz_komutu_bicimi(tmp_path):
     assert k[1:5] == ["-m", "karadul", "analyze", "/h/x"]
     assert k[5:] == ["--skip-dynamic", "--output-dir", str(tmp_path / "ws"), "--output",
                      str(tmp_path / "out"), "--config", str(tmp_path / "a.yaml")]
+
+
+# ============================================================================================
+# scripts/arge/olcek/gece_kosusu.py — gece kuyruğu: boş makine denetimi ve sürdürme
+#
+# Kilitlenen davranışlar:
+#   (f) boş makine: 1 dk yük eşiğin KESİNLİKLE altında olmalı; başlamadan önce sönüm beklenir, inmezse
+#       koşu başlatılmaz; bitişte en çok son-bekle süresi içinde inmeli; başlangıç yükü koşucunun kaydı;
+#   (g) geçersiz deneme saklanır (``.gecersiz<k>``) ve en çok 2 kez yinelenir;
+#   (h) sürdürme: ``BITTI`` olan koşu atlanır (``kesildi`` hariç); yarım dizin ``.yarim<k>`` olarak saklanıp
+#       yeniden koşulur; canlı pid'li yarım koşuya dokunulmaz; BITTI yazmayan koşu yinelenmez;
+#   (i) kuyruk sırası ve koşu tanımları (HZ-0 K1 O1 B1 …, B'de gösteri ayarı, duvarlar, avast kökü,
+#       JFR yolu, duman etiketi); ``--kuru`` hiçbir şey oluşturmaz ve TAHMİNİ toplamı basar; Berke onayı
+#       olmadan avast grubu koşmaz.
+
+import argparse  # noqa: E402
+
+_GK_PATH = _KOK / "scripts" / "arge" / "olcek" / "gece_kosusu.py"
+_gspec = importlib.util.spec_from_file_location("gece_kosusu_under_test", _GK_PATH)
+gk = importlib.util.module_from_spec(_gspec)
+sys.modules[_gspec.name] = gk
+_gspec.loader.exec_module(gk)
+
+
+def _ns(tmp_path, **kw):
+    v = dict(en_cok_deneme=3, yuk_bekle_sn=30, son_bekle_sn=180, yuk_uyar=False, disk_alt_gb=0,
+             kuyruk_paket="TEST", kok=tmp_path)
+    v.update(kw)
+    return argparse.Namespace(**v)
+
+
+def _kosu(tmp_path, ad="K"):
+    return gk.Kosu(grup="hz0", kod=ad, tekrar=1, kok=tmp_path / "hz0" / ad / "1", hedef=tmp_path / "h",
+                   duvar=100, etiket=f"hz0:{ad}#1")
+
+
+class _Yuk:
+    """Yük okuyucusu: koşu öncesi ``once``, koşu sonrası ``sonra`` (sahte çalıştırıcı geçiş yapar)."""
+
+    def __init__(self, once=1.0, sonra=1.0):
+        self.once, self.sonra, self.kosuldu = once, sonra, False
+
+    def __call__(self):
+        return self.sonra if self.kosuldu else self.once
+
+
+def _sahte_calistirici(yuk, yuk_bas, bitti=True):
+    cagri = []
+
+    def calistir(k, agac, paket, deneme, kok):
+        cagri.append(deneme)
+        yuk.kosuldu = True
+        k.kok.mkdir(parents=True, exist_ok=True)
+        (k.kok / "kunye.json").write_text(json.dumps({"yuk_bas": [yuk_bas[len(cagri) - 1], 0, 0]}))
+        if bitti:
+            (k.kok / "BITTI").write_text("tamam\n")
+        return {"cikis": 0, "sure_sn": 1.0, "dis_sinir": None}
+    return calistir, cagri
+
+
+@pytest.fixture
+def sahte_zaman(monkeypatch):
+    monkeypatch.setattr(gk, "uyu", lambda s: None)
+
+
+def test_bekle_sessiz_esik_kesin_alt(sahte_zaman):
+    ok_, okuma, gecen = gk.bekle_sessiz(3.5, 100, oku=iter([3.0]).__next__)
+    assert ok_ and okuma == [3.0] and gecen == 0
+    # eşik değerinin kendisi "altında" değildir
+    ok_, okuma, gecen = gk.bekle_sessiz(3.5, 20, oku=lambda: 3.5)
+    assert not ok_ and okuma == [3.5, 3.5, 3.5] and gecen == 20
+
+
+def test_bekle_sessiz_sonum_bekler(sahte_zaman):
+    ok_, okuma, gecen = gk.bekle_sessiz(3.5, 100, oku=iter([8.0, 6.0, 4.0, 3.4]).__next__)
+    assert ok_ and okuma == [8.0, 6.0, 4.0, 3.4] and gecen == 30
+
+
+def test_gecerlilik_kurallari():
+    assert gk.gecerlilik(3.0, True, 3.5) == (True, "boş makine")
+    g, n = gk.gecerlilik(3.6, True, 3.5)
+    assert not g and "başlangıç" in n
+    g, n = gk.gecerlilik(3.0, False, 3.5)
+    assert not g and "bitişte" in n
+    assert not gk.gecerlilik(None, True, 3.5)[0]
+    assert gk.yuk_esigi() == pytest.approx(0.25 * os.cpu_count())
+
+
+def test_bitti_olan_kosu_atlanir(tmp_path, sahte_zaman, monkeypatch):
+    k = _kosu(tmp_path)
+    k.kok.mkdir(parents=True)
+    (k.kok / "BITTI").write_text("zaman_asimi\n")
+    yuk = _Yuk()
+    monkeypatch.setattr(gk, "yuk_oku", yuk)
+    cal, cagri = _sahte_calistirici(yuk, [1.0])
+    s = gk.kos_bir(k, tmp_path, _ns(tmp_path), 3.5, calistirici=cal)
+    assert s["durum"] == "atlandi_bitti" and cagri == []
+
+
+def test_kesildi_ve_yarim_dizin_saklanip_yeniden_kosulur(tmp_path, sahte_zaman, monkeypatch):
+    k = _kosu(tmp_path)
+    k.kok.mkdir(parents=True)
+    (k.kok / "BITTI").write_text("kesildi\n")
+    yuk = _Yuk()
+    monkeypatch.setattr(gk, "yuk_oku", yuk)
+    cal, cagri = _sahte_calistirici(yuk, [1.0])
+    s = gk.kos_bir(k, tmp_path, _ns(tmp_path), 3.5, calistirici=cal)
+    assert s["durum"] == "gecerli" and cagri == [1]
+    assert (k.kok.parent / "1.yarim1" / "BITTI").read_text().strip() == "kesildi"
+    assert json.loads((k.kok / "gece_durum.json").read_text())["gecerli"] is True
+    # BITTI'siz yarım dizin de saklanır
+    k2 = _kosu(tmp_path, "O")
+    k2.kok.mkdir(parents=True)
+    (k2.kok / "kosu.log").write_text("yarım")
+    yuk.kosuldu = False
+    cal2, cagri2 = _sahte_calistirici(yuk, [1.0])
+    assert gk.kos_bir(k2, tmp_path, _ns(tmp_path), 3.5, calistirici=cal2)["durum"] == "gecerli"
+    assert (k2.kok.parent / "1.yarim1" / "kosu.log").exists() and cagri2 == [1]
+
+
+def test_canli_yarim_kosuya_dokunulmaz(tmp_path, sahte_zaman):
+    k = _kosu(tmp_path)
+    k.kok.mkdir(parents=True)
+    (k.kok / "pid.json").write_text(json.dumps({"time_pid": os.getpid(), "karadul_pid": None}))
+    with pytest.raises(SystemExit, match="hâlâ çalışıyor"):
+        gk.kos_bir(k, tmp_path, _ns(tmp_path), 3.5, calistirici=lambda *a: pytest.fail("koşuldu"))
+    assert k.kok.exists()
+
+
+def test_baslangic_yuku_yuksek_iki_kez_yinelenir(tmp_path, sahte_zaman, monkeypatch):
+    k = _kosu(tmp_path)
+    yuk = _Yuk()
+    monkeypatch.setattr(gk, "yuk_oku", yuk)
+    cal, cagri = _sahte_calistirici(yuk, [5.0, 5.0, 5.0])
+    s = gk.kos_bir(k, tmp_path, _ns(tmp_path), 3.5, calistirici=cal)
+    assert cagri == [1, 2, 3] and s["durum"] == "gecersiz"
+    assert (k.kok.parent / "1.gecersiz1").is_dir() and (k.kok.parent / "1.gecersiz2").is_dir()
+    assert not (k.kok.parent / "1.gecersiz3").exists()
+    d = json.loads((k.kok / "gece_durum.json").read_text())
+    assert d["gecerli"] is False and d["deneme"] == 3 and "başlangıç" in d["neden"]
+
+
+def test_ikinci_denemede_gecerli(tmp_path, sahte_zaman, monkeypatch):
+    k = _kosu(tmp_path)
+    yuk = _Yuk()
+    monkeypatch.setattr(gk, "yuk_oku", yuk)
+    cal, cagri = _sahte_calistirici(yuk, [5.0, 1.0])
+    s = gk.kos_bir(k, tmp_path, _ns(tmp_path), 3.5, calistirici=cal)
+    assert cagri == [1, 2] and s["durum"] == "gecerli" and len(s["gecersiz_saklanan"]) == 1
+
+
+def test_bitiste_yuk_inmezse_gecersiz(tmp_path, sahte_zaman, monkeypatch):
+    k = _kosu(tmp_path)
+    yuk = _Yuk(once=1.0, sonra=9.0)  # koşudan sonra yük hiç inmiyor (dış yük)
+    monkeypatch.setattr(gk, "yuk_oku", yuk)
+    cal, cagri = _sahte_calistirici(yuk, [1.0, 1.0, 1.0])
+    s = gk.kos_bir(k, tmp_path, _ns(tmp_path, yuk_bekle_sn=0), 3.5, calistirici=cal)
+    # ilk deneme bitişte geçersiz; yük inmediği için sonraki denemeler başlatılamaz
+    assert cagri == [1] and s["durum"] == "baslatilamadi"
+    assert s["denemeler"][0]["gecerli"] is False and "bitişte" in s["denemeler"][0]["neden"]
+    assert all(d["gecerli"] is False for d in s["denemeler"])
+
+
+def test_on_bekleme_inmezse_baslatilmaz(tmp_path, sahte_zaman, monkeypatch):
+    k = _kosu(tmp_path)
+    monkeypatch.setattr(gk, "yuk_oku", lambda: 9.0)
+    s = gk.kos_bir(k, tmp_path, _ns(tmp_path), 3.5, calistirici=lambda *a: pytest.fail("koşuldu"))
+    assert s["durum"] == "baslatilamadi" and len(s["denemeler"]) == 3
+    assert all("başlatılmadı" in d["neden"] for d in s["denemeler"])
+
+
+def test_yuk_uyar_tek_deneme_gecersiz_isaretler(tmp_path, sahte_zaman, monkeypatch):
+    k = _kosu(tmp_path)
+    yuk = _Yuk(once=9.0, sonra=9.0)
+    monkeypatch.setattr(gk, "yuk_oku", yuk)
+    cal, cagri = _sahte_calistirici(yuk, [9.0])
+    s = gk.kos_bir(k, tmp_path, _ns(tmp_path, yuk_uyar=True, yuk_bekle_sn=0, son_bekle_sn=0), 3.5,
+                   calistirici=cal)
+    assert cagri == [1] and s["durum"] == "gecersiz"
+
+
+def test_bitti_yazmayan_kosu_yinelenmez(tmp_path, sahte_zaman, monkeypatch):
+    k = _kosu(tmp_path)
+    yuk = _Yuk()
+    monkeypatch.setattr(gk, "yuk_oku", yuk)
+    cal, cagri = _sahte_calistirici(yuk, [1.0], bitti=False)
+    s = gk.kos_bir(k, tmp_path, _ns(tmp_path), 3.5, calistirici=cal)
+    assert s["durum"] == "hata" and cagri == [1]
+
+
+def _tekrar_yaz(kok, toplam, gecerli=True):
+    kok.mkdir(parents=True, exist_ok=True)
+    (kok / "gece_durum.json").write_text(json.dumps({"gecerli": gecerli}))
+    (kok / "kunye.json").write_text(json.dumps({"boru": {"toplam_sn": toplam}}))
+    (kok / "BITTI").write_text("tamam\n")
+
+
+def test_hz0_yayilim_ek_tekrar_en_cok_iki(tmp_path, monkeypatch):
+    kuy = [gk.Kosu(grup="hz0", kod=kod, tekrar=n, kok=tmp_path / "hz0" / kod / str(n), hedef=None,
+                   duvar=10, etiket=f"hz0:{kod}#{n}") for n in (1, 2, 3) for kod in ("K", "O")]
+    for k, t in zip(kuy, (100, 200, 100, 201, 130, 202)):  # K: yayılım 0,30; O: 0,01
+        _tekrar_yaz(k.kok, t)
+    assert gk.yayilim([k.kok for k in kuy if k.kod == "K"]) == pytest.approx(0.30)
+    cagri = []
+
+    def kosucu(k, agac, a, esik):
+        cagri.append(k.etiket)
+        _tekrar_yaz(k.kok, 100)
+        return {"etiket": k.etiket, "durum": "gecerli", "denemeler": []}
+    monkeypatch.setattr(gk, "_gunluk", lambda kok, metin: None)
+    s = gk.hz0_ek_tekrarlar(kuy, tmp_path, _ns(tmp_path), 3.5, kosucu=kosucu)
+    # K'de yayılım ek tekrarlarla da 0,30 kalır → tam 2 ek tekrar; O'ya hiç
+    assert cagri == ["hz0:K#4", "hz0:K#5"] and len(s) == 2
+    assert (tmp_path / "hz0" / "K" / "5" / "BITTI").exists()
+    # geçersiz tekrar yayılıma girmez; 3'ten az geçerli → hüküm yok
+    _tekrar_yaz(tmp_path / "x" / "1", 100)
+    _tekrar_yaz(tmp_path / "x" / "2", 500, gecerli=False)
+    _tekrar_yaz(tmp_path / "x" / "3", 101)
+    assert gk.yayilim([tmp_path / "x" / str(n) for n in (1, 2, 3)]) is None
+
+
+def test_kuyruk_sirasi_ve_tanimlari(tmp_path):
+    kuy = gk.kuyruk_olustur(("hz0", "p16c", "k_appcds", "avast", "b_jfr", "olc1", "duman"),
+                            tmp_path / "g", tmp_path / "av", kuru=True)
+    hz0 = [k.etiket for k in kuy if k.grup == "hz0"]
+    assert hz0 == ["hz0:K#1", "hz0:O#1", "hz0:B#1", "hz0:K#2", "hz0:O#2", "hz0:B#2",
+                   "hz0:K#3", "hz0:O#3", "hz0:B#3"]
+    b = next(k for k in kuy if k.etiket == "hz0:B#1")
+    assert b.ayar == gk.GOSTERI / "gosteri.yaml" and b.duvar == 10800 and b.hz0_ek
+    assert all(k.duvar == 7200 for k in kuy if k.grup == "olc1")
+    assert [k.kod for k in kuy if k.grup == "olc1"] == ["T100", "T300", "PAKET"]
+    av = [k for k in kuy if k.grup == "avast"]
+    assert [k.etiket for k in av] == ["avast:K#1", "avast:O#1", "avast:K#2", "avast:O#2",
+                                      "avast:K#3", "avast:O#3"]
+    assert all(str(k.kok).startswith(str(tmp_path / "av")) for k in av)
+    cds = [k for k in kuy if k.grup == "k_appcds"]
+    assert len(cds) == 4 and all("AutoCreateSharedArchive" in k.java_ek and "FlightRecording" not in k.java_ek
+                                 for k in cds)
+    jfr = next(k for k in kuy if k.grup == "b_jfr")
+    assert f"filename={jfr.kok / 'kayit.jfr'}," in jfr.java_ek and "SharedArchive" not in jfr.java_ek
+    assert next(k for k in kuy if k.grup == "duman").etiket == "duman:cat"
+
+
+def test_kuyruk_komutu_kosucunun_ayristiricisiyla_okunur(tmp_path):
+    """Duman koşusunun ilk denemesi bu yüzden düştü: '-XX:' ile başlayan değer ayrı belirteçte."""
+    kuy = gk.kuyruk_olustur(("hz0", "k_appcds", "b_jfr"), tmp_path / "g", tmp_path / "av", kuru=True)
+    for k in (next(x for x in kuy if x.grup == g) for g in ("hz0", "k_appcds", "b_jfr")):
+        k.hedef = k.hedef or tmp_path / "h"
+        komut = gk._komut(k, tmp_path / "agac", "PAKET", 1)
+        assert komut[:3] == [str(gk.KUYRUK), "PAKET", k.etiket]
+        assert komut[4] == str(gk.OLCEK_KOS)
+        arg = ok.ayristirici().parse_args(komut[5:])
+        assert arg.java_ek == k.java_ek and arg.duvar_sn == k.duvar and arg.kok == k.kok
+        assert arg.ayar == k.ayar and arg.kill_bekle_sn == ok.KILL_BEKLE_SN
+    assert gk._komut(k, tmp_path, "P", 2)[2] == f"{k.etiket}/d2"
+
+
+def test_kuru_kip_hicbir_sey_olusturmaz(tmp_path, capsys):
+    kok = tmp_path / "gece"
+    assert gk.main(["--commit", "abcdef1234", "--agac", str(tmp_path / "agac"), "--kok", str(kok),
+                    "--gece", "1", "--kuru"]) == 0
+    out = capsys.readouterr().out
+    assert "TAHMİNİ toplam" in out and "hz0:B#3" in out and "olc1" not in out
+    assert "avast grubu koşuda atlanır" in out
+    assert not kok.exists()
+
+
+def test_avast_onaysiz_kosulmaz(tmp_path, monkeypatch):
+    monkeypatch.setattr(gk, "agac_kunyesi", lambda agac: {"commit": "x"})
+    monkeypatch.setattr(gk, "donanim_kunyesi", lambda: {})
+    monkeypatch.setattr(gk, "kos_bir", lambda *a, **kw: pytest.fail("koşuldu"))
+    kok = tmp_path / "gece"
+    kod = gk.main(["--commit", "abcdef1234", "--agac", str(tmp_path), "--kok", str(kok),
+                   "--avast-kok", str(tmp_path / "av"), "--yalniz", "avast"])
+    ozet = json.loads((kok / "ozet.json").read_text())
+    assert kod == 0 and ozet["sayim"]["atlandi_onay_yok"] == 6
+    assert not (kok / "gece.pid").exists()
+
+
+# ============================================================================================
+# scripts/arge/hiz/hz0_ek.py ve zaman_cizelgesi.py'nin kunye.json eki
+
+_HZ_PATH = _KOK / "scripts" / "arge" / "hiz" / "hz0_ek.py"
+_hspec = importlib.util.spec_from_file_location("hz0_ek_under_test", _HZ_PATH)
+hz = importlib.util.module_from_spec(_hspec)
+sys.modules[_hspec.name] = hz
+_hspec.loader.exec_module(hz)
+
+
+def test_hz0_ek_izler_ve_acma_olcer(tmp_path):
+    oku = tmp_path / "oku"
+    oku.mkdir()
+    for i in range(5):
+        (oku / f"f{i}.c").write_text("x")
+    kok = tmp_path / "kok"
+    dec = kok / "ws" / "workspaces" / "a" / "b" / "static" / "ghidra_output" / "decompiled"
+    dec.mkdir(parents=True)
+    (dec / "g.c").write_text("y")
+    p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2.5)"])
+    try:
+        s = hz.izle(p.pid, kok, 0.5, oku, en_uzun_sn=30, n=5)
+    finally:
+        p.kill()
+        p.wait()
+    assert len(s["ornekler"]) >= 2
+    assert all(o["is_parcacigi"] >= 1 and o["toplam_islemci_sn"] >= 0 for o in s["ornekler"])
+    assert s["acma_bas"]["oku_ac"]["n"] == 5 and s["acma_son_basvuru"]["oku_ac"]["n"] == 5
+    assert s["acma_son_kendi"]["oku_ac"]["n"] == 1 and s["acma_son_kendi"]["dizin"] == str(dec)
+    assert s["sure_siniri_doldu"] is False
+    d = s["donanim_bas"]
+    assert d["cpu_sayisi"] == os.cpu_count() and d["cip"] and d["perflevel"]
+    assert hz.acma_olc(tmp_path / "yok", tmp_path / "x.json")["olculmedi"] == "dizin yok"
+
+
+def test_zaman_cizelgesi_basladi_yoksa_kunye_baslangici(tmp_path):
+    import datetime
+    zspec = importlib.util.spec_from_file_location(
+        "zaman_cizelgesi_under_test", _KOK / "scripts" / "arge" / "hiz" / "zaman_cizelgesi.py")
+    zc = importlib.util.module_from_spec(zspec)
+    zspec.loader.exec_module(zc)
+    kok = tmp_path / "kosu"
+    (kok / "ws" / "workspaces" / "a" / "20261120_000000" / "static").mkdir(parents=True)
+    (kok / "kunye.json").write_text(json.dumps({"baslangic": "2026-11-20T01:02:03+03:00"}))
+    s = zc.gosteri(kok, tmp_path / "zaman")
+    assert s["basladi_kaynagi"] == "kunye.json"
+    beklenen = datetime.datetime.fromisoformat("2026-11-20T01:02:03+03:00")
+    assert s["basladi"] == beklenen.astimezone().strftime("%Y-%m-%d %H:%M:%S")
+    assert s["olaylar"][0]["olay"] == "BASLADI" and s["olaylar"][0]["t"] == beklenen.timestamp()
