@@ -211,3 +211,27 @@ Sınıf sütunu: `zincir` durağan kuralın sonucu; `arama-karesel` elle sınıf
 - `mutation_specs_ba1.json`: 7 / 7 öldü (54 sn).
 - `mutation_specs_p04a.json` yeniden koşuldu: **27 / 27 öldü, 0 hata (35 sn)**; `block_annotator.py`'ye bakan dört tanımın `find` metni bayatlamadı (değişiklik yok).
 - Tam takım, 1. koşu (19:53 → 20:01, yük altında, 448 sn): 10 876 geçti / 88 atlandı / 152 seçilmedi / **7 kaldı**. Yedisinin hepsi çalışma ağacında git'in izlemediği çalışma verisinin olmamasından: `vendor/gnulib-ref/…` yok (`test_ps3b_full_write`, `test_ps3b_gnulib_varlik`, `test_ps3b_ic_ad`), `scripts/node_modules` yok (`test_deobfuscator::TestExtractModules` ×2, `test_pipeline::test_identify_and_static`, `test_project_reconstructor::…explicit_modules_dir`). ONARIM_BRIF §2.4'teki bağlar (`sigs`, `vendor`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`, `scripts/node_modules`; commit'lenmedi, dönmeden önce kaldırılır) kurulunca bu 7 test ayrıca koşuldu: 21 / 21 geçti (aynı dosyalardaki kardeşleriyle). BA-1 değişikliğiyle ilgileri yok.
+- **Tam takım, 2. koşu (bağlarla; 20:02 → 20:26, ağır yük altında: load 11,9 → 31,7; 1 490 sn): 10 988 geçti / 18 atlandı / 152 seçilmedi / 0 kaldı.** Akşam ekinin tabanı (`95d4e3c`: 10 968 / 18 / 0) + bu paketin 20 yeni sınaması = 10 988. Bağlar koşudan sonra kaldırıldı.
+
+## Hipotezler (ön kayıt `de86d08`; eşikler değişmedi)
+
+| H | ön kayıt | ölçülen | sonuç |
+|---|---|---|---|
+| H1 | kusurlu satır (89 karakter) yeni kalıplarla ≤ 0,1 sn | `memmove` 0,004 ms (çocuk süreç duvarı 0,028 sn); eski: 20 sn'de bitmedi | **TUTTU** |
+| H2 | Ollama 13 554 / 13 554 dosya; toplam ≤ 300 sn; tek dosya ≤ 5 sn | 13 554 / 13 554; 61,9 sn; en uzun 0,70 sn (yük altında) | **TUTTU** |
+| H3 | eski koşunun 7 310 dosyası bayt eşit | 7 310 / 7 310 (ayrılan alan yok) | **TUTTU** |
+| H4 | S8 8 çalışma alanında eski ↔ yeni bayt eşit 8 / 8 | 8 / 8 (ayrıca ws ↔ yeni 8 / 8) | **TUTTU** |
+| H5 | `block_annotator.py`'de başka üstel kalıp (ilk ölçüm) | 0 (27 polinom adayı; gerçek satırda en kötü 67 ms) | ilk ölçüm |
+| H6 | envanterde üstel kalıp (ilk ölçüm) | 2 (`c_namer.py:3436`, `recovery_layers/constraint_solver.py:271`); 39 aday doğrulanamadı | ilk ölçüm (sezgisel üreteç: alt sınır) |
+
+## Ana oturumun bilmesi gerekenler
+
+- `(?>…)` Python ≥ 3.11 ister: `pyproject.toml` `requires-python >= 3.11`, uygulama paketi Python 3.12 (`packaging/macos/build_mac_app.sh:285`). Daha eski yorumlayıcıda `block_annotator` içe aktarılırken `re.error` olur (adım `Exception` yakalayıp atlar).
+- Yapı sınaması (`test_kalipta_atomik_disi_ic_ice_yineleme_yok`) ve tarama betiği `re._parser` / `re._constants` iç modüllerini kullanıyor; Python'un iç değişikliğinde test kırılabilir (ürün değil).
+- SIGTERM'e yanıt vermeme genel kusur olarak duruyor (C düzeyinde eşleşme): envanterdeki iki üstel kalıp ya da gelecekteki bir kalıp aynı takılmayı yapabilir. Ghidra sonrası adımlar için takılma bekçisi ayrı paket (kapsam dışı (a)).
+- Envanterdeki iki üstel kalıbın gerçek girdide erişilebilirliği ölçülmedi; onarım sonraki paket (kapsam dışı (b)). `constraint_solver.py:271`'in yorumu (v1.7.6) yazımı "geri izlemeyi sınırlar" diye tanıtıyor; ölçüm tersini gösteriyor.
+- Uçtan uca Ollama koşusu (Ghidra'lı, bayraklar açık) bu pakette koşulmadı; ana oturum main'e aldıktan sonra koşacak. Ghidra'sız yeniden oynatma adımın bütün dosyaları 62 sn'de bitirdiğini ve eski çıktıyla bayt eşit olduğunu gösteriyor.
+- Tam takım için çalışma ağacına kurulan çalışma verisi bağları (`sigs`, `vendor`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`, `scripts/node_modules`) dönmeden önce kaldırıldı; commit'lenmedi.
+- Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/BA1/` (ölçüm özeti `ozet/`; `ollama_yeni/`, `s8/`, `esdeger/` ara ürün, A-35'e göre silinebilir).
+
+## PAKET BİTTİ
