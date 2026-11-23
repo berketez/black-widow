@@ -14,9 +14,9 @@ Taban: main `e2c079d` (`git merge --ff-only main` sonrası; P16e içinde: `calle
 | 5 | Testler (`tests/test_ol1_kopru_bekci.py`, 30) | bitti | `627e3de` |
 | 6 | Mutasyon (`mutation_specs_ol1.json` 29 / 29) + altı eski tanım (108 / 108) | bitti | `d23e05e` |
 | 7 | `config.py` yaması (`yamalar/OL1__config.py.patch`; `git apply --check` temiz; uygulanmadı) | bitti | `627e3de` |
-| 8 | S8 (8 ikili, taban `P16e/s8_sonra_3`) | koşuyor (09:34–) | — |
-| 9 | T25 (Ollama dilimi) | kuyrukta (09:34'ten beri bekliyor) | — |
-| 10 | Tam takım (yamasız) | bekliyor | — |
+| 8 | S8 (8 ikili, taban `P16e/s8_sonra_3`) | bitti: **8 / 8 eşit** (ham kıyas) | bu commit |
+| 9 | T25 (Ollama dilimi) | koşuyor (09:56:19–) | — |
+| 10 | Tam takım (yamasız) | bitti: 10 851 geçti / 14 atlandı / 1 kaldı (beklenen) | bu commit |
 
 ## Kalem 1 — fizibilite (plan adım 1)
 
@@ -61,6 +61,22 @@ Betik: `pyghidra.open_program(analyze=False)` + ana iş parçacığında `FlatPr
 ## Kalem 7 — `config.py` yaması (`627e3de`)
 
 `docs/arge/2026-11-23_dalga1/yamalar/OL1__config.py.patch` (`betik/yama_uret.py` ile `difflib`'den; dosyaya dokunulmadı): iki alan satırında `# ETKİSİZ: ÖL-1 bağlayacak (INERT_SETTINGS)` → `# okuyan: ghidra/headless.py _run_auto_analysis (ÖL-1)`, `cozumleyici_takilma_sn` öntanımı 0 → **600**, `INERT_SETTINGS`'ten `# ÖL-1 (Dalga 1)` grubu (iki satır + başlık) silinir. `git apply --check` temiz (A-34: uygulanmadı). Yamalı durumda `test_bayrak_on_paketi` envanterindeki öntanım (0) kilidi INERT kaydı kalkınca düşer (dosyanın kendi kuralı); `test_p16c_analiz_suresi`'nin sahte Ghidra'sında `AnalysisTask` yok → okuyucu kurulamaz, bekçisiz koşar, çağrı dizisi aynı (bu kol `test_okuyucu_kurulamazsa_bekcisiz_kosar` ve `test_bekci_acik_takilmasiz_davranis_ayni` ile sınandı). Yamalı ağaçta tam takım koşulmadı (kural gereği; ana oturum koşar).
+
+## Kalem 8 — S8 (kabul b)
+
+- Ürün ağacı `~/karadul_olcum/urun-1b97c2f` (`git worktree add --detach` + altı çalışma verisi bağı; kod commit'i `1b97c2f`). Ayar: ağacın kökünde `karadul.yaml` = `analysis: {cozumleyici_takilma_sn: 600, bekci_aralik_sn: 15}` (urun_kos'un `--config`'i yok; ürün süreci ağacın kökünde koşar). Kopyası `…/OL1/s8_sonra/ol1.yaml` ve `ozet/s8_ol1.yaml`. Yamasız ağaçta bu iki alan için `Uyarı: … etkisiz: henüz hiçbir kod okumuyor` satırı basılıyor (INERT kaydı yamayla kalkacak); değer yine yükleniyor (sqlite3'ün `ghidra_status.json`'unda `analysis.bekci.esik_sn = 600`).
+- Sürücü `~/karadul_olcum/runs/dalga1-2026-11-23/OL1/betik/s8_kos.zsh` (P16e'ninkinin aynısı; ikili başına bir kuyruk çağrısı, dış `timeout 3700`), sıra ORTAK_D0 §6, tek kök `…/OL1/s8_sonra`. 09:34:11–09:56:16, 8 / 8 çıkış 0, yuva 2; koşu başında 1 dk yük 7,16–19,04 (yük altında).
+- **Kıyas (ön kayıt B5): taban `P16e/s8_sonra_3` ↔ `OL1/s8_sonra`, ham (`s8_esitlik.py`, `--sira-normal` yok): 8 / 8 ikilide JSON 0 / 23, `.c` 0 / 296 … 0 / 2 821, `naming_map` 0 / 3, `ghidra_status` eski alan farkı 0, `pcode.jsonl` eşit. Fark birimi yok** (BSim dosyaları dahil: kök taban sırasıyla koşuldu). zstd `FUN_001063c0` decompiler takası bu koşuda görülmedi; yeniden koşu gerekmedi. Çıktılar `ozet/s8_ham.{md,json}`.
+- Yeni alan (`analysis`, `s8_esitlik` kıyas dışı tutuyor; ayrıca sayıldı, `ozet/s8_bekci.md`): 8 / 8'de `analysis`'e yalnız `bekci` eklendi, eksik anahtar yok, `status` 8 / 8 `ok` ↔ `ok`, takılma alanı (`takilan_cozumleyici`, `takilmalar`, `ilk_tur`, `kapatilan_cozumleyiciler`, `neden`, `bekci_hatasi`) 8 / 8'de yok. Bekçi okuması: sqlite3, debian tmux, zstd, mac/tmux 1'er, öbür dördü 0 (otomatik analiz 3,1–8,5 sn; ilk okuma 15 sn'de), okunamayan 0.
+- **Hüküm B5: TUTTU, 8 / 8.**
+
+## Kalem 10 — tam takım (yamasız)
+
+09:41:33–09:53:45 (yük 18,04 → 12,26; aynı anda S8 ve başka ajanların koşuları), kod `ccef020` (= `1b97c2f` + test / tanım / belge), worktree'de altı çalışma verisi bağı + `scripts/node_modules` (commit'lenmedi): **10 851 geçti / 14 atlandı / 1 kaldı** (729,9 sn; 152 seçilmedi). Kalan tek test beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `AssertionError: kayıtta ama okunuyor: {'analysis.cozumleyici_takilma_sn': ['karadul/ghidra/headless.py'], 'analysis.bekci_aralik_sn': ['karadul/ghidra/headless.py']}` (yama INERT satırlarını siler). Başka kırmızı yok. Bir uyarı yeni: `headless.py` `_jvm_den_ayril`'da `jpype.isThreadAttachedToJVM` kullanımdan kalkıyor (`DeprecationWarning`, işlev aynı; yerine `java.lang.Thread.isAttached`; ölçülen kod değişmesin diye bu pakette değiştirilmedi). Günlük `~/karadul_olcum/runs/dalga1-2026-11-23/OL1/tam_takim/`.
+
+## Kalem 9 — T25 (kabul a, c)
+
+- **09:57 — bekliyorum:** T25 09:56:19'da başladı (kuyruk `OL1 T25:ollama`, yuva 2; yük 8,95 / 12,99 / 14,54). Sürücü `betik/t25_kos.zsh`: gösteri 1. denemenin komutu (`python -m karadul analyze …/girdi/Ollama --skip-dynamic --output-dir … --output …`) + `--config t25/ol1.yaml` (600 / 15) + `--verbose`, ürün ağacı `urun-1b97c2f`, "Objective-C Message Analyzer" AÇIK (yaml'da `ghidra_disabled_analyzers` yok). Otomatik analizin bitiş olayı görülünce ya da 75 dk dolunca durdurulur. TAHMİNİ: tetiklenme Objective-C çözümleyicisi başladıktan 600–615 sn sonra, bitiş 10:20–10:40.
 
 ## Sonraki paketlere not
 
