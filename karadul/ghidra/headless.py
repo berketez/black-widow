@@ -242,6 +242,22 @@ def high_var_sort_key(entry: dict) -> tuple:
     )
 
 
+def caller_sort_key(entry: dict) -> tuple:
+    """Çağıran listesi kaydı için kararlı sıralama anahtarı (P16e).
+
+    Çağıranlar ``ReferenceManager.getReferencesTo(giriş)`` yinelemesiyle toplanıyor; o sıra
+    koşudan koşuya değişiyordu (küme aynı; HZ1, 2026-11-20: htop 6 koşuda 4 farklı sıra), ``.c``
+    başlığındaki ``// Callers:`` satırı da ilk 5'i gösterdiği için farklı alt küme gösteriyordu.
+    Liste tekilleştirildikten sonra, yazılmadan önce bu anahtarla sıralanır: çağıranın giriş
+    adresi (tam sayı değeri), eşitlikte ad, sonra çağrı yeri. Anahtar hiçbir girdide istisna atmaz.
+    """
+    return (
+        _address_sort_key(str(entry.get("address", "") or "")),
+        str(entry.get("name", "") or ""),
+        _address_sort_key(str(entry.get("call_site", "") or "")),
+    )
+
+
 class GhidraHeadless:
     """Ghidra headless analiz wrapper.
 
@@ -1050,6 +1066,7 @@ class GhidraHeadless:
                 if c["address"] not in seen_c:
                     seen_c.add(c["address"])
                     unique_callers.append(c)
+            unique_callers.sort(key=caller_sort_key)  # P16e: getReferencesTo sırası kararsız
             seen_e: set = set()
             unique_callees = []
             for c in callees:
@@ -1169,6 +1186,8 @@ class GhidraHeadless:
                             "address": ca,
                             "call_site": str(ref.getFromAddress()),
                         })
+        # P16e: sıralı liste → "// Callers:" satırı en küçük adresli 5 çağıranı gösterir.
+        callers.sort(key=caller_sort_key)
 
         callees = []
         seen_callees: set[str] = set()
@@ -1931,6 +1950,7 @@ class GhidraHeadless:
                         if ca != func_addr and ca not in seen_callers:
                             seen_callers.add(ca)
                             called_by.append({"name": caller.getName(), "address": ca})
+            called_by.sort(key=caller_sort_key)  # P16e
 
             func_xrefs[func_addr] = {
                 "name": func_name,
