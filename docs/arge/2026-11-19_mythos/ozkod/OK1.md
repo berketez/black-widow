@@ -47,3 +47,21 @@ K1 → K2 ikili başına: zstd 117 (harf 47, yeni 70), mac/tmux 110 (yeni), debi
 **H10 gerçekleşti (tanı düzeyinde):** bayrak açıkken 256 fonksiyon yeni ad alıyor; bunlar planın 40'lık sayımının dışında. Ürün hükmü (doğru / yanlış) yeniden oynatmadan.
 
 **Şu an bekleniyor (20:17):** ürün yeniden oynatması — K0 ve K1: 19 ikili (3'er eşzamanlı, 20:11'de başladı); K2: 23 ikili (20:15); K1 ek: openssl, pzstd, sqlite3, factor (20:15). Yük ortalaması 33–38 (başka ajanlar). TAHMİN bitiş 20:50–21:10 (openssl en uzunu; P12d'de 33 dk). Tam takım da sürüyor (yamasız).
+
+## Kalem 5 — Ürün yeniden oynatması ve ölçüm
+
+**Yöntem:** `yeniden.py` (P12d'nin kopyası; yalnız `ReconstructionStage`), `kos1.sh` / `kol_sira.sh` (koşu kökünde), girdi `urun-onarim-a62f15e` çalışma alanları (SALT OKUR). Kol ağaçları koşu kökünde `git archive` ile: `agac_K0` (`bf62e4a`), `agac_K1` (`45f7f85`), `agac_K2` ve `agac_K2k` (`08bad683`; K2'de `karadul.yaml` ile `oz_ad_verbatim: true`). Ölçüm `olc_kol.py`: `urun_olc.py olc --eksik-izinli --siniflayici-agac <kol ağacı> --mac-veri /Users/apple/Black_Widow/workspaces/olcum_mac`, ayrıca öğe kaydı (ad + GT adı; depo dışı, `ozet/kayit_<kol>.json`). Karşılaştırma `urun_olc.py karsilastir` + `analiz.py` (yalnız `BITTI` işaretli koşular). Yük ortalaması 27–38 (yük altında; süreler yalnız bilgi).
+
+**oz_ad_harf.py yeniden** (a62f15e tabanı; çıktı koşu kökünde `ozet/oz_ad_harf_cikti/`, ARGE kökü değişmedi): 196 ad / bugün doğru 93 / kanıt harfleriyle doğru 133 / yanlıştan doğruya **40** (zstd 37, coreutils 1, openssl 1, mac/tmux 1). Planın sayısıyla aynı.
+
+### H0 — K0 → K1 (P12d), 19 ikili (tanıda farklı çıkanların hepsi; 19 / 19 `basari True`)
+
+| | K0 (`bf62e4a`) | K1 (+ P12d) |
+|---|---|---|
+| Havuz ad / doğru / yanlış (19 ikili) | 657 / 562 / 95 | 678 / 579 / 99 |
+| `string_context/oz_ad` ad / doğru / yanlış | 164 / 84 / 80 | 185 / 101 / 84 |
+| Öbür 7 kanal | — | **aynı** (7 / 7) |
+| Kazanılan / kaybedilen doğru | — | **17 / 0** (hepsi `oz_ad`, coreutils) |
+| Giderilen / yeni yanlış | — | **0 / 4** (debian/tmux `12296c`, zstd `1b80c0` ve `1f14b0`, mac/tmux `100004b58`: P12d raporundaki dört adresin aynısı) |
+
+`karsilastir`: kaybedilen doğru 0 / 562 → `beklenen_aralikta`; `yanlis_yonu` `incele` (P12d'deki gibi; ad ekleyen değişiklik). **H0 tuttu** (sapma 0). Özet `ozet/fark_K0_K1.{json,md}`.
