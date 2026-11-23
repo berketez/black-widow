@@ -43,14 +43,14 @@ Gerekçe:
 
 Commit: `09060ad`.
 
-**Mutasyon:** `scripts/measurement/mutation_specs_ba1.json`, 7 mutant (üçü eski kalıbın geri konması: memmove / memcpy / memset; ayraç içi daralma; ayraçlı seçeneğin düşmesi; boş üçüncü argüman; atomik grubun kalkması) → **7 / 7 öldü**, toplam süre **54 sn** (üç zaman aşımı × 15 sn dahil). Sonra `git diff` yalnız onarım.
+**Mutasyon:** `scripts/measurement/mutation_specs_ba1.json`, 7 mutant (üçü eski kalıbın geri konması: memmove / memcpy / memset; ayraç içi daralma; ayraçlı seçeneğin düşmesi; boş üçüncü argüman; atomik grubun kalkması) → **7 / 7 öldü**, toplam süre **54 sn** (eski kalıbı geri koyan üç mutantın süre sınamasında 15 sn zaman aşımıyla kırmızı olması bu süreyle tutarlı; kırmızının nedeni mutant başına ayrıca yazdırılmadı). Sonra `git diff` yalnız onarım.
 
 ## Kalem 4a — Ghidra'sız yeniden oynatma, Ollama (H2, H3) (19:47)
 
 **Girdi / çıktı (`karadul/pipeline/steps/engineering_annotation.py`'den çıkarıldı):** `CodeBlockAnnotator(config).annotate(decompiled_dir=capa_annotation_decompiled_dir, functions_json=functions_json_path, call_graph_json=call_graph_json_path, output_dir=reconstructed/annotated, algorithm_matches=_collect_all_algorithms(algo_result, eng_result))`.
 - `capa_annotation_decompiled_dir` = `reconstructed/commented/` (`capa_annotation` dizini değiştirmeden geçirir; CAPA kod beslemesi K-1 gereği kapalı).
 - `functions_json_path` / `call_graph_json_path` = `ghidra_metadata._resolve_json_paths`: önce `deobfuscated/`, yoksa `static/` (`ghidra_functions.json`, `ghidra_call_graph.json`).
-- `algo_result` / `eng_result`: `reconstructed/algorithms.json` (yalnız `success` iken yazılır) + `reconstructed/engineering_algorithms.json` (`success` alanı). `algorithms.json` `detection_method` / `address` taşımaz; bu iki alan yalnız başlık kutusu kategorilerinde (`_ALGORITHM_HEADER_CATEGORIES`) çıktıya girer. Ollama'da 2 algoritma (`hash`), başlık kategorisinde 0 → kayıp yok.
+- `algo_result` / `eng_result`: `reconstructed/algorithms.json` (yalnız `success` iken yazılır) + `reconstructed/engineering_algorithms.json` (`success` alanı). `algorithms.json` `detection_method` / `address` taşımaz; bu iki alan yalnız başlık kutusu kategorilerinde (`_ALGORITHM_HEADER_CATEGORIES`) çıktıya girer. Ollama'da 2 algoritma, başlık kategorisinde 0 → kayıp yok.
 - `config` adımda yalnız `CodeBlockAnnotator.__init__`'te saklanıyor, hiçbir dedektörde okunmuyor; yeniden oynatmada `None`.
 - Çıktı: her `*.c` (açıklamalı ya da değişmeden kopya) + `block_annotations.json`. Çıktıda zaman, rastgelelik, süreç kimliği yok (`block_annotator.py`'de `time` / `random` / `datetime` kullanımı yok; dosya sırası `sorted(rglob)`): karşılaştırmada ayrılan alan yok, tam bayt karşılaştırması.
 - Araçlar: `scripts/arge/ba1/yeniden_oynat.py` (ayrı çocuk süreç + zaman aşımı; her dosyaya başlarken `ilerleme.txt`; dosya başına süre `_extract_functions` çağrı damgalarından), `scripts/arge/ba1/cikti_karsilastir.py`. Çıktı `~/karadul_olcum/runs/dalga1-2026-11-23/BA1/ollama_yeni/` (çalışma alanına yazılmadı).
@@ -82,7 +82,7 @@ Araç `scripts/arge/ba1/esdeger_ve_onek.py` (eski ve yeni kalıp ayrı çocuk s�
 
 **Bütün çiftler:** 2 855 (satır, ad) çifti (Ollama 1 643; S8: cat 34, sort 70, htop 79, sqlite3 154, debian tmux 198, tree 24, zstd 464, mac tmux 189). Eski kalıbın 2 sn içinde bittiği 2 854 çiftin **2 854'ünde yeni sonuç eskiyle aynı** (span + üç grup; 794'ünde eşleşme var, Ollama 453). Eski kalıp yalnız 1 çiftte zaman aşımına uğradı: Ollama `FUN_100295d40.c:211` (kusurlu satır); yeni kalıp orada eşleşme bulmadı (0,001 ms). Farklı sonuç 0. Toplam duvar süresi: yeni 0,8 sn, eski 2,1 sn (1 zaman aşımı dahil). Ham özet `…/BA1/esdeger/esdeger_ozet.json`.
 
-Not (sayım kapsamı): ana oturumun "1 262 dosya / 3 631 satır" sayısı `grep -E '(memcpy|memset|memmove)\('` ile, yorum satırları dahil (bu dizinde 1 272 dosya, 3 631 satır; bunların 2 144'ü `/* INLINE: memcpy() — … */` yorumu, adım bunları atlar). Adımın gerçekten kalıba verdiği kod satırı 1 641 (çift 1 643).
+Not (sayım kapsamı): bu dizinde `grep -E '(memcpy|memset|memmove)\('` 3 631 satır veriyor (ana oturumun sayısıyla aynı; adlardan birini taşıyan dosya 1 272), ama bunların 2 144'ü `//` ya da `/*` ile başlayan yorum satırı (örnek: `/* INLINE: memcpy() — memcpy(field_ptr_4, 4, ...) */`); adım bu satırları atlar. Adlardan birini taşıyan yorum dışı satır 1 641 (çift 1 643). Toplayıcı dosyanın bütün satırlarını alır; adım yalnız `_FUNC_RE` ile çıkarılan gövdelerdeki (≤ 10 000 karakter) satırlara bakar, yani buradaki küme adımınkinin üst kümesi.
 
 **Eşdeğerlik tablosu (44 gerçek satır; seçim belirlenimli, ölçüt `esdeger_tablo.py` başlığında):**
 
