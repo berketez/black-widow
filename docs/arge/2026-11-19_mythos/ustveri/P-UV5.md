@@ -10,7 +10,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV5/` (ölçüm özetleri
 |---|---|---|
 | 1 ön kayıt | bitti | `bdd058f` |
 | 2 kod + birim testleri + mutasyon | bitti: 32 test, 15 / 15 mutant öldü | `a731db6`, `caa14e3` |
-| 3 Ghidra'sız yeniden oynatma (Mac 8, ELF 5, hedef seti) | sürüyor | — |
+| 3 Ghidra'sız yeniden oynatma (Mac 8, ELF 5, hedef seti) | bitti (aşağıda) | bu commit |
 | 4 ürün koşusu (kuyruk) | bayrak açık 8 Mach-O kuyrukta (19:54'te başlatıldı) | — |
 | 5 tam takım (yamasız) | başlamadı | — |
 
@@ -36,3 +36,37 @@ Gönderim "`stages.py`'de yalnız `_recover_main_from_entry` ve yardımcıları;
 ### Yama
 
 `docs/arge/2026-11-23_dalga1/yamalar/PUV5__config.py.patch`: INERT satırı (ve grup yorumu `# P-ÜV5 (Dalga 1)`) silinir; alan yorumu `okuyan: stages.py _recover_main_from_entry (P-ÜV5)`. `git apply --check` temiz; ağaca uygulanmadı (A-34).
+
+## Kalem 3 — Ghidra'sız yeniden oynatma (19:57–19:58; yük altında)
+
+Betik `PUV5/oynat.py` (koşu kökünde; ürün kodunu dalın ağacından yükler, `karadul.__file__` denetimli). Var olan çalışma alanlarının `static/` + `raw/` dizinleri `PUV5/oynat/<birim>/`'e kopyalandı (asıllar salt okundu; gnulib adımı `static/`'e yazdığı için). Tohum sırasının tamamı (`_seed_recovery_pre_names`: main → KS-1 → gnulib / `usage` → ELF önyük → elle), dört kol: **eski** (main `0b4d948`'in `stages.py`'si), **kapali** (dal, bayrak kapalı), **acik** (dal, bayrak açık), **yamali** (dal + `_main_caller` yaması, aşağıda). Karşılaştırılan: ad sözlüğü, künye, `stats`, yazılan `gnulib_candidates.json`. Çıktı `PUV5/ozet/oynat.json` (sayı / adres; GT adı yok).
+
+| Birim | eski = kapali (H2) | açık ↔ kapalı değişen | Giriş (Ghidra) | GT `_main` adresi | `main` doğru | Nüfusta | Künye |
+|---|---|---|---|---|---|---|---|
+| mac/htop (a62f15e) | 4 / 4 alan aynı | yalnız `entry` | 0x100001780 (4 bayt thunk) | aynı | evet | hayır (thunk) | `main_giris` |
+| mac/tmux (a62f15e) | aynı | yalnız `entry` | 0x100075f44 | aynı | evet | evet | `main_giris` |
+| mac/tmux (S8 tabanı b6aceb9) | aynı | yalnız `entry` | 0x100075f44 | aynı | evet | evet | `main_giris` |
+| mac/envsubst | aynı | yalnız `entry` | 0x100001b80 | aynı | evet | evet | `main_giris` |
+| mac/gettext | aynı | yalnız `entry` | 0x100001b80 | aynı | evet | evet | `main_giris` |
+| mac/gmktemp | aynı | yalnız `entry` | 0x100000ea8 | aynı | evet | evet | `main_giris` |
+| mac/gsort | aynı | yalnız `entry` | 0x1000014b4 | aynı | evet | evet | `main_giris` |
+| mac/idn2 | aynı | yalnız `entry` | 0x1000016c8 | aynı | evet | evet | `main_giris` |
+| mac/xz | aynı | yalnız `entry` | 0x1000047ec | aynı | evet | evet | `main_giris` |
+| elf/cat, expr, ls, tree, pzstd | aynı (5 / 5) | **0** (5 / 5) | — (ELF kalıbı `FUN_…` = `main`, değişmedi) | — | — | — | `main_giris` (eskisi gibi) |
+
+- **H1 (kural düzeyi): 8 / 8** girişe `main`, 8 / 8 GT'ye göre doğru; yanlış `main` **0** (kollarda başka hiçbir anahtar `main` almadı).
+- **H2 (kural düzeyi): 14 / 14** çalışma alanında (Mac 9 + ELF 5) bayrak kapalı dal = main'in kodu: ad sözlüğü, künye, `stats`, gnulib karar dosyası aynı.
+- **H3 (kural düzeyi): 5 / 5** ELF'te bayrak açık ↔ kapalı değişen ad 0 (`stats`'ta yeni alan da yok; Mach-O kuralı `load_commands.txt` yoksa sessiz döner).
+- **H5:** `usage_gelenegi` kararı dört kolda da **0** (Mac 9 + ELF 5). Neden: htop ve tmux'ta `Usage: %s` parmak izi adayı yok; GNU ikililerinde (gsort vb.) `usage` gnulib varlık kanıtı yeterli olduğu için olağan yoldan yazılıyor (`main`'den bağımsız; eski = açık). Yeni ad 0, yanlış 0; H5'in "yanlış 0" kısmı boş kümede tutuyor, sayı 0 (ilk ölçüm).
+  - Ön kayıttaki öngörü (`_main_caller` `FUN_` anahtarı arıyor; Mach-O'da `main`'in anahtarı `entry`) koddan doğru; ama bu sekiz ikilide etkisi yok: yamalı kol (`_main_caller` çağıranın Ghidra adını da tanır; kaynak `PUV5/yamali/stages_yamali.py`) da 0. Bu yüzden `_main_caller` için yama **bırakılmadı** (ölçülmüş faydası yok); P-ÜV6b / P-ÜV9 kalem 7'ye not.
+- **H6 (kural düzeyi):** htop'ta giriş thunk → nüfusta değil; öbür 7 ikilide giriş nüfusta ve `main` doğru → doğru ad kapsamı her birinde +1 (TUTTU, kural düzeyinde; ürün düzeyi kalem 4'te).
+
+### Hedef seti ve H4 (`PUV5/hedef.py`, çıktı `ozet/hedef.json`)
+
+| İkili | Girişte Ghidra adı | `pclntab` adı (girişte) | Kural | Hüküm |
+|---|---|---|---|---|
+| terminal-notifier 3.1.0 (PUV6a `urun/acik2` çalışma alanı) | `entry` (0x100000d60, 128 bayt) | Go yok (`veri_yok`) | `entry` → `main` | sembollü kopyada `_main` = 0x100000d60: **doğru** |
+| Ollama arm64 (gösteri çalışma alanı) | `entry` (0x100081fb0) | `main` (Go dış bağlayıcı saplaması) | yazmaz (`go_giris_main_main_degil`) | gönderim hüküm 2; geliştiricinin `main.main`'i PUV6a Go kanalında `main_main` |
+| gh 2.105.0 (H4; Ghidra yok, yalnız ikili okundu) | — | `_rt0_arm64_darwin` (0x100089440) | yazmaz (birim testi `test_go_ic_baglayici_girisi_main_yazilmaz`) | **H4 TUTTU** |
+
+Hedef setinde ad bekleyen 40'lık terminal-notifier nüfusuna (HEDEF tanımı) etkisi ürün koşusunda ölçülmedi (terminal-notifier ürün koşusu bu paketin kuyruk sırasında yok); kural düzeyinde +1 doğru ad (`main`).
