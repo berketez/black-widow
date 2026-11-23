@@ -18,6 +18,15 @@ from pathlib import Path
 from typing import Any
 
 from karadul.config import CPU_PERF_CORES
+from karadul.core.naming_labels import (
+    LABEL_METADATA,
+    METADATA_CHANNEL_FIELD,
+    METADATA_CHECK_FIELD,
+    METADATA_CHECK_UNMEASURED,
+    METADATA_EVIDENCE_FIELD,
+    ORIGINAL_NAME_FIELD,
+    metadata_confidence,
+)
 from karadul.pipeline.steps._feedback_naming_candidates import (
     K4_CHANNEL_FLAGS,
     UNMEASURED_SOURCES,
@@ -83,6 +92,54 @@ def drop_below_threshold(
 
 MERGER_PROVENANCE_SECTION = "name_merger"
 MERGER_PROVENANCE_VERSION = 1
+
+
+def metadata_decision(meta: dict[str, Any], final_name: Any) -> dict[str, Any]:
+    """Üst veri adayının köken alanları (P-ÜV6a; plan P-ÜV6 kalem 4–6).
+
+    Birleştiricinin seçtiği ad üst veri adıysa: ``label = üst veriden`` (hiçbir zaman ``kesin``),
+    ``ozgun_ad`` (derleyicinin yazdığı ad), kanal, ``ust_veri_dogrulama`` (bugün ``olculmedi``:
+    tutarlılık denetimi P-ÜV7 main'de değil) ve güven = kanalın ölçülmüş kesinliğinin Wilson alt
+    sınırı (tablodan; birleşik Bayes puanı değil). Başka bir kaynağın adı kazandıysa üst veri adayı
+    yalnız kanıt olarak (``ust_veri_adayi``) yazılır; etiket ve güven değişmez.
+    """
+    source = meta.get("kaynak")
+    fields = {"adres": meta.get("adres"), "kaynak": source, ORIGINAL_NAME_FIELD: meta.get("ozgun_ad")}
+    if meta.get("secici_yerine"):
+        fields["secici_yerine"] = True
+        fields["ghidra_adi"] = meta.get("ghidra_adi")
+    if final_name != meta.get("ad"):
+        return {"ust_veri_adayi": fields}
+    out = {
+        "label": LABEL_METADATA,
+        METADATA_CHANNEL_FIELD: source,
+        ORIGINAL_NAME_FIELD: meta.get("ozgun_ad"),
+        METADATA_CHECK_FIELD: METADATA_CHECK_UNMEASURED,
+        "confidence": metadata_confidence(source),
+        "evidence": f"üst veri ({source}) {meta.get('adres')}: {meta.get('ozgun_ad')}",
+    }
+    if meta.get("secici_yerine"):
+        out["secici_yerine"] = True
+        out["ghidra_adi"] = meta.get("ghidra_adi")
+    return out
+
+
+def metadata_drop_decided(k4: dict[str, Any], decided_map: dict[str, str],
+                          stats: dict[str, Any]) -> int:
+    """c_namer'ın zaten ad verdiği anahtardaki üst veri adayı kanıt satırına iner (P13a / AD-04:
+    o anahtarın kararı c_namer'ındır; kod c_namer'ın adını taşıyor). Dönen: inen kayıt sayısı."""
+    records = k4.get("metadata_records") or {}
+    evidence = k4.setdefault("metadata_evidence", [])
+    dropped = 0
+    for key in [k for k in records if k in decided_map]:
+        meta = records.pop(key)
+        evidence.append({"kaynak": meta.get("kaynak"), "adres": meta.get("adres"),
+                         "ozgun_ad": meta.get("ozgun_ad"), "nedenler": ["c_namer_adlandirdi"],
+                         "c_namer_adi": decided_map[key]})
+        ch = stats.setdefault("naming_channels", {}).setdefault(meta.get("kaynak"), {})
+        ch["c_namer_adlandirdi"] = ch.get("c_namer_adlandirdi", 0) + 1
+        dropped += 1
+    return dropped
 
 
 def c_namer_decided(naming_result: Any) -> dict[str, str] | None:
@@ -225,8 +282,15 @@ def write_merger_provenance(
     decided_count: int,
     threshold: float | None,
     stats: dict[str, Any],
+    metadata_records: dict[str, dict[str, Any]] | None = None,
+    metadata_evidence: list[dict[str, Any]] | None = None,
 ) -> None:
     """Birleştiricinin kararını köken kaydına yaz (``naming_provenance.json`` → ``name_merger``).
+
+    P-ÜV6a: üst veri kanalının adı kazandıysa karar ``label = üst veriden``, ``ozgun_ad``,
+    ``ust_veri_kanali``, ``ust_veri_dogrulama`` ve tablodaki güveni taşır (``metadata_decision``);
+    ad yazılmayan üst veri kayıtları bölümün ``ust_veri_kanit`` listesinde (kanıt satırı). Üst veri
+    kaydı yoksa bölüm eskisiyle bayt bayt aynıdır.
 
     Kayıt c_namer'ın bu yinelemedeki köken kaydına (``decompiled_dir``; c_namer'ın çıktı
     dizini) eklenir; yoksa (c_namer koşmadı) ``reconstructed/name_merger_provenance[_iterN].json``
@@ -234,6 +298,7 @@ def write_merger_provenance(
     (eşik / ad geçerliliği nedeniyle düşenin nedeni). Yazılamazsa yalnız istatistiğe not düşülür.
     """
     decisions: dict[str, Any] = {}
+    applied_metadata = 0
     for key in sorted(merge_result.merged_names):
         m = merge_result.merged_names[key]
         if key in final_map:
@@ -256,6 +321,11 @@ def write_merger_provenance(
         }
         if unmeasured:
             decisions[key]["unmeasured_sources"] = unmeasured
+        meta = (metadata_records or {}).get(key)
+        if meta is not None:
+            decisions[key].update(metadata_decision(meta, m.final_name))
+            if decisions[key].get("label") == LABEL_METADATA and key in final_map:
+                applied_metadata += 1
     section = {
         "version": MERGER_PROVENANCE_VERSION,
         "iteration": iter_index,
@@ -265,6 +335,11 @@ def write_merger_provenance(
         "unk": merge_result.total_unk,
         "decisions": decisions,
     }
+    if metadata_evidence:
+        section[METADATA_EVIDENCE_FIELD] = sorted(
+            metadata_evidence, key=lambda r: (str(r.get("kaynak")), str(r.get("adres"))))
+    if applied_metadata:
+        stats["name_merger_by_label"] = {LABEL_METADATA: applied_metadata}
     from karadul.core.naming_labels import NAMING_PROVENANCE_FILE
 
     target = Path(decompiled_dir) / NAMING_PROVENANCE_FILE
@@ -333,6 +408,14 @@ def k4_inputs(ctx: Any, functions_json: Path | None) -> dict[str, Any]:
         "trex_status": get("trex_status"),
         "rtti_classes": _as_dict_list(rtti),
         "rtti_status": get("rtti_status"),
+        # P-ÜV6a: üst veri üreticileri (Faz 1: go_metadata_recovery, objc_metadata_recovery).
+        "go_functions": _as_dict_list(get("go_functions")),
+        "go_status": get("go_status"),
+        "objc_methods": _as_dict_list(get("objc_methods")),
+        "objc_status": get("objc_status"),
+        # Kanallar doldurur; birleştirici köken kaydına yazar (anahtar → künye; kanıt satırları).
+        "metadata_records": {},
+        "metadata_evidence": [],
     }
 
 
@@ -395,6 +478,9 @@ def run_name_merger(
         decided = c_namer_decided(naming_result)
         excluded = rejected_pre_name_keys(
             extracted_names, decided, bindiff_confidence_map, refdiff_naming)
+        # P13b / BORU-14 (a): K-4 kanalları gerçek koşuda (bayrağı açık olanlar). Sözlük burada
+        # kurulur: üst veri kanallarının künyesi ve kanıt satırları köken kaydına geçer (P-ÜV6a).
+        k4 = k4_inputs(ctx, functions_json)
 
         candidates_by_symbol = collect_candidates(
             pre_names_via_c_namer=decided is not None,
@@ -415,12 +501,12 @@ def run_name_merger(
             # uzerinden constant/api/formula naming kanallari uretilir.
             decompiled_dir=decompiled_dir,
             functions_json=functions_json,
-            # P13b / BORU-14 (a): K-4 kanalları gerçek koşuda (bayrağı açık olanlar).
-            k4=k4_inputs(ctx, functions_json),
+            k4=k4,
             # P12c kalem 5: c_namer koşmadığında ön adın güveni kanalının ölçülmüş kesinliği.
             pre_name_meta=pre_name_meta_of(ctx),
         )
         decided_map = dict(decided or {})
+        metadata_drop_decided(k4, decided_map, stats)
         for key in list(candidates_by_symbol):
             if key in decided_map:
                 del candidates_by_symbol[key]
@@ -491,6 +577,8 @@ def run_name_merger(
             iter_index=iter_index, merge_result=merge_result, final_map=merged_map,
             rejected=rejected, excluded=excluded, decided_count=len(decided_map),
             threshold=threshold, stats=stats,
+            metadata_records=k4["metadata_records"],
+            metadata_evidence=k4["metadata_evidence"],
         )
         if not final_naming_map:
             return final_naming_map, current_named_set, decompiled_dir

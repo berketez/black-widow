@@ -10,9 +10,17 @@ from __future__ import annotations
 import json
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from karadul.core.naming_labels import (
+    METADATA_SOURCES,
+    SOURCE_GO_PCLNTAB,
+    SOURCE_OBJC_METHOD,
+    metadata_confidence,
+    metadata_writes_names,
+)
 
 try:
     from karadul.reconstruction.name_merger import NamingCandidate
@@ -163,8 +171,13 @@ K4_CHANNEL_FLAGS: dict[str, str] = {
     "bn_symbol": "enable_binaryninja_naming",
     "trex_struct": "enable_trex_naming",
     "rtti": "enable_rtti_naming",
+    # P-ÜV6a: üst veri kanalları (üreticiler ``go_metadata_recovery`` / ``objc_metadata_recovery``,
+    # Faz 1). Ölçülmüş kesinlik ``naming_labels.MEASURED_METADATA_PRECISION``; etiket ``üst veriden``.
+    SOURCE_GO_PCLNTAB: "enable_go_pclntab_naming",
+    SOURCE_OBJC_METHOD: "enable_objc_metadata_naming",
 }
-UNMEASURED_SOURCES: frozenset[str] = frozenset(K4_CHANNEL_FLAGS)
+# Güveni ölçülmemiş kanallar (köken kaydında güven ``null``); üst veri kanalları ölçüldü (tablo).
+UNMEASURED_SOURCES: frozenset[str] = frozenset(K4_CHANNEL_FLAGS) - frozenset(METADATA_SOURCES)
 
 CH_RAN = "calisti"
 CH_NO_DATA = "veri_yok"
@@ -197,6 +210,8 @@ class GhidraFunctionIndex:
     by_addr: dict[int, str]
     names: frozenset[str]
     delta: int = 0
+    # Ghidra adının C kodundaki yazımı (``code_name``) → kaç fonksiyon o yazımı taşıyor (A-28 tekliği)
+    code_name_counts: dict[str, int] = field(default_factory=dict)
 
     def key_for(self, addr: int) -> tuple[str | None, str]:
         """İkili adresinin Ghidra anahtarı. Dönen: (anahtar ya da None, sonuç)."""
@@ -206,6 +221,29 @@ class GhidraFunctionIndex:
         if not _is_unnamed(name):
             return None, "ghidra_adli"
         return name, "tuttu"
+
+    def key_for_selector(self, addr: int, selector: str | None) -> tuple[str | None, str]:
+        """ObjC yöntemi için anahtar (KARARLAR A-28; yalnız ``objc_method`` kaynağı kullanır).
+
+        Ghidra o adreste adsızsa ``key_for`` ile aynı (``tuttu``). Ghidra adı üst verideki seçiciyle
+        BİREBİR aynıysa anahtar o adın C kodundaki yazımıdır (``secici_yerine``): tam ad seçicinin
+        yerine yazılır. Aynı yazımı birden çok fonksiyon taşıyorsa (``init`` gibi; Ghidra sınıf ad
+        alanını ad listesine yazmaz) koddaki ad hangi fonksiyonun olduğunu ayırmaz → aday yok
+        (``secici_tekil_degil``). Ghidra'nın adı seçiciden farklı ve jenerik değilse dokunulmaz.
+        """
+        name = self.by_addr.get(int(addr) + self.delta)
+        if name is None:
+            return None, "ghidra_fonksiyonu_yok"
+        if _is_unnamed(name):
+            return name, "tuttu"
+        if not selector or name != selector:
+            return None, "ghidra_adli"
+        key = code_name(name)
+        if key is None:
+            return None, "gecersiz_ad"
+        if self.code_name_counts.get(key, 1) > 1:
+            return None, "secici_tekil_degil"
+        return key, "secici_yerine"
 
     def key_for_name(self, symbol: str) -> tuple[str | None, str]:
         """Ghidra fonksiyonu simgenin kendi (ayrıştırılmamış) adını taşıyorsa o ad anahtardır."""
@@ -231,12 +269,16 @@ def load_ghidra_index(
     funcs = data.get("functions", []) if isinstance(data, dict) else data
     by_addr: dict[int, str] = {}
     names: set[str] = set()
+    code_counts: dict[str, int] = {}
     for f in funcs if isinstance(funcs, list) else []:
         if not isinstance(f, dict) or not isinstance(f.get("name"), str):
             continue
         if f.get("is_external"):
             continue
         names.add(f["name"])
+        cn = code_name(f["name"])
+        if cn is not None:
+            code_counts[cn] = code_counts.get(cn, 0) + 1
         try:
             by_addr.setdefault(int(str(f.get("address", "")), 16), f["name"])
         except ValueError:
@@ -245,7 +287,24 @@ def load_ghidra_index(
     link_base = _binary_link_base(binary_path) if binary_path is not None else None
     if ghidra_image_base is not None and link_base is not None:
         delta = int(ghidra_image_base) - int(link_base)
-    return GhidraFunctionIndex(by_addr=by_addr, names=frozenset(names), delta=delta)
+    return GhidraFunctionIndex(by_addr=by_addr, names=frozenset(names), delta=delta,
+                               code_name_counts=code_counts)
+
+
+# Ghidra'nın C çıktısında tanımlayıcı olmayan karakterler ``_`` yazılır (ObjC seçicisi
+# ``applicationDidFinishLaunching:`` kodda ``applicationDidFinishLaunching_``; terminal-notifier'da
+# ölçüldü, P-UV6a.md).
+_CODE_NAME_RE = re.compile(r"[^A-Za-z0-9_]")
+
+
+def code_name(ghidra_name: str) -> str | None:
+    """Ghidra fonksiyon adının C kodundaki yazımı; tanımlayıcı olamıyorsa ``None``."""
+    if not isinstance(ghidra_name, str) or not ghidra_name:
+        return None
+    s = _CODE_NAME_RE.sub("_", ghidra_name)
+    if s[0].isdigit():
+        return None
+    return s
 
 
 def _binary_link_base(binary_path: Path | None) -> int | None:
@@ -313,8 +372,12 @@ def _add_resolved(
     index: GhidraFunctionIndex,
     candidates: dict[str, list[Any]],
     stats: dict[str, Any],
+    exclude_keys: frozenset[str] | set[str] | None = None,
 ) -> bool:
-    """Adresi (ya da ayrıştırılmamış simge adını) Ghidra anahtarına çevirip aday ekle."""
+    """Adresi (ya da ayrıştırılmamış simge adını) Ghidra anahtarına çevirip aday ekle.
+
+    ``exclude_keys``: başka bir kanalın zaten aday verdiği anahtarlar (P-ÜV6a: ``go_pclntab``
+    açıkken ``go_demangler`` aynı fonksiyona ikinci aday üretmez; sayaç ``ust_veri_onde``)."""
     ch = _channel(stats, source)
     key, outcome = (None, "ghidra_fonksiyonu_yok")
     if addr is not None:
@@ -323,6 +386,9 @@ def _add_resolved(
         key2, outcome2 = index.key_for_name(symbol)
         if key2 is not None:
             key, outcome = key2, outcome2
+    if key is not None and exclude_keys and key in exclude_keys:
+        ch["ust_veri_onde"] = ch.get("ust_veri_onde", 0) + 1
+        return False
     ch[outcome] = ch.get(outcome, 0) + 1
     if key is None:
         return False
@@ -351,13 +417,25 @@ def add_k4_channels(
     trex_status: str | None,
     rtti_classes: list[dict[str, Any]] | None = None,
     rtti_status: tuple[str, str] | None = None,
+    go_functions: list[dict[str, Any]] | None = None,
+    go_status: Any = None,
+    objc_methods: list[dict[str, Any]] | None = None,
+    objc_status: Any = None,
+    metadata_records: dict[str, dict[str, Any]] | None = None,
+    metadata_evidence: list[dict[str, Any]] | None = None,
     candidates: dict[str, list[Any]],
     stats: dict[str, Any],
 ) -> None:
-    """Bayrağı açık K-4 kanallarını çalıştır; her kanalın durumunu yaz (kapalılar dahil)."""
+    """Bayrağı açık K-4 kanallarını çalıştır; her kanalın durumunu yaz (kapalılar dahil).
+
+    ``metadata_records`` (anahtar → üst veri adayı künyesi) ve ``metadata_evidence`` (ad yazılmayan
+    üst veri kaydı = kanıt satırı) verilirse doldurulur; birleştirici köken kaydına yazar.
+    """
     for source in K4_CHANNEL_FLAGS:
         if not flags.get(source):
-            _set_status(stats, source, CH_DISABLED, f"{K4_CHANNEL_FLAGS[source]} kapalı (ölçülmedi)")
+            reason = ("bayrak kapalı (öntanım; A-14: 3 bağımsız programda ölçülmedi)"
+                      if source in METADATA_SOURCES else "kapalı (ölçülmedi)")
+            _set_status(stats, source, CH_DISABLED, f"{K4_CHANNEL_FLAGS[source]} {reason}")
     active = [s for s in K4_CHANNEL_FLAGS if flags.get(s)]
     if not active:
         return
@@ -365,6 +443,15 @@ def add_k4_channels(
         for source in active:
             _set_status(stats, source, CH_NO_DATA, "Ghidra fonksiyon listesi yok")
         return
+    records = metadata_records if metadata_records is not None else {}
+    evidence = metadata_evidence if metadata_evidence is not None else []
+    # Üst veri kanalları önce: aynı fonksiyona eski Go kanalı (nm) ikinci aday üretmesin.
+    if flags.get(SOURCE_GO_PCLNTAB):
+        _add_go_pclntab(go_functions or [], go_status, index, candidates, stats, records, evidence)
+    if flags.get(SOURCE_OBJC_METHOD):
+        _add_objc_methods(objc_methods or [], objc_status, index, candidates, stats, records,
+                          evidence)
+    metadata_keys = frozenset(records)
     if flags.get("dwarf"):
         _add_dwarf(binary_path, index, candidates, stats)
     if flags.get("rust_demangler") or flags.get("go_demangler"):
@@ -372,7 +459,7 @@ def add_k4_channels(
         if flags.get("rust_demangler"):
             _add_rust_demangler(syms, index, candidates, stats)
         if flags.get("go_demangler"):
-            _add_go_demangler(syms, index, candidates, stats)
+            _add_go_demangler(syms, index, candidates, stats, exclude_keys=metadata_keys)
     if flags.get("pdb"):
         _add_pdb_symbols(pdb_symbols or [], pdb_status, binary_path, index, candidates, stats)
     if flags.get("bn_symbol"):
@@ -509,6 +596,7 @@ def _add_go_demangler(
     index: GhidraFunctionIndex,
     candidates: dict[str, list[Any]],
     stats: dict[str, Any],
+    exclude_keys: frozenset[str] | None = None,
 ) -> None:
     """Go simgeleri (``paket.Fonksiyon``) ayrıştırılıp aday olur."""
     try:
@@ -538,7 +626,7 @@ def _add_go_demangler(
         _add_resolved(
             source="go_demangler", addr=addr, symbol=name, qualified=demangled,
             confidence=0.90, reason="Go ad ayrıştırma", index=index,
-            candidates=candidates, stats=stats,
+            candidates=candidates, stats=stats, exclude_keys=exclude_keys,
         )
     ch["go_simge"] = seen
     _set_status(stats, "go_demangler", CH_RAN if seen else CH_NO_DATA,
@@ -710,6 +798,206 @@ def _add_rtti(
                 candidates=candidates, stats=stats,
             )
     _set_status(stats, "rtti", CH_RAN)
+
+
+# ---------------------------------------------------------------------------
+# P-ÜV6a: üst veri ad kanalları (Go ``pclntab``, Objective-C yöntem listesi)
+#
+# Üreticiler Faz 1'de (``go_metadata_recovery``, ``objc_metadata_recovery``) adres → özgün ad okur;
+# burada her kayıt ya ad adayı olur ya da kanıt satırı (ad yazılmaz, kayıt kaybolmaz):
+# - Go: ``pcsp_kapsama`` ``kisa`` / ``tasan`` olan fonksiyonun üst verisi gövdesine uymuyor
+#   (P-UV1 E bozması: ~170 yanlış ad buradan) → kanıt satırı (``pcsp_elendi``);
+# - ObjC: okuyucunun ``ad_yazilabilir = False`` dediği, Swift köprüsü (``swift``) ya da paylaşımlı
+#   gövdeli (``imp_paylasimli``) kayıt → kanıt satırı (her nedenin ayrı sayacı);
+# - aday yalnız Ghidra'nın o adreste adsız bıraktığı fonksiyona (P13b kuralı); tek istisna A-28:
+#   ObjC yönteminde Ghidra adı seçiciyle birebir aynıysa tam ad seçicinin yerine yazılır;
+# - ad C tanımlayıcısına çevrilir, özgün ad (``ozgun_ad``) künyede ve gerekçede taşınır; güven
+#   kanalın ölçülmüş kesinliğinden (``naming_labels.MEASURED_METADATA_PRECISION``).
+# ---------------------------------------------------------------------------
+
+PCSP_REJECTED: frozenset[str] = frozenset({"kisa", "tasan"})   # go_pclntab.PCSP_KISA / PCSP_TASAN
+OBJC_NOT_WRITABLE = "ad_yazilamaz"
+OBJC_SWIFT_BRIDGE = "swift_kopru"
+OBJC_SHARED_IMP = "imp_paylasimli"
+
+
+def _producer_status(status: Any) -> tuple[str | None, str]:
+    """Üretici adımın durumu ``{"durum", "neden"}``; yapıt yoksa ``(None, "")``."""
+    if isinstance(status, dict) and isinstance(status.get("durum"), str):
+        return status["durum"], str(status.get("neden") or "")
+    if isinstance(status, str):
+        return status, ""
+    return None, ""
+
+
+def _metadata_gate(source: str, items: list[dict[str, Any]], status: Any,
+                   producer_flag: str, stats: dict[str, Any]) -> bool:
+    """Kanal koşabilir mi; koşamıyorsa durumunu yazar. Üretici yoksa ``desteklenmiyor``."""
+    durum, neden = _producer_status(status)
+    if durum is None:
+        _set_status(stats, source, CH_UNSUPPORTED,
+                    f"üretici adım koşmadı (Faz 1'de {producer_flag} yapıtı yok)")
+        return False
+    if durum == CH_DISABLED:
+        _set_status(stats, source, CH_DISABLED,
+                    f"üretici kapalı (binary_reconstruction.{producer_flag})")
+        return False
+    if durum != CH_RAN:
+        _set_status(stats, source, durum, neden)
+        return False
+    if not items:
+        _set_status(stats, source, CH_NO_DATA, "üretici kayıt vermedi")
+        return False
+    if not metadata_writes_names(source):
+        _set_status(stats, source, CH_RAN,
+                    "ölçülmüş kesinlik ad eşiğinin altında: kayıtlar yalnız kanıt satırı")
+    return True
+
+
+def _evidence_row(source: str, addr: int, original: str, reasons: list[str],
+                  **extra: Any) -> dict[str, Any]:
+    row = {"kaynak": source, "adres": f"{addr:#x}", "ozgun_ad": original, "nedenler": reasons}
+    row.update({k: v for k, v in extra.items() if v is not None})
+    return row
+
+
+def _add_metadata_candidate(
+    *, source: str, addr: int, original: str, key: str, outcome: str,
+    index: GhidraFunctionIndex, candidates: dict[str, list[Any]], stats: dict[str, Any],
+    records: dict[str, dict[str, Any]], evidence: list[dict[str, Any]],
+    extra: dict[str, Any] | None = None,
+) -> bool:
+    ch = _channel(stats, source)
+    name = c_identifier(original)
+    if name is None:
+        ch["gecersiz_ad"] = ch.get("gecersiz_ad", 0) + 1
+        evidence.append(_evidence_row(source, addr, original, ["gecersiz_ad"]))
+        return False
+    if not metadata_writes_names(source):
+        ch["esik_alti"] = ch.get("esik_alti", 0) + 1
+        evidence.append(_evidence_row(source, addr, original, ["esik_alti"]))
+        return False
+    if key in records:
+        # Aynı anahtara ikinci üst veri kaydı: hangisi olduğu bilinemez → ikisi de kanıt satırı.
+        ch["cift_kayit"] = ch.get("cift_kayit", 0) + 1
+        evidence.append(_evidence_row(source, addr, original, ["cift_kayit"]))
+        prev = records.pop(key)
+        candidates[key] = [c for c in candidates.get(key, [])
+                           if _cand_source(c) not in METADATA_SOURCES]
+        if not candidates[key]:
+            del candidates[key]
+        evidence.append(_evidence_row(prev["kaynak"], int(prev["adres"], 16), prev["ozgun_ad"],
+                                      ["cift_kayit"]))
+        return False
+    candidates.setdefault(key, []).append(_make_candidate(
+        name=name, source=source, confidence=float(metadata_confidence(source) or 0.0),
+        reason=f"üst veri ({source}): {original}",
+    ))
+    records[key] = {"kaynak": source, "adres": f"{addr:#x}", "ozgun_ad": original, "ad": name,
+                    "ghidra_adi": index.by_addr.get(int(addr) + index.delta),
+                    "secici_yerine": outcome == "secici_yerine", **(extra or {})}
+    ch["aday"] = ch.get("aday", 0) + 1
+    return True
+
+
+def _cand_source(c: Any) -> Any:
+    return c.get("source") if isinstance(c, dict) else getattr(c, "source", None)
+
+
+def _add_go_pclntab(
+    go_functions: list[dict[str, Any]],
+    go_status: Any,
+    index: GhidraFunctionIndex,
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+    records: dict[str, dict[str, Any]],
+    evidence: list[dict[str, Any]],
+) -> None:
+    """Go ``pclntab`` fonksiyon adları (``go_metadata_recovery``): adsız Ghidra fonksiyonuna aday."""
+    source = SOURCE_GO_PCLNTAB
+    if not _metadata_gate(source, go_functions, go_status, "enable_go_metadata_recovery", stats):
+        return
+    ch = _channel(stats, source)
+    for fn in go_functions:
+        if not isinstance(fn, dict) or not isinstance(fn.get("ad"), str) or not fn["ad"]:
+            continue
+        try:
+            addr = int(str(fn.get("giris")), 16)
+        except (TypeError, ValueError):
+            continue
+        ch["kayit"] = ch.get("kayit", 0) + 1
+        pcsp = fn.get("pcsp_kapsama")
+        if pcsp in PCSP_REJECTED:
+            ch["pcsp_elendi"] = ch.get("pcsp_elendi", 0) + 1
+            evidence.append(_evidence_row(source, addr, fn["ad"], [f"pcsp_{pcsp}"]))
+            continue
+        key, outcome = index.key_for(addr)
+        ch[outcome] = ch.get(outcome, 0) + 1
+        if key is None:
+            continue
+        _add_metadata_candidate(
+            source=source, addr=addr, original=fn["ad"], key=key, outcome=outcome, index=index,
+            candidates=candidates, stats=stats, records=records, evidence=evidence,
+            extra={"pcsp_kapsama": pcsp or None, "paket": fn.get("paket") or None},
+        )
+    if ch.get("durum") is None:
+        _set_status(stats, source, CH_RAN)
+
+
+def _objc_rejections(m: dict[str, Any]) -> list[str]:
+    """Ad yazılmayacak ObjC kaydının nedenleri (her biri ayrı sayaç; boşsa ad adayı olabilir)."""
+    reasons = []
+    if m.get("ad_yazilabilir") is not True:
+        reasons.append(OBJC_NOT_WRITABLE)
+    if m.get("swift") is True:
+        reasons.append(OBJC_SWIFT_BRIDGE)
+    if m.get("imp_paylasimli") is True:
+        reasons.append(OBJC_SHARED_IMP)
+    return reasons
+
+
+def _add_objc_methods(
+    objc_methods: list[dict[str, Any]],
+    objc_status: Any,
+    index: GhidraFunctionIndex,
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+    records: dict[str, dict[str, Any]],
+    evidence: list[dict[str, Any]],
+) -> None:
+    """Objective-C yöntem tam adları (``objc_metadata_recovery``; ``-[Sınıf seçici]``)."""
+    source = SOURCE_OBJC_METHOD
+    if not _metadata_gate(source, objc_methods, objc_status, "enable_objc_metadata_recovery", stats):
+        return
+    ch = _channel(stats, source)
+    for m in objc_methods:
+        if not isinstance(m, dict):
+            continue
+        imp, full = m.get("imp"), m.get("tam_ad")
+        if not isinstance(imp, int) or isinstance(imp, bool) or imp <= 0:
+            ch["imp_yok"] = ch.get("imp_yok", 0) + 1      # protokol bildirimi: gövde yok
+            continue
+        if not isinstance(full, str) or not full:
+            continue
+        ch["kayit"] = ch.get("kayit", 0) + 1
+        reasons = _objc_rejections(m)
+        if reasons:
+            for r in reasons:
+                ch[r] = ch.get(r, 0) + 1
+            ch["kanit_satiri"] = ch.get("kanit_satiri", 0) + 1
+            evidence.append(_evidence_row(source, imp, full, reasons))
+            continue
+        key, outcome = index.key_for_selector(imp, m.get("secici"))
+        ch[outcome] = ch.get(outcome, 0) + 1
+        if key is None:
+            continue
+        _add_metadata_candidate(
+            source=source, addr=imp, original=full, key=key, outcome=outcome, index=index,
+            candidates=candidates, stats=stats, records=records, evidence=evidence,
+            extra={"secici": m.get("secici") or None, "kategori": m.get("kategori") or None},
+        )
+    if ch.get("durum") is None:
+        _set_status(stats, source, CH_RAN)
 
 # ---------------------------------------------------------------------------
 # Per-source helper'lari
