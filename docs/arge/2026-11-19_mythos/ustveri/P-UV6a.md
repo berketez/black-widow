@@ -184,7 +184,7 @@ Sayılacaklar: `out/naming_map.json` `mappings`'te `label = üst veriden` kayıt
   - 3'ü kilitli sözlük testi (yamayla yeşile döner): `test_output_formatter_guven::test_sozluk_n0b_ve_c_namer_ile_ayni`, `test_lm_tools::test_ad_etiketleri`, `test_urun_olc::test_sabitler_ks1_ve_urunden` (bu üçüncüsü tam takımda bulundu → `PUV6a__test_urun_olc.py.patch`, `7d1ceb0`).
   - 2'si `index.html` betiği değiştiği için: CSP meta etiketindeki sha256 eskiydi (`test_csp_betik_karmasi_ve_kisitlar`; tarayıcı betiği engellerdi) → onarıldı `e5c813c`; `test_u1_olay_yokken_imlec_yerinde_ve_animasyonsuz` onarımdan sonra geçti.
 - Dört yama geçici uygulanmış kopyada (`config.py` yaması worktree'de uygulanamadı: izin sınıflandırıcısı `git apply`'ı reddetti; P-ÜV1'deki gibi worktree dışı kopya `PUV6a/yamali2/`): etkilenen 11 test dosyası **332 geçti / 4 atlandı / 0 kaldı**. Worktree'deki `config.py`'ye hiç dokunulmadı.
-- 2. koşu (yamasız, CSP onarımından sonra) arka planda; sonucu aşağıda.
+- **2. koşu (son; yamasız, kod `7d1ceb0` = şimdiki kod; 09:17–09:30, 764 sn, yük altında): 10 783 geçti / 13 atlandı / 3 kaldı** (152 seçim dışı). Kalan 3 = yukarıdaki üç kilitli sözlük testi (yamayla yeşil, yamalı kopyada doğrulandı). Başka kalan yok. Günlük `PUV6a/tam_takim2.log`.
 
 ## Yamalar (son hâl)
 
@@ -226,3 +226,21 @@ Kök `PUV6a/s8_acik`; karşılaştırma aynı ağacın bayraklar kapalı koluyla
 | mac/tmux | aynı / aynı / aynı | `veri_yok` | `veri_yok` | 0,021 / 0,007 |
 
 - Değişen ad 0 (5 / 5); iki kanalın durumu `veri_yok` (5 / 5); `name_merger_by_label` yok. (zstd'nin bu iki kolu ilk kapalı koşudaki Ghidra varyantını taşıyor; açık ↔ kapalı farkı 0.)
+
+## Özet: hükümler (ön kayıt `3374382`)
+
+| | Hüküm | Sayı |
+|---|---|---|
+| H1 | TUTTU (şerhli) | bayraklar kapalı, `naming_map` tabanla bayt aynı: ilk koşu 4 / 5 (zstd'de Ghidra decompile belirlenimsizliği, P16e'nin başka ağaçtaki koşusunda da aynı fark), zstd tekrarı 0 fark → 5 / 5; `out/naming_map.json` iki koşuda da 5 / 5 |
+| H2 | TUTTU | dört bayrak açık ↔ kapalı: değişen ad 0 (5 / 5), iki kanal `veri_yok` (5 / 5) |
+| H3 | KISMEN | terminal-notifier: üst veri kaynaklı ad 0 → **32 / 32** (`naming_map` ∧ `out/src`; ≥ 30 tuttu), GT'ye göre yanlış **0** (tuttu); ad bekleyen 40'ta doğru 0 → **1** (≥ 30 tutmadı: 31 IMP Ghidra'da adlı, nüfus dışı — ön kayıtta öngörüldü). İlk koşuda (5da70a7) 6 / 32: yalın seçici anahtarı `objc_stub` saplamalarıyla çakışıyordu → onarım `5d23182` |
+| H4 | TUTTU | Ollama Go `tuttu` 10 475 ≥ 9 540; `pcsp_elendi` 0 |
+| H5 | TUTTU | Ollama ObjC 151 / 151 tam ad adayı (A-28 149 + adsız 2; 149 nitelikli anahtarın 149'u decompile çıktısında); onarımdan önce 145 |
+| H6 | TUTTU | docker-cli Go adayları 35 048 / 35 048 GT ile aynı (Wilson alt 0,99989) |
+| H7 | TUTTU | terminal-notifier 32 / 32 `üst veriden`, `ozgun_ad` dolu, güven tablodan, `kesin` 0; birim testi + mutant `puv6a_etiket_kesin` |
+| H8 | TUTTU | iTerm2 ObjC yanlış 274 / 33 885 (%0,81 ≤ %1), doğru 33 611 ≥ 33 000; docker-compose Go 90 077 / 0 |
+| H9 | TUTTU | bayraklar kapalı: iki adım ≤ 0,0001 sn / ikili (5 / 5) |
+
+Kanal başına ölçülmüş program sayısı (hüküm 6; A-14 için ≥ 3 gerekir): **Go 2** (docker-cli keşif, docker-compose sınama; Ollama GT'siz), **ObjC 2** (terminal-notifier keşif, iTerm2 sınama; Ollama GT'siz). Bayraklar öntanımda kapalı kaldı.
+
+## PAKET BİTTİ
