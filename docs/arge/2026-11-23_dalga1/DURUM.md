@@ -170,3 +170,8 @@ Kök `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/ollama_ba_kapali/` (özet `ozet
 - Blok açıklamadan sonraki adımlar bu girdide takılmadan bitti. Blok açıklama açıkken uçtan uca koşu (BA1 main'de) OL2 main'e girince yapılacak (tek koşuda: öntanımlar + üst veri bayrakları; BSim'in boş depoda atlanması ve adım içi olaylar da orada ölçülür).
 - **Koşunun gösterdiği kusurlar:** (1) çıkış 3'ün tek nedeni eski Go çözümleyicisinin "evrensel ikilide … şişman dosyayı açmıyor" hatası (yeni okuyucu aynı dilimi okuyor) → PUV6c'ye kalem; (2) README "Status: SUCCESS" ↔ çıkış 3 ve "Language: C/C++" (D5 / G7; bilinen); (3) `out/src`'de 13 159 dosyanın 12 486'sı `FUN_<adres>.c`, 9 448'i tek dizinde: ad kodda ve başlıkta ama dosya adında ve dizin yapısında değil (eski davranış; Go adları paket yolunu taşıyor) → tasarım önerisi Berke'ye; (4) `ust_veri_dogrulama` hep `olculmedi` (PUV6c).
 
+## Berke (20:4x): "bu 4 ajan bitince duralım bakalım"
+
+- Yeni ajan gönderilmez. Çalışan dördü (PUV5, OL2, OK1, OL10A) bitince doğrulanıp main'e alınır, sonra durulur. Yeni uzun koşu (Ollama'nın blok açıklama açık uçtan uca koşusu) başlatılmaz; sonraki oturumun ilk işi.
+- Gönderilmeyen, metni hazır paketler: `gonderim/OL4.md`, `gonderim/PUV6b.md` (PUV5 main'e girince), `gonderim/BA2.md` (OK1 main'e girince). Yazılacaklar: HZ-2 (OL2'den sonra), GS-1 (ÖL-4'ten sonra), PUV6c (PUV5'ten sonra), HZ-7a, açılış ölçümü.
+
