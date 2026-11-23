@@ -1,0 +1,87 @@
+{
+  "_comment": "P16e (Ghidra dökümünde çağıran listeleri kararlı sırada) mutasyon koruması. Her mutant bir sıralama noktasını, anahtarı, '// Callers:' satırını ya da tekilleştirmeyi bozar; ilgili test KIRMIZI olmalı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_p16e.json",
+  "mutants": [
+    {
+      "id": "p16e_cagri_grafigi_siralamaz",
+      "desc": "Sıralama noktası 1 kaldırılır: call_graph.json nodes.<adr>.callers getReferencesTo sırasında kalır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_cagri_grafigi_yineleme_sirasindan_bagimsiz",
+      "find": "            unique_callers.sort(key=caller_sort_key)  # P16e: getReferencesTo sırası kararsız\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "p16e_fonksiyon_xrefs_siralamaz",
+      "desc": "Sıralama noktası 2 kaldırılır: decompiled.json xrefs.callers ve '// Callers:' satırı getReferencesTo sırasında kalır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_fonksiyon_xrefs_yineleme_sirasindan_bagimsiz",
+      "find": "        callers.sort(key=caller_sort_key)\n",
+      "replace": "        pass\n"
+    },
+    {
+      "id": "p16e_xrefs_siralamaz",
+      "desc": "Sıralama noktası 3 kaldırılır: xrefs.json called_by getReferencesTo sırasında kalır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_xrefs_yineleme_sirasindan_bagimsiz",
+      "find": "            called_by.sort(key=caller_sort_key)  # P16e\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "p16e_anahtar_ad_once",
+      "desc": "Sıralama anahtarı ada göre (adres yerine): ad birinci, adres ikinci",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_anahtar_adres_addan_once_gelir",
+      "find": "        _address_sort_key(str(entry.get(\"address\", \"\") or \"\")),\n        str(entry.get(\"name\", \"\") or \"\"),\n",
+      "replace": "        str(entry.get(\"name\") or \"\"),\n        _address_sort_key(str(entry.get(\"address\", \"\") or \"\")),\n"
+    },
+    {
+      "id": "p16e_anahtar_metin_sirasi",
+      "desc": "Adres tam sayı değeri yerine metin olarak karşılaştırılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_anahtar_adres_tam_sayi_degeriyle",
+      "find": "        _address_sort_key(str(entry.get(\"address\", \"\") or \"\")),\n        str(entry.get(\"name\", \"\") or \"\"),\n",
+      "replace": "        str(entry.get(\"address\", \"\") or \"\"),\n        str(entry.get(\"name\", \"\") or \"\"),\n"
+    },
+    {
+      "id": "p16e_anahtar_ad_esitligi_yok",
+      "desc": "Aynı adreste ad eşitlik bozucusu düşer (aynı adresli iki ad giriş sırasında kalır)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_anahtar_ayni_adresli_iki_ad_ada_gore",
+      "find": "        str(entry.get(\"name\", \"\") or \"\"),\n        _address_sort_key(str(entry.get(\"call_site\", \"\") or \"\")),\n",
+      "replace": "        _address_sort_key(str(entry.get(\"call_site\", \"\") or \"\")),\n"
+    },
+    {
+      "id": "p16e_callers_son_bes",
+      "desc": "'// Callers:' satırı sıralı listenin son 5'ini gösterir (en küçük adresli 5 yerine)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_callers_satiri_en_kucuk_adresli_bes",
+      "find": "names = [c[\"name\"] for c in xrefs[\"callers\"][:5]]",
+      "replace": "names = [c[\"name\"] for c in xrefs[\"callers\"][-5:]]"
+    },
+    {
+      "id": "p16e_cagri_grafigi_tekillestirme_bozulur",
+      "desc": "call_graph tekilleştirmesi düşer: sıralı listede aynı çağıran iki kez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_tekillestirme_korunur_kume_ayni",
+      "find": "                if c[\"address\"] not in seen_c:\n",
+      "replace": "                if True:\n"
+    },
+    {
+      "id": "p16e_fonksiyon_xrefs_tekillestirme_bozulur",
+      "desc": "_extract_func_xrefs tekilleştirmesi düşer (ilk eşleşme): sıralı listede ikiz iki kez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_tekillestirme_korunur_kume_ayni",
+      "find": "if ca != func_addr and ca not in seen_callers:",
+      "replace": "if ca != func_addr:",
+      "occurrence": 1
+    },
+    {
+      "id": "p16e_xrefs_tekillestirme_bozulur",
+      "desc": "_extract_xrefs tekilleştirmesi düşer (ikinci eşleşme): called_by'da ikiz iki kez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_xrefs_yineleme_sirasindan_bagimsiz",
+      "find": "if ca != func_addr and ca not in seen_callers:",
+      "replace": "if ca != func_addr:",
+      "occurrence": 2
+    }
+  ]
+}
