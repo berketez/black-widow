@@ -13,11 +13,54 @@ from pathlib import Path
 from typing import Any
 
 from karadul.pipeline.steps._feedback_naming_bindiff import (
+    KAYNAK_REFDIFF,
+    gate_counter,
     pre_name_meta_of,
     update_unprotected,
+    write_reference_evidence,
 )
+from karadul.reconstruction.kimlik import yontem_kapisi as _kapi
 
 logger = logging.getLogger(__name__)
+
+
+def gate_reference_matches(
+    rd_result: Any, *, stats: dict[str, Any], basvuru: str | None = None,
+) -> tuple[dict[str, str], dict[str, str], list[dict[str, Any]]]:
+    """PK-1: ``ReferenceMatchResult``'ın adlarını yöntem kapısından geçir.
+
+    Her hedef adın yöntemi, ``naming_map``'i kuran kuralla (``ReferenceDiffer._build_naming_map``:
+    hedef başına en yüksek güvenli eşleşme, eşitlikte ilk gelen) ``matches``'ten bulunur. Dönen:
+    (ad yazabilen ``hedef → başvuru adı``, ``hedef → yöntem``, kanıt satırları). Yöntemi bulunamayan
+    ad ölçülmemiş sayılır (kanıt satırı). Sayaçlar ``stats["refdiff_method_gate"]``.
+    """
+    best: dict[str, tuple[str, float, str | None, str | None]] = {}
+    for m in getattr(rd_result, "matches", None) or ():
+        t, r = getattr(m, "target_name", None), getattr(m, "ref_name", None)
+        if not t or not r:
+            continue
+        conf = float(getattr(m, "confidence", 0.0) or 0.0)
+        prev = best.get(t)
+        if prev is None or conf > prev[1]:
+            best[t] = (r, conf, getattr(m, "method", None), getattr(m, "target_address", None))
+    names: dict[str, str] = {}
+    methods: dict[str, str] = {}
+    evidence: list[dict[str, Any]] = []
+    for t_name, ref_name in (getattr(rd_result, "naming_map", None) or {}).items():
+        b = best.get(t_name)
+        method = b[2] if b is not None and b[0] == ref_name else None
+        if _kapi.ad_verebilir(method):
+            names[t_name] = ref_name
+            methods[t_name] = str(method)
+            gate_counter(stats, "refdiff_method_gate", method, "ad")
+            continue
+        gate_counter(stats, "refdiff_method_gate", method, "kanit")
+        evidence.append(_kapi.kanit_satiri(
+            kaynak=KAYNAK_REFDIFF, anahtar=t_name, ad=ref_name, yontem=method,
+            adres=b[3] if b is not None else None,
+            eslesme_guveni=b[1] if b is not None else None, basvuru=basvuru,
+        ))
+    return names, methods, evidence
 
 
 def run_reference_differ(
@@ -162,6 +205,17 @@ def _match_against_db(
             detection=det,
         )
         if rd_result and rd_result.naming_map:
-            refdiff_naming.update(rd_result.naming_map)
+            # PK-1: yalnız kapıdan geçen yöntemin adı ``refdiff_naming``'e; kalan kanıt satırı
+            names, methods, evidence = gate_reference_matches(
+                rd_result, stats=stats,
+                basvuru=f"{det.library}/{getattr(det, 'version', '')}",
+            )
+            refdiff_naming.update(names)
+            stats.setdefault("refdiff_methods", {}).update(methods)
+            stats.setdefault("refdiff_evidence", []).extend(evidence)
             stats[f"refdiff_{det.library}_matches"] = rd_result.matched
             stats[f"refdiff_{det.library}_rate"] = rd_result.match_rate
+    write_reference_evidence(
+        pc=pc, kaynak=KAYNAK_REFDIFF,
+        rows=stats.get("refdiff_evidence") or [], stats=stats,
+    )

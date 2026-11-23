@@ -3,6 +3,12 @@
 stages.py L2396-2564'un birebir kopyasi. BinDiff iki kaynaktan eslestirir:
 (a) reference_binary config (geriye uyum), (b) ref_db cache auto-scan.
 Per-match confidence map iter'lar arasi persistent tutulur.
+
+PK-1 (yöntem kapısı; KARARLAR A-2, A-13, A-30): eşleşmeler yöntemine göre ikiye ayrılır.
+Ölçülmüş kesinliğinin Wilson alt sınırı ``AD_ESIGI``'ni geçen yöntem (``yontem_kapisi.ad_verebilir``)
+ad yazar; geçmeyen ya da ölçülmemiş yöntemin eşleşmesi ad yazmaz, kanıt satırı olur
+(``stats["bindiff_evidence"]``, sayaç ``stats["bindiff_method_gate"]``, köken kaydında
+``reference_evidence``; yazıcı ``write_reference_evidence``).
 """
 
 from __future__ import annotations
@@ -12,9 +18,95 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from karadul.reconstruction.kimlik import yontem_kapisi as _kapi
 from karadul.reconstruction.tarif import baglama as _baglama
 
 logger = logging.getLogger(__name__)
+
+# Köken kaydı (``naming_provenance.json``) bölümü: kapıdan düşen başvuru eşleşmeleri.
+REFERENCE_EVIDENCE_SECTION = "reference_evidence"
+# c_namer koşmadıysa (köken kaydı yoksa) yazılan ayrı dosya (``reconstructed/`` altında).
+REFERENCE_EVIDENCE_FALLBACK_FILE = "reference_evidence.json"
+KAYNAK_BINDIFF = "bindiff"
+KAYNAK_REFDIFF = "reference_differ"
+
+
+def gate_counter(stats: dict[str, Any], key: str, method: str | None, outcome: str) -> None:
+    """``stats[key]`` sayacı: ``yöntem → {"ad": n, "kanit": m}``."""
+    row = stats.setdefault(key, {}).setdefault(str(method), {"ad": 0, "kanit": 0})
+    row[outcome] = row.get(outcome, 0) + 1
+
+
+def split_by_method_gate(
+    conf_map: dict[str, tuple[str, float, str]],
+    matches: Any,
+    *,
+    stats: dict[str, Any],
+    basvuru: str | None = None,
+) -> tuple[dict[str, tuple[str, float, str]], list[dict[str, Any]]]:
+    """``transfer_names_with_confidence`` çıktısını yöntem kapısından geçir.
+
+    Dönen: (ad yazabilenler — aynı biçimde, kanıt satırları). Sayaçlar ``bindiff_method_gate``'e.
+    ``matches``: eşleşmelerin hedef adresini kanıt satırına yazmak için (``DiffMatch.target_address``).
+    """
+    addr_of: dict[str, str] = {}
+    for m in matches or ():
+        t = getattr(m, "target_name", None)
+        if t and t not in addr_of:
+            addr_of[t] = getattr(m, "target_address", None)
+    names: dict[str, tuple[str, float, str]] = {}
+    evidence: list[dict[str, Any]] = []
+    for t_name, (ref_name, conf, method) in conf_map.items():
+        if _kapi.ad_verebilir(method):
+            names[t_name] = (ref_name, conf, method)
+            gate_counter(stats, "bindiff_method_gate", method, "ad")
+            continue
+        gate_counter(stats, "bindiff_method_gate", method, "kanit")
+        evidence.append(_kapi.kanit_satiri(
+            kaynak=KAYNAK_BINDIFF, anahtar=t_name, ad=ref_name, yontem=method,
+            adres=addr_of.get(t_name), eslesme_guveni=conf, basvuru=basvuru,
+        ))
+    return names, evidence
+
+
+def write_reference_evidence(
+    *, pc: Any, kaynak: str, rows: list[dict[str, Any]], stats: dict[str, Any],
+) -> None:
+    """Kanıt satırlarını köken kaydına yaz (``naming_provenance.json`` → ``reference_evidence``).
+
+    Hedef: Faz 2'nin ilk yinelemesinde c_namer'ın köken kaydı (``reconstructed/src``; birleştirici
+    ``name_merger`` bölümünü aynı dosyaya, öbür bölümleri koruyarak yazar). Kayıt yoksa (c_namer
+    koşmadı) ``reconstructed/reference_evidence.json``. Bölüm bir satır listesidir (P-ÜV6a'nın
+    ``ust_veri_kanit`` biçimi); bu ``kaynak``'ın eski satırları değiştirilir, öbür kaynağınkiler kalır.
+    Satır yoksa dosyaya dokunulmaz. Yazılamazsa yalnız istatistiğe not düşülür.
+    """
+    if not rows:
+        return
+    from karadul.core.naming_labels import NAMING_PROVENANCE_FILE
+
+    try:
+        reconstructed = Path(pc.workspace.get_stage_dir("reconstructed"))
+        target = reconstructed / "src" / NAMING_PROVENANCE_FILE
+        if not target.is_file():
+            target = reconstructed / REFERENCE_EVIDENCE_FALLBACK_FILE
+        data: Any = {}
+        if target.is_file():
+            data = json.loads(target.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("köken kaydı sözlük değil")
+        old = data.get(REFERENCE_EVIDENCE_SECTION)
+        kept = [r for r in old if isinstance(r, dict) and r.get("kaynak") != kaynak] \
+            if isinstance(old, list) else []
+        data[REFERENCE_EVIDENCE_SECTION] = sorted(
+            kept + list(rows),
+            key=lambda r: (str(r.get("kaynak")), str(r.get("anahtar")), str(r.get("ozgun_ad"))))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # c_namer'ın yazım biçimiyle aynı (indent=1, ensure_ascii, sort_keys)
+        target.write_text(json.dumps(data, indent=1, ensure_ascii=True, sort_keys=True),
+                          encoding="utf-8")
+        stats["reference_evidence_provenance"] = f"yazildi:{target.name}"
+    except (OSError, ValueError, TypeError, AttributeError, json.JSONDecodeError) as exc:
+        stats["reference_evidence_provenance"] = f"yazilamadi:{type(exc).__name__}"
 
 # P13a / AD-11 + B-C6: BinDiff / ReferenceDiffer'ın ezemediği ön ad türleri: elle (analist),
 # ``main`` girişi (yükleyicinin bulduğu), KS-1 kesin çapası. Öncelik ``tarif.baglama``'da
@@ -102,8 +194,15 @@ def run_bindiff(
                 stats=stats,
             )
 
+        # PK-1: kapıdan düşen eşleşmeler kanıt satırı olarak köken kaydına
+        write_reference_evidence(
+            pc=pc, kaynak=KAYNAK_BINDIFF,
+            rows=stats.get("bindiff_evidence") or [], stats=stats,
+        )
+
         if bindiff_names:
             stats["bindiff_matches"] = len(bindiff_names)
+            # Yalnız yöntem kapısından geçen adlar (``split_by_method_gate``)
             protected = update_unprotected(
                 extracted_names, bindiff_names, pre_name_meta_of(ctx))
             if protected:
@@ -157,8 +256,14 @@ def _config_source(
         )
         conf_map = differ.transfer_names_with_confidence(diff_result)
         if conf_map:
-            bindiff_confidence_map.update(conf_map)
-            bindiff_names.update(differ.transfer_names(diff_result))
+            # PK-1: yalnız kapıdan geçen yöntemin eşleşmesi ad yazar; kalan kanıt satırı
+            named, evidence = split_by_method_gate(
+                conf_map, getattr(diff_result, "matches", None),
+                stats=stats, basvuru=Path(ref_binary).name,
+            )
+            bindiff_confidence_map.update(named)
+            bindiff_names.update({t: v[0] for t, v in named.items()})
+            stats.setdefault("bindiff_evidence", []).extend(evidence)
             stats["bindiff_config_matches"] = len(conf_map)
             stats["bindiff_config_match_rate"] = diff_result.match_rate
             logger.info(
@@ -243,7 +348,13 @@ def _refdb_source(
                 )
                 rdb_conf = differ.transfer_names_with_confidence(rdb_diff)
                 if rdb_conf:
-                    for t_name, (ref_name, conf, method) in rdb_conf.items():
+                    # PK-1: yöntem kapısı (kalan eşleşme kanıt satırı)
+                    named, evidence = split_by_method_gate(
+                        rdb_conf, getattr(rdb_diff, "matches", None), stats=stats,
+                        basvuru=f"{rdb_entry.library}/{rdb_entry.version}",
+                    )
+                    stats.setdefault("bindiff_evidence", []).extend(evidence)
+                    for t_name, (ref_name, conf, method) in named.items():
                         existing = bindiff_confidence_map.get(t_name)
                         if existing is None or conf > existing[1]:
                             bindiff_confidence_map[t_name] = (
