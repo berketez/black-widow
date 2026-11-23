@@ -49,3 +49,21 @@ Bağlayıcılık sırası (çelişkide üstteki geçerli): `docs/arge/2026-11-19
 | OL10 | yalnız `docs/arge/2026-11-19_mythos/olcek/OL10_TASARIM.md` |
 
 Sonraki paketlerin sırası ve sahipliği `docs/arge/2026-11-23_dalga1/DURUM.md`'de.
+
+## 5. Akşam eki (2026-11-23 19:30'dan sonra gönderilen paketler)
+
+- **Taban:** main `152176b` (= origin/main). Tam takım `95d4e3c`'de 10 968 geçti / 18 atlandı / 0 kaldı (670 sn, yük altında); o commit'ten beri main'e yalnız belge girdi. Sabahın yedi paketi (PUV6a, PUV3, PUV4, PUV7, P16e, OL1, OL10 tasarımı) main'de: gönderim metinlerindeki "PUV6a main'e girince" koşulu sağlandı.
+- **Bu dilim 6 paket, aynı anda en çok 4:** BA1, PUV5, PK1, OL2 (ilk dört); yer açıldıkça OK1, OL10A. Hepsi Opus.
+- **Sabit ürün ağacı (bugünkü ürün):** `~/karadul_olcum/urun-152176b` (main `152176b`; altı bağ kurulu). §2'deki `urun-be9550e` satırı sabah içindir.
+- **Ghidra kuyruğu dolu olacak:** ana oturumun Ollama koşusu (`ANA ollama:ba_kapali`) bir yuvayı TAHMİN 1,5–2 saat tutar; PUV5 ve OL2 öbür yuvayı paylaşır. Ghidra'sız yeniden oynatmayla verilebilen her hüküm önce onunla verilir; kuyruğa kod, test ve mutasyon bittikten sonra girilir.
+- **ÖL-1'in bekçisi öntanımda açık** (`analysis.cozumleyici_takilma_sn` 600): ürün koşularında çözümleyici 600 sn tepede kalırsa kapatılır ve koşu `kismi` olur; koşunun `ghidra_status.json`'ında görünür. Bunu kendi değişikliğine bağlama.
+- **Disk:** boş alan 19:28'de 259,5 GB (kullanılan 706,7 GB).
+
+| Paket | Yazabileceği dosyalar (tam liste gönderim metninde) |
+|---|---|
+| BA1 | `karadul/reconstruction/engineering/block_annotator.py`, kendi testleri / betikleri / belgeleri |
+| PUV5 | `karadul/stages.py` (yalnız `_recover_main_from_entry` ve yardımcıları), kendi testleri / belgeleri |
+| PK1 | `karadul/pipeline/steps/_feedback_naming_{bindiff,refdiff}.py`, `_feedback_naming_candidates.py` (yalnız `_add_bindiff`, `_add_refdiff`), yeni `karadul/reconstruction/kimlik/` |
+| OL2 | `karadul/ghidra/headless.py` (döküm işlevleri + BSim bloğu), `karadul/ghidra/bsim.py` |
+| OK1 | `karadul/reconstruction/c_namer.py` (yalnız `_strategy_string_context`), iki `alt_kanal.py` (yalnız `_is_own_name`) |
+| OL10A | yalnız yeni dosyalar (`karadul/core/tembel_*.py`, …) |
