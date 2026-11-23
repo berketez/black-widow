@@ -1,0 +1,25 @@
+diff --git a/karadul/config.py b/karadul/config.py
+--- a/karadul/config.py
++++ b/karadul/config.py
+@@ -392,9 +392,9 @@
+     # Berke kalici karari: feedback_no_llm.md — deterministic, CPU-only.
+     # --- Bayrak ön paketi (KARARLAR A-19 a): okunmuyor; bağlayan paket INERT satırını siler ---
+     # ÖL-1: aynı Ghidra çözümleyicisi bu kadar sn tepedeyse kapatılıp sürdürülür (0 = kapalı).
+-    cozumleyici_takilma_sn: int = 0  # ETKİSİZ: ÖL-1 bağlayacak (INERT_SETTINGS)
++    cozumleyici_takilma_sn: int = 600  # okuyan: ghidra/headless.py _run_auto_analysis (ÖL-1)
+     # ÖL-1: çözümleyici bekçisinin okuma aralığı (sn).
+-    bekci_aralik_sn: int = 15  # ETKİSİZ: ÖL-1 bağlayacak (INERT_SETTINGS)
++    bekci_aralik_sn: int = 15  # okuyan: ghidra/headless.py _run_auto_analysis (ÖL-1)
+     # ÖL-3: büyük Ghidra çıktıları akış biçiminde dosyaya yazılır (kapalı = bugünkü yol).
+     akis_yazimi: bool = False  # ETKİSİZ: ÖL-3 bağlayacak (INERT_SETTINGS)
+     # ÖL-3b: ikili istihbarat aşamasının süre bütçesi (sn; 0 = sınırsız).
+@@ -1320,9 +1320,6 @@
+     "binary_reconstruction.oz_ad_verbatim": _pending_binding("ÖK-1"),
+     # P-ÜV5 (Dalga 1)
+     "binary_reconstruction.enable_macho_entry_main": _pending_binding("P-ÜV5"),
+-    # ÖL-1 (Dalga 1)
+-    "analysis.cozumleyici_takilma_sn": _pending_binding("ÖL-1"),
+-    "analysis.bekci_aralik_sn": _pending_binding("ÖL-1"),
+     # ÖK-2 (Dalga 2)
+     "binary_reconstruction.oz_ad_uniqueness_gate": _pending_binding("ÖK-2"),
+     # P-ÜV1 / P-ÜV2 / P-ÜV3 (Dalga 2; üretici adımı okuyan ilk kod; Faz 1 listesine P-ÜV6 ekler)
