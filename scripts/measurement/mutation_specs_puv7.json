@@ -1,0 +1,125 @@
+{
+ "_comment": "P-ÜV7 (2026-11-23): Go tip verisi okuyucu + tutarlılık denetimi (T1–T6, K4, K10, damga, ikili kararı). Plandaki 8 mutant + 7 ek. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv7.json",
+ "mutants": [
+  {
+   "id": "puv7_unreachable_dislanmaz",
+   "desc": "runtime.unreachableMethod hedefi T1'den dışlanmaz (budanmış yöntemin yer tutucusu yanlış alarm verir)",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_unreachable_method_hedefi_isaretlenmez",
+   "find": "            if f.ad == UNREACHABLE_METHOD:\n",
+   "replace": "            if False:\n"
+  },
+  {
+   "id": "puv7_koseli_soyulmaz",
+   "desc": "son bileşen alınırken tip parametresi köşeli ayraçları soyulmaz",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_son_bilesen_ve_koseli_ayrac",
+   "find": "    g = koseli_soy(ad)\n",
+   "replace": "    g = ad\n"
+  },
+  {
+   "id": "puv7_yapi_uncommon_56",
+   "desc": "yapı türünde UncommonType ofseti 80 yerine 56 alınır",
+   "module": "karadul/analyzers/ustveri/go_tip.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_yapi_uncommon_ofseti_80_ve_extra_star",
+   "find": "    KIND_STRUCT: 80,\n",
+   "replace": "    KIND_STRUCT: 0x38,\n"
+  },
+  {
+   "id": "puv7_itab_adimi_32",
+   "desc": "1.27 itab tablosunda adım 24 + 8n yerine 32 + 8n",
+   "module": "karadul/analyzers/ustveri/go_tip.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_temiz_modul_damgalari",
+   "find": "                a += ITAB_BASLIK_BOYU + 8 * max(len(ms), 1)\n",
+   "replace": "                a += 32 + 8 * max(len(ms), 1)\n"
+  },
+  {
+   "id": "puv7_t3_guclu",
+   "desc": "T3 (dosya ↔ paket) güçlü işaret sayılır",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_t3_zayif_damgaya_ve_karara_girmez",
+   "find": "GUCLU_DENETIMLER = frozenset({\"T1\", \"T2\", \"T2p\", \"T5\", \"T6\"})\n",
+   "replace": "GUCLU_DENETIMLER = frozenset({\"T1\", \"T2\", \"T2p\", \"T3\", \"T5\", \"T6\"})\n"
+  },
+  {
+   "id": "puv7_tutarsiz_tek_kaynak",
+   "desc": "tutarsız fonksiyon tek_kaynak damgası alır",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_ad_degisikligi_t1_ve_t2_ile_yakalanir",
+   "find": "            damgalar[f.giris] = DAMGA_TUTARSIZ\n",
+   "replace": "            damgalar[f.giris] = DAMGA_TEK_KAYNAK\n"
+  },
+  {
+   "id": "puv7_eksi_bir_adres",
+   "desc": "metin ofseti −1 (budanmış yöntem) adres sayılır",
+   "module": "karadul/analyzers/ustveri/go_tip.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_budanmis_yontem_metin_ofseti_eksi_bir_adres_degil",
+   "find": "METIN_OFSETI_YOK = frozenset({-1, 0})",
+   "replace": "METIN_OFSETI_YOK = frozenset({0})"
+  },
+  {
+   "id": "puv7_kacis_cozulmez",
+   "desc": "T2p'de ad içindeki %2e kaçışı çözülmez",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_kacis_cozulmeden_paket_uyusmaz_degil",
+   "find": "                    if kacis_coz(paket_adi(f.ad)) == u.paket:\n",
+   "replace": "                    if paket_adi(f.ad) == u.paket:\n"
+  },
+  {
+   "id": "puv7_k4_damgaya_girmez",
+   "desc": "K4 / K10 (yapısal işaret) damgayı tutarsız yapmaz",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_k4_tasan_pcsp_tutarsiz_damga",
+   "find": "        if guclu or YAPISAL_ISARETLER.intersection(im):\n",
+   "replace": "        if guclu:\n"
+  },
+  {
+   "id": "puv7_k10_movk_atlanir",
+   "desc": "K10 büyük çerçeve sabitinde movk parçası atlanır",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_k10_buyuk_cerceve_movz_movk_yazmac",
+   "find": "            parcalar |= b[2] << b[3]\n",
+   "replace": "            parcalar |= 0\n"
+  },
+  {
+   "id": "puv7_k10_imm9_isaretsiz",
+   "desc": "K10 str ön indeks anlığı işaretsiz okunur",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_arm64_yigin_komutu_cozumu",
+   "find": "        rt, rn, imm9 = w & 31, (w >> 5) & 31, _isaretli((w >> 12) & 0x1FF, 9)\n",
+   "replace": "        rt, rn, imm9 = w & 31, (w >> 5) & 31, (w >> 12) & 0x1FF\n"
+  },
+  {
+   "id": "puv7_k10_taninmayan_ihlal_degil",
+   "desc": "K10'da yığın komutu olmayan giriş bölümü ihlal sayılmaz",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_k10_yigin_komutu_olmayan_tutarsiz",
+   "find": "K10_IHLAL = frozenset({K10_UYUMSUZ, K10_TANINMAYAN, K10_OKUNAMADI})\n",
+   "replace": "K10_IHLAL = frozenset({K10_UYUMSUZ, K10_OKUNAMADI})\n"
+  },
+  {
+   "id": "puv7_esik_yuzde_bes",
+   "desc": "ikili kararı eşiği %1 yerine %5",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_karar_uyari_ve_esik",
+   "find": "    elif n and guclu_isaretli > UST_VERI_SUPHELI_ESIGI * n:\n",
+   "replace": "    elif n and guclu_isaretli > 0.05 * n:\n"
+  },
+  {
+   "id": "puv7_surum_alt_siniri_yok",
+   "desc": "tip verisi sürüm kapısının alt sınırı kalkar (1.19 tahminle okunur)",
+   "module": "karadul/analyzers/ustveri/go_tip.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_desteklenmeyen_surumde_ad_cift_kaynak_olmaz",
+   "find": "        if not EN_KUCUK_SURUM <= self.kucuk <= EN_BUYUK_SURUM:\n",
+   "replace": "        if not self.kucuk <= EN_BUYUK_SURUM:\n"
+  },
+  {
+   "id": "puv7_itab_araligi_denetimsiz",
+   "desc": "1.27 itab aralığının types…etypes içinde olduğu denetlenmez",
+   "module": "karadul/analyzers/ustveri/go_tip.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_127_itab_araligi_tip_bolgesi_disinda_desteklenmiyor",
+   "find": "            if not (self.types <= bas <= son <= self.etypes):\n",
+   "replace": "            if not (self.types <= bas):\n"
+  }
+ ]
+}

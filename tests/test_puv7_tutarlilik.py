@@ -32,6 +32,23 @@ BOZUK_HAM = 0x8000_0000_DEAD_BEEF
 ANA = "example.com/uyg"
 BOY = 0x40
 
+# Kurucunun biçim sabitleri — resmî biçimden (PLAN "P-ÜV7 / Biçim"), modülden BAĞIMSIZ yazılır:
+# modül sabitini değiştiren bir mutant kurucuyu değiştirmemeli (yoksa ölmez).
+B_TIP = 48
+B_UNCOMMON = 16
+B_YONTEM = 16
+B_IMETHOD = 8
+B_ITAB_BASLIK = 24
+B_PTR_ELEM = 48
+B_IFACE_METHODS = 56
+B_IFACE_LEN = 64
+B_K_STRUCT, B_K_PTR, B_K_IFACE = 25, 22, 20
+B_UNCOMMON_OFS = {B_K_STRUCT: 80, B_K_PTR: 56, B_K_IFACE: 80}
+B_TF_UNCOMMON, B_TF_EXTRA = 1, 2
+B_MD_TYPES = 37
+B_MD_ETYPES_126 = 38
+B_MD_TYPEDESCLEN_127, B_MD_ETYPES_127, B_MD_ITABOFFSET_127, B_MD_ITABSIZE_127 = 38, 39, 40, 41
+
 # Fonksiyonlar (sıra sabit; testler adla değil sırayla değiştirir).
 F_GOGO, F_T_AD, F_PT_AD, F_EKLE, F_CALIS, F_UNREACH, F_YAZ, F_YARDIM = range(8)
 FONKSIYONLAR = [
@@ -200,54 +217,54 @@ def kur(
         return girisler[i]
 
     def tip(kind: int, ad_off: int, tflag: int, ek: int) -> int:
-        a = tb.yer(GT.TIP_BOYU + ek)
+        a = tb.yer(B_TIP + ek)
         tb.yaz(a, "<QQIBBBBQQii", 8, 0, 0, tflag, 8, 8, kind, 0, 0, ad_off, 0)
         return a
 
     def uncommon(t: int, ofset: int, paket: str, yontemler: list[tuple[str, int, int]]) -> None:
         # yöntemler UncommonType'ın hemen ardında (Moff = 16)
         u = t + ofset
-        tb.yaz(u, "<iHHII", tb.ad(paket), len(yontemler), len(yontemler), GT.UNCOMMON_BOYU, 0)
+        tb.yaz(u, "<iHHII", tb.ad(paket), len(yontemler), len(yontemler), B_UNCOMMON, 0)
         for j, (yad, ifn, tfn) in enumerate(yontemler):
-            tb.yaz(u + GT.UNCOMMON_BOYU + GT.YONTEM_BOYU * j, "<iiii", tb.ad(yad), 0, ifn, tfn)
+            tb.yaz(u + B_UNCOMMON + B_YONTEM * j, "<iiii", tb.ad(yad), 0, ifn, tfn)
 
     def yontem_yeri(n_y: int) -> int:
-        return GT.UNCOMMON_BOYU + GT.YONTEM_BOYU * n_y
+        return B_UNCOMMON + B_YONTEM * n_y
 
-    u_ofs = GT.UNCOMMON_OFSETI
+    u_ofs = B_UNCOMMON_OFS
     # T (yapı): Ad → Ifn (*T).Ad, Tfn T.Ad
-    t_t = tip(GT.KIND_STRUCT, tb.ad("*p.T"),
-              (GT.TFLAG_UNCOMMON if struct_uncommon else 0) | GT.TFLAG_EXTRA_STAR,
-              u_ofs[GT.KIND_STRUCT] - GT.TIP_BOYU + yontem_yeri(1))
+    t_t = tip(B_K_STRUCT, tb.ad("*p.T"),
+              (B_TF_UNCOMMON if struct_uncommon else 0) | B_TF_EXTRA,
+              u_ofs[B_K_STRUCT] - B_TIP + yontem_yeri(1))
     if struct_uncommon:
-        uncommon(t_t, u_ofs[GT.KIND_STRUCT], f"{ANA}/p", [("Ad", metin(F_PT_AD), metin(F_T_AD))])
+        uncommon(t_t, u_ofs[B_K_STRUCT], f"{ANA}/p", [("Ad", metin(F_PT_AD), metin(F_T_AD))])
     # *T: Ad + budanmış Gizli (−1)
-    t_pt = tip(GT.KIND_POINTER, tb.ad("*p.T"), GT.TFLAG_UNCOMMON,
-               u_ofs[GT.KIND_POINTER] - GT.TIP_BOYU + yontem_yeri(2))
-    tb.gosterici(t_pt + GT.GOSTERICI_OGESI, t_t)
-    uncommon(t_pt, u_ofs[GT.KIND_POINTER], f"{ANA}/p",
+    t_pt = tip(B_K_PTR, tb.ad("*p.T"), B_TF_UNCOMMON,
+               u_ofs[B_K_PTR] - B_TIP + yontem_yeri(2))
+    tb.gosterici(t_pt + B_PTR_ELEM, t_t)
+    uncommon(t_pt, u_ofs[B_K_PTR], f"{ANA}/p",
              [("Ad", metin(F_PT_AD), metin(F_PT_AD)), ("Gizli", -1, -1)])
     tb.yaz(t_t + 44, "<i", t_pt - TIPLER)          # T.PtrToThis → *T
     # *Liste[int]
-    t_pl = tip(GT.KIND_POINTER, tb.ad("*p.Liste[int]"), GT.TFLAG_UNCOMMON,
-               u_ofs[GT.KIND_POINTER] - GT.TIP_BOYU + yontem_yeri(1))
-    uncommon(t_pl, u_ofs[GT.KIND_POINTER], f"{ANA}/p", [("Ekle", metin(F_EKLE), metin(F_EKLE))])
+    t_pl = tip(B_K_PTR, tb.ad("*p.Liste[int]"), B_TF_UNCOMMON,
+               u_ofs[B_K_PTR] - B_TIP + yontem_yeri(1))
+    uncommon(t_pl, u_ofs[B_K_PTR], f"{ANA}/p", [("Ekle", metin(F_EKLE), metin(F_EKLE))])
     # F (yapı) kaçışlı paket yolu
-    t_f = tip(GT.KIND_STRUCT, tb.ad("ab.F"), GT.TFLAG_UNCOMMON,
-              u_ofs[GT.KIND_STRUCT] - GT.TIP_BOYU + yontem_yeri(1))
-    uncommon(t_f, u_ofs[GT.KIND_STRUCT], f"{ANA}/a.b", [("Calis", metin(F_CALIS), metin(F_CALIS))])
+    t_f = tip(B_K_STRUCT, tb.ad("ab.F"), B_TF_UNCOMMON,
+              u_ofs[B_K_STRUCT] - B_TIP + yontem_yeri(1))
+    uncommon(t_f, u_ofs[B_K_STRUCT], f"{ANA}/a.b", [("Calis", metin(F_CALIS), metin(F_CALIS))])
     # U (yapı, yöntem tablosu yok) ve *U
-    t_u = tip(GT.KIND_STRUCT, tb.ad("p.U"), 0, u_ofs[GT.KIND_STRUCT] - GT.TIP_BOYU)
-    t_pu = tip(GT.KIND_POINTER, tb.ad("*p.U"), 0, u_ofs[GT.KIND_POINTER] - GT.TIP_BOYU)
-    tb.gosterici(t_pu + GT.GOSTERICI_OGESI, t_u)
+    t_u = tip(B_K_STRUCT, tb.ad("p.U"), 0, u_ofs[B_K_STRUCT] - B_TIP)
+    t_pu = tip(B_K_PTR, tb.ad("*p.U"), 0, u_ofs[B_K_PTR] - B_TIP)
+    tb.gosterici(t_pu + B_PTR_ELEM, t_u)
 
     def arayuz(ad: str, yontemler: list[str]) -> int:
-        a = tip(GT.KIND_INTERFACE, tb.ad(ad), 0, u_ofs[GT.KIND_INTERFACE] - GT.TIP_BOYU)
-        im = tb.yer(GT.IMETHOD_BOYU * len(yontemler))
+        a = tip(B_K_IFACE, tb.ad(ad), 0, u_ofs[B_K_IFACE] - B_TIP)
+        im = tb.yer(B_IMETHOD * len(yontemler))
         for j, y in enumerate(yontemler):
-            tb.yaz(im + GT.IMETHOD_BOYU * j, "<ii", tb.ad(y), 0)
-        tb.gosterici(a + GT.ARAYUZ_YONTEM_GOSTERICISI, im)
-        tb.yaz(a + GT.ARAYUZ_YONTEM_UZUNLUGU, "<QQ", len(yontemler), len(yontemler))
+            tb.yaz(im + B_IMETHOD * j, "<ii", tb.ad(y), 0)
+        tb.gosterici(a + B_IFACE_METHODS, im)
+        tb.yaz(a + B_IFACE_LEN, "<QQ", len(yontemler), len(yontemler))
         return a
 
     i_i = arayuz("p.I", ["Ad", "Kapat"])
@@ -265,11 +282,11 @@ def kur(
         bolge.hizala(8)
         out = []
         for inter, typ, fun in itab_tanim:
-            a = bolge.yer(GT.ITAB_BASLIK_BOYU + 8 * max(len(fun), 1))
+            a = bolge.yer(B_ITAB_BASLIK + 8 * max(len(fun), 1))
             bolge.gosterici(a, inter)
             bolge.gosterici(a + 8, typ)
             for j, hedef in enumerate(fun):
-                bolge.gosterici(a + GT.ITAB_BASLIK_BOYU + 8 * j, GO_METIN + hedef)
+                bolge.gosterici(a + B_ITAB_BASLIK + 8 * j, GO_METIN + hedef)
             out.append(a)
         return out
 
@@ -307,14 +324,14 @@ def kur(
           11: len(pct), 12: len(pct), 14: len(pclntable), 15: len(pclntable), 17: n + 1, 18: n + 1}
     gos = {0: PCLN, 1: PCLN + funcname_off, 4: PCLN + cu_off, 7: PCLN + filetab_off,
            10: PCLN + pctab_off, 13: PCLN + pcln_off, 16: PCLN + pcln_off, 19: FFTAB,
-           20: minpc, 21: maxpc, 22: GO_METIN, 23: GO_METIN + son + 0x100, GT.MD_TYPES: TIPLER}
+           20: minpc, 21: maxpc, 22: GO_METIN, 23: GO_METIN + son + 0x100, B_MD_TYPES: TIPLER}
     if yeni:
-        gos[GT.MD_ETYPES_127] = etypes
-        uz[GT.MD_TYPEDESCLEN_127] = typedesclen
-        uz[GT.MD_ITABOFFSET_127] = itaboffset
-        uz[GT.MD_ITABSIZE_127] = itabsize
+        gos[B_MD_ETYPES_127] = etypes
+        uz[B_MD_TYPEDESCLEN_127] = typedesclen
+        uz[B_MD_ITABOFFSET_127] = itaboffset
+        uz[B_MD_ITABSIZE_127] = itabsize
     else:
-        gos[GT.MD_ETYPES_126] = etypes
+        gos[B_MD_ETYPES_126] = etypes
     for i, v in uz.items():
         struct.pack_into("<Q", md, 8 * i, v)
     for i, v in gos.items():
@@ -561,6 +578,7 @@ def test_go_olmayan_goruntu_veri_yok() -> None:
 def test_son_bilesen_ve_koseli_ayrac() -> None:
     assert T.son_bilesen(f"{ANA}/p.(*Liste[go.shape.int]).Ekle") == "Ekle"
     assert T.son_bilesen("p.(*T[a.B[c.D]]).M-fm") == "M"
+    assert T.son_bilesen("p.Esle[go.shape.string,go.shape.int]") == "Esle"
     assert T.koseli_soy("T[x[y]].M") == "T.M"
     assert T.dosya_paketi("github.com/x/y@v1.2.3/z/f.go") == "github.com/x/y/z"
 

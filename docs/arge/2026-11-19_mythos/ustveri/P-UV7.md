@@ -13,8 +13,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (özet `ozet/`).
 | 3 | Denetimler T1, T2, T2p, T5, T6 (güçlü); T3, T4 (zayıf) | yazıldı | 52c3f9a |
 | 4 | Damga + ikili özeti | yazıldı | 52c3f9a |
 | 5 | Bozma deneyi betiği (A–E) | yazıldı; H2 TUTTU | 85f8a03 |
-| 6 | Kalem 6 (K10) ölçümü ve kararı | ölçüldü (≥ %99) → eklendi; H5 TUTMADI | (K10 commit'i) |
-| 7 | Mutasyon (≥ 8) | bekliyor | — |
+| 6 | Kalem 6 (K10) ölçümü ve kararı | ölçüldü (≥ %99) → eklendi; H5 TUTMADI | 896753a |
+| 7 | Mutasyon (≥ 8) | 15 / 15 öldü | (mutasyon commit'i) |
 | 8 | Kabul ölçümü (H1, H2, H4, H6, H7; ek ikililer) | bekliyor | — |
 | 9 | Dondurma → H3-sınama (docker-compose) | bekliyor | — |
 | 10 | Tam takım | bekliyor | — |
@@ -148,3 +148,24 @@ komut aynı büyüklükte yığın ayarı.
   yığın komutu olmayan, büyük çerçeve `movz` + `movk` + `sub` yazmaç (ve `movk` atlanırsa
   yakalanır), iki parçalı `sub` ×2, çerçevesiz ve birleştirici dili bakılmaz, arm64 dışı
   `desteklenmiyor`, kapatılabilir.
+
+## Kalem 7: mutasyon (`scripts/measurement/mutation_specs_puv7.json`)
+
+**15 mutant, 15 öldü, 0 hayatta, 0 hata** (`karadul/` farkı sonra temiz). Plandaki 8 mutantın hepsi
+(`unreachableMethod` dışlaması kalkar; köşeli ayraç soyulmaz; yapı `Uncommon` ofseti 56; itab adımı
+`32 + 8n`; T3 güçlü sayılır; `tutarsiz` → `tek_kaynak`; metin ofseti −1 adres sayılır; kaçış
+çözülmez) + 7 ek (K4 / K10 damgaya girmez; K10 `movk` parçası atlanır; K10 `str` anlığı
+işaretsiz; K10 tanınmayan ihlal değil; eşik %5; sürüm alt sınırı kalkar; 1.27 itab aralığı
+denetimsiz).
+
+İlk koşuda 2 hayatta + 1 hata çıktı, ikisi test zayıflığıydı:
+- Köşeli ayraç: sentetik adlarda köşeli ayraç son noktadan önce (`p.(*Liste[go.shape.int]).Ekle`)
+  olduğu için soymasız da son bileşen doğru çıkıyordu → `p.Esle[go.shape.string,go.shape.int]`
+  denetimi eklendi (son noktadan sonra köşeli ayraç).
+- Sürüm alt sınırı: bağlı test 1.27 yerleşimiyle kuruluyordu; 1.19'da 1.26 sözcük sırasıyla okunan
+  `etypes` akıl dışı çıktığı için ikinci denetim yakalıyordu (mutant gerçekten zararsızdı o
+  kurulumda). 1.26 yerleşimiyle kurulan teste (`test_desteklenmeyen_surumde_ad_cift_kaynak_olmaz`)
+  bağlandı.
+- Hata: `find` metni satır sonu yorumu yüzünden eşleşmedi; yorumsuz alt dizgiyle düzeltildi.
+- Ayrıca test kurucusu kitaplığın biçim sabitlerini (`GT.UNCOMMON_OFSETI` …) kullanıyordu: sabiti
+  değiştiren mutant kurucuyu da değiştirirdi. Kurucu modülden bağımsız sabit sayılarla yeniden yazıldı.
