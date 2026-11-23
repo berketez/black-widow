@@ -1,0 +1,93 @@
+{
+ "_comment": "PK-1 (2026-11-23): başvuru yollarına yöntem kapısı. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_pk1.json",
+ "mutants": [
+  {
+   "id": "pk1_m1_esik_sifir",
+   "desc": "m1 (hüküm 1): eşik 0 alınır → her ölçülmüş yöntem ad verir",
+   "module": "karadul/reconstruction/kimlik/yontem_kapisi.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "    return _ham_alt(*sayim) >= AD_ESIGI",
+   "replace": "    return _ham_alt(*sayim) >= 0.0"
+  },
+  {
+   "id": "pk1_m2_tablo_disi_true",
+   "desc": "m2: tablo dışı (ölçülmemiş) yöntem ad verebilir",
+   "module": "karadul/reconstruction/kimlik/yontem_kapisi.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "    if sayim is None:\n        return False\n    return _ham_alt",
+   "replace": "    if sayim is None:\n        return True\n    return _ham_alt"
+  },
+  {
+   "id": "pk1_m3_kanit_yazilmaz",
+   "desc": "m3: config yolunda kanıt satırı yazılmaz",
+   "module": "karadul/pipeline/steps/_feedback_naming_bindiff.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "            stats.setdefault(\"bindiff_evidence\", []).extend(evidence)\n            stats[\"bindiff_config_matches\"]",
+   "replace": "            stats.setdefault(\"bindiff_evidence\", [])\n            stats[\"bindiff_config_matches\"]"
+  },
+  {
+   "id": "pk1_m4_refdiff_sabit_095",
+   "desc": "m4: _add_refdiff sabit 0,95 geri gelir",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "NamingCandidate(new_name, conf, \"reference_differ\")",
+   "replace": "NamingCandidate(new_name, 0.950, \"reference_differ\")"
+  },
+  {
+   "id": "pk1_m5_bindiff_eslesme_guveni",
+   "desc": "_add_bindiff eşleyicinin puanını yazar (ölçülmüş alt sınır yerine)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "NamingCandidate(new_name, measured, f\"bindiff_{method}\")",
+   "replace": "NamingCandidate(new_name, _conf, f\"bindiff_{method}\")"
+  },
+  {
+   "id": "pk1_m6_refdiff_kapi_yok",
+   "desc": "ReferenceDiffer yolunda kapı kalkar (yöntemi olan her ad yazılır)",
+   "module": "karadul/pipeline/steps/_feedback_naming_refdiff.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "        if _kapi.ad_verebilir(method):\n            names[t_name] = ref_name",
+   "replace": "        if method is not None:\n            names[t_name] = ref_name"
+  },
+  {
+   "id": "pk1_m7_refdb_kapi_yok",
+   "desc": "ref_db yolunda kapıdan önceki tüm eşleşmeler ad yazar",
+   "module": "karadul/pipeline/steps/_feedback_naming_bindiff.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "for t_name, (ref_name, conf, method) in named.items():",
+   "replace": "for t_name, (ref_name, conf, method) in rdb_conf.items():"
+  },
+  {
+   "id": "pk1_m8_kanit_obur_kaynak_silinir",
+   "desc": "köken kaydı yazıcısı öbür kaynağın satırlarını siler",
+   "module": "karadul/pipeline/steps/_feedback_naming_bindiff.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "            kept + list(rows),",
+   "replace": "            list(rows),"
+  },
+  {
+   "id": "pk1_m9_add_bindiff_kapi_yok",
+   "desc": "_add_bindiff ölçülmemiş / kapı altı yöntemi de aday yapar (güven 0)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "        if measured is None or not _kapi.ad_verebilir(method):\n            continue\n",
+   "replace": "        measured = measured or 0.0\n"
+  },
+  {
+   "id": "pk1_m10_refdiff_yontem_ilk_eslesme",
+   "desc": "refdiff: adın yöntemi naming_map'in seçtiği eşleşmeden değil, ilk eşleşmeden",
+   "module": "karadul/pipeline/steps/_feedback_naming_refdiff.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "        if prev is None or conf > prev[1]:",
+   "replace": "        if prev is None:"
+  },
+  {
+   "id": "pk1_m11_config_adlar_kapisiz",
+   "desc": "config yolunda bindiff_names kapıdan geçmeyenleri de alır",
+   "module": "karadul/pipeline/steps/_feedback_naming_bindiff.py",
+   "test": "tests/test_pk1_basvuru_yontem_kapisi.py",
+   "find": "            bindiff_names.update({t: v[0] for t, v in named.items()})",
+   "replace": "            bindiff_names.update({t: v[0] for t, v in conf_map.items()})"
+  }
+ ]
+}
