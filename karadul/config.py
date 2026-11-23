@@ -770,7 +770,7 @@ class BinaryReconstructionConfig:
     # P-ÜV6: Swift erişim fonksiyonu ad kanalı.
     enable_swift_metadata_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
     # P-ÜV5: Mach-O LC_MAIN girişindeki fonksiyona main adı verilir.
-    enable_macho_entry_main: bool = False  # ETKİSİZ: P-ÜV5 bağlayacak (INERT_SETTINGS)
+    enable_macho_entry_main: bool = False  # okuyan: stages.py _recover_main_from_entry (P-ÜV5)
     # P-ÜV6 (P-ÜV7'nin denetimi): Go adlarına tutarlılık damgası.
     enable_go_metadata_integrity: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
     # HIZ. HZ-7c (koşullu paket): ölçülmüş koşulda ikinci feedback_loop turu atlanır.
@@ -1313,9 +1313,6 @@ INERT_SETTINGS: dict[str, str] = {
     # Alan başına TEK satır, bağlayan pakete göre gruplu. Bağlayan paket alanı okumaya
     # başladığında yalnız kendi satırlarını siler ve alan satırındaki `# ETKİSİZ:` yorumunu
     # kaldırır (yama; ana oturum uygular). Tablo: docs/arge/2026-11-20_dalga0/BAYRAK.md.
-    # ÖK-1 (Dalga 1)
-    # P-ÜV5 (Dalga 1)
-    "binary_reconstruction.enable_macho_entry_main": _pending_binding("P-ÜV5"),
     # ÖK-2 (Dalga 2)
     "binary_reconstruction.oz_ad_uniqueness_gate": _pending_binding("ÖK-2"),
     # P-ÜV1 / P-ÜV2 / P-ÜV3 (Dalga 2; üretici adımı okuyan ilk kod; Faz 1 listesine P-ÜV6 ekler)
