@@ -25,9 +25,9 @@ Plan: `ustveri/PLAN.md` "P-ÜV3". Kararlar: A-10, A-13, A-14, A-27.
 | 4 vtable / geçersiz kılma / uyum / tanık | bitti (+ geçersiz kılma hedefi, async gövde kanıtı) | `0a9a36a`, `53ef449` |
 | 5 Üretici adım + INERT yaması | bitti | `0a9a36a`, `12f453d` |
 | 6 Sağlamlık + mutasyon | bitti: 18 / 18 öldü | `cfc572f` |
-| 7 Keşif ölçümü (H0, H1, H4, H5) | bitti: H0, H1, H4, H5 tuttu | bu commit |
-| 8 Dondurma → H2, H3 bir kez | dondurma ilan edildi; ölçüm sırada | — |
-| 9 Tam takım | sırada | — |
+| 7 Keşif ölçümü (H0, H1, H4, H5) | bitti: H0, H1, H4, H5 tuttu | `9d6ee9a` |
+| 8 Dondurma → H2, H3 bir kez | dondurma `9d6ee9a`; H2 tuttu, H3 sayı şartı tutmadı (yanlış 0) | `716ddee` |
+| 9 Tam takım | bitti (yamasız): 10 800 geçti / 13 atlandı / 1 kaldı (beklenen) | bu commit |
 
 ## Biçim: plandan farklar ve yerelde doğrulananlar
 
@@ -199,6 +199,17 @@ Alt küme dökümü (ön kayıt §2 sınıflaması):
 Ön kayıt hükümleri: **H0 tuttu, H1 tuttu, H2 tuttu, H3 tutmadı (sayı 2 627 < 3 477; yanlış 0 / 2 627 tuttu), H4 tuttu,
 H5 tuttu.**
 
+## Tam takım (yamasız; 08:45–09:04, yük altında: load 15–21)
+
+- `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökü, ağaç `1b603a4`, ORTAK §2 bağları
+  kurulu): **10 800 geçti / 13 atlandı / 152 seçilmedi / 1 kaldı** (1 151 sn). Günlük `…/PUV3/tam_takim.log`.
+- Kalan tek test `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate`: "kayıtta ama okunuyor:
+  `binary_reconstruction.enable_swift_metadata_recovery` ← `karadul/pipeline/steps/swift_metadata_recovery.py`". Beklenen;
+  `PUV3__config.py.patch` uygulanınca kalkar (yamalı hâlde bu dosya + `test_bayrak_on_paketi` + `test_puv3_swift` 210 / 3,
+  08:31). Başka kırmızı yok.
+- Çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules` dizin bağları git'te izlenmeyen dosya olarak görünüyor;
+  `signatures*` / `sigs_macos_system.json` yok sayılıyor) commit'lenmedi; worktree'de duruyor.
+
 ## P-ÜV6b için notlar
 
 - **Ad adayı olacak alan:** `swift_types[i]` içinde `ad_yazilabilir is True` olan kayıtların `adres` (erişim fonksiyonu)
@@ -224,3 +235,5 @@ H5 tuttu.**
 - Adım Faz 1'e ve `steps/__init__.py`'ye eklenmedi; bayrak kapalıyken ürün davranışı değişmez.
 - `check-consistency` kancası iki kez yanlış alarm verdi (`ART_STATUS` / `STAT_*` adları objc adımıyla farklı — her
   adımın kendi yapıt adı; testteki `CONST` adresi başka modülün sabitiyle): değiştirilmedi.
+
+## PAKET BİTTİ
