@@ -28,20 +28,22 @@ P-ÜV6 ikiye bölündü (ana oturum kararı): plan P-ÜV6'yı altı okuyucu main
 | Saat | İş | Sonuç |
 |---|---|---|
 | 08:00–08:10 | Durum doğrulaması | main = origin/main = `9c9b2d4`, ağaç temiz; yük 3,3; boş alan 191,8 GB (kullanılan 774,3 GB); Ghidra kuyruğu boş; açık başka oturum: karadelik (ayrı proje) |
-| 08:10 | Bu dalganın belgeleri | `ORTAK_D1.md`, `gonderim/{PUV6a,P16e,PUV3,OL10}.md`, bu dosya |
+| 08:10 | Bu dalganın belgeleri | `ORTAK_D1.md`, `gonderim/{PUV6a,P16e,PUV3,OL10}.md`, bu dosya (`f2b0db5`) |
+| 08:11 | İlk dört ajan gönderildi; bekçi kuruldu | `bekci_d0.py` (Monitor, 30 dk'da bir yeniden); OL10 için "model düşmesi" satırı beklenen (Mythos ajanı) |
+| 08:2x | Sıradaki dört paketin metni | `gonderim/{OL1,PUV4,PUV5,PUV7}.md` |
 
 ## Paketler
 
 | Paket | Ajan | Model | Durum | Not |
 |---|---|---|---|---|
-| PUV6a | — | Opus | gönderiliyor | sert son 11:45; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV6a.md` |
-| P16e | — | Opus | gönderiliyor | sert son 10:45; ilerleme `docs/arge/2026-11-19_mythos/hiz/P16e.md` |
-| PUV3 | — | Opus | gönderiliyor | sert son 11:30; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV3.md` |
-| OL10 | — | Mythos | gönderiliyor | sert son 10:45; çıktı `docs/arge/2026-11-19_mythos/olcek/OL10_TASARIM.md` |
-| PUV5 | — | Opus | sırada (PUV6a main'e girince; `stages.py`) | metin `docs/arge/2026-11-20_dalga0/gonderim/PUV5.md` (saatler güncellenecek) |
-| OL1 | — | Opus | sırada (P16e main'e girince; `headless.py`) | `olcek/PLAN.md` ÖL-1 |
-| PUV4 | — | Opus | sırada (yer açılınca) | `ustveri/PLAN.md` P-ÜV4 |
-| PUV7 | — | Opus | sırada (yer açılınca) | `ustveri/PLAN.md` P-ÜV7 |
+| PUV6a | a42e3d495be90379d | Opus | çalışıyor (08:11) | sert son 11:45; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV6a.md` |
+| P16e | a55c97e3a05c70d6f | Opus | çalışıyor (08:11) | sert son 10:45; ilerleme `docs/arge/2026-11-19_mythos/hiz/P16e.md` |
+| PUV3 | a14ae2562cbc29126 | Opus | çalışıyor (08:11) | sert son 11:30; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV3.md` |
+| OL10 | a8420740e5db17ed4 | Mythos | çalışıyor (08:11) | sert son 10:45; çıktı `docs/arge/2026-11-19_mythos/olcek/OL10_TASARIM.md` |
+| PUV5 | — | Opus | sırada (PUV6a main'e girince; `stages.py`) | metin hazır: `gonderim/PUV5.md` |
+| OL1 | — | Opus | sırada (P16e main'e girince; `headless.py`) | metin hazır: `gonderim/OL1.md` |
+| PUV4 | — | Opus | sırada (yer açılınca) | metin hazır: `gonderim/PUV4.md` |
+| PUV7 | — | Opus | sırada (yer açılınca) | metin hazır: `gonderim/PUV7.md` |
 
 ## Açık kararlar ve bekleyenler
 
