@@ -112,3 +112,19 @@ H8 Ghidra'sızdır (aday listesi ↔ GT); terminal-notifier'ın ikinci ürün ko
 
 - **H8 TUTTU:** iTerm2 yanlış %0,81 ≤ %1 ve doğru 33 611 ≥ 33 000; docker-compose yanlış 0 ≤ %0,1.
 - **Risk (ana oturum kararı gerekir):** `MEASURED_METADATA_PRECISION[objc_method]` hüküm 5 gereği P-UV2'nin 33 611 / 33 611'i (alt 0,9998). O sayı yalnız GT adı ObjC olan adresleri sayıyordu; ürünün hüküm 3 süzgeçlerinden geçen aday kümesinde kesinlik 33 611 / 33 885 = %99,19 (Wilson alt 0,9909). Kanal yine ad eşiğinin (0,909) çok üstünde, ama köken kaydındaki güven (0,9998) ürün düzeyi ölçümden yüksek. Yanlış 274'ün kümesi P-UV2'nin "Swift işaretsiz 274 kayıt"ıyla aynı sayı (GT adı ObjC değil); türleri sınama kuralı gereği ikinci kez bakılmadı. Öneri: tablo satırı (33 611, 33 885, 0,9909) — değiştirmedim (hüküm 5 bağlayıcı).
+
+### H3 ikinci koşu (`urun-5d23182`; kuyrukta 08:50:01 → 09:11:26 başladı → 09:12:33 bitti, 67 sn, yük 22–26) — ölçüm `PUV6a/urun_terminal-notifier_acik2.json`
+
+| Satır | Önce (b6aceb9, HEDEF taban) | Sonra (5d23182, dört bayrak açık) |
+|---|---|---|
+| `out/naming_map.json`'da üst veri kaynaklı ad (`label = üst veriden`) | 0 | **32 / 32** (A-28 31 + adsız fonksiyon 1) |
+| bunlardan `out/src` kodunda tanımlayıcı olarak geçen | 0 | **32** |
+| GT'ye göre doğru / yanlış / GT'siz (`ozgun_ad` üstünden, kalem 2 kuralları) | — | **32 / 0 / 0** |
+| `ozgun_ad` dolu / güven tablodan (0,9998) / etiket `kesin` | — | 32 / 32 / **0** |
+| ad bekleyen 40 fonksiyonda doğru ad (HEDEF tanımı; c_namer ∪ üst veri) | 0 / 40 | **1 / 40** |
+| c_namer genel haritası (HEDEF tanımı) | 0 | 0 |
+| kanal sayaçları (`objc_method`) | — | kayıt 32, `secici_yerine` 31, `tuttu` 1, aday 32; kanıt satırı 0; `go_pclntab` `veri_yok` |
+| adım süresi (yük altında) | — | Go 0,029 sn, ObjC 0,029 sn |
+
+- **H3 KISMEN:** "≥ 30 / 32 ürün çıktısında (`naming_map` ve `out/src`)" **TUTTU** (32 / 32); "yanlış 0" **TUTTU**; "ad bekleyen 40'ta doğru 0 → ≥ 30" **TUTMADI** (0 → 1). Neden (ön kayıtta ölçümden önce yazılmıştı): 32 IMP'in 31'i Ghidra'da seçiciyle adlı, HEDEF'in nüfus tanımı yalnız jenerik adlı fonksiyonları sayar; nüfusun kalan 39 fonksiyonu ObjC yöntemi değil (GT ad türü "diğer" 50: blok, C işlevi) — bu kanalların kapsamında değiller.
+- **H7 TUTTU** (bu koşuda): üst veri kaynaklı 32 adın 32'si `label = üst veriden`, `ozgun_ad` dolu, güven tablodan; `kesin` 0. Köken kaydında 32 karar, 32'si uygulanmış, düşen 0.
