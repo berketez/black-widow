@@ -154,3 +154,53 @@ Yöntem: yeni kalıbın eşleştiği her kod satırında (satır başına bir ke
 | mac tmux | 35 | 0 | 35 | 0 | — | 24 / 10 / 1 |
 
 Okuma: Mach-O'da libc adı Ghidra'da `_memcpy` biçiminde (Ollama 236, mac tmux 35); Ollama'da öbür 217 eşleşme Go çalışma zamanının kendi işlevi `runtime_memmove` (libc çağrısı değil; açıklama "Move memory" diyor, anlam olarak yakın ama çağrılan işlev farklı). `__memcpy_chk` gibi `_chk` sonekli adlar `memcpy\s*\(` ile eşleşmez (ad `memcpy`'den sonra `_chk` sürdüğü için). Karar ana oturumda; kod değişmedi.
+
+## Kalem 5b — envanter: `karadul/reconstruction/` + `karadul/pipeline/steps/` (hüküm 6b; onarım YOK) (19:53)
+
+Araç `scripts/arge/ba1/kalip_tara.py tara` (yöntem dosyanın başında; özet):
+1. **Toplama (AST):** `re.compile / search / match / fullmatch / findall / finditer / sub / subn / split` çağrılarının sabit (ya da sabitlerin `+` birleşimi) kalıp dizgisi + `re.X` bayrakları. Sabit olmayan kalıp "dinamik" sayılır, taranmaz.
+2. **Durağan sınıflama (`re._parser` ağacı):** `ic_ice` = atomik grup / sahiplenici niceleyici dışında sınırsız yineleme gövdesinde sınırsız yineleme; `ortusen_secenek` = sınırsız yineleme gövdesinde ilk karakter kümeleri kesişen iki seçenek; `zincir` = aynı dizide kümeleri kesişen ve aradaki düğümleri ilkinin yutabildiği iki ya da daha çok sınırsız yineleme (polinom adayı).
+3. **Devingen doğrulama** (yalnız `ic_ice` / `ortusen_secenek` adayları; her ölçüm ayrı çocuk süreç, 5 sn zaman aşımı): önek = dış yinelemeye götüren alt kalıbın en kısa tanığı; pompa = dış yineleme gövdesinin tanığı / iç yinelemenin tek karakteri / kesişen seçeneklerin ortak karakteri; sonek = küçük n'de eşleşmeyi bozan ilk karakter (`!`, satır sonu, boş, `(`, `)`, `\x00` …). Pompa 8, 12, …, 32 kez. **Üstel** = zaman aşımı ya da ≥ 1 sn ya da +4 pompada ≥ 8 kat (≥ 10 ms).
+4. **Duyarlılık denetimi:** aynı araç BA-1 öncesi `block_annotator.py` kopyasında üç eski bellek kalıbını üstel buldu (pozitif kontrol), onarılmış dosyada 0.
+
+Sınır: pompa üreteci sezgisel; üretemediği düşmanca girdi biçimleri olabilir (aşağıda "kurulamadı" ve "doğrulanmadı" listesi). Dinamik (sabit olmayan) 113 kalıp taranmadı.
+
+**Sayım (H6):** 1 073 sabit kalıp (dinamik 113, derlenemeyen 0); `ic_ice` adayı 41, `ortusen_secenek` adayı 5 (kesişimli; toplam 41 kalıp), `zincir` 111. **Devingen doğrulanan üstel: 2.** Hepsi `karadul/reconstruction/` altında; `karadul/pipeline/steps/`'te aday çıkmadı. Ham `…/BA1/ozet/envanter.json`.
+
+**Üstel kalıplar (sonraki paketin girdisi):**
+
+| dosya:satır | kalıp | en kısa düşmanca girdi (bulunan) | ölçülen süre (ayrı süreç, yük altında) | not |
+|---|---|---|---|---|
+| `karadul/reconstruction/c_namer.py:3436` | `_ZN(\d+\w+)+E` (`re.match`) | `"_ZN" + "0a" * 28 + "!"` (60 karakter) | n = 8 / 12 / 16 / 20 / 24 / 28 pompa: 0,02 ms / 0,21 ms / 3,4 ms / 53 ms / 0,83 sn / **> 5 sn (zaman aşımı)** | `\d+` ⊂ `\w+` (rakam ikisinde de); her 4 pompada ~16 kat. C++ ad çözücü sezgisi; `E` içermeyen uzun `_ZN…` girdisinde. Gerçek girdide erişilebilirliği ölçülmedi |
+| `karadul/reconstruction/recovery_layers/constraint_solver.py:271` (`_LINKED_LIST_RE`) | `…(?P<type>[a-zA-Z_](?:\w+\s*)*\*{0,2})…` | `"a=*(a" + "a" * 24 + "!"` (30 karakter) | n = 8 / 12 / 16 / 20 / 24: 0,03 ms / 0,29 ms / 4,6 ms / 73 ms / **1,13 sn** | `(?:\w+\s*)*`: `\s*` boş olabildiği için `\w+` koşusu her bölünüşle denenir. Satırdaki yorum (v1.7.6) bu yazımı "geri izlemeyi sınırlar" diye tanıtıyor; ölçüm tersini gösteriyor. Gerçek girdide erişilebilirliği ölçülmedi |
+
+Doğrulanamayan adaylar (39; pompayla n = 32'de süre < 1 ms, ya da girdi kurulamadı — üstel olmadıkları KANITLANMADI, yalnız bu yöntemle bulunamadı): `r/` = `karadul/reconstruction/`: `r/binary_name_extractor.py:185`, `:2745`, `:2752`, `:2759`; `r/c_flow_simplifier.py:147`; `r/c_namer.py:1503`, `:934`; `r/c_type_recoverer.py:440`, `:543`, `:129`, `:239`; `r/engineering/semantic_namer.py:332`, `:369`, `:384`, `:389`, `:1777`; `r/engineering/struct_recovery.py:713`, `:724`, `:737`, `:748`, `:777`; `r/recovery_layers/formula_extractor.py:2430`; `r/reference_differ.py:139` (girdi kurulamadı); `r/string_intelligence.py:102`, `:110`, `:115` (kurulamadı), `:121` (kurulamadı), `:128`, `:142` (kurulamadı), `:216`, `:242`, `:291`, `:300`, `:306`, `:317`, `:1061`; `r/tarif/alt_kanal.py:140`, `:439`; `r/xtride_typer.py:633`. Elle bakış (ölçüm değil): kurulamayan dördü ayırıcılı yineleme (`\w+(?:::\w+)*`, `\d+(?:\.\d+)*`), belirsizlik görünmüyor.
+
+Kapsam dışı notlar (yapılmadı): (a) Ghidra sonrası adımlar için takılma bekçisi / SIGTERM'e yanıt ayrı paket (ÖL-4 / ÖL-2 notu); bu paketin süre testi yalnız kendi kalıplarını ayrı süreçte sınar. (b) Yukarıdaki iki üstel kalıbın onarımı sonraki paket.
+
+## Kalem 3 — `block_annotator.py`'nin bütün kalıpları (hüküm 4) (20:04)
+
+**Yöntem:** Kalem 5b'deki araç (`kalip_tara.py tara`; AST ile toplama → `re._parser` ağacında durağan sınıflama → üstel adaylarda ayrı süreçte düşmanca girdiyle süre ölçümü) onarılmış `block_annotator.py`'ye ve BA-1 öncesi kopyasına koşuldu; ardından `kalip_tara.py gercek` ile dosyanın 52 kalıbının hepsi Ollama + S8'in 8 çalışma alanındaki gerçek girdide (adımın girdisi `reconstructed/commented/*.c`; 23 870 dosya, 4 533 866 satır) zamanlandı: her kalıp her `strip()` edilmiş satırda (adımın satır kalıplarına verdiği birim) ve ayrıca her dosyanın tam içeriğinde (yalnız `_FUNC_RE` ve gövde kalıbı için gerçek kullanım; öbürleri için üst sınır). Tek çocuk süreç, 1 500 sn zaman aşımı; **yük altında** (aynı anda tam takım koşuyordu, load ~10–13).
+
+**Durağan sonuç:** 52 sabit kalıp (dinamik 0). `ic_ice`: onarılmış dosyada **0** (eski kopyada 3: memcpy / memset / memmove, devingen olarak üstel doğrulandı — aracın pozitif kontrolü). `ortusen_secenek`: 0. `zincir` (polinom adayı, derece ≈ 2 + aramanın başlangıç konumu): 27 kalıp — satır 204 (`0\.0+\d+` + `.*break`), 275 (`ASSEMBLY_BODY_PATTERNS`, DOTALL), 293 / 301 / 309 (`malloc` / `calloc` / `realloc`: `\(?.*\)?\s*` … `(.+?)\s*\)`), ve 22 döngü amacı kalıbı `for\s*\([^)]*=\s*0\s*;[^)]*<\s*\w*(…)` (satır 387 … 512). Bunlara ek olarak durağan kuralın yakalamadığı ama arama başlangıç konumuyla karesel olan satır içi kalıplar (`(\w+)\s*\[…`, `\w+\s*\(` vb.) gerçek veri ölçümünde ayrıca görülüyor.
+
+**H5: `block_annotator.py`'de üç onarılan dışında üstel sınıfa giren kalıp: 0** (ilk ölçüm; yön bildirilmemişti). Onarım gerekmedi.
+
+**Gerçek veride en kötü süre (satır birimi; en kötü 12; ham `…/BA1/ozet/gercek_en_kotu.json`):**
+
+| block_annotator.py satırı | kalıp (özet) | sınıf | en kötü satır | nerede | toplam (4,5 M satır) | tam dosya üst sınırı |
+|---|---|---|---:|---|---:|---:|
+| 293 | `malloc` (`\(?.*\)?\s*malloc\s*\(\s*(.+?)\s*\)`) | zincir | 67,4 ms | Ollama `FUN_100346360.c:33` | 19,4 sn | 481 ms |
+| 301 | `calloc` | zincir | 36,1 ms | Ollama `FUN_1000b7680.c:2386` | 18,8 sn | 566 ms |
+| 309 | `realloc` | zincir | 32,2 ms | Ollama `FUN_100368b50.c:59` | 19,1 sn | 446 ms |
+| 253 | row-major `(\w+)\s*\[\s*(\w+)\s*\*…` | arama-karesel | 31,0 ms | Ollama `FUN_100346360.c:33` | 12,9 sn | 387 ms |
+| 512 | ML döngüsü `for\s*\([^)]*=\s*0\s*;[^)]*<\s*\w*(n_layer…)` | zincir | 29,5 ms | mac tmux `FUN_1000357a0.c:112` | 0,5 sn | 0,3 ms |
+| 1428 | satır içi `\w+\s*\(` | arama-karesel | 27,1 ms | Ollama `FUN_1000bee20.c:34` | 8,4 sn | 1,7 ms |
+| 204 | `if\s*\(…(1e-\d+\|0\.0+\d+)\s*\).*break` | zincir | 25,7 ms | mac tmux `FUN_100082b98.c:8` | 0,6 sn | 0,5 ms |
+| 1426 | satır içi `\w+\s*\[\s*\w+\s*\*` | arama-karesel | 21,6 ms | Ollama `FUN_100346360.c:33` | 12,5 sn | 366 ms |
+| 261 | dot product `(\w+)\s*\+=\s*(\w+)\s*\[[^]]+\]…` | arama-karesel | 20,3 ms | Ollama `FUN_100056090.c:59` | 12,2 sn | 420 ms |
+| 238 | scatter `(\w+)\s*\[([^]]*)\]\s*\+=…` | arama-karesel | 19,4 ms | Ollama `FUN_100158cc0.c:18` | 13,4 sn | 378 ms |
+| 474 | DSP döngüsü | zincir | 10,1 ms | mac tmux `FUN_100090f14.c:15` | 0,5 sn | 0,3 ms |
+| 53 | `_FUNC_RE` (MULTILINE, `finditer` tam içerikte) | — | 8,0 ms | mac tmux `FUN_100059c6c.c:338` | 1,8 sn | 1,9 ms |
+
+Sınıf sütunu: `zincir` durağan kuralın sonucu; `arama-karesel` elle sınıflama (her arama başlangıcında `\w+` koşusunun geri izlenmesi), büyüme eğrisi ölçülmedi. Öbür 40 kalıbın en kötü satır süresi ≤ 6,1 ms. Gövde kalıbı 275 (`ASSEMBLY_BODY_PATTERNS`, gerçek kullanımı ≤ 10 000 karakterlik gövde): satırda 2,8 ms, tam dosyada 0,3 ms. Sonuç: gerçek veride hiçbir kalıp tek satırda 0,1 sn'ye yaklaşmıyor; adımın tamamı Ollama'da 62 sn (H2). Karesel / zincir kalıplar uzun satırda büyür (ör. 1 537 karakterlik satırda `\w+\s*\(` 16–27 ms), ama üstel değil; onarım bu paketin kapsamında değil (hüküm 4: "yalnız listelenir"). Not: `tmux` adı iki çalışma alanında ortak (`FUN_001…` debian, `FUN_1000…` mac).
