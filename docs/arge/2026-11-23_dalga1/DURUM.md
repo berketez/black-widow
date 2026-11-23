@@ -156,3 +156,7 @@ Berke (19:27): "kaldığımız yerden devam edelim, max 4 ajan." Düzen sabahla 
 
 - 19:36 dört ajan gönderildi; bekçi kuruldu (`bekci_d0.py`, Monitor; 30 dk'da bir yeniden). 19:40 ana oturumun Ollama koşusu başladı (`ANA ollama:ba_kapali`; süre sınırı 9 000 sn).
 - Berke (19:3x): "asıl mimari falan Mythos olsun, geri kalanları Opus yapsın" → düzen aynı: mimari / tasarım / gönderim metni / doğrulama ana oturumda (Mythos; gerekirse tek Mythos tasarım ajanı), kodun tamamı Opus'ta.
+- **Hazır metinler (sonraki yuvalar için):** `gonderim/OL4.md` (serbest; `cli.py`, `cli_common.py`, `ui/server.py`), `gonderim/PUV6b.md` (Swift ad kanalı + RTTI kanıt satırı; PUV5 ve PK1 main'e girince). P-ÜV6b ikiye bölündü: PUV6b (Swift, RTTI, ObjC güven satırı, durum sabitleri) ve PUV6c (Go tutarlılık damgası, `go_pclntab` notları, `main` künyesi; PUV5'in sayısından sonra yazılacak).
+- **Yeni paket GS-1 (A-36):** Ghidra sonrası adımların ilerleme olayları + arayüz iptalinin SIGKILL'e yükselmesi + SIGTERM'e yanıtsızlığın nedeninin ölçümü. ÖL-4'ten sonra yazılıp gönderilecek.
+- **Yazılacak (önkoşulu bekleyen):** HZ-2 (OL2'den sonra; `bsim.py`), HZ-7a (OK1'den sonra; `c_namer.py`'nin başka işlevleri + `api_param_db.py`), açılış ölçümü (A-14; Go derleyicisi indirmesi A-23 izniyle ana oturumda), BA-2 (BA1'in envanterinden).
+
