@@ -12,7 +12,7 @@ Taban: main `e2c079d` (`git merge --ff-only main` sonrası; P16e içinde: `calle
 | 3 | Bekçi (`_CozumleyiciBekcisi`) + `_run_auto_analysis` | bitti | `1b97c2f` |
 | 4 | İlerleme olayları (`_AdimSaati`, `_analyze_pyghidra`, decompile parçaları) | bitti | `1b97c2f` |
 | 5 | Testler (`tests/test_ol1_kopru_bekci.py`, 30) | bitti | `627e3de` |
-| 6 | Mutasyon (`mutation_specs_ol1.json` 29 / 29) + altı eski tanım (108 / 108) | bitti | bu commit |
+| 6 | Mutasyon (`mutation_specs_ol1.json` 29 / 29) + altı eski tanım (108 / 108) | bitti | `d23e05e` |
 | 7 | `config.py` yaması (`yamalar/OL1__config.py.patch`; `git apply --check` temiz; uygulanmadı) | bitti | `627e3de` |
 | 8 | S8 (8 ikili, taban `P16e/s8_sonra_3`) | koşuyor (09:34–) | — |
 | 9 | T25 (Ollama dilimi) | kuyrukta (09:34'ten beri bekliyor) | — |
@@ -61,3 +61,21 @@ Betik: `pyghidra.open_program(analyze=False)` + ana iş parçacığında `FlatPr
 ## Kalem 7 — `config.py` yaması (`627e3de`)
 
 `docs/arge/2026-11-23_dalga1/yamalar/OL1__config.py.patch` (`betik/yama_uret.py` ile `difflib`'den; dosyaya dokunulmadı): iki alan satırında `# ETKİSİZ: ÖL-1 bağlayacak (INERT_SETTINGS)` → `# okuyan: ghidra/headless.py _run_auto_analysis (ÖL-1)`, `cozumleyici_takilma_sn` öntanımı 0 → **600**, `INERT_SETTINGS`'ten `# ÖL-1 (Dalga 1)` grubu (iki satır + başlık) silinir. `git apply --check` temiz (A-34: uygulanmadı). Yamalı durumda `test_bayrak_on_paketi` envanterindeki öntanım (0) kilidi INERT kaydı kalkınca düşer (dosyanın kendi kuralı); `test_p16c_analiz_suresi`'nin sahte Ghidra'sında `AnalysisTask` yok → okuyucu kurulamaz, bekçisiz koşar, çağrı dizisi aynı (bu kol `test_okuyucu_kurulamazsa_bekcisiz_kosar` ve `test_bekci_acik_takilmasiz_davranis_ayni` ile sınandı). Yamalı ağaçta tam takım koşulmadı (kural gereği; ana oturum koşar).
+
+## Sonraki paketlere not
+
+### ÖL-4 (gösterim)
+
+- Olaylar yalnız `karadul.ilerleme` günlükçüsüne INFO düzeyinde gider; `analyze` bugün `--verbose` olmadan INFO işleyicisi kurmuyor → olaylar görünmez (ÖL-4 adım 1'in işi). `--verbose` ile satır `setup_logging` biçiminde gelir: `2026-11-23 10:00:00,123 INFO    [karadul.ilerleme] ILERLEME asama=static adim=… durum=…`; ayrıştırıcı `ILERLEME ` önekinden sonrasını `shlex.split` ile ayırmalı (tırnak içinde `\"` ve `\\` kaçışı).
+- Üretilen `durum` değerleri: `basladi` (her adım), `bitti` (`gecen_sn`; decompile'da `islenen` / `toplam`), `kismi` (`neden="<adım>: <hata>"`; otomatik analizde bekçi / zaman aşımı nedeni), `atlandi` (`gdt` "ayar boş", `pdb` / `function_id` / `bsim.ingest` "ayar kapalı"), `suruyor` (otomatik analizde bekçinin her okuması `cozumleyici` + `gecen_sn`; paralel decompile'da her parça bitişi `islenen` / `toplam` / `gecen_sn`). Tetiklenme satırı `durum=suruyor` + `neden="N sn tepede (eşik E sn); kapatılıyor"`: gösterimde uyarı olarak ayrılabilir.
+- `asama` hep `static` (olaylar yalnız Ghidra köprüsünde). Öbür aşamalar olay üretmiyor; `_job_progress` olay yoksa aşama satırına (`OK <aşama>: …`) düşmeli.
+- `ghidra_status.json` `analysis`'te gösterilebilecek yeni alanlar: `takilan_cozumleyici`, `takilmalar`, `bekci` (`okuma` / `okunamayan`: bekçinin gerçekten okuduğunun kanıtı), `neden`.
+- **Sessizlik:** bekçi yalnız otomatik analiz boyunca okur (15 sn). Öbür uzun adımların (xref, CFG, çağrı grafiği, BSim ingest / sorgu, decompile'da parçalar bitene kadar) içinde olay yok: bu adımlar 60 sn'yi geçerse ÖL-4'ün "T25'te en uzun boşluk ≤ 60 sn" kabulü bu paketle tutmaz (adım içi `suruyor` ÖL-2 / ÖL-3'ün işi; aşağıda). Paralel decompile'da parçalar eşzamanlı başladığı için parça olayları da sona yığılır.
+
+### ÖL-2 (bütçeler)
+
+- Bütçe aşımında ayrı olay satırı gerekmez: adım sürerken `step_errors[<adım>]`'a yazılan neden `_AdimSaati.bitti`'de kendiliğinden `durum=kismi neden="<adım>: …"` olur (hata adımın `basla` / `bitti` arasında eklenmeli).
+- Adım içi ilerleme: `son_an` denetimi (500 fonksiyonda bir) aynı noktada `_ilerleme(ADIM_…, OLAY_SURUYOR, islenen=n, toplam=N, gecen_sn=…)` için doğal yer (gerçek sayım; zamanlayıcı değil). xref / CFG / BSim'de bu olmadan T25'in tamamında 60 sn sessizlik kabulü tutmaz.
+- `_run_auto_analysis`'te izleyici tek satırdan döngüyle kurulur (`timeout_s` ikinci turda kalan bütçeye yeniden bağlanır); P16c'nin dört `find` metni bu yüzden tekil. İkinci bir `TimeoutTaskMonitor.timeoutIn(...)` satırı p16c tanımını bayatlatır.
+- Bekçinin eşiği (600 sn) sabit bir süre: büyük ikilide (A-8) meşru ama uzun süren bir çözümleyici de 600 sn tepede kalırsa kapatılır. Bu pakette ölçülmedi. "İlerlemeyen" ile "yavaş ilerleyen"i ayırmanın yolu (analiz izleyicisinin ilerleme sayacı; `TimeoutTaskMonitor`'un temsilcisi `TaskMonitorAdapter` ilerlemeyi de saklamıyor) ya da boyuta bağlı eşik ÖL-2 / ÖL-10'un sorusu.
+- İkinci tur `analyzeAll` = `reAnalyzeAll(null)`: kapatılan dışındaki bütün çözümleyiciler baştan koşar (birinci turda bitenler dahil); maliyeti T25'te ölçüldü (aşağıda).
