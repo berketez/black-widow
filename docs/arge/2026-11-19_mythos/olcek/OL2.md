@@ -14,15 +14,15 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`). 
 | 4 | Mutasyon (`mutation_specs_ol2.json` 33 / 33) + sekiz eski tanım (161 / 161) | bitti | `47947da` |
 | 5 | `config.py` yaması (`yamalar/OL2__config.py.patch`; `git apply --check` temiz; uygulanmadı) + `test_p16b_bsim.py` yaması | bitti | `0fff66d`, `84d222b` |
 | 6 | Ön kayıt (`on_kayit_ol2.md`; ölçümden önce ayrı commit) | bitti | `1740d82` |
-| 7 | sqlite3 (H2) | bitti: **TUTTU** (çıkış 3; sınırsız adımların en uzunu 2,069 sn) | bu commit |
-| 8 | S8 (H3, H5) | bitti: H3 **metne göre TUTMADI (cat'te `total_queries` 107 → 0; ön kayıtta önceden yazılı fark)**, `total_queries` dışında 8 / 8 tuttu; H5 **TUTTU** (kesilen adım 0) | bu commit |
-| 8b | Ek koşu (ön kayıt dışı): sqlite3, bütçe 1 sn | bitti: xref (genel sembol sayımında) ve BSim ingest gerçek Ghidra'da kesildi | bu commit |
-| 9 | T25 (H1, H4) | köprü bitti (20:49:08–21:15:25): **H1 TUTTU** (BSim 582,95 sn; sorgu atlandı; ingest 576,3 sn, bitti), **H4 TUTTU** (decompile dışı en uzun sessizlik 22 sn); statik aşamanın köprü sonrası kısmı koşuyor | bu commit |
-| 10 | Tam takım (yamasız) | bitti: 11 029 geçti / 19 atlandı / 1 kaldı (beklenen) | bu commit |
+| 7 | sqlite3 (H2) | bitti: **TUTTU** (çıkış 3; sınırsız adımların en uzunu 2,069 sn) | `b8d4881` |
+| 8 | S8 (H3, H5) | bitti: H3 **metne göre TUTMADI (cat'te `total_queries` 107 → 0; ön kayıtta önceden yazılı fark)**, `total_queries` dışında 8 / 8 tuttu; H5 **TUTTU** (kesilen adım 0) | `81a21dc` |
+| 8b | Ek koşu (ön kayıt dışı): sqlite3, bütçe 1 sn | bitti: xref (genel sembol sayımında) ve BSim ingest gerçek Ghidra'da kesildi | `81a21dc` |
+| 9 | T25 (H1, H4) | köprü bitti (20:49:08–21:15:25): **H1 TUTTU** (BSim 582,95 sn; sorgu atlandı; ingest 576,3 sn, bitti), **H4 TUTTU** (decompile dışı en uzun sessizlik 22 sn); koşu 21:19:01'de çıkış 3 ile bitti (neden köprü dışı) | `163e8e8`, bu commit |
+| 10 | Tam takım (yamasız) | bitti: 11 029 geçti / 19 atlandı / 1 kaldı (beklenen) | `d1209c0` |
 
-**20:52 — bekliyorum (T25):** T25 20:49:08'de yuva 1'de başladı (1 dk yük 9,60; ana oturumun Ollama koşusu 20:44'te bitti). TAHMİNİ bitiş 21:35–21:55 (gösteri / ana oturum koşusunda BSim'e kadar ~28 dk + ingest ≤ 900 sn + sorgu atlanır). 21:58'de bitmemişse durdurulur, ölçülebilen kadarı yazılır.
+**20:50 — bekliyorum (T25):** T25 20:49:08'de yuva 1'de başladı (1 dk yük 9,60; ana oturumun Ollama koşusu 20:44'te bitti). TAHMİNİ bitiş 21:35–21:55 (gösteri / ana oturum koşusunda BSim'e kadar ~28 dk + ingest ≤ 900 sn + sorgu atlanır). 21:58'de bitmemişse durdurulur, ölçülebilen kadarı yazılır.
 
-**20:37 — bekliyorum (güncelleme):** S8 5 / 8 bitti (cat, sort, tree, sqlite3, htop; ara kıyas: sort, tree, sqlite3, htop ham eşit, BSim dosyaları dahil; cat'te yalnız BSim durum alanları + `total_queries`); debian tmux koşuyor, kalan zstd ve mac/tmux (yük 20–40, ikili başına 3–6 dk). TAHMİNİ S8 bitişi 20:50–21:00. T25 20:09'dan beri kuyrukta; S8 bitince ikinci yuvaya ya da ana oturumun koşusu bitince birinciye girer; TAHMİNİ başlangıç 20:55–21:10, süre 45–60 dk (yük altında), bitiş 21:45–22:05. 21:58'de bitmemişse durdurulur ve ölçülebilen kadarı yazılır. (Ön kayıt dışı "1 sn bütçeli sqlite3 ek koşusu" T25'le yuva için yarışmasın diye iptal edilmek istendi; bekleme kabuğu bulunamadı ve koşu S8'den hemen sonra 20:48:30–20:49:04'te koştu: T25'i ~35 sn geciktirdi. Düzeltme 20:52.)
+**20:37 — bekliyorum (güncelleme):** S8 5 / 8 bitti (cat, sort, tree, sqlite3, htop; ara kıyas: sort, tree, sqlite3, htop ham eşit, BSim dosyaları dahil; cat'te yalnız BSim durum alanları + `total_queries`); debian tmux koşuyor, kalan zstd ve mac/tmux (yük 20–40, ikili başına 3–6 dk). TAHMİNİ S8 bitişi 20:50–21:00. T25 20:09'dan beri kuyrukta; S8 bitince ikinci yuvaya ya da ana oturumun koşusu bitince birinciye girer; TAHMİNİ başlangıç 20:55–21:10, süre 45–60 dk (yük altında), bitiş 21:45–22:05. 21:58'de bitmemişse durdurulur ve ölçülebilen kadarı yazılır. (Ön kayıt dışı "1 sn bütçeli sqlite3 ek koşusu" T25'le yuva için yarışmasın diye iptal edilmek istendi; bekleme kabuğu bulunamadı ve koşu S8'den hemen sonra 20:48:30–20:49:04'te koştu: T25'i ~35 sn geciktirdi. Düzeltme 20:50.)
 
 **20:09 — bekliyorum:** S8 (8 ikili, tek kök `…/OL2/s8`, sıra ORTAK_D0 §6) ikinci yuvada PUV5 ile sırayla; birinci yuvayı ana oturumun Ollama koşusu tutuyor (19:36'dan beri, TAHMİN 1,5–2 sa). T25 kuyruğa giriyor: yuva boşalınca (büyük olasılıkla ana oturumun koşusu bitince) başlar. TAHMİNİ bitiş: S8 20:45–21:15; T25 başlangıcı 21:05–21:35, süresi 45–60 dk (yük altında; BSim'e kadar ~28 dk + ingest ≤ 900 sn), bitiş 21:50–22:05 (sert son 22:05: yetişmezse "kalan"). Tam takım arka planda (TAHMİN 12–20 dk).
 
@@ -129,6 +129,8 @@ Yamalı öntanımda (`bos_depoda_sorgu_atla: True`) iki P16b testi boş depoda a
 | H4 decompile dışı en uzun `ILERLEME` sessizliği ≤ 60 sn | **22 sn** | TUTTU |
 | (ek, hükümsüz) decompile içi en uzun sessizlik | 332 sn | rapor |
 
+- Koşunun sonu: 21:19:01, **çıkış 3**, kuyruk süresi 1 793 sn (20:49:08–21:19:01; sonda 1 dk yük 3,48). Kısmi nedeni köprü dışında: "static: Desteklenmiyor: evrensel ikilide go dilimi tanındı ama Go analizcisi (GOPCLNTAB / modül adları) şişman dosyayı açmıyor; yalnız yerel hat (seçilen dilim) koştu" (bu paketin değişikliğiyle ilgisi yok; köprünün `step_errors`'ı boş). Köprü bittikten (21:15:25) sonra statik aşamanın kalanı ~215 sn `ILERLEME` olayı üretmeden sürdü (olay sözleşmesi bugün yalnız köprüde; H4'ün kapsamı köprü adımları; ÖL-4 / ÖL-6 notu). `ILERLEME` satırları `ozet/t25_ilerleme_satirlari.txt`.
+
 ## Kalem 10 — tam takım (yamasız)
 
 20:03:24–20:30:14 (1 564 sn; 1 dk yük 15,03 → 31,52: aynı anda S8, H2, ana oturumun Ollama koşusu, PUV5 ve başka ajanlar; **yük altında**), kod `17e5965` (= `d83f100` + test / tanım / belge), worktree'de altı çalışma verisi bağı + `scripts/node_modules` (commit'lenmedi): **11 029 geçti / 19 atlandı / 1 kaldı** (152 seçilmedi). Kalan tek test beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `AssertionError: kayıtta ama okunuyor: {'timeouts.ghidra_adim': ['karadul/ghidra/headless.py'], 'bsim.ingest_butcesi_sn': ['karadul/ghidra/headless.py']}` (yama INERT satırlarını siler). Üçüncü alan `bsim.bos_depoda_sorgu_atla` listede yok: `bsim.py` onu `self._bsim_cfg_value("bos_depoda_sorgu_atla", …)` ile okuyor, testin sıkı düzenli ifadesi (`getattr|hasattr|config_flag|_get`) bu yardımcıyı tanımıyor (P16b'nin `lock_timeout_s`, `batch_query` alanlarıyla aynı durum); yamalı kopyada `test_p15a_etkisiz` 11 / 11 geçti (`test_every_unread_field_is_registered` alan adını dizge olarak buluyor). Başka kırmızı yok. Uyarılar (3) bu paketten değil (`jpype.isThreadAttachedToJVM` ÖL-1'den; iki `ComputationRecoveryConfig` uyarısı). Günlük `…/OL2/tam_takim/pytest.log`, kopyası `ozet/tam_takim_pytest.log`.
@@ -170,8 +172,18 @@ Yamalı öntanımda (`bos_depoda_sorgu_atla: True`) iki P16b testi boş depoda a
 - **Boş depo kararının dayanağı köken kaydı:** köken kaydı GHIDRA-02'den (P16b) beri var. Köken kaydı varken depoda köken kaydı olmayan ESKİ programlar da varsa (P16b öncesi ingest) karar "boş" diyebilir ve bu eski programlara karşı eşleşme kaybolur. Kayıt hiç yokken depo dosyası varsa atlanmaz (denetleniyor); karışık durum denetlenmiyor (H2 deposundaki program sayısını `QueryExeInfo` ile sormak bir Java çağrısı; bu pakette yapılmadı).
 - **`total_queries` anlamı:** atlanan sorguda 0, kısmi sorguda sorgulanan sayı (eskiden fonksiyon başına yolda ve bazı hata yollarında aday fonksiyon sayısı yazılıyordu; o yollara dokunulmadı).
 - **Kısmi ingest kalıcı:** yukarıda (HZ-2 notları).
-- Worktree'de çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`) tam takım için kuruldu; commit'lenmedi, kapanışta kaldırılacak. Ürün ağacı `~/karadul_olcum/urun-d83f100` (detached worktree, altı bağ, kökte git'in izlemediği `karadul.yaml` = yamanın öntanımları) silinmedi: bu ağaçla başka koşu yapılırsa ÖL-2 öntanımlarıyla koşar.
+- Worktree'de çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`) tam takım için kuruldu; commit'lenmedi, kapanışta kaldırıldı (`git status` temiz). Ürün ağacı `~/karadul_olcum/urun-d83f100` (detached worktree, altı bağ, kökte git'in izlemediği `karadul.yaml` = yamanın öntanımları) silinmedi: bu ağaçla başka koşu yapılırsa ÖL-2 öntanımlarıyla koşar.
 
 ## Kalem 5 — `config.py` yaması (`0fff66d`)
 
 `docs/arge/2026-11-23_dalga1/yamalar/OL2__config.py.patch` (`betik/yama_uret.py`, `difflib`; dosyaya dokunulmadı): `timeouts.ghidra_adim` 0 → **3600** (`# okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)`), `bsim.bos_depoda_sorgu_atla` False → **True** (`# okuyan: ghidra/bsim.py BSimDatabase (ÖL-2)`), `bsim.ingest_butcesi_sn` 0 → **900** (`# okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)`); `INERT_SETTINGS`'ten `# ÖL-2 (Dalga 2)` grubu (başlık + üç satır) silinir. `git apply --check` temiz (A-34: uygulanmadı).
+
+## Koşu kökü
+
+`~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` — **1,9 GB** (21:22, `du -sh`). Ölçüm özeti `ozet/`: `h2_sqlite3.json`, `h2_ilerleme_satirlari.txt`, `h2_uptime_{bas,son}.txt`, `s8_ham.{md,json}`, `s8_h5.json`, `ek_sqlite3_1sn.json`, `ek_xref_kiyas.json`, `ek_ilerleme_satirlari.txt`, `t25_olc.json`, `t25_ilerleme_satirlari.txt`, `t25_uptime_{bas,son}.txt`, `kuyruk_OL2.txt`, `tam_takim_ozet.txt`, `tam_takim_pytest.log`, `mutasyon/*.log`, `ayar/*.yaml`. Betikler `betik/` (`tek_kos.zsh`, `s8_kos.zsh`, `h2_olc.py`, `t25_olc.py`, `s8_h5.py`, `ek_xref_kiyas.py`, `spec_uret.py`, `yama_uret.py`). Çalışma alanları (`s8/*/ws|out`, `s8/cache`, `t25/ws|out|cache`, `sqlite3*/ws|out|cache`) ve yamalı kopya (`yamali_kopya/`, worktree dışı test denetimi) silinmedi (A-35: ana oturum siler). Ürün ağacı `~/karadul_olcum/urun-d83f100` silinmedi.
+
+## Commit'ler (dal `worktree-agent-af188ae0aaac8598e`, push yok)
+
+`b568d2a` ilerleme dosyası · `d83f100` kod (adım bütçeleri + BSim koşulları) · `0fff66d` testler + config yaması · `1740d82` ön kayıt · `47947da` mutasyon tanımı · `17e5965` ilerleme · `84d222b` test_p16b yaması · `b8d4881` H2 + eski tanımlar · `50996ee` notlar / riskler · `d1209c0` tam takım · `3d1fce9` bekleme satırı · `81a21dc` S8 + ek koşu · `163e8e8` T25 · bu commit kapanış.
+
+## PAKET BİTTİ
