@@ -12,6 +12,10 @@ yöntem (``DiffMatch.method``) başına ve toplam. Eşik ürünün öntanımı (
 
 Kullanım (depo kökünden):
     PYTHONDONTWRITEBYTECODE=1 python scripts/arge/kimlik/urun_bindiff.py kesif_htop sinama_tmux … --json <çıktı>
+
+``--kapi`` (PK-1): eşleşmeler ürünün yöntem kapısından geçirilir
+(``karadul.reconstruction.kimlik.yontem_kapisi.ad_verebilir``); kapıdan geçenler ``yontem`` (ad) sayımına,
+geçmeyenler ``kanit`` (kanıt satırı) sayımına girer. Seçenek yokken çıktı eskisiyle aynıdır.
 """
 from __future__ import annotations
 
@@ -31,6 +35,7 @@ from veri import Ikili, ks1  # noqa: E402
 
 sys.path.insert(0, str(veri.REPO))
 from karadul.analyzers.bindiff import BinaryDiffer  # noqa: E402
+from karadul.reconstruction.kimlik.yontem_kapisi import ad_verebilir, ad_veren_yontemler  # noqa: E402
 from karadul.reconstruction.reference_differ import ReferenceDiffer  # noqa: E402
 
 
@@ -47,7 +52,7 @@ def _jsonlar(I: Ikili, adli: bool) -> tuple[dict, dict, dict]:
     return f, cg, st
 
 
-def olc(Q: Ikili, R: Ikili, kip: str) -> dict[str, Any]:
+def olc(Q: Ikili, R: Ikili, kip: str, kapi: bool = False) -> dict[str, Any]:
     qf, qcg, qst = _jsonlar(Q, adli=False)
     rf, rcg, rst = _jsonlar(R, adli=True)
     if kip == "refdiffer":
@@ -61,6 +66,7 @@ def olc(Q: Ikili, R: Ikili, kip: str) -> dict[str, Any]:
         sonuc = BinaryDiffer().compare(reference=rf, target=qf, ref_strings=rst, target_strings=qst, **ek)
     nufus = set(Q.nufus)
     say: dict[str, list[int]] = {}
+    kanit: dict[str, list[int]] = {}       # --kapi: kapıdan düşenler (kanıt satırı)
     for m in sonuc.matches:
         q, r = int(m.target_address, 16), int(m.ref_address, 16)
         if q not in nufus or q not in Q.fonk or r not in R.fonk:
@@ -68,11 +74,16 @@ def olc(Q: Ikili, R: Ikili, kip: str) -> dict[str, Any]:
         h = esle.hukum(Q, R, q, r)
         if h not in ("dogru", "yanlis"):
             continue
+        hedef = say if (not kapi or ad_verebilir(m.method)) else kanit
         for anahtar in (m.method, "toplam"):
-            s = say.setdefault(anahtar, [0, 0])
+            s = hedef.setdefault(anahtar, [0, 0])
             s[0 if h == "dogru" else 1] += 1
-    return {"sorgu": Q.kimlik, "basvuru": R.kimlik, "kip": kip, "nufus": len(nufus),
-            "yontem": {k: {"dogru": d, "yanlis": y} for k, (d, y) in say.items()}}
+    cikti = {"sorgu": Q.kimlik, "basvuru": R.kimlik, "kip": kip, "nufus": len(nufus),
+             "yontem": {k: {"dogru": d, "yanlis": y} for k, (d, y) in say.items()}}
+    if kapi:
+        cikti["kapi"] = True
+        cikti["kanit"] = {k: {"dogru": d, "yanlis": y} for k, (d, y) in kanit.items()}
+    return cikti
 
 
 def main(argv=None) -> int:
@@ -80,6 +91,8 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("gruplar", nargs="+")
     ap.add_argument("--json", type=Path)
+    ap.add_argument("--kapi", action="store_true",
+                    help="PK-1: eşleşmeleri ürünün yöntem kapısından geçir (kalan kanıt satırı sayılır)")
     a = ap.parse_args(argv)
     onbellek: dict[str, Ikili] = {}
 
@@ -89,30 +102,39 @@ def main(argv=None) -> int:
         return onbellek[k]
 
     cikti: dict[str, Any] = {}
+    if a.kapi:
+        cikti["kapi"] = {"ad_veren_yontemler": list(ad_veren_yontemler())}
     tum: dict[str, dict[str, list[int]]] = {}     # kip → yöntem → [doğru, yanlış]; bütün gruplar
+    tum_kanit: dict[str, dict[str, list[int]]] = {}   # --kapi: kapıdan düşenler
     for g in a.gruplar:
         satirlar = []
         for kip in ("config", "refdb", "refdiffer"):
             havuz: dict[str, list[int]] = {}
+            havuz_kanit: dict[str, list[int]] = {}
             nuf = 0
             for c in ciftler.grup(g):
                 for qk, rk in (c, c[::-1]):
-                    s = olc(al(qk), al(rk), kip)
+                    s = olc(al(qk), al(rk), kip, kapi=a.kapi)
                     satirlar.append(s)
                     nuf += s["nufus"]
-                    for k, v in s["yontem"].items():
-                        h = havuz.setdefault(k, [0, 0])
-                        h[0] += v["dogru"]
-                        h[1] += v["yanlis"]
-                        t = tum.setdefault(kip, {}).setdefault(k, [0, 0])
-                        t[0] += v["dogru"]
-                        t[1] += v["yanlis"]
+                    for alan, hv, tm in (("yontem", havuz, tum), ("kanit", havuz_kanit, tum_kanit)):
+                        for k, v in s.get(alan, {}).items():
+                            h = hv.setdefault(k, [0, 0])
+                            h[0] += v["dogru"]
+                            h[1] += v["yanlis"]
+                            t = tm.setdefault(kip, {}).setdefault(k, [0, 0])
+                            t[0] += v["dogru"]
+                            t[1] += v["yanlis"]
             for k, (d, y) in sorted(havuz.items()):
                 o = ks1.oran(d, d + y)
                 print(f"{g:14s} {kip:6s} {k:16s} doğru {d:5d} yanlış {y:5d} kesinlik {o['oran']:.3f} "
                       f"[{o['aralik'][0]:.3f}, {o['aralik'][1]:.3f}] kapsam {d / nuf * 100:5.1f}% (nüfus {nuf})")
+            for k, (d, y) in sorted(havuz_kanit.items()):
+                print(f"{g:14s} {kip:6s} KANIT {k:16s} doğru {d:5d} yanlış {y:5d}")
             cikti.setdefault(g, {})[kip] = {"havuz": {k: {"dogru": d, "yanlis": y} for k, (d, y) in havuz.items()},
                                            "nufus": nuf}
+            if a.kapi:
+                cikti[g][kip]["kanit"] = {k: {"dogru": d, "yanlis": y} for k, (d, y) in havuz_kanit.items()}
         cikti[g]["yonler"] = satirlar
     # Yöntem başına bütün grupların havuzu (yöntem kapısı tablosunun kaynağı: PLAN.md PK-1)
     for kip, yy in tum.items():
@@ -122,6 +144,12 @@ def main(argv=None) -> int:
                   f"[{o['aralik'][0]:.3f}, {o['aralik'][1]:.3f}]")
     cikti["tum_gruplar"] = {kip: {k: {"dogru": d, "yanlis": y, "kesinlik": ks1.oran(d, d + y)} for k, (d, y) in yy.items()}
                             for kip, yy in tum.items()}
+    if a.kapi:
+        for kip, yy in tum_kanit.items():
+            for k, (d, y) in sorted(yy.items()):
+                print(f"{'TÜM GRUPLAR':14s} {kip:9s} KANIT {k:18s} doğru {d:5d} yanlış {y:5d}")
+        cikti["tum_gruplar_kanit"] = {kip: {k: {"dogru": d, "yanlis": y} for k, (d, y) in yy.items()}
+                                      for kip, yy in tum_kanit.items()}
     if a.json:
         a.json.parent.mkdir(parents=True, exist_ok=True)
         a.json.write_text(json.dumps(cikti, ensure_ascii=False, indent=1), encoding="utf-8")
