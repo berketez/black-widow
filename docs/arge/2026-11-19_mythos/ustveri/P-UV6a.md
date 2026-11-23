@@ -75,3 +75,15 @@ Girdi: `~/karadul_olcum/runs/gosteri-2026-11-19/ollama/ws/workspaces/Ollama/2026
 
 - %100 ≥ %99,9 → TUTTU. İlk sürümde aday listesi adsız girişi (ad boş) sayıyordu (35 049, yanlış 1); ürün kanalı o girişi atlıyor, ölçüm aracı ürünle aynı kurala çekildi (sayı ölçüm aracının hatasıydı, kanalın değil).
 - Ek (keşif): terminal-notifier ObjC 32 / 32 doğru (birebir 31, kategori 1), elenen 0; Go `veri_yok`.
+
+## Kalem 8 — Ghidra'lı ölçüm
+
+Ürün ağaçları (silinmez; ana oturum siler): `~/karadul_olcum/urun-5da70a7` (ilk koşu), `~/karadul_olcum/urun-5d23182` (A-28 onarımı sonrası). Bayrak yaml'ı `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/bayraklar_acik.yaml` (dört bayrak `true`, başka ayar yok; yamasız dalda iki ad bayrağı için "etkisiz" uyarısı basılır ama değer okunur). Koşu `ustveri_urun.py kos` (`urun_kos.calistir` + `--config`), ölçüm `ustveri_urun.py urun`.
+
+### H3 ilk koşu (5da70a7; 08:43:20–08:44:19, 59 sn, yük altında 11–17) — ÜST VERİ ADI 6 / 32: kusur bulundu
+
+- `out/naming_map.json`'da `label = üst veriden` 6 ad (5 A-28 + 1 adsız fonksiyon), 6'sı da kodda, 6'sı da GT'ye göre doğru, 6'sında `ozgun_ad` dolu ve güven tablodan. Ad bekleyen 40'ta doğru 0 → 1.
+- Kanal sayaçları: `secici_tekil_degil` 26 / yineleme. Teşhis (`PUV6a/tn_cift_ad.py`): 27 yöntemin seçici adını taşıyan ikinci Ghidra fonksiyonunun 27'si `__objc_stubs` bölümünde (≤ 32 bayt; Ghidra `_objc_msgSend$sel` saplamasını seçiciyle adlandırıyor), 3'ü thunk. Decompile çıktısında saplama `objc_stub::printVersion`, yöntem `AppDelegate::printVersion` (sınıf ad alanı). Yalın seçici anahtarı saplamayı ve çağrılarını da değiştirirdi → tekillik bekçisi doğru davranmıştı ama A-28'i 31'den 5'e indiriyordu.
+- Ayrıca sayaçlar Faz 2'nin iki turunda birikiyordu (`kayit` 64 = 2 × 32).
+- **Onarım (`5d23182`):** A-28 anahtarı `Sınıf::code_name(seçici)` (yöntemin koddaki tanım adı; saplama `objc_stub::` ad alanında kalır); sayaçlar yineleme başına; aynı sınıf + seçici (örnek + sınıf yöntemi) → `cift_kayit` kanıt satırı. Ollama gösteri çalışma alanında yeniden oynatma: ObjC aday 151 / 151 (A-28 149 + adsız 2), 149 nitelikli anahtarın 149'u Ghidra'nın decompile çıktısında geçiyor (`PUV6a/ollama_kodda.py`). Go sayıları değişmedi (10 475).
+- Not: S8 koşuları (`s8_kapali`, `s8_acik`) `urun-5da70a7` ile başlatıldı. Onarım yalnız ObjC kanalı açıkken çalışan kodu ve üst veri köken kaydına `adres` alanını değiştirdi; bayraklar kapalıyken ve ObjC'siz ikilide (S8'in 5'i düz C) ad haritasına etkisi yok — H1 / H2 için 5da70a7 sonucu geçerli sayıldı (gerekçe bu satır).
