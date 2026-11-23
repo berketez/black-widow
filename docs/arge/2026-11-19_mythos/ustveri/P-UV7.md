@@ -316,3 +316,54 @@ Koşu anında `go_tip.py` / `tutarlilik.py` sha256'sı dondurulanla aynı (`286a
   doğru adlara yanlış alarm 0 (sınama ikilisinde de).
 - **H7 (11 dilim) → koşul sağlandı:** güçlü işaretli oranın en büyüğü 11 / 11 dilimde 0; %1 eşiği
   kalır (düzeltme öncesi %0,206 notu yukarıda).
+
+## Bekleme (09:35)
+
+Şu an: tam takım arka planda (worktree kökünden, `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q
+-p no:cacheprovider`; günlük `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/tam_takim.log`).
+Tahmini bitiş 09:45–09:55 (yük altında). Çalışma verisi bağları kuruldu (`sigs`, `vendor`,
+`scripts/node_modules`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`;
+commit'lenmez — üçü `dizin/` kalıbına uymadığı için `git status`'ta `??` görünür).
+
+## P-ÜV6b için notlar
+
+**İçe aktarılacak adlar** (`karadul.analyzers.ustveri.tutarlilik`): `denetle`,
+`TutarlilikSonucu` (`damgalar`, `isaretler`, `kapsam`, `ozet`, `karar`, `karar_nedeni`,
+`damga(giris)`), `DAMGA_CIFT_KAYNAK`, `DAMGA_TEK_KAYNAK`, `DAMGA_TUTARSIZ`, `DAMGALAR`,
+`KARAR_TEMIZ`, `KARAR_UYARI`, `KARAR_UST_VERI_SUPHELI`, `IKILI_KARARLARI`,
+`UST_VERI_SUPHELI_ESIGI`, `GUCLU_DENETIMLER`, `ZAYIF_DENETIMLER`, `YAPISAL_ISARETLER`,
+`DENETIM_K4`, `DENETIM_K10`. Tip okuyucu: `karadul.analyzers.ustveri.go_tip.GoTipVerisi`.
+
+**Bağlama önerisi (karar P-ÜV6b'nin):**
+- `go_functions` satırına `dogrulama` = damga. `tutarsiz` → ad yazılmaz, kanıt satırı (A-10);
+  `cift_kaynak` → "üst veriden, çift kaynaklı"; `tek_kaynak` → "üst veriden".
+- İkili kararı: ölçülen ayırt edici düzey `uyari` (bozulmamış 11 / 11 `temiz`, A / B / C / E
+  8 / 8 `uyari`). `ust_veri_supheli` yalnız toplu bozmada; o durumda Go adlarının tümünü kanıt
+  satırına indirmek önerilir. D (tutarlı sahtecilik) hiçbir düzeyde görünmez: "üst veriden"
+  etiketi bu yüzden kalmalı.
+- Maliyet (bozulmamış 11 dilim): `tutarsiz` damgası yalnız P-ÜV1'in K4 `kisa` fonksiyonu (gh,
+  limactl, arduino-cli'de 1'er); başka doğru ada yanlış alarm 0 (docker-cli 35 048, docker-compose
+  90 077 sembollü adda 0).
+
+**`go_pclntab.py`'de eksik / yanlış bulunanlar (değiştirilmedi; ana oturuma):**
+1. `oku()` `GoPclntab` nesnesini döndürmüyor (`GoSonuc`'ta yok). `denetle` tip verisi
+   (`md["adres"]`, `text`) ve K10 (`pc_tablosu`) için nesneye muhtaç: P-ÜV6b ya `denetle(g)`
+   çağırır (okuyucu yeniden kurulur; 11 dilimde toplam 0,2–2,8 sn, yük altında) ya da `GoSonuc`'a
+   `pcln` alanı eklenir.
+2. `paket_adi` (`runtime.funcpkgpath` kuralı) başka paketten yükseltilmiş dışa kapalı yöntemde
+   paketi yöntem adının içinden çıkarıyor → bu fonksiyonların `paket` / `sinif` alanı yanlış: gh
+   10, limactl 71, Ollama arm64 4, docker-brew 270, docker-cli 264 … (yukarıda). Önerilen kural:
+   alıcılı adlarda paket = ilk `.(` ya da tip adından önceki önek; T2p'deki önek denetimi gibi.
+3. `FUNC_ID` tablosu üründe yok (tek tanım `tutarlilik.FUNC_ID`); 1.23 / 1.24'te sıra farklı
+   (sarmalayıcı kimliği 22) → T5 orada yalnız `runtime.` önekini denetliyor.
+4. `moduledata`'nın 24–47. sözcükleri okunmuyor; `go_tip` 37–41'i `md["adres"]`'ten kendisi okuyor.
+
+**Sınırlar / riskler:**
+- Birden çok metin bölümü (`textsectmap`) çözülmüyor: `Method.Ifn / Tfn` = `text + ofset`. Böyle
+  bir ikilide T2 adresleri tutmaz → kapsam düşer (ad `tek_kaynak` kalır; yanlış alarm değil).
+  11 dilimde görülmedi; çok büyük ikililerde (ÖLÇEK) ölçülmedi.
+- K10 yalnız arm64; x86_64 dilimlerinde `desteklenmiyor` (E türü orada yalnız K4 + T ile).
+- E'nin kalan %7,5–%9,5'i (aynı boy + aynı çerçeve) için içerik imzası yok (`pcdata` / `funcdata`
+  ↔ komut akışı ölçülmedi).
+- Go 1.18–1.19 ve > 1.27: tip verisi `desteklenmiyor` (T1 / T2 yok; damga en çok `tek_kaynak`).
+- `enable_go_metadata_integrity` bayrağı okunmadı (INERT; bağlama P-ÜV6b).
