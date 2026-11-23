@@ -126,5 +126,5 @@ Kök `PUV5/urun/kapali` (dal `caa14e3`, ayar dosyası yok) ve `PUV5/urun/taban` 
 ## Riskler
 
 - **Kapsam sapması:** `_seed_recovery_pre_names`'te iki çağrıya ayar argümanı (yukarıda gerekçesi). Mutant `puv5_ayar_iletilmez` kilitliyor.
-- **`entry` sözcüğü:** anahtar Ghidra adı olduğu için birleştirici kodda `entry` sözcüğünün her geçtiği yeri `main` yapar. 9 Mac çalışma alanında `entry.c` dışında `entry` yalnız `// Callers:` yorum satırlarında geçiyor (değişmesi doğru). Soyulmuş ikilide yerel / alan adları jenerik olduğu için çakışma beklenmez; dizgi değişmezi içindeki `entry` için ölçülmedi.
+- **`entry` sözcüğü:** anahtar Ghidra adı olduğu için birleştirici kodda `entry` sözcüğünün her geçtiği yeri `main` yapar. 9 Mac ikilisinin (htop, tmux, P-S3b 6, terminal-notifier) decompile çıktısında `entry` sözcüğü (`grep -w`) `entry.c`'deki tanım / başlık dışında yalnız `// Callers:` yorum satırlarında geçiyor (değişmesi doğru); dizgi değişmezinde, yerel ya da alan adında 0. Başka ikilide ölçülmedi.
 - **Evrensel ikili:** dilim seçimi `universal_slice.json` → `raw/<ad>_<mimari>`; birim testi var, gerçek evrensel ikilide yalnız Ollama'da (Go istisnasına takıldı) denendi.
