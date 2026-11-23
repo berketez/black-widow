@@ -192,6 +192,6 @@ def test_ad04_bindiff_adi_on_ad_olarak_ikinci_kez_sayilmaz(tmp_path, monkeypatch
     # BinDiff c_namer'dan SONRA ön ad sözlüğüne yazdı; aynı eşleşme bir kez sayılır
     harita, stats = _kos_adaylarla(
         tmp_path, monkeypatch, extracted={"FUN_00104000": "ref_ad"}, naming_result=_cnamer({}),
-        ek_adaylar={}, bindiff={"FUN_00104000": ("ref_ad", 0.8, "string")})
+        ek_adaylar={}, bindiff={"FUN_00104000": ("ref_ad", 0.8, "string_refs")})
     assert stats["name_merger_exact_multi"] == 0
     assert harita == {"FUN_00104000": "ref_ad"}

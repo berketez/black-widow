@@ -56,7 +56,7 @@ def test_ad04_olculmus_on_ad_bindiff_ile_iki_kaynak_sayilmaz(tmp_path) -> None:
     extracted = {"FUN_00104000": "ref_ad"}
     meta = {"FUN_00104000": {"kind": "gnulib", "name": "ref_ad"}}  # ölçülmüş kanal
     harita, stats = _kos(tmp_path, extracted=extracted, meta=meta,
-                         bindiff={"FUN_00104000": ("ref_ad", 0.8, "string")})
+                         bindiff={"FUN_00104000": ("ref_ad", 0.8, "string_refs")})
     assert stats["name_merger_c_namer_decided"] == 0
     assert stats["name_merger_exact_multi"] == 0       # ön ad ikinci kaynak olarak girmedi
     assert stats["name_merger_total"] == 1
