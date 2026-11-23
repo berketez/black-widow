@@ -79,6 +79,45 @@ Yamalı öntanımda (`bos_depoda_sorgu_atla: True`) iki P16b testi boş depoda a
 - Karşılaştırma için (salt okunur, aynı ikili, bütçesiz): P16e `s8_sonra_3` sqlite3'te ingest 11,788 sn, sorgu 11,775 sn.
 - **Hüküm H2: TUTTU** (her sınırsız adım ≤ 7 sn: en uzun 2,069 sn; bütçesi dolan adımın çıktısı geçerli JSON ve kısmi işaretli; çıkış 3). **Sınır:** sqlite3'te döküm adımları zaten 2 sn'nin altında; bu koşuda bütçesi gerçekten dolan tek adım BSim ingest. Döküm işlevlerinin kesilme yolu gerçek Ghidra'da bu koşuyla SINANMADI (birim testlerinde sınandı); ön kayıt dışı ek koşu aşağıda (koşulursa).
 
+## Kabul (d)
+
+119 birleşik koşusunda ad haritası aynı mı: **ölçülmedi; kapanış ölçümüne bırakıldı** (gönderim hükmü 8). BSim gölge kipte olduğu için ad etkisi bu pakette S8'in `out/naming_map.json` eşitliğiyle denetlenir.
+
+## Sonraki paketlere not
+
+### HZ-2 için notlar (aynı BSim bloğu, aynı iki işlev)
+
+- **Ingest (`_BSimNativeWrapper.ingest_program`):** bugün bütçe, `for func in gercek:` döngüsünün başında `denetci.denetle(taranan, len(gercek))`; dolunca `last_ingest_kismi = {"islenen": taranan, "toplam": len(gercek)}` ve taranan kısım `InsertRequest` ile eklenir. HZ-2 döngüyü `gen.scanFunctions(<Java yineleyici>, n, monitor)`'a çevirince Python döngüsü kalkar; bütçe **`monitor`'a** taşınmalı: kalan bütçe (`denetci` son anı − şimdi) ile `TimeoutTaskMonitor.timeoutIn(kalan, SECONDS)` (P16c / ÖL-1'deki gibi). Dönüşte `monitor.isCancelled()` / `didTimeout()` → kısmi; `islenen` = DescriptionManager'daki fonksiyon sayısı (`manager.listAllFunctions().size()`), `toplam` = yineleyicinin uzunluğu; sözleşme aynı kalsın (`last_ingest_kismi`, `BSimDatabase._ingest_kismi`). `scanFunctions` iptal görünce yarım kalan parçanın ne bıraktığı (`ParallelDecompileTask`) ayrıca denetlenmeli.
+- **Adım içi olay:** `scanFunctions` Java iş parçacıklarında koşar; Python tarafında `suruyor` olayı için ya ÖL-1'deki gibi bir okuyucu iş parçacığı (izleyicinin ilerlemesini okuyan) ya da ilerleme sayacını saklayan bir izleyici gerekir. ÖL-1 bulgusu: `TimeoutTaskMonitor`'un temsilcisi `TaskMonitorAdapter` ilerlemeyi / iletiyi saklamıyor. Olay zamanlayıcıyla basılmaz (sahte ilerleme yasağı): yalnız gerçek okunan sayaçla.
+- **Sorgu (`query_functions`):** tarama döngüsünde aynı denetim; ayrıca `QueryNearest.execute`'tan hemen ÖNCE `denetci.doldu or denetci.denetle(...)` (çağrının kendisi kesilemez). HZ-2 sorguyu ingest'in DescriptionManager'ıyla yaparsa tarama kalkar; çağrı öncesi denetim kalmalı. Sorgu parçalanacaksa (DescriptionManager alt kümeleri) denetim parça sınırına konur; parça başına `islenen` gerçek sorgulanan fonksiyon sayısı olur (`sorgu_islenen`).
+- **Denetçi iletimi:** `BSimDatabase.denetci` → `self._native.denetci` (öznitelik; sahte `_native`'lerin konum argümanlı imzaları yüzünden). HZ-2'nin yeni yöntemleri de aynı özniteliği okumalı.
+- **Mutasyon tanımı:** `mutation_specs_ol2.json`'daki `ol2_ingest_kesilmez` (`if denetci is not None and denetci.denetle(taranan, len(gercek)):`) ve `ol2_toplu_cagri_oncesi_denetim_yok` `find` metinleri HZ-2'nin değiştireceği satırlarda; HZ-2 bunları yeni yerlerine taşımalı (tanım yaması).
+- **Kısmi ingest'in sonraki koşuya etkisi (açık risk):** kesilen ingest programın md5'ini H2 deposuna yazar; aynı ikili yeniden koşulunca `_exe_already_ingested` doğru döner ve kalan fonksiyonlar hiç eklenmez. Köken kaydına `kismi` işareti ve "eksik ingest'i tamamla" yolu bu pakette YOK (öneri: HZ-2 ya da ÖL-9).
+
+### ÖL-3 için notlar
+
+- `_extract_call_graph`, `_extract_xrefs`, `_extract_cfg` döngülerinin başında `denetci.denetle(islenen)` ve dönüşte `out.update(denetci.kismi_alanlari())`. Akış biçimli yazım / Java tarafı yineleme gelince: denetim **fonksiyon sınırında** kalmalı (yarım fonksiyon yazılmaz; P16e sıra kuralı korunur), kısmi alanlar çıktının sonuna eklenmeli (bütçe dolmadıysa çıktı bayt bayt aynı). `ol2_cfg_kesilmez` ve `ol2_dizgi_kismi_alan_yok` `find` metinleri bu satırlarda.
+- Bütçe fonksiyon sınırında denetlendiği için tek bir dev fonksiyon (gövdesi on binlerce adres) bütçeyi aşabilir; adres düzeyinde kesme yok (yarım fonksiyon verisi üretmemek için). ÖL-3'ün Java tarafı yinelemesi bu boşluğu kapatabilir.
+- `_extract_xrefs`'in genel sembol sayımı ayrı bölüm: bütçe `KUCUK_BIRIM_DENETIM_ADIMI` (1 024) sembolde bir denetlenir.
+
+### ÖL-4 için notlar (gösterim)
+
+- Yeni olaylar: döküm adımlarında ve BSim ingest / sorguda `durum=suruyor islenen=n [toplam=N] gecen_sn=…` (yalnız döngü denetim noktasında; `toplam` dizgi / tip / komut sayımında YOK). Bütçe aşımında bitiş olayı `durum=kismi islenen=… [toplam=…] neden="<adım anahtarı>: adım bütçesi (S sn) doldu[; ek]"` (önek ÖL-1'in `_AdimSaati.bitti` biçimi: `cfg:`, `xrefs:`, `bsim_ingest:` …). Boş depoda BSim sorgusunda `basladi` → `atlandi` (neden) → `bitti` (adım başlamış, iş yapmadan bitmiş; gösterimde "atlandı" önde tutulmalı).
+- `step_errors`'ta yeni anahtarlar: `bsim_ingest`, `bsim_query` (bütçe), döküm adımlarının bugünkü anahtarları (bütçe nedeniyle).
+- `bsim_matches.json`'da yeni durum değerleri: `bsim_status` `atlandi` / `kismi`; `bsim_detail`'de `sorgu_atlandi`, `neden`, `ingest_islenen` / `ingest_toplam`, `sorgu_islenen` / `sorgu_toplam`, `bos_depo_denetimi` (yalnız ilgili durumda).
+
+### Kapsam dışı (gönderim hükmü 9; yapılmadı)
+
+- Ghidra SONRASI adımların (yeniden kurma, blok açıklama …) takılma bekçisi: bugün Ollama koşusunda blok açıklamadaki bir düzenli ifade koşuyu 31 dk kilitledi (BA-1; süreç SIGTERM'e yanıt vermedi). ÖL-2'nin bütçeleri yalnız Ghidra köprüsünün döküm adımları ve BSim içindir. ÖL-6 / ayrı paket.
+
+## Riskler
+
+- **Kesilemeyen Java çağrıları:** `InsertRequest.execute`, `QueryNearest.execute`, `GenSignatures.scanFunction` (tek fonksiyon), decompile çağrıları bütçenin içinden kesilemez; denetim yalnız aralarında. Bir çağrı uzun sürerse adım bütçeyi o kadar aşar.
+- **Boş depo kararının dayanağı köken kaydı:** köken kaydı GHIDRA-02'den (P16b) beri var. Köken kaydı varken depoda köken kaydı olmayan ESKİ programlar da varsa (P16b öncesi ingest) karar "boş" diyebilir ve bu eski programlara karşı eşleşme kaybolur. Kayıt hiç yokken depo dosyası varsa atlanmaz (denetleniyor); karışık durum denetlenmiyor (H2 deposundaki program sayısını `QueryExeInfo` ile sormak bir Java çağrısı; bu pakette yapılmadı).
+- **`total_queries` anlamı:** atlanan sorguda 0, kısmi sorguda sorgulanan sayı (eskiden fonksiyon başına yolda ve bazı hata yollarında aday fonksiyon sayısı yazılıyordu; o yollara dokunulmadı).
+- **Kısmi ingest kalıcı:** yukarıda (HZ-2 notları).
+- Worktree'de çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`) tam takım için kuruldu; commit'lenmedi, kapanışta kaldırılacak. Ürün ağacı `~/karadul_olcum/urun-d83f100` (detached worktree, altı bağ, kökte git'in izlemediği `karadul.yaml` = yamanın öntanımları) silinmedi: bu ağaçla başka koşu yapılırsa ÖL-2 öntanımlarıyla koşar.
+
 ## Kalem 5 — `config.py` yaması (`0fff66d`)
 
 `docs/arge/2026-11-23_dalga1/yamalar/OL2__config.py.patch` (`betik/yama_uret.py`, `difflib`; dosyaya dokunulmadı): `timeouts.ghidra_adim` 0 → **3600** (`# okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)`), `bsim.bos_depoda_sorgu_atla` False → **True** (`# okuyan: ghidra/bsim.py BSimDatabase (ÖL-2)`), `bsim.ingest_butcesi_sn` 0 → **900** (`# okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)`); `INERT_SETTINGS`'ten `# ÖL-2 (Dalga 2)` grubu (başlık + üç satır) silinir. `git apply --check` temiz (A-34: uygulanmadı).
