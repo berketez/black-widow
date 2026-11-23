@@ -10,11 +10,11 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV5/` (ölçüm özetleri
 |---|---|---|
 | 1 ön kayıt | bitti | `bdd058f` |
 | 2 kod + birim testleri + mutasyon | bitti: 32 test, 15 / 15 mutant öldü | `a731db6`, `caa14e3` |
-| 3 Ghidra'sız yeniden oynatma (Mac 8, ELF 5, hedef seti) | bitti (aşağıda) | bu commit |
-| 4 ürün koşusu (kuyruk) | bayrak açık 8 Mach-O kuyrukta (19:54'te başlatıldı) | — |
-| 5 tam takım (yamasız) | başlamadı | — |
+| 3 Ghidra'sız yeniden oynatma (Mac 8, ELF 5, hedef seti) | bitti: H1 8 / 8, H2 14 / 14, H3 5 / 5, H4 tuttu, H5 0 ad | `2303d7b` |
+| 4 ürün koşusu (kuyruk) | bayrak açık 8 / 8 + terminal-notifier bitti; H2 / H6 kolu sürüyor | `e212c1d`, `1884399` |
+| 5 tam takım (yamasız) | bitti: 10 916 / 62 / 5 (1 beklenen, 4 ortam) | `f678871` |
 
-**Şu an bekleniyor (19:55):** bayrak açık ürün koşusu, 8 Mach-O (htop, tmux, gmktemp, idn2, gettext, envsubst, xz, gsort), ikili başına ayrı kuyruk çağrısı (`kos.sh acik …`, kök `PUV5/urun/acik`). Kuyruğun bir yuvası ana oturumun Ollama koşusunda; öbür yuva OL2 ile paylaşılıyor. TAHMİN bitiş 20:20–20:45 (P-S3b'de bu altı ikili 29–174 sn sürmüştü; yük altında, sıra beklemesi dahil). Beklerken yeniden oynatma ve belge.
+**Şu an bekleniyor (20:22):** H2 / H6 kolu: bayrak kapalı 7 ikili (tmux, gmktemp, idn2, gettext, envsubst, xz, gsort), sonra bugünkü ürün tabanı 7 ikili (`zincir2.sh`; ikili başına ayrı kuyruk çağrısı). Yuva 2'yi OL2'nin S8 zinciri tutuyor, yuva 1 ana oturumun Ollama koşusunda. TAHMİN: sıraya giriş 20:40–21:00, bitiş 21:05–21:25; sert sonda bitmeyen koşu "kalan" yazılır.
 
 ## Kalem 2 — kod (`karadul/stages.py`)
 
