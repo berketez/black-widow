@@ -204,3 +204,10 @@ Kapsam dışı notlar (yapılmadı): (a) Ghidra sonrası adımlar için takılma
 | 53 | `_FUNC_RE` (MULTILINE, `finditer` tam içerikte) | — | 8,0 ms | mac tmux `FUN_100059c6c.c:338` | 1,8 sn | 1,9 ms |
 
 Sınıf sütunu: `zincir` durağan kuralın sonucu; `arama-karesel` elle sınıflama (her arama başlangıcında `\w+` koşusunun geri izlenmesi), büyüme eğrisi ölçülmedi. Öbür 40 kalıbın en kötü satır süresi ≤ 6,1 ms. Gövde kalıbı 275 (`ASSEMBLY_BODY_PATTERNS`, gerçek kullanımı ≤ 10 000 karakterlik gövde): satırda 2,8 ms, tam dosyada 0,3 ms. Sonuç: gerçek veride hiçbir kalıp tek satırda 0,1 sn'ye yaklaşmıyor; adımın tamamı Ollama'da 62 sn (H2). Karesel / zincir kalıplar uzun satırda büyür (ör. 1 537 karakterlik satırda `\w+\s*\(` 16–27 ms), ama üstel değil; onarım bu paketin kapsamında değil (hüküm 4: "yalnız listelenir"). Not: `tmux` adı iki çalışma alanında ortak (`FUN_001…` debian, `FUN_1000…` mac).
+
+## Kalem 6 — ilgili takım, mutasyon, tam takım (20:05)
+
+- İlgili takım (`test_ba1_blok_kalip_suresi.py` + `test_p04a_blok_yorumu.py` + `test_step_engineering_annotation.py`; `block_annotator` / `CodeBlockAnnotator`'ı sınayan bütün test dosyaları bunlar): 30 geçti / 0 kaldı.
+- `mutation_specs_ba1.json`: 7 / 7 öldü (54 sn).
+- `mutation_specs_p04a.json` yeniden koşuldu: **27 / 27 öldü, 0 hata (35 sn)**; `block_annotator.py`'ye bakan dört tanımın `find` metni bayatlamadı (değişiklik yok).
+- Tam takım, 1. koşu (19:53 → 20:01, yük altında, 448 sn): 10 876 geçti / 88 atlandı / 152 seçilmedi / **7 kaldı**. Yedisinin hepsi çalışma ağacında git'in izlemediği çalışma verisinin olmamasından: `vendor/gnulib-ref/…` yok (`test_ps3b_full_write`, `test_ps3b_gnulib_varlik`, `test_ps3b_ic_ad`), `scripts/node_modules` yok (`test_deobfuscator::TestExtractModules` ×2, `test_pipeline::test_identify_and_static`, `test_project_reconstructor::…explicit_modules_dir`). ONARIM_BRIF §2.4'teki bağlar (`sigs`, `vendor`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`, `scripts/node_modules`; commit'lenmedi, dönmeden önce kaldırılır) kurulunca bu 7 test ayrıca koşuldu: 21 / 21 geçti (aynı dosyalardaki kardeşleriyle). BA-1 değişikliğiyle ilgileri yok.
