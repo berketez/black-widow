@@ -15,11 +15,14 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`). 
 | 5 | `config.py` yaması (`yamalar/OL2__config.py.patch`; `git apply --check` temiz; uygulanmadı) + `test_p16b_bsim.py` yaması | bitti | `0fff66d`, `84d222b` |
 | 6 | Ön kayıt (`on_kayit_ol2.md`; ölçümden önce ayrı commit) | bitti | `1740d82` |
 | 7 | sqlite3 (H2) | bitti: **TUTTU** (çıkış 3; sınırsız adımların en uzunu 2,069 sn) | bu commit |
-| 8 | S8 (H3, H5) | kuyrukta (20:08'den beri) | — |
-| 9 | T25 (H1, H4) | kuyruğa giriyor | — |
+| 8 | S8 (H3, H5) | bitti: H3 **metne göre TUTMADI (cat'te `total_queries` 107 → 0; ön kayıtta önceden yazılı fark)**, `total_queries` dışında 8 / 8 tuttu; H5 **TUTTU** (kesilen adım 0) | bu commit |
+| 8b | Ek koşu (ön kayıt dışı): sqlite3, bütçe 1 sn | bitti: xref (genel sembol sayımında) ve BSim ingest gerçek Ghidra'da kesildi | bu commit |
+| 9 | T25 (H1, H4) | koşuyor (20:49:08'den beri, yuva 1) | — |
 | 10 | Tam takım (yamasız) | bitti: 11 029 geçti / 19 atlandı / 1 kaldı (beklenen) | bu commit |
 
-**20:37 — bekliyorum (güncelleme):** S8 5 / 8 bitti (cat, sort, tree, sqlite3, htop; ara kıyas: sort, tree, sqlite3, htop ham eşit, BSim dosyaları dahil; cat'te yalnız BSim durum alanları + `total_queries`); debian tmux koşuyor, kalan zstd ve mac/tmux (yük 20–40, ikili başına 3–6 dk). TAHMİNİ S8 bitişi 20:50–21:00. T25 20:09'dan beri kuyrukta; S8 bitince ikinci yuvaya ya da ana oturumun koşusu bitince birinciye girer; TAHMİNİ başlangıç 20:55–21:10, süre 45–60 dk (yük altında), bitiş 21:45–22:05. 21:58'de bitmemişse durdurulur ve ölçülebilen kadarı yazılır. (Ön kayıt dışı "1 sn bütçeli sqlite3 ek koşusu" T25'le yuva için yarışmasın diye iptal edildi.)
+**20:52 — bekliyorum (T25):** T25 20:49:08'de yuva 1'de başladı (1 dk yük 9,60; ana oturumun Ollama koşusu 20:44'te bitti). TAHMİNİ bitiş 21:35–21:55 (gösteri / ana oturum koşusunda BSim'e kadar ~28 dk + ingest ≤ 900 sn + sorgu atlanır). 21:58'de bitmemişse durdurulur, ölçülebilen kadarı yazılır.
+
+**20:37 — bekliyorum (güncelleme):** S8 5 / 8 bitti (cat, sort, tree, sqlite3, htop; ara kıyas: sort, tree, sqlite3, htop ham eşit, BSim dosyaları dahil; cat'te yalnız BSim durum alanları + `total_queries`); debian tmux koşuyor, kalan zstd ve mac/tmux (yük 20–40, ikili başına 3–6 dk). TAHMİNİ S8 bitişi 20:50–21:00. T25 20:09'dan beri kuyrukta; S8 bitince ikinci yuvaya ya da ana oturumun koşusu bitince birinciye girer; TAHMİNİ başlangıç 20:55–21:10, süre 45–60 dk (yük altında), bitiş 21:45–22:05. 21:58'de bitmemişse durdurulur ve ölçülebilen kadarı yazılır. (Ön kayıt dışı "1 sn bütçeli sqlite3 ek koşusu" T25'le yuva için yarışmasın diye iptal edilmek istendi; bekleme kabuğu bulunamadı ve koşu S8'den hemen sonra 20:48:30–20:49:04'te koştu: T25'i ~35 sn geciktirdi. Düzeltme 20:52.)
 
 **20:09 — bekliyorum:** S8 (8 ikili, tek kök `…/OL2/s8`, sıra ORTAK_D0 §6) ikinci yuvada PUV5 ile sırayla; birinci yuvayı ana oturumun Ollama koşusu tutuyor (19:36'dan beri, TAHMİN 1,5–2 sa). T25 kuyruğa giriyor: yuva boşalınca (büyük olasılıkla ana oturumun koşusu bitince) başlar. TAHMİNİ bitiş: S8 20:45–21:15; T25 başlangıcı 21:05–21:35, süresi 45–60 dk (yük altında; BSim'e kadar ~28 dk + ingest ≤ 900 sn), bitiş 21:50–22:05 (sert son 22:05: yetişmezse "kalan"). Tam takım arka planda (TAHMİN 12–20 dk).
 
@@ -80,6 +83,34 @@ Yamalı öntanımda (`bos_depoda_sorgu_atla: True`) iki P16b testi boş depoda a
 - Olaylar: `ghidra.bsim.ingest durum=kismi islenen=253 toplam=429 gecen_sn=2.069 neden="bsim_ingest: adım bütçesi (2 sn) doldu"`, `ghidra.bsim.query durum=atlandi neden=…`.
 - Karşılaştırma için (salt okunur, aynı ikili, bütçesiz): P16e `s8_sonra_3` sqlite3'te ingest 11,788 sn, sorgu 11,775 sn.
 - **Hüküm H2: TUTTU** (her sınırsız adım ≤ 7 sn: en uzun 2,069 sn; bütçesi dolan adımın çıktısı geçerli JSON ve kısmi işaretli; çıkış 3). **Sınır:** sqlite3'te döküm adımları zaten 2 sn'nin altında; bu koşuda bütçesi gerçekten dolan tek adım BSim ingest. Döküm işlevlerinin kesilme yolu gerçek Ghidra'da bu koşuyla SINANMADI (birim testlerinde sınandı); ön kayıt dışı ek koşu aşağıda (koşulursa).
+
+## Kalem 8 — S8 (H3, H5)
+
+- Ürün ağacı `urun-d83f100`, kökte `karadul.yaml` = yamanın öntanımları (`timeouts.ghidra_adim: 3600`, `bsim.bos_depoda_sorgu_atla: true`, `bsim.ingest_butcesi_sn: 900`; kopyası `…/OL2/s8/karadul.yaml`). Sürücü `betik/s8_kos.zsh` (OL1 / P16e'ninkinin aynısı; ikili başına bir kuyruk çağrısı, dış `timeout 3700`), sıra ORTAK_D0 §6 (cat, sort, tree, sqlite3, htop, debian tmux, zstd, mac/tmux), tek kök `…/OL2/s8`, koşuya özel boş `KARADUL_CACHE_DIR` (`…/OL2/s8/cache`). 20:13:43–20:48:29, 8 / 8 çıkış 0, yuva 2; koşu başında 1 dk yük 18,06–39,68 (**yük altında**).
+- Kıyas: taban `P16e/s8_sonra_3` ↔ `OL2/s8`, ham (`s8_esitlik.py`, `--sira-normal` yok). Çıktılar `ozet/s8_ham.{md,json}`, H5 / BSim denetimi `betik/s8_h5.py` → `ozet/s8_h5.json`.
+
+| İkili | JSON farklı / dosya | `.c` farklı / dosya | `naming_map` farklı / dosya | `ghidra_status` eski alan farkı | `pcode.jsonl` | BSim (sonra) |
+|---|---|---|---|---|---|---|
+| debian/coreutils/cat | **3 / 23** (yalnız BSim: `bsim_matches.json`, `bsim_shadow.json`, `static/ghidra_bsim.json`) | 0 / 296 | 0 / 3 | 0 | eşit | `atlandi`, `total_queries` 0 (taban 107), `known_executables` 1 |
+| debian/coreutils/sort | 0 / 23 | 0 / 625 | 0 / 3 | 0 | eşit | `ok`, 244 sorgu, 180 eşleşme |
+| debian/tree/tree | 0 / 23 | 0 / 250 | 0 / 3 | 0 | eşit | `ok`, 119 / 50 |
+| debian/sqlite3/sqlite3 | 0 / 23 | 0 / 1 144 | 0 / 3 | 0 | eşit | `ok`, 429 / 95 |
+| debian/htop/htop | 0 / 23 | 0 / 1 148 | 0 / 3 | 0 | eşit | `ok`, 609 sorgu |
+| debian/tmux/tmux | 0 / 23 | 0 / 2 588 | 0 / 3 | 0 | eşit | `ok`, 1 920 sorgu |
+| debian/zstd/zstd | 0 / 23 | 0 / 1 444 | 0 / 3 | 0 | eşit | `ok`, 1 086 sorgu |
+| mac/tmux | 0 / 23 | 0 / 2 821 | 0 / 3 | 0 | eşit | `ok`, 2 588 sorgu |
+
+- **cat'teki fark birimleri** (üç BSim dosyasında aynı; `bsim_shadow.json`'da `total_queries` alanı yok): `bsim_status` (`ok` → `atlandi`), `bsim_detail.status`, `bsim_detail.excluded.self` (211 → 0: sorgu koşmadığı için dışlanan kendi adayı yok), `bsim_detail.query_mode` (yalnız tabanda: `batch`), `bsim_detail.neden` ve `bsim_detail.sorgu_atlandi` (yalnız sonrada), **`total_queries` (107 → 0)**. `total_matches` 0 → 0, `matches` boş ↔ boş. Bunun dışında JSON, `.c`, ad haritaları eşit.
+- zstd `FUN_001063c0` decompiler takası bu koşuda görülmedi (zstd `.c` 0 / 1 444); yeniden koşu gerekmedi.
+- **H5:** 8 / 8 ikilide `step_errors` boş, hiçbir `ghidra_output/*.json`'da `kismi` anahtarı yok; en uzun döküm / BSim adımı 3,3–23,3 sn (3 600 sn bütçenin çok altında). **Kesilen adım 0 → TUTTU.**
+- **H3 hükmü (kurala göre):** metin "cat'te `bsim_matches.json` yalnız `bsim_status` / `bsim_detail` alanlarında farklı" diyor; cat'te ayrıca `total_queries` farklı (ön kayıtta ölçümden önce yazılan tasarım farkı: atlanan sorgu sayılmaz) → **H3 metne göre TUTMADI** (tek fark birimi `total_queries`). `total_queries` dışında: cat yalnız BSim durum alanlarında farklı, öbür 7 ikilide BSim dosyaları dahil ham eşit, `decompiled/*.c`, öbür `ghidra_output/*.json` ve `out/naming_map.json` 8 / 8 ham eşit → TUTTU.
+- Ad etkisi (kabul (d)'nin bu paketteki karşılığı): `out/naming_map.json` 8 / 8 bayt eşit (24 / 24 ad haritası dosyası).
+
+## Kalem 8b — ek koşu (ön kayıt dışı; hüküm yok): sqlite3, `timeouts.ghidra_adim: 1`
+
+- Amaç: H2 koşusunda döküm adımları 2 sn'nin altında kaldığı için döküm işlevlerinin kesilme yolu gerçek Ghidra'da görülmemişti. 20:48:30–20:49:04 (yuva 2; 1 dk yük 14,29), ayar `…/OL2/sqlite3_1sn/ol2_ek_1sn.yaml`, çıkış **3**. Ölçüm `ozet/ek_sqlite3_1sn.json`, `ozet/ek_xref_kiyas.json`.
+- Kesilen adımlar: **`ghidra.xref`** 1,023 sn (fonksiyon bölümü bitti 1 144 / 1 144; genel sembol sayımında kesildi: `neden` "adım bütçesi (1 sn) doldu; genel sembol sayımı yarıda (5120 sembol)"; `xrefs.json` geçerli JSON, `kismi: true`, `islenen 1144`, `toplam 1144`; `function_xrefs` S8'deki tam sqlite3 çıktısıyla **eşit**, yalnız `total_globals_with_xrefs` 3 979 (tam 7 591); kısmi alanlar sözlüğün sonunda) ve **`ghidra.bsim.ingest`** 1,027 sn (74 / 429 fonksiyon tarandı ve eklendi, `bsim_status: kismi`; sorgu atlandı). `call_graph` 0,970 sn ve `cfg` 0,816 sn bütçeye sığdı: fonksiyon döngüsünün içinden kesilme gerçek Ghidra'da yine görülmedi (birim testlerinde sınandı).
+- Olaylar: `ghidra.xref durum=kismi islenen=1144 toplam=1144 gecen_sn=1.023 neden="xrefs: …"`, `ghidra.bsim.ingest durum=kismi islenen=74 toplam=429 …`, `ghidra.bsim.query durum=atlandi …`.
 
 ## Kalem 10 — tam takım (yamasız)
 
