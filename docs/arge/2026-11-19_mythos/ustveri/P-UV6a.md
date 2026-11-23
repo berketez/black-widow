@@ -212,3 +212,17 @@ Dalın tabanı `f2b0db5`; main o zamandan beri P-ÜV3'ü aldı (`a750673` `confi
 - **LM `SUMMARY_BLIND_TAGS`** (`karadul/lm/context.py`, liste dışı) değişmedi: ölçüm kipinde `metadata` etiketli adlar gizlenmez.
 - **`GoBinaryAnalyzer`** (`strings` + düzenli ifade, adres yok): plan kalem 7 bulgusu; ayrı onarım paketi önerilir (bu pakette kod yok).
 - Geçici ürün ağaçları `~/karadul_olcum/urun-5da70a7`, `~/karadul_olcum/urun-5d23182` (silinmedi).
+
+### H2 — dört bayrak açık, S8'in 5 ikilisi (`urun-5da70a7`, `ustveri_urun.py kos --config bayraklar_acik.yaml`; 09:06–09:22) → TUTTU
+
+Kök `PUV6a/s8_acik`; karşılaştırma aynı ağacın bayraklar kapalı koluyla (`s8_kapali`), `PUV6a/harita_bayt.py`.
+
+| İkili | `naming_map` (out / src / src_iter1) açık = kapalı | `go_pclntab` | `objc_method` | üretici süreleri (Go / ObjC, sn, yük altında) |
+|---|---|---|---|---|
+| debian/coreutils/cat | bayt aynı / aynı / aynı | `veri_yok` | `veri_yok` | 0,002 / 0,002 |
+| debian/tree/tree | aynı / aynı / aynı | `veri_yok` | `veri_yok` | 0,036 / 0,036 |
+| debian/sqlite3/sqlite3 | aynı / aynı / aynı | `veri_yok` | `veri_yok` | 0,023 / 0,063 |
+| debian/zstd/zstd | aynı / aynı / aynı | `veri_yok` | `veri_yok` | 0,057 / 0,036 |
+| mac/tmux | aynı / aynı / aynı | `veri_yok` | `veri_yok` | 0,021 / 0,007 |
+
+- Değişen ad 0 (5 / 5); iki kanalın durumu `veri_yok` (5 / 5); `name_merger_by_label` yok. (zstd'nin bu iki kolu ilk kapalı koşudaki Ghidra varyantını taşıyor; açık ↔ kapalı farkı 0.)
