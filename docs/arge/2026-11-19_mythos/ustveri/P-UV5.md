@@ -104,6 +104,7 @@ Kök `PUV5/urun/kapali` (dal `caa14e3`, ayar dosyası yok) ve `PUV5/urun/taban` 
 |---|---|---|---|---|
 | htop | **bayt aynı / aynı / aynı** | 1 (`entry`) | 0 | 0 / 0 (giriş thunk; nüfus dışı) |
 | tmux (kapalı 20:44–20:49; taban = S8 b6aceb9 ve A/A) | **bayt aynı / aynı / aynı** (S8 tabanına da A/A'ya da) | 1 (`entry`; 236 ↔ 235 anahtar, `src` ve `src_iter1`) | **0** (kapalıya, S8'e ve A/A'ya karşı) | 206 / 205 → **+1** |
+| gsort (kapalı 20:49–20:50, taban 20:50–20:51) | **bayt aynı / aynı / aynı** | 1 (`entry`) | **0** | 4 / 3 → **+1** |
 
 **Kuyruk notu (20:13):** zincirim kuyruğun ikinci yuvasını OL2'den önce kapıyordu (yeni çağrı beklemesiz, bekleyen öbür çağrı 5 sn uykulu); OL2 20:08'den beri bekliyordu. Kuyruğun paket bekletme dosyasıyla (`ghidra_kuyruk.bekle.PUV5`) kendi yeni çağrılarımı OL2 bir iş başlatana dek durdurdum (20:10–20:13). Sonra OL2'nin S8 zinciri yuvayı aynı yolla tutuyor; benim kalan 7 çiftim sırada.
 
