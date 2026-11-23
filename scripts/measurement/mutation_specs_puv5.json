@@ -1,0 +1,125 @@
+{
+ "_comment": "P-ÜV5 (2026-11-23): Mach-O LC_MAIN girişi = main (ReconstructionStage._recover_main_from_entry + yardımcıları). Plan mutantları: Go istisnası, LC_UNIXTHREAD, adlı giriş, ELF'te Mach-O kuralı, bayrak, görüntü tabanı farkı; ek: biçim / MH_EXECUTE / kodda / çoklu LC_MAIN / Go okunamaz / Go kapsam dışı / Go saplaması / ayar iletimi / dilim seçimi. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv5.json",
+ "mutants": [
+  {
+   "id": "puv5_go_istisnasi_yok",
+   "desc": "Go istisnası kaldırılır: iç bağlayıcılı Go girişine (_rt0_…) main yazılır",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_go_ic_baglayici_girisi_main_yazilmaz",
+   "find": "        if block is not None:\n            rec[\"neden\"] = block\n            return\n",
+   "replace": "        if block is not None and False:\n            rec[\"neden\"] = block\n            return\n"
+  },
+  {
+   "id": "puv5_unixthread_main_sayilir",
+   "desc": "LC_UNIXTHREAD'in pc'si de main girişi sayılır",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_lc_unixthread_main_sayilmaz",
+   "find": "        offs = info[\"entryoffs\"]\n",
+   "replace": "        offs = info[\"entryoffs\"] or [p - (info[\"text_vmaddr\"] or 0) for p in info[\"unixthread_pcs\"] if p]\n"
+  },
+  {
+   "id": "puv5_adli_giris_ezilir",
+   "desc": "girişte Ghidra'nın jenerik olmayan (sembol) adı da main ile ezilir",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_giriste_sembol_adi_varsa_dokunulmaz",
+   "find": "        if not is_generic_name(name):\n",
+   "replace": "        if not is_generic_name(name) and False:\n"
+  },
+  {
+   "id": "puv5_elfte_macho_kurali_kosar",
+   "desc": "Mach-O kuralı ELF kalıbından önce ve bayraktan bağımsız koşar",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_elf_kalibi_once_gelir_macho_kurali_kosmaz",
+   "find": "            main_addr: str | None = None\n",
+   "replace": "            self._recover_macho_entry_main(extracted_names, static_dir, decompiled_dir, stats)\n            main_addr: str | None = None\n"
+  },
+  {
+   "id": "puv5_bayrak_denetimi_yok",
+   "desc": "bayrak denetimi kaldırılır (kural her zaman açık)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_bayrak_kapaliyken_hicbir_sey_degismez",
+   "find": "        return getattr(recon, \"enable_macho_entry_main\", False) is True\n",
+   "replace": "        return True\n"
+  },
+  {
+   "id": "puv5_taban_farki_yok",
+   "desc": "Ghidra görüntü tabanı farkı uygulanmaz (ikili adresi Ghidra adresi sanılır)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_goruntu_tabani_farki_uygulanir",
+   "find": "        index.delta = image_base - text_vmaddr\n",
+   "replace": "        index.delta = 0\n"
+  },
+  {
+   "id": "puv5_bicim_denetimi_yok",
+   "desc": "ikilinin Mach-O olduğu denetlenmez (ELF görüntüsünde de kural yazar)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_elf_bicimli_ikilide_macho_kurali_ad_yazmaz",
+   "find": "        if image is None or getattr(image, \"bicim\", None) != \"macho\":\n",
+   "replace": "        if image is None:\n"
+  },
+  {
+   "id": "puv5_mh_execute_denetimi_yok",
+   "desc": "MH_EXECUTE denetlenmez (dylib'e de main yazılır)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_mh_execute_degilse_yazilmaz",
+   "find": "        if getattr(image, \"dosya_turu\", None) != self._MH_EXECUTE:\n",
+   "replace": "        if getattr(image, \"dosya_turu\", None) is None:\n"
+  },
+  {
+   "id": "puv5_kodda_denetimi_yok",
+   "desc": "anahtarın decompile çıktısında tanımı aranmaz (kodda olmayan anahtar yazılır)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_kodda_tanimi_yoksa_yazilmaz",
+   "find": "        if not (decompiled_dir / f\"{name}.c\").is_file():\n",
+   "replace": "        if not (decompiled_dir).is_dir():\n"
+  },
+  {
+   "id": "puv5_coklu_lc_main_gecer",
+   "desc": "birden çok farklı LC_MAIN girişinde ilki kullanılır",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_birden_cok_farkli_lc_main_belirsiz",
+   "find": "        if len(set(offs)) != 1 or offs[0] is None:\n",
+   "replace": "        if offs[0] is None:\n"
+  },
+  {
+   "id": "puv5_go_okunamaz_gecer",
+   "desc": "Go okuyucusu tutarsiz / desteklenmiyor / hata verirse engel yok sayılır",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_go_okunamazsa_yazilmaz",
+   "find": "            return f\"go_okunamadi:{sonuc.durum}\", None\n",
+   "replace": "            return None, None\n"
+  },
+  {
+   "id": "puv5_go_kapsam_disi_gecer",
+   "desc": "Go tablosu girişi kapsamıyorsa engel yok sayılır",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_go_tablosu_girisi_kapsamazsa_yazilmaz",
+   "find": "        return \"go_giris_pclntab_disinda\", None\n",
+   "replace": "        return None, None\n"
+  },
+  {
+   "id": "puv5_go_saplamasi_gecer",
+   "desc": "dış bağlayıcılı Go'nun main saplaması da geliştiricinin main'i sayılır (gönderim hüküm 2'ye aykırı)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_go_dis_baglayici_main_saplamasi_da_yazilmaz",
+   "find": "                if f.ad == cls._GO_DEVELOPER_MAIN:\n",
+   "replace": "                if f.ad in (cls._GO_DEVELOPER_MAIN, \"main\"):\n"
+  },
+  {
+   "id": "puv5_ayar_iletilmez",
+   "desc": "tohum (künyeli yol) bağlamın ayarını kurala iletmez (bayrak üründe hiç okunmaz)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_tohum_kunyesi_main_giris",
+   "find": "        self._recover_main_from_entry(extracted_names, static_dir, stats,\n                                      getattr(context, \"config\", None))\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n",
+   "replace": "        self._recover_main_from_entry(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n"
+  },
+  {
+   "id": "puv5_dilim_secimi_yok",
+   "desc": "evrensel dosyada ürünün seçtiği ince dilim yerine kapsayıcı dosya açılır",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv5_macho_main.py::test_open_macho_image_dilim_secimi",
+   "find": "                candidates.append(raw_dir / Path(str(sl[\"path\"])).name)\n",
+   "replace": "                pass\n"
+  }
+ ]
+}
