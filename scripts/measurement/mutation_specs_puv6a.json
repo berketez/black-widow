@@ -1,0 +1,165 @@
+{
+ "_comment": "P-ÜV6a (2026-11-23): Go pclntab ve ObjC yöntem ad kanallarının bağlanması. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv6a.json",
+ "mutants": [
+  {
+   "id": "puv6a_bayrak_hep_acik",
+   "desc": "ad kanalı bayrağı okunmaz, hepsi açık sayılır (öntanım True)",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "flags = {src: config_flag(br, flag) for src, flag in K4_CHANNEL_FLAGS.items()}",
+   "replace": "flags = {src: True for src, flag in K4_CHANNEL_FLAGS.items()}"
+  },
+  {
+   "id": "puv6a_adli_fonksiyona_aday",
+   "desc": "Ghidra'nın adlandırdığı fonksiyona da aday verilir (P13b kuralı kalkar)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "        if not _is_unnamed(name):\n            return None, \"ghidra_adli\"\n        return name, \"tuttu\"",
+   "replace": "        return name, \"tuttu\""
+  },
+  {
+   "id": "puv6a_a28_secici_farkli_da_yazilir",
+   "desc": "A-28: Ghidra adı seçiciden farklı olsa da tam ad yazılır",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "        if not selector or name != selector:\n            return None, \"ghidra_adli\"",
+   "replace": "        if not selector:\n            return None, \"ghidra_adli\""
+  },
+  {
+   "id": "puv6a_a28_yolu_yok",
+   "desc": "A-28 yolu kapanır: seçiciyle adlı yönteme tam ad yazılmaz",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "        return key, \"secici_yerine\"",
+   "replace": "        return None, \"secici_yerine\""
+  },
+  {
+   "id": "puv6a_a28_teklik_denetimi_yok",
+   "desc": "aynı seçici adını taşıyan iki fonksiyonda da tam ad yazılır",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "if self.code_name_counts.get(key, 1) > 1:",
+   "replace": "if self.code_name_counts.get(key, 1) > 99:"
+  },
+  {
+   "id": "puv6a_pcsp_suzgeci_yok",
+   "desc": "hüküm 1: pcsp_kapsama kisa / tasan fonksiyon ad adayı olur",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "        if pcsp in PCSP_REJECTED:",
+   "replace": "        if pcsp in ():"
+  },
+  {
+   "id": "puv6a_ad_yazilabilir_suzgeci_yok",
+   "desc": "hüküm 3: okuyucunun ad_yazilabilir = False dediği kayıt ad adayı olur",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "    if m.get(\"ad_yazilabilir\") is not True:",
+   "replace": "    if m.get(\"ad_yazilabilir\") is None:"
+  },
+  {
+   "id": "puv6a_swift_suzgeci_yok",
+   "desc": "hüküm 3: Swift köprüsü kaydı ad adayı olur",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "    if m.get(\"swift\") is True:",
+   "replace": "    if m.get(\"swift\") is True and False:"
+  },
+  {
+   "id": "puv6a_imp_paylasimli_suzgeci_yok",
+   "desc": "hüküm 3: paylaşımlı gövdeli kayıt ad adayı olur",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "    if m.get(\"imp_paylasimli\") is True:",
+   "replace": "    if m.get(\"imp_paylasimli\") is True and False:"
+  },
+  {
+   "id": "puv6a_etiket_kesin",
+   "desc": "hüküm 4: üst veri adı kesin etiketiyle yazılır",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "        \"label\": LABEL_METADATA,",
+   "replace": "        \"label\": \"kesin\","
+  },
+  {
+   "id": "puv6a_ozgun_ad_yerine_tanimlayici",
+   "desc": "özgün ad yerine C tanımlayıcısı künyeye yazılır",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "\"ozgun_ad\": original, \"ad\": name,",
+   "replace": "\"ozgun_ad\": name, \"ad\": name,"
+  },
+  {
+   "id": "puv6a_guven_sabit",
+   "desc": "hüküm 5: güven tablodan değil sabit 0,95",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "        \"confidence\": metadata_confidence(source),",
+   "replace": "        \"confidence\": 0.95,"
+  },
+  {
+   "id": "puv6a_iki_go_kanali_ayni_anahtar",
+   "desc": "kalem 7: go_pclntab açıkken go_demangler aynı anahtara ikinci aday verir",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "_add_go_demangler(syms, index, candidates, stats, exclude_keys=metadata_keys)",
+   "replace": "_add_go_demangler(syms, index, candidates, stats)"
+  },
+  {
+   "id": "puv6a_uretici_faz1_disinda",
+   "desc": "go_metadata_recovery Faz 1 listesinden düşer",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "                \"go_metadata_recovery\",\n",
+   "replace": ""
+  },
+  {
+   "id": "puv6a_tablo_yukari_yuvarlanir",
+   "desc": "ölçülmüş kesinlik yukarı yuvarlanır (1,0: kesinlik görüntüsü)",
+   "module": "karadul/core/naming_labels.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "    SOURCE_GO_PCLNTAB: (90077, 90077, 0.9999),",
+   "replace": "    SOURCE_GO_PCLNTAB: (90077, 90077, 1.0),"
+  },
+  {
+   "id": "puv6a_haritaya_her_karar",
+   "desc": "ad haritasına etiketi üst veriden olmayan birleştirici kararları da girer",
+   "module": "karadul/core/output_formatter.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "                        or dec.get(\"label\") != LABEL_METADATA):",
+   "replace": "                        or False):"
+  },
+  {
+   "id": "puv6a_rapor_dogrulanmadi_sayar",
+   "desc": "rapor üst veri adını doğrulanmadı sayar",
+   "module": "karadul/reporting/report_data.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "and k not in (LABEL_CERTAIN, LABEL_VERIFIED, LABEL_METADATA))",
+   "replace": "and k not in (LABEL_CERTAIN, LABEL_VERIFIED))"
+  },
+  {
+   "id": "puv6a_lm_proven",
+   "desc": "LM aracı üst veri adını proven (korunan, kesin) gösterir",
+   "module": "karadul/lm/tools/__init__.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "LABEL_METADATA: TAG_METADATA}",
+   "replace": "LABEL_METADATA: TAG_PROVEN}"
+  },
+  {
+   "id": "puv6a_c_namer_karari_sessiz",
+   "desc": "c_namer'ın adlandırdığı anahtardaki üst veri kaydı kanıt satırına inmez (kaybolur)",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "        metadata_drop_decided(k4, decided_map, stats)\n",
+   "replace": "        pass\n"
+  },
+  {
+   "id": "puv6a_kanit_satiri_yazilmaz",
+   "desc": "hüküm 7: ad yazılmayan üst veri kaydı köken kaydına yazılmaz",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6a_baglama.py",
+   "find": "    if metadata_evidence:\n        section[METADATA_EVIDENCE_FIELD]",
+   "replace": "    if False:\n        section[METADATA_EVIDENCE_FIELD]"
+  }
+ ]
+}
