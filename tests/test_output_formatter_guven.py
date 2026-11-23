@@ -140,6 +140,7 @@ def test_sozluk_n0b_ve_c_namer_ile_ayni():
     sys.modules[spec.name] = ak
     spec.loader.exec_module(ak)
     assert set(ak.GUVEN_ETIKETLERI.values()) == {nl.LABEL_VERIFIED, nl.LABEL_UNVERIFIED}
-    assert nl.NAME_LABELS == ("kesin", "doğrulandı", "doğrulanmadı")
+    # P-ÜV6a: üst veri adlarının etiketi (sözlüğün sonunda; alt kanal sözlüğünde değil)
+    assert nl.NAME_LABELS == ("kesin", "doğrulandı", "doğrulanmadı", "üst veriden")
     from karadul.reconstruction import c_namer
     assert c_namer.NAMING_PROVENANCE_FILE == nl.NAMING_PROVENANCE_FILE
