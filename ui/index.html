@@ -275,6 +275,7 @@
   .lbadge.k{color:var(--named); border-color:rgba(56,224,138,.4)}
   .lbadge.v{color:var(--cyan); border-color:rgba(56,216,240,.4)}
   .lbadge.u{color:var(--weak); border-color:rgba(230,169,46,.4)}
+  .lbadge.m{color:var(--cyan); border-color:rgba(56,216,240,.25); border-style:dashed}
   .fn .lbadge.u{color:var(--dim); border-color:var(--border)}
   .substage.lb-u .d{background:var(--dim); box-shadow:none} .substage.lb-u b{color:var(--weak)}
   .substage.lb-v .d{background:var(--cyan); box-shadow:0 0 5px var(--cyan)} .substage.lb-v b{color:var(--cyan)}
@@ -824,6 +825,7 @@ function nameCounts(functions,manual){
     else if(f.label==='kesin') c.kesin++;
     else if(f.label==='doğrulandı') c.dogrulandi++;
     else if(f.label==='doğrulanmadı') c.dogrulanmadi++;
+    else if(f.label==='üst veriden') c.ustveri=(c.ustveri||0)+1;   // P-ÜV6a; yalnız varsa sayılır
     else c.etiketsiz++;
   }
   return c;
@@ -831,6 +833,7 @@ function nameCounts(functions,manual){
 function queueTexts(c){
   return {head:c.assigned+' / '+c.total+' ad atandı',
           lab:'kesin '+c.kesin+' · doğrulandı '+c.dogrulandi+' · doğrulanmadı '+c.dogrulanmadi+
+              (c.ustveri?' · üst veriden '+c.ustveri:'')+
               ' · etiketsiz '+c.etiketsiz+' · elle '+c.elle};
 }
 /* P17-GOSTERIM-BITIS */
@@ -1447,7 +1450,8 @@ function _fmtConf(c){ const n=Number(c); return isFinite(n)&&n<=1?n.toFixed(2):e
 const NAME_LABEL={
   'kesin':{cls:'k',mark:'kesin',tip:'kesin: ad ikilinin kendi ad yuvasından okundu; bu kanalın tam ad kesinliği ön kayıtlı ölçümde hedefi tuttu'},
   'doğrulandı':{cls:'v',mark:'doğrulandı',tip:'doğrulandı: kanal ölçüldü, yanlış oranı hedefin altında'},
-  'doğrulanmadı':{cls:'u',mark:'?',tip:'doğrulanmadı: adın geldiği kanal ölçülmedi ya da ölçüm hedefi göstermedi'}
+  'doğrulanmadı':{cls:'u',mark:'?',tip:'doğrulanmadı: adın geldiği kanal ölçülmedi ya da ölçüm hedefi göstermedi'},
+  'üst veriden':{cls:'m',mark:'üst veri',tip:'üst veriden: ad ikilinin dil üst verisinden (Go pclntab / Objective-C yöntem listesi) okundu; kanal kesinliği ölçüldü ama ad metni değiştirilebilir, doğrulanamaz (kesin değil)'}
 };
 function labelInfo(label){
   return (typeof label==='string' && Object.prototype.hasOwnProperty.call(NAME_LABEL,label)) ? NAME_LABEL[label] : null;

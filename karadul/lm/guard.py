@@ -203,7 +203,8 @@ def _decode_json_strings(listing: str) -> list[str]:
 
 
 # Ad listelerinde Karadul'un yazdığı biçim sözcükleri: etiketler, "by", "... and N more", "none", "x3".
-_LISTING_WORDS = frozenset({"proven", "verified", "unverified", "manual", "model", "by", "and", "more", "none"})
+_LISTING_WORDS = frozenset({"proven", "verified", "unverified", "manual", "model", "metadata", "by", "and", "more",
+                            "none"})
 _COUNT_RE = re.compile(r"^x[0-9]+$")
 
 

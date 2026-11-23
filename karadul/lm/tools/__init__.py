@@ -34,7 +34,8 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Optional, Sequence
 
 from karadul.core.naming_labels import (
-    LABEL_CERTAIN, LABEL_UNVERIFIED, LABEL_VERIFIED, NAMING_PROVENANCE_FILE, PROVENANCE_GLOBAL, provenance_label,
+    LABEL_CERTAIN, LABEL_METADATA, LABEL_UNVERIFIED, LABEL_VERIFIED, NAMING_PROVENANCE_FILE, PROVENANCE_GLOBAL,
+    provenance_label,
 )
 from karadul.lm import NAME_TAG_MAX_CHARS, protocol
 from karadul.lm.audit import sha256_text
@@ -109,7 +110,11 @@ INVALID_CALL_ERRORS = frozenset({ERR_UNKNOWN_ADDRESS, ERR_BAD_ARGUMENT, ERR_TOOL
 # --- Ad etiketleri (sözleşme §1.6) ----------------------------------------------------------
 TAG_PROVEN, TAG_VERIFIED, TAG_UNVERIFIED = "proven", "verified", "unverified"
 TAG_MANUAL, TAG_MODEL = "manual", "model"
-LABEL_TAGS = {LABEL_CERTAIN: TAG_PROVEN, LABEL_VERIFIED: TAG_VERIFIED, LABEL_UNVERIFIED: TAG_UNVERIFIED}
+# P-ÜV6a: üst veriden okunan ad (``üst veriden``) kendi etiketini taşır: ``proven`` değildir (korunmaz,
+# kesin gibi gösterilmez) ve etiketsiz kalıp ``manual`` sayılmaz.
+TAG_METADATA = "metadata"
+LABEL_TAGS = {LABEL_CERTAIN: TAG_PROVEN, LABEL_VERIFIED: TAG_VERIFIED, LABEL_UNVERIFIED: TAG_UNVERIFIED,
+              LABEL_METADATA: TAG_METADATA}
 # Körlük kipinde sonuçlara girmeyen etiketler (sözleşme §1.5; tasarım §5.3 "Ölçüm kipi").
 BLIND_HIDDEN_TAGS = frozenset({TAG_MANUAL, TAG_MODEL})
 

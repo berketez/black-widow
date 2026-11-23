@@ -29,9 +29,14 @@ from pathlib import Path
 from typing import Any, Optional
 
 from karadul.core.naming_labels import (
+    LABEL_METADATA,
+    METADATA_CHANNEL_FIELD,
+    METADATA_CHECK_FIELD,
     NAMING_PROVENANCE_FILE,
+    ORIGINAL_NAME_FIELD,
     PROVENANCE_GLOBAL,
     SOURCE_C_NAMER,
+    SOURCE_METADATA,
     provenance_channel,
     provenance_confidence,
     provenance_evidence,
@@ -795,6 +800,17 @@ class OutputFormatter:
         if c_namer_added:
             naming_map["sources"].append(SOURCE_C_NAMER)
 
+        # 7. P-ÜV6a: birleştiricinin koda yazdığı üst veri adları (``name_merger`` kararlarında
+        # ``label = üst veriden``). c_namer'ın haritasında yoklar (birleştirici c_namer'dan sonra
+        # koşar); kayıt köken alanlarıyla (özgün ad, kanal, güven) taşınır. Kayıt yoksa (bayraklar
+        # kapalı) harita eskisiyle aynıdır.
+        metadata_added = 0
+        for orig, record in self._merger_metadata_records(reconstructed, c_namer_maps).items():
+            naming_map["mappings"][orig] = record      # kodun taşıdığı ad (birleştirici yazdı)
+            metadata_added += 1
+        if metadata_added:
+            naming_map["sources"].append(SOURCE_METADATA)
+
         return self._separate_candidates(
             naming_map, src_dir, language, self._ghidra_names_by_address())
 
@@ -984,6 +1000,45 @@ class OutputFormatter:
                     m = _C_TRAILING_NAME_RE.search(head, 0, i)
                     return m.group(1) if m else None
         return None
+
+    @staticmethod
+    def _merger_metadata_records(reconstructed: Path, c_namer_maps: list[Path]) -> dict[str, Any]:
+        """Birleştiricinin üst veri kararları: anahtar → ad haritası kaydı (son yineleme kazanır).
+
+        Kaynak: c_namer haritalarının yanındaki köken kaydının ``name_merger`` bölümü; c_namer
+        koşmadıysa ``reconstructed/name_merger_provenance[_iterN].json``. Yalnız koda giden
+        (``applied_name`` dolu) ve ``label = üst veriden`` taşıyan kararlar.
+        """
+        paths = [p.parent / NAMING_PROVENANCE_FILE for p in c_namer_maps]
+        paths += sorted(reconstructed.glob("name_merger_provenance*.json"))
+        out: dict[str, Any] = {}
+        for path in paths:
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            section = data.get("name_merger") if isinstance(data, dict) else None
+            decisions = section.get("decisions") if isinstance(section, dict) else None
+            if not isinstance(decisions, dict):
+                continue
+            for key, dec in decisions.items():
+                if (not isinstance(key, str) or not isinstance(dec, dict)
+                        or dec.get("label") != LABEL_METADATA):
+                    continue
+                applied = dec.get("applied_name")
+                if not isinstance(applied, str) or not applied or applied == key:
+                    continue
+                out[key] = {
+                    "new_name": applied,
+                    "source": dec.get(METADATA_CHANNEL_FIELD) or SOURCE_METADATA,
+                    "confidence": provenance_confidence(dec),
+                    "label": LABEL_METADATA,
+                    "channel": provenance_channel(dec),
+                    "evidence": provenance_evidence(dec),
+                    ORIGINAL_NAME_FIELD: dec.get(ORIGINAL_NAME_FIELD),
+                    METADATA_CHECK_FIELD: dec.get(METADATA_CHECK_FIELD),
+                }
+        return out
 
     @staticmethod
     def _read_c_namer_provenance(map_path: Path) -> dict[str, Any]:

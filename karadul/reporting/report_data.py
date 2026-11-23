@@ -49,7 +49,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from karadul.core.naming_labels import LABEL_CERTAIN, LABEL_UNVERIFIED, LABEL_VERIFIED
+from karadul.core.naming_labels import LABEL_CERTAIN, LABEL_METADATA, LABEL_UNVERIFIED, LABEL_VERIFIED
 
 logger = logging.getLogger(__name__)
 
@@ -648,6 +648,14 @@ def _naming_labels(result: Any, workspace: Any) -> Section:
         return _missing(key, title, src, "reconstruct stage did not run")
     labels = st.get("naming_by_label")
     renamed = _int_or_none(st.get("variables_renamed"))
+    # P-ÜV6a: birleştiricinin yazdığı üst veri adları (``name_merger_by_label``) etiket dağılımına
+    # eklenir; ``üst veriden`` ne "doğrulanmadı" ne "kesin" sayılır, ayrı yazılır.
+    merger_labels = st.get("name_merger_by_label")
+    if isinstance(merger_labels, dict) and merger_labels:
+        labels = dict(labels) if isinstance(labels, dict) else {}
+        for k, v in merger_labels.items():
+            if isinstance(v, int) and not isinstance(v, bool):
+                labels[k] = labels.get(k, 0) + v
     if not isinstance(labels, dict):
         if renamed:
             return Section(key, title, SECTION_UNKNOWN, src,
@@ -657,10 +665,16 @@ def _naming_labels(result: Any, workspace: Any) -> Section:
         return _missing(key, title, src, "no name label distribution recorded")
     total = sum(v for v in labels.values() if isinstance(v, int))
     unverified = sum(v for k, v in labels.items() if isinstance(v, int)
-                     and k not in (LABEL_CERTAIN, LABEL_VERIFIED))
+                     and k not in (LABEL_CERTAIN, LABEL_VERIFIED, LABEL_METADATA))
+    metadata = sum(v for k, v in labels.items() if isinstance(v, int) and k == LABEL_METADATA)
     parts = ", ".join(f"{k}: {v}" for k, v in sorted(labels.items()))
     extra = {"labels": dict(labels), "function_names_total": total,
              "function_names_unverified": unverified, "variables_renamed": renamed}
+    if metadata:
+        extra["function_names_metadata"] = metadata
+    metadata_note = (f"; {metadata} function name(s) read from binary metadata, labelled "
+                     f"'{LABEL_METADATA}' (measured channel, name text not verifiable; not "
+                     f"'{LABEL_CERTAIN}')" if metadata else "")
     local_note = (f"; {renamed} identifier renames in total (local names carry no "
                   "verification label, so they are unverified)" if renamed else "")
     if total == 0:
@@ -669,15 +683,18 @@ def _naming_labels(result: Any, workspace: Any) -> Section:
         head = (f"{unverified} of {total} recovered function names are labelled "
                 f"'{LABEL_UNVERIFIED}' (producing channel not measured or below its "
                 f"precision target) [{parts}]")
+    elif metadata:
+        head = (f"all {total} recovered function names are labelled certain/verified/"
+                f"'{LABEL_METADATA}' [{parts}]")
     else:
         head = f"all {total} recovered function names are labelled certain/verified [{parts}]"
     if unverified or renamed:
         # Yerel adlar etiket taşımaz: ad değişikliği varsa doğrulanmamış ad vardır.
-        return Section(key, title, SECTION_FINDINGS, src, head + local_note,
+        return Section(key, title, SECTION_FINDINGS, src, head + metadata_note + local_note,
                        items=[], count=unverified, extra=extra)
     if total == 0:
         return _missing(key, title, src, "no recovered name recorded")
-    return Section(key, title, SECTION_CLEAN, src, head, count=0, extra=extra)
+    return Section(key, title, SECTION_CLEAN, src, head + metadata_note, count=0, extra=extra)
 
 
 def _compositions(result: Any, workspace: Any) -> Section:
