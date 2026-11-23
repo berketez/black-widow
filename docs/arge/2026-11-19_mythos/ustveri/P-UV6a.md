@@ -176,3 +176,38 @@ GHIDRA_INSTALL_DIR=$HOME/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC \
 ```
 
 Sayılacaklar: `out/naming_map.json` `mappings`'te `label = üst veriden` kayıt sayısı (beklenen üst sınır: Go 10 475 + ObjC 151, Ghidra'sız oynatmadan; c_namer'ın önce adlandırdığı anahtarlar `c_namer_adlandirdi` sayacıyla düşer), rapor `naming_channels.go_pclntab` / `objc_method`, `name_merger_by_label`. Ollama'nın GT'si yok: doğruluk Ghidra'sız kanal ölçümüyle (H4 / H5) ve docker-cli / docker-compose GT'siyle (H6 / H8) desteklenir. Taban: 13 160 fonksiyonda 17 ad.
+
+## Tam takım (kalem 10)
+
+- 1. koşu (yamasız, `5baad39`..`3c5acf1` arası kod = `5d23182`; 08:59–09:16, 1 018 sn, yük altında): **10 781 geçti / 13 atlandı / 5 kaldı** (152 seçim dışı). Günlük `PUV6a/tam_takim.log`.
+  - 3'ü kilitli sözlük testi (yamayla yeşile döner): `test_output_formatter_guven::test_sozluk_n0b_ve_c_namer_ile_ayni`, `test_lm_tools::test_ad_etiketleri`, `test_urun_olc::test_sabitler_ks1_ve_urunden` (bu üçüncüsü tam takımda bulundu → `PUV6a__test_urun_olc.py.patch`, `7d1ceb0`).
+  - 2'si `index.html` betiği değiştiği için: CSP meta etiketindeki sha256 eskiydi (`test_csp_betik_karmasi_ve_kisitlar`; tarayıcı betiği engellerdi) → onarıldı `e5c813c`; `test_u1_olay_yokken_imlec_yerinde_ve_animasyonsuz` onarımdan sonra geçti.
+- Dört yama geçici uygulanmış kopyada (`config.py` yaması worktree'de uygulanamadı: izin sınıflandırıcısı `git apply`'ı reddetti; P-ÜV1'deki gibi worktree dışı kopya `PUV6a/yamali2/`): etkilenen 11 test dosyası **332 geçti / 4 atlandı / 0 kaldı**. Worktree'deki `config.py`'ye hiç dokunulmadı.
+- 2. koşu (yamasız, CSP onarımından sonra) arka planda; sonucu aşağıda.
+
+## Yamalar (son hâl)
+
+| Yama | `git apply --check` (dal) | `patch --dry-run` (güncel main `d5b4ab0`) |
+|---|---|---|
+| `PUV6a__config.py.patch` | temiz | temiz |
+| `PUV6a__test_output_formatter_guven.py.patch` | temiz | temiz |
+| `PUV6a__test_lm_tools.py.patch` | temiz | temiz |
+| `PUV6a__test_urun_olc.py.patch` | temiz | temiz |
+
+Dalın tabanı `f2b0db5`; main o zamandan beri P-ÜV3'ü aldı (`a750673` `config.py`'de Swift INERT satırını sildi). Bu dalın değiştirdiği dosyalarla main'in değiştirdikleri kesişmiyor (`comm` boş); `config.py` yaması main'in `config.py`'sine de temiz uygulanıyor.
+
+## P-ÜV6b'ye bırakılanlar
+
+1. Swift (`swift_type_accessor`) kanalı ve `swift_metadata_recovery` adımının Faz 1'e / `steps/__init__.py`'ye kaydı (adım main'de, kayıtsız); RTTI (`rtti` kanalının kanıt satırına çevrilmesi, `rtti_recovery`); `enable_macho_entry_main` (P-ÜV5); `enable_go_metadata_integrity` + `tutarsiz` / `ust_veri_supheli` damgaları (P-ÜV7); durum sabitlerinin `goruntu.py`'de tek tanıma taşınması. Altyapı hazır: `naming_labels.METADATA_SOURCES` / `MEASURED_METADATA_PRECISION` / köken alanları, `_metadata_gate`, `_add_metadata_candidate`, `ust_veri_kanit`, `output_formatter._merger_metadata_records` yeni kaynağı kaynak adıyla tanır.
+2. `ust_veri_dogrulama` bugün her kayıtta `olculmedi`; `cift_kaynak` / `tek_kaynak` / `tutarsiz` P-ÜV7 ile.
+3. ObjC güven tablosu (H8 riski): ürün düzeyi aday kesinliği 33 611 / 33 885 (alt 0,9909); tablo 0,9998 yazıyor.
+4. A-14: kanal başına 2 program; öntanımda açma (K-4) üçüncü programla ayrı ölçüm.
+
+## Riskler ve ana oturum için notlar
+
+- **A-28 anahtarı `Sınıf::seçici_`:** birleştirici `::` içeren anahtarı "yerel" sayar (yalnız sözcük kuralları; genel teklik eki uygulanmaz). Ad sınıf önekli olduğundan iki sınıf çakışmaz; aynı sınıfta örnek + sınıf yöntemi aynı seçiciyle → `cift_kayit` kanıt satırı. Kategori yöntemlerinde Ghidra'nın ad alanı ölçülmedi (yanlışsa anahtar kodda bulunmaz, ad yazılmaz; yanlış ad üretmez). Arayüz ve LM araçları köken kaydını `FUN_` adresiyle eşler: A-28 adlarının rozeti arayüzde görünmeyebilir (ad haritası kaydı `address` alanını taşıyor; bağlama arayüz paketinin işi).
+- **Birleştiricinin öbür adları ad haritasında yok** (eski kusur, ölçüldü: zstd / pzstd 6 uygulanmış ad, `mappings` 0): bu paket yalnız `üst veriden` kararlarını haritaya ekledi.
+- **c_namer önceliği:** c_namer'ın önce adlandırdığı `FUN_` anahtarında üst veri adı yazılmaz, kanıt satırına iner (`c_namer_adlandirdi`). terminal-notifier'da 0; Ollama'da uçtan uca koşuda sayılacak.
+- **LM `SUMMARY_BLIND_TAGS`** (`karadul/lm/context.py`, liste dışı) değişmedi: ölçüm kipinde `metadata` etiketli adlar gizlenmez.
+- **`GoBinaryAnalyzer`** (`strings` + düzenli ifade, adres yok): plan kalem 7 bulgusu; ayrı onarım paketi önerilir (bu pakette kod yok).
+- Geçici ürün ağaçları `~/karadul_olcum/urun-5da70a7`, `~/karadul_olcum/urun-5d23182` (silinmedi).
