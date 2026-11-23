@@ -20,7 +20,6 @@ from karadul.config import INERT_SETTINGS, Config, PipelineConfig
 ETKISIZ = (
     "analysis.use_deep_deobfuscation",
     "binary_reconstruction.function_id_db_paths",
-    "binary_reconstruction.enable_rtti_recovery",
     "computation_recovery.formula_min_complexity",
     "computation_recovery.cfg_iso_vf2_node_cap",
     "deep_trace.enable_dispatch_resolution",
@@ -31,6 +30,7 @@ ETKISIZ = (
 BAGLI = (
     "binary_reconstruction.max_decompile_timeout_per_func",  # ghidra/headless.py
     "binary_reconstruction.rtti_abi",  # `karadul rtti` öntanımı (P15a)
+    "binary_reconstruction.enable_rtti_recovery",  # pipeline/steps/rtti_recovery.py (P-ÜV4)
 )
 
 
