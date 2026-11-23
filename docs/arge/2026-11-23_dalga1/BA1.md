@@ -58,3 +58,20 @@ Commit: `09060ad`.
 **H2 (yük altında; başta load 5,48, sonda 6,13):** 13 554 / 13 554 dosya işlendi ve yazıldı, toplam **61,9 sn** (çocuk süreç duvarı 62,5 sn), en uzun tek dosya **0,70 sn** (`FUN_1002c6eb0`; sonraki 0,29 / 0,28 / 0,27 / 0,25 sn). Eşikler ≤ 300 sn ve ≤ 5 sn → **TUTTU**. 8 981 açıklama (`loop_purpose` 8 585, `memory_op` 396); hata 0. Ham: `…/BA1/ollama_yeni/zamanlama.json`.
 
 **H3:** eski koşunun yazdığı 7 310 dosyanın (`ANA/ollama_ustveri/ws/…/reconstructed/annotated/`, ürün ağacı `urun-d2134d5`; `block_annotator.py` `d2134d5` ile `0b4d948` arasında değişmemiş) **7 310 / 7 310**'u yeni çıktıyla bayt eşit, farklı 0, eksik 0 → **TUTTU**. Ayrılan alan yok (yukarıda). Yeni çıktının tamamı 13 555 dosya (13 554 `.c` + `block_annotations.json`), dizin özeti sha256 `ba1fb761e227…`. Ham: `…/BA1/ozet/H3_karsilastirma.json`.
+
+## Kalem 4b — Ghidra'sız yeniden oynatma, S8 (H4) (19:49)
+
+S8'in 8 çalışma alanı (`P16e/s8_sonra_3`, ürün ağacı `urun-00b8a9c`; `block_annotator.py` `00b8a9c` ile `0b4d948` arasında değişmemiş), her birinde adım iki kez yeniden oynatıldı: eski kod (`git show 0b4d948:…/block_annotator.py` kopyası, `…/BA1/eski_kod/block_annotator_eski.py`) ve yeni kod; ayrıca yeni çıktı çalışma alanının kendi `reconstructed/annotated/`'ı ile karşılaştırıldı (yeniden oynatmanın ürün yoluna sadakati). Sürücü `…/BA1/s8_kos.sh`; ham `…/BA1/s8/<ad>/{eski_yeni,ws_yeni}.json`, `…/zamanlama.json`. Yük altında (load 5,27 → 5,62).
+
+| çalışma alanı | dosya (`.c` + rapor) | eski ↔ yeni bayt eşit | ws ↔ yeni bayt eşit | açıklama (eski / yeni) | süre eski / yeni (sn) |
+|---|---:|---:|---:|---:|---:|
+| debian/coreutils/cat | 297 | 297 / 297 | 297 / 297 | 54 / 54 | 0,34 / 0,12 |
+| debian/coreutils/sort | 626 | 626 / 626 | 626 / 626 | 213 / 213 | 0,85 / 0,35 |
+| debian/htop | 1 149 | 1 149 / 1 149 | 1 149 / 1 149 | 374 / 374 | 1,64 / 0,76 |
+| debian/sqlite3 | 1 145 | 1 145 / 1 145 | 1 145 / 1 145 | 554 / 554 | 1,55 / 0,67 |
+| debian/tmux | 2 589 | 2 589 / 2 589 | 2 589 / 2 589 | 1 720 / 1 720 | 4,31 / 2,21 |
+| debian/tree | 251 | 251 / 251 | 251 / 251 | 148 / 148 | 0,28 / 0,17 |
+| debian/zstd | 1 445 | 1 445 / 1 445 | 1 445 / 1 445 | 1 161 / 1 161 | 3,75 / 2,16 |
+| mac/tmux | 2 822 | 2 822 / 2 822 | 2 822 / 2 822 | 1 938 / 1 938 | 4,86 / 2,49 |
+
+**H4: 8 / 8 bayt eşit → TUTTU** (`block_annotations.json` dahil; ayrılan alan yok). Yeni çıktı çalışma alanının kendi çıktısıyla da 8 / 8 eşit: yeniden oynatma ürün yolunu birebir veriyor (algoritma girdisi: sqlite3'te 7, zstd'de 2 algoritma, başlık kategorisinde 0). Yan gözlem (yük altında, tek koşu): yeni kod adımı eskisinden ~1,7–2,8 kat hızlı bitirdi; eski kalıp eşleşmeyen sıradan satırlarda da bölünüş deniyordu.
