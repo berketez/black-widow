@@ -97,7 +97,12 @@ olmayanlar (örneğe uyuldu):
 
 `docs/arge/2026-11-23_dalga1/yamalar/PUV3__config.py.patch`: INERT satırı silinir, alan yorumu "okuyan:
 pipeline/steps/swift_metadata_recovery.py (P-ÜV3)" olur. Yamasız dalda `test_p15a_etkisiz::test_inert_registry_is_accurate`
-kırmızı (doğrulandı); yamalı hâlde `test_p15a_etkisiz` + `test_bayrak_on_paketi` + `test_puv3_swift` 210 geçti / 3 atlandı.
+kırmızı (doğrulandı); yamalı hâlde `test_p15a_etkisiz` + `test_bayrak_on_paketi` + `test_puv3_swift` 210 geçti / 3 atlandı
+(08:31; yama o an üretilirken geçici uygulanmış, `git checkout` ile geri alındı).
+- 08:45'te tam takım için yamayı `git apply` ile geçici uygulama komutu izin sınıflayıcısınca **reddedildi**; ana oturumun
+  talimatıyla (`config.py`'ye başka yoldan yazılmadı) tam takım yamasız koşuldu. Yama main'e alınırken ana oturumca
+  uygulanacak. **`git apply --check docs/arge/2026-11-23_dalga1/yamalar/PUV3__config.py.patch` → çıkış 0** (yalnız
+  denetim, dosya değişmedi; ağaç `716ddee`).
 
 ## Keşif ölçümü (dondurmadan önce)
 
@@ -193,3 +198,29 @@ Alt küme dökümü (ön kayıt §2 sınıflaması):
 
 Ön kayıt hükümleri: **H0 tuttu, H1 tuttu, H2 tuttu, H3 tutmadı (sayı 2 627 < 3 477; yanlış 0 / 2 627 tuttu), H4 tuttu,
 H5 tuttu.**
+
+## P-ÜV6b için notlar
+
+- **Ad adayı olacak alan:** `swift_types[i]` içinde `ad_yazilabilir is True` olan kayıtların `adres` (erişim fonksiyonu)
+  → `ad` (`type metadata accessor for <nitelikli_ad>`). Bu biçim HEDEF ölçüm aracının kuralıyla (`ustveri_olc.swift_yazimi`:
+  kanal adı = GT sembolünün `swift-demangle` çıktısı) birebir aynı; ürün ad biçimine (boşluk, ayraç, `(extension in M):`,
+  `(X in _AYRAÇ)`) nasıl çevrileceği P-ÜV6b'nin kararı (ölçüm aracıyla eşleşmesi korunmalı). `nitelikli_ad` ve `kisa_ad`
+  ayrı alanlar. Etiket `üst veriden` (A-10).
+- **Kanıt satırı olacak alan:** `swift_slots` (ad alanı yok): vtable (`tip`, `yontem_turu`, `sira`, `ornek`, `dinamik`,
+  `zaman_uyumsuz`, `adres`, `govde`), geçersiz kılma (`ust_tip`, `ust_sira`, `yontem_turu`, `adres`, `govde`), tanık
+  (`protokol`, `tip`, `sira`, `adres`). Ad kanalına girmez (H4). Ad verilemeyen tiplerin `kisa_ad`'ı da yalnız kanıt
+  olabilir (ör. "özel tip `Gizli`, ayraç ikilide yok").
+- **Bilinen yanlış alt kümeleri:** ölçülen yanlış yok (iTerm2 0 / 2 627; yerel 3 derlemede 0). Ad verilmeyen alt kümeler:
+  ayracı ikilide olmayan özel tipler (iTerm2 1 030 / 1 156; Rectangle 6 / 7), işlev içi tipler, kısıtlı / gereksinimli
+  uzantı içindeki tipler (iTerm2 2). Bu kümeler için ad uydurulmamalı (ayraçsız `Modül.Tip` GT ile tam eşit değildir).
+- **A-14 notu:** Wilson alt sınırı iTerm2'de 0,9985 (≥ 0,909), ama GT'li bağımsız program sayısı 1 (iTerm2) + yerel
+  örnek (kendi derlememiz); Rectangle soyulmuş, GT yok. "En az 3 bağımsız program" şartı için ikinci / üçüncü GT'li Swift
+  programı gerekiyor (P-ÜV6b ya da P-ÜV8).
+- **İkinci tur adayı (ayrı paket, ön kayıtla):** (a) kısıtlı uzantı adı (`Swift.Array<A where A == Swift.Int>`;
+  `Dictionary` gibi nominalin kendi gereksinimini taşıyan kısıtsız uzantıyı ayırmak için nominalin gereksinim listesi
+  gerekir); (b) özel yapı / enum ayracı için betimleyici sırasıyla dosya gruplaması (yerel örnekte betimleyiciler dosya
+  sırasıyla yerleşiyor; sezgisel, yanlış ad riski ölçülmeden yazılmamalı).
+- `DURUM_TUTARSIZ` / `DURUM_KAPALI` `swift.py`'de de yerel (objc.py gibi); tek tanıma taşıma P-ÜV6b'de.
+- Adım Faz 1'e ve `steps/__init__.py`'ye eklenmedi; bayrak kapalıyken ürün davranışı değişmez.
+- `check-consistency` kancası iki kez yanlış alarm verdi (`ART_STATUS` / `STAT_*` adları objc adımıyla farklı — her
+  adımın kendi yapıt adı; testteki `CONST` adresi başka modülün sabitiyle): değiştirilmedi.
