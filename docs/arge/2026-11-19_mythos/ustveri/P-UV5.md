@@ -112,3 +112,19 @@ Kök `PUV5/urun/kapali` (dal `caa14e3`, ayar dosyası yok) ve `PUV5/urun/taban` 
 - 1 beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — "kayıtta ama okunuyor: {'binary_reconstruction.enable_macho_entry_main': ['karadul/stages.py']}" (yama kaldırır).
 - 4 ortam: `test_deobfuscator.py::TestExtractModules::{test_extract_webpack_modules, test_extract_from_sample_minified}`, `test_pipeline.py::TestPipelineExecution::test_identify_and_static`, `test_project_reconstructor.py::TestReconstructIntegration::test_reconstruct_with_explicit_modules_dir` — worktree'de `scripts/node_modules` bağı takım başlarken yoktu (`node … deobfuscate.mjs` çıkış 1). Bağ kurulunca dördü yeniden koşuldu: **4 / 4 geçti**. Değişiklikle ilgisiz.
 - Yamalı kopya (`PUV5/yamali_agac/`, depo dışı; `config.py` yaması `patch -p1` ile orada uygulandı, worktree'deki `config.py`'ye dokunulmadı): `test_p15a_etkisiz` + `test_bayrak_on_paketi` + `test_puv5_macho_main` → **195 geçti / 8 atlandı / 0 kaldı**.
+
+## P-ÜV6b'ye ve ana oturuma notlar
+
+1. **Ölçülmüş kesinlik satırı** (`naming_labels.MEASURED_PRE_NAME_PRECISION["on_ad:main_giris"]`, bugün ELF'ten 110 / 110, 0,966; bu pakette DEĞİŞMEDİ, gönderim hüküm 4): Mach-O ürün ölçümü **9 / 9** (geliştirme seti Mac 2 + P-S3b kabul seti 6 + terminal-notifier 1; Wilson %95 alt 0,7008). Birlikte **119 / 119** → Wilson alt **0,9687** (`baglama.wilson`). Program sayısı (A-14): Mach-O'da 9 ayrı program.
+2. **Bayrak künyesi ve öntanım:** `config.py` yaması (INERT satırı + yorum) `PUV5__config.py.patch`; öntanım kapalı kaldı. Öntanımda açma ayrı karar (K-4); bu paketin ölçümünde yanlış `main` 0 / 9.
+3. **Ad haritası görünürlüğü:** `entry` → `main` kodda var, `out/naming_map.json`'da yok (formatter yalnız `FUN_` / `DAT_` / `sub_` / `thunk_` önekli c_namer anahtarlarını alıyor). Yama `PUV5__output_formatter.py.patch`; a62f15e'nin 119 çıktısında c_namer haritasında `entry` anahtarı 0.
+4. **Ölçüm araçları `entry` anahtarını saymıyor:** `scripts/measurement/urun_olc.py` (`FONKSIYON_ANAHTARI_RE` yalnız `FUN_<onaltılık>`) ve `ustveri_urun.py urun` (`FUN_` ya da köken kaydındaki `address`). Mach-O `main`'i birleşik ölçümde görünmez; anahtar → adres `ghidra_functions.json`'dan eşlenmeli (OLCUM / P-ÜV8). Bu paketin sayımları kendi betiğiyle (`PUV5/urun_olc_puv5.py`).
+5. **`usage` geleneği (`_main_caller`):** `main`'i çağıranın `FUN_<adres>` anahtarıyla arıyor; Mach-O'da anahtar `entry`. Sekiz Mac ikilisinde etkisi 0 (htop / tmux'ta `Usage: %s` adayı yok; GNU ikililerinde `usage` gnulib yolundan). Yama bırakılmadı (ölçülmüş faydası yok); yamalı kaynak deney için `PUV5/yamali/stages_yamali.py`. P-ÜV9 kalem 7 (`main`'den yayılan kanallar) bunu Mac'te `usage` adayı olan bir ikiliyle ölçmeli.
+6. **Go:** Mach-O Go ikilisinde `main` yazılmaz (Ollama: girişin `pclntab` adı Go'nun dış bağlayıcı `main` saplaması; gh: `_rt0_arm64_darwin`). Geliştiricinin `main`'i `main.main` → PUV6a Go kanalı `main_main`.
+7. **`stats["macho_entry_main"]`:** bayrak açık + Mach-O'da `pipeline_result.json`'a giren yeni alan (neden / kanıt); bayrak kapalıyken ya da ELF'te yazılmaz (H2 / H3 yeniden oynatmasında `stats` aynı).
+
+## Riskler
+
+- **Kapsam sapması:** `_seed_recovery_pre_names`'te iki çağrıya ayar argümanı (yukarıda gerekçesi). Mutant `puv5_ayar_iletilmez` kilitliyor.
+- **`entry` sözcüğü:** anahtar Ghidra adı olduğu için birleştirici kodda `entry` sözcüğünün her geçtiği yeri `main` yapar. 9 Mac çalışma alanında `entry.c` dışında `entry` yalnız `// Callers:` yorum satırlarında geçiyor (değişmesi doğru). Soyulmuş ikilide yerel / alan adları jenerik olduğu için çakışma beklenmez; dizgi değişmezi içindeki `entry` için ölçülmedi.
+- **Evrensel ikili:** dilim seçimi `universal_slice.json` → `raw/<ad>_<mimari>`; birim testi var, gerçek evrensel ikilide yalnız Ollama'da (Go istisnasına takıldı) denendi.
