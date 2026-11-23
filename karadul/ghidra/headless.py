@@ -14,6 +14,7 @@ import logging
 import os
 import re
 import statistics
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -64,28 +65,206 @@ GHIDRA_ADIMLARI: tuple[str, ...] = (
 # yukarıdaki adımların süresi. ``decompile_parcalari``: decompile parçalarının süre özeti.
 DURUM_SURE_ALANLARI: tuple[str, ...] = ("analysis", "adim_sureleri", "decompile_parcalari")
 
+# ÖL-1: ilerleme olayı sözleşmesi (``docs/arge/2026-11-19_mythos/olcek/PLAN.md`` §1; SABİT, ÖL-4
+# gösterir). Günlükçü ``karadul.ilerleme``, düzey INFO, tek satır ``ILERLEME alan=değer …``.
+# Olay yalnız gerçek bir adım geçişinde ya da gerçek bir okumada üretilir; "canlı görünsün" diye
+# zamanlayıcıyla boş olay basılmaz. Boşluk içeren değer çift tırnakta (``"``, ``=`` ve ters bölü
+# içeren değer de); tırnak içinde ``"`` ve ``\`` ters bölüyle kaçırılır, satır sonu boşluğa
+# çevrilir: satır ``shlex.split`` ile ayrıştırılır. ``None`` değerli alan yazılmaz.
+ILERLEME_GUNLUKCU = "karadul.ilerleme"
+ILERLEME_ONEKI = "ILERLEME"
+ILERLEME_ASAMA = "static"  # Ghidra köprüsü ``static`` aşamasında koşar
+OLAY_BASLADI = "basladi"
+OLAY_SURUYOR = "suruyor"
+OLAY_BITTI = "bitti"
+OLAY_KISMI = "kismi"
+OLAY_ATLANDI = "atlandi"
+OLAY_DURUMLARI: tuple[str, ...] = (OLAY_BASLADI, OLAY_SURUYOR, OLAY_BITTI, OLAY_KISMI, OLAY_ATLANDI)
+OLAY_ISTEGE_BAGLI_ALANLAR: tuple[str, ...] = (
+    "islenen", "toplam", "gecen_sn", "cozumleyici", "bilesen", "neden",
+)
+_ilerleme_logger = logging.getLogger(ILERLEME_GUNLUKCU)
+
+# ÖL-1: bekçi takılan çözümleyiciyi kapatıp otomatik analizi ikinci turda bitirdiyse
+# ``analysis.status`` (``static`` aşaması kısmi sayar: ``step_errors["analysis"]``).
+ANALIZ_COZUMLEYICI_KAPATILDI = "ok_cozumleyici_kapatildi"
+
+
+def _olay_degeri(deger: Any) -> str:
+    metin = re.sub(r"[\r\n]+", " ", str(deger))
+    if metin == "" or re.search(r'[\s"=\\]', metin):
+        return '"%s"' % metin.replace("\\", "\\\\").replace('"', '\\"')
+    return metin
+
+
+def ilerleme_satiri(adim: str, durum: str, **alanlar: Any) -> str:
+    """ÖL-1: sözleşme biçiminde tek ``ILERLEME`` satırı (alan sırası sözleşmedeki sıra)."""
+    if durum not in OLAY_DURUMLARI:
+        raise ValueError("bilinmeyen ilerleme durumu: %r" % (durum,))
+    bilinmeyen = sorted(set(alanlar) - set(OLAY_ISTEGE_BAGLI_ALANLAR))
+    if bilinmeyen:
+        raise ValueError("sözleşmede olmayan ilerleme alanı: %s" % bilinmeyen)
+    parcalar = [ILERLEME_ONEKI, "asama=" + ILERLEME_ASAMA, "adim=" + _olay_degeri(adim),
+                "durum=" + durum]
+    for ad in OLAY_ISTEGE_BAGLI_ALANLAR:
+        if alanlar.get(ad) is not None:
+            parcalar.append("%s=%s" % (ad, _olay_degeri(alanlar[ad])))
+    return " ".join(parcalar)
+
+
+def _ilerleme(adim: str, durum: str, **alanlar: Any) -> None:
+    """ÖL-1: olayı ``karadul.ilerleme`` günlükçüsüne INFO düzeyinde yaz."""
+    _ilerleme_logger.info("%s", ilerleme_satiri(adim, durum, **alanlar))
+
+
+def _takilma_metni(info: dict[str, Any]) -> str:
+    """ÖL-1: bekçi tetiklendiğinde ``step_errors["analysis"]`` metni (ad + süre + sonuç)."""
+    ilk = (info.get("takilmalar") or [{}])[0]
+    esik = (info.get("bekci") or {}).get("esik_sn")
+    metin = "takılan çözümleyici kapatıldı: %r %s sn tepede kaldı (eşik %s sn)" % (
+        ilk.get("cozumleyici"), ilk.get("tepede_sn"), "%g" % esik if esik is not None else "?")
+    if info.get("status") == ANALIZ_COZUMLEYICI_KAPATILDI:
+        return metin + "; otomatik analiz onsuz yeniden koşuldu ve bitti; analiz kısmi"
+    return metin + "; %s; analiz kısmi (sonraki adımlar kısmi programla koştu)" % (
+        info.get("neden") or "otomatik analiz bitmedi")
+
 
 class _AdimSaati:
-    """HZ-1: köprü adımlarının süresi; yalnız ``GHIDRA_ADIMLARI``'ndaki adlar kabul edilir."""
+    """HZ-1: köprü adımlarının süresi; yalnız ``GHIDRA_ADIMLARI``'ndaki adlar kabul edilir.
 
-    def __init__(self) -> None:
+    ÖL-1: adım başı ve sonu aynı noktada ilerleme olayı üretir (ikinci zamanlayıcı yok):
+    ``basla`` → ``durum=basladi``; ``bitti`` → ``durum=bitti gecen_sn=<bu kaydın süresi>``.
+    ``hatalar`` (köprünün ``step_errors``'ı) verilmişse adım sürerken eklenen hata ``durum=kismi
+    neden="<adım>: <hata>"`` yazdırır.
+    """
+
+    def __init__(self, hatalar: dict[str, str] | None = None) -> None:
         self._baslangic: dict[str, float] = {}
         self._sureler: dict[str, float] = {}
+        self._hatalar = hatalar
+        self._onceki_hatalar: dict[str, frozenset[str]] = {}
 
     def basla(self, adim: str) -> None:
         if adim not in GHIDRA_ADIMLARI:
             raise ValueError("bilinmeyen Ghidra adımı: %r" % (adim,))
         self._baslangic[adim] = time.monotonic()
+        self._onceki_hatalar[adim] = frozenset(self._hatalar or ())
+        _ilerleme(adim, OLAY_BASLADI)
 
-    def bitti(self, adim: str) -> None:
+    def bitti(self, adim: str, **alanlar: Any) -> None:
         """Başlamış adımın süresini yaz; başlamamış ya da bitmiş adımda bir şey yapmaz."""
         t0 = self._baslangic.pop(adim, None)
         if t0 is not None:
             self._sureler[adim] = round(time.monotonic() - t0, 3)
+            onceki = self._onceki_hatalar.pop(adim, frozenset())
+            yeni = [k for k in (self._hatalar or {}) if k not in onceki]
+            if yeni:
+                _ilerleme(adim, OLAY_KISMI, gecen_sn=self._sureler[adim],
+                          neden="%s: %s" % (yeni[0], self._hatalar[yeni[0]]), **alanlar)
+            else:
+                _ilerleme(adim, OLAY_BITTI, gecen_sn=self._sureler[adim], **alanlar)
 
     def sozluk(self) -> dict[str, float]:
         """Biten adımlar, ``GHIDRA_ADIMLARI`` sırasında."""
         return {a: self._sureler[a] for a in GHIDRA_ADIMLARI if a in self._sureler}
+
+
+def _jvm_den_ayril() -> None:
+    """Bu Python iş parçacığı JVM'e bağlandıysa ayır (JPype onu kendiliğinden ayırmaz)."""
+    try:
+        import jpype
+
+        if jpype.isJVMStarted() and jpype.isThreadAttachedToJVM():
+            jpype.JClass("java.lang.Thread").detach()
+    except Exception:  # noqa: BLE001
+        logger.debug("bekçi iş parçacığı JVM'den ayrılamadı", exc_info=True)
+
+
+class _CozumleyiciBekcisi:
+    """ÖL-1: otomatik analizde tepedeki Ghidra görevini aralıkla okuyan bekçi (daemon iş parçacığı).
+
+    ``okuyucu() -> (anahtar, ad) | None``: ``None`` = tepede görev yok; ``anahtar`` görevin
+    kimliği (Ghidra'da görev sarmalayıcısı; ``==`` Java ``equals`` = kimlik); ``ad`` görev bir
+    çözümleyiciyse onun seçenek adı, değilse ``None`` (kapatılamaz, olayda ad yazılmaz).
+
+    Her başarılı okumada ``adim=ghidra.otomatik_analiz durum=suruyor`` olayı (``gecen_sn`` =
+    otomatik analizin başından beri). Aynı görev ``esik_sn`` boyunca tepede kalır ve bir
+    çözümleyiciyse ``iptal`` çağrılır (izleyicinin ``cancel()``'ı), ad ``takilan``'a yazılır ve
+    bekçi durur. Okuma düşerse sayılır, olay üretilmez, ad uydurulmaz. Eşik ve aralık yalnız
+    ayardan gelir (``analysis.cozumleyici_takilma_sn``, ``analysis.bekci_aralik_sn``; A-9).
+    """
+
+    def __init__(self, okuyucu, iptal, esik_sn: float, aralik_sn: float,
+                 baslangic: float, saat=None) -> None:
+        self._okuyucu = okuyucu
+        self._iptal = iptal
+        self._esik = float(esik_sn)
+        self._aralik = float(aralik_sn)
+        self._baslangic = baslangic
+        self._saat = saat if saat is not None else time.monotonic
+        self._onceki: Any = None
+        self._ilk_gorulme = 0.0
+        self._dur = threading.Event()
+        self._is: threading.Thread | None = None
+        self.takilan: str | None = None
+        self.tepede_sn: float | None = None
+        self.okuma = 0
+        self.okunamayan = 0
+        self.son_hata: str | None = None
+
+    def oku(self) -> bool:
+        """Tek okuma; bekçi tetiklendiyse (bu ya da önceki okumada) ``True``."""
+        if self.takilan is not None:
+            return True
+        try:
+            okunan = self._okuyucu()
+        except Exception as exc:  # noqa: BLE001
+            self.okunamayan += 1
+            self.son_hata = "%s: %s" % (type(exc).__name__, exc)
+            self._onceki = None
+            return False
+        simdi = self._saat()
+        if okunan is None:
+            self._onceki = None
+            return False
+        anahtar, ad = okunan
+        self.okuma += 1
+        if self._onceki is None or not (anahtar == self._onceki):
+            self._onceki = anahtar
+            self._ilk_gorulme = simdi
+        tepede = simdi - self._ilk_gorulme
+        gecen = round(simdi - self._baslangic, 1)
+        if ad is not None and tepede >= self._esik:
+            self.takilan = ad
+            self.tepede_sn = round(tepede, 1)
+            neden = "%.0f sn tepede (eşik %g sn); kapatılıyor" % (tepede, self._esik)
+            _ilerleme(ADIM_OTOMATIK_ANALIZ, OLAY_SURUYOR, gecen_sn=gecen, cozumleyici=ad,
+                      neden=neden)
+            logger.warning("Ghidra çözümleyicisi takıldı: %s %s", ad, neden)
+            self._iptal()
+            return True
+        _ilerleme(ADIM_OTOMATIK_ANALIZ, OLAY_SURUYOR, gecen_sn=gecen, cozumleyici=ad)
+        return False
+
+    def _dongu(self) -> None:
+        try:
+            while not self._dur.wait(self._aralik):
+                if self.oku():
+                    break
+        finally:
+            _jvm_den_ayril()
+
+    def baslat(self) -> None:
+        self._is = threading.Thread(target=self._dongu, name="karadul-cozumleyici-bekcisi",
+                                    daemon=True)
+        self._is.start()
+
+    def durdur(self) -> bool:
+        """İş parçacığını durdur; bekçi tetiklendiyse ``True``."""
+        self._dur.set()
+        if self._is is not None:
+            self._is.join(self._aralik)
+        return self.takilan is not None
 
 # PyGhidra kontrol
 _PYGHIDRA_AVAILABLE: bool | None = None
@@ -360,7 +539,6 @@ class GhidraHeadless:
         ghidra_install = self.analyze_headless.parent.parent
         start = time.monotonic()
         # HZ-1: adım süreleri (yalnız ölçüm; adımların gövdesi ve çıktısı değişmez).
-        saat = _AdimSaati()
         decompile_parcalari: dict[str, Any] | None = None
         log_lines: list[str] = []
         scripts_output: dict[str, Any] = {}
@@ -368,6 +546,8 @@ class GhidraHeadless:
         # sonuç sözlüğüyle çağırana gider, ``static`` aşaması istatistiğe ve
         # ``static/ghidra_status.json``'a yazar (GHIDRA-09).
         step_errors: dict[str, str] = {}
+        # ÖL-1: adım saati ilerleme olaylarını da üretir; adım sürerken eklenen hata ``kismi``.
+        saat = _AdimSaati(step_errors)
 
         def _step_failed(step: str, exc: BaseException, level: str = "WARN") -> None:
             msg = "%s: %s" % (type(exc).__name__, exc)
@@ -407,20 +587,28 @@ class GhidraHeadless:
                     analysis_info = {"status": "failed", "timeout_s": int(timeout),
                                      "error": "%s: %s" % (type(exc).__name__, exc)}
                     _step_failed("analysis", exc)
-                saat.bitti(ADIM_OTOMATIK_ANALIZ)
                 if analysis_info.get("status") == "timeout":
                     msg = (
                         "zaman aşımı: Ghidra otomatik analizi %d sn'de durduruldu; "
                         "analiz kısmi (sonraki adımlar kısmi programla koştu)"
                         % int(timeout)
                     )
+                    if analysis_info.get("takilmalar"):  # ÖL-1: bekçi durdurdu
+                        msg = _takilma_metni(analysis_info)
                     step_errors["analysis"] = msg
                     log_lines.append("WARN: analysis: %s" % msg)
                     logger.warning("Ghidra otomatik analizi zaman aşımı (%d sn): kısmi", int(timeout))
+                elif analysis_info.get("status") == ANALIZ_COZUMLEYICI_KAPATILDI:
+                    msg = _takilma_metni(analysis_info)
+                    step_errors["analysis"] = msg
+                    log_lines.append("WARN: analysis: %s" % msg)
+                    logger.warning("Ghidra otomatik analizi: %s", msg)
                 elif analysis_info.get("status") == "ok":
                     log_lines.append(
                         "Otomatik analiz: %.1f sn" % float(analysis_info.get("duration_s", 0.0))
                     )
+                # ÖL-1: bitiş olayı adım hatasını görsün diye durum işlendikten sonra.
+                saat.bitti(ADIM_OTOMATIK_ANALIZ)
 
                 # GDT Data Type Archive yukleme
                 gdt_paths = self.config.binary_reconstruction.ghidra_data_type_archives
@@ -431,6 +619,8 @@ class GhidraHeadless:
                     )
                     saat.bitti(ADIM_GDT)
                     log_lines.append("GDT arsivleri: %d yuklendi" % loaded)
+                else:
+                    _ilerleme(ADIM_GDT, OLAY_ATLANDI, neden="ayar boş")
 
                 # PDB otomatik yukleme (Windows PE icin)
                 if self.config.binary_reconstruction.pdb_auto_load:
@@ -446,6 +636,8 @@ class GhidraHeadless:
                     except Exception as exc:
                         _step_failed("pdb", exc)
                     saat.bitti(ADIM_PDB)
+                else:
+                    _ilerleme(ADIM_PDB, OLAY_ATLANDI, neden="ayar kapalı")
 
                 # 1. Fonksiyon listesi
                 saat.basla(ADIM_FUNCTIONS)
@@ -518,10 +710,17 @@ class GhidraHeadless:
                             decomp_data["total_attempted"],
                         )
                     )
+                    # ÖL-1: bitiş olayında işlenen (başarılı + başarısız) / toplam.
+                    dec_sayac = {
+                        "islenen": int(decomp_data.get("success") or 0)
+                        + int(decomp_data.get("failed") or 0),
+                        "toplam": decomp_data.get("total_attempted"),
+                    }
                 except Exception as exc:
                     _all_funcs_for_pcode = None
+                    dec_sayac = {}
                     _step_failed("decompile", exc, "FAIL")
-                saat.bitti(ADIM_DECOMPILE)
+                saat.bitti(ADIM_DECOMPILE, **dec_sayac)
 
                 # 5. Type recovery (basarisizlik analizi durdurmaz)
                 saat.basla(ADIM_TYPES)
@@ -624,6 +823,8 @@ class GhidraHeadless:
                     except Exception as exc:
                         _step_failed("function_id", exc)
                     saat.bitti(ADIM_FUNCTION_ID)
+                else:
+                    _ilerleme(ADIM_FUNCTION_ID, OLAY_ATLANDI, neden="ayar kapalı")
 
                 # 11.5 BSim ingest + sorgu (opsiyonel)
                 if self.config.bsim.enabled:
@@ -691,6 +892,8 @@ class GhidraHeadless:
                         _step_failed("bsim", exc)
                     saat.bitti(ADIM_BSIM_INGEST)
                     saat.bitti(ADIM_BSIM_QUERY)
+                else:
+                    _ilerleme(ADIM_BSIM_INGEST, OLAY_ATLANDI, neden="ayar kapalı")
 
                 # 10. Program bilgileri + birlesik sonuc
                 saat.basla(ADIM_COMBINED)
@@ -799,6 +1002,45 @@ class GhidraHeadless:
             logger.warning("Ghidra'da bulunmayan çözümleyici adı (kapatılamadı): %s", unknown)
         return found
 
+    @staticmethod
+    def _cozumleyici_okuyucu(program):
+        """ÖL-1: o an tepedeki otomatik analiz görevini okuyan işlev (fizibilite: yol a).
+
+        ``AutoAnalysisManager.activeTask`` özel alanı (Java yansıması) → görev sarmalayıcısı;
+        sarmalayıcının ``task`` alanı ``AnalysisTask`` ise adı çözümleyicinin seçenek adıdır
+        (``AnalysisTask`` kurucusu ``analyzer.getName()``; ``_disable_analyzers`` bu adı kullanır).
+        Ghidra 12.1.2'nin iç alanlarına bağlıdır: alan yoksa istisna çağırana gider, bekçi
+        kurulmaz. Okuma yalnız alan okur; Java'ya geri çağrı (``JProxy``) yok.
+        """
+        from ghidra.app.plugin.core.analysis import AnalysisTask, AutoAnalysisManager
+
+        mgr = AutoAnalysisManager.getAnalysisManager(program)
+        etkin = mgr.getClass().getDeclaredField("activeTask")
+        etkin.setAccessible(True)
+        gorev_alani: list = []
+
+        def oku():
+            sarmal = etkin.get(mgr)
+            if sarmal is None:
+                return None
+            if not gorev_alani:
+                alan = sarmal.getClass().getDeclaredField("task")
+                alan.setAccessible(True)
+                gorev_alani.append(alan)
+            gorev = gorev_alani[0].get(sarmal)
+            if gorev is None:
+                return None
+            return sarmal, (str(gorev.getName()) if isinstance(gorev, AnalysisTask) else None)
+
+        return oku
+
+    def _bekci_ayari(self) -> tuple[float, float]:
+        """ÖL-1: (takılma eşiği sn, okuma aralığı sn); biri 0 ise bekçi kapalı."""
+        analysis = getattr(self.config, "analysis", None)
+        esik = getattr(analysis, "cozumleyici_takilma_sn", 0) or 0
+        aralik = getattr(analysis, "bekci_aralik_sn", 0) or 0
+        return float(esik), float(aralik)
+
     def _run_auto_analysis(self, program, timeout_s: int) -> dict[str, Any]:
         """Ghidra otomatik analizini süre sınırıyla koş (P16c, GHIDRA-06 kalanı).
 
@@ -807,6 +1049,13 @@ class GhidraHeadless:
         ``FlatProgramAPI``'nin izleyicisi ``TimeoutTaskMonitor``: süre dolunca analiz
         iptal edilir ve sonuç ``status = "timeout"`` olur (program kısmi çözümlenmiş
         kalır, ``markProgramAnalyzed`` çağrılmaz). Öntanımlı sınırla çıktı eskisiyle aynı.
+
+        ÖL-1: ``analysis.cozumleyici_takilma_sn`` > 0 iken analiz boyunca ``_CozumleyiciBekcisi``
+        koşar. Aynı çözümleyici eşik kadar tepede kalırsa izleyici iptal edilir, çözümleyici
+        kapatılır (``_disable_analyzers``) ve ``analyzeAll`` kalan süre bütçesiyle BİR kez daha
+        çağrılır; ikinci tur biterse ``status = "ok_cozumleyici_kapatildi"``. İkinci turda yeniden
+        takılma, ikinci tur zaman aşımı, kapatılamayan ad ya da bitmiş bütçe → ``"timeout"``
+        (bugünkü kısmi yol; yeniden deneme yok). Bekçi kapalıyken davranış bugünküyle aynı.
         """
         from java.util.concurrent import TimeUnit
         from ghidra.app.script import GhidraScriptUtil
@@ -822,23 +1071,88 @@ class GhidraHeadless:
                                 "ghidra_disabled_analyzers", None) or [])
         if disabled:
             info["disabled_analyzers"] = self._disable_analyzers(program, disabled)
-        monitor = TimeoutTaskMonitor.timeoutIn(max(1, int(timeout_s)), TimeUnit.SECONDS)
-        api = FlatProgramAPI(program, monitor)
-        t0 = time.monotonic()
-        GhidraScriptUtil.acquireBundleHostReference()
-        try:
-            api.analyzeAll(program)
-            timed_out = bool(monitor.didTimeout())
-            if not timed_out:
-                GhidraProgramUtilities.markProgramAnalyzed(program)
-        finally:
-            GhidraScriptUtil.releaseBundleHostReference()
+        esik_sn, aralik_sn = self._bekci_ayari()
+        okuyucu = None
+        if esik_sn > 0 and aralik_sn > 0:
             try:
-                monitor.finished()
-            except Exception:  # noqa: BLE001
-                logger.debug("TimeoutTaskMonitor.finished basarisiz", exc_info=True)
+                okuyucu = self._cozumleyici_okuyucu(program)
+            except Exception as exc:  # noqa: BLE001
+                info["bekci_hatasi"] = "%s: %s" % (type(exc).__name__, exc)
+                logger.warning("Çözümleyici bekçisi kurulamadı (%s); otomatik analiz bekçisiz",
+                               info["bekci_hatasi"])
+        butce_s = int(timeout_s)
+        takilmalar: list[dict[str, Any]] = []
+        bekci_kaydi = {"esik_sn": esik_sn, "aralik_sn": aralik_sn, "okuma": 0, "okunamayan": 0}
+        durma_nedeni: str | None = None
+        t0 = time.monotonic()
+        tur = 1
+        while True:
+            monitor = TimeoutTaskMonitor.timeoutIn(max(1, int(timeout_s)), TimeUnit.SECONDS)
+            api = FlatProgramAPI(program, monitor)
+            bekci = None
+            if okuyucu is not None:
+                bekci = _CozumleyiciBekcisi(okuyucu, monitor.cancel, esik_sn, aralik_sn, t0)
+            GhidraScriptUtil.acquireBundleHostReference()
+            try:
+                if bekci is not None:
+                    bekci.baslat()
+                api.analyzeAll(program)
+                timed_out = bool(monitor.didTimeout())
+                takildi = bekci is not None and bekci.durdur()
+                if not timed_out:
+                    if not takildi:
+                        GhidraProgramUtilities.markProgramAnalyzed(program)
+            finally:
+                if bekci is not None:
+                    bekci.durdur()
+                    bekci_kaydi["okuma"] += bekci.okuma
+                    bekci_kaydi["okunamayan"] += bekci.okunamayan
+                    if bekci.son_hata:
+                        bekci_kaydi["son_hata"] = bekci.son_hata
+                GhidraScriptUtil.releaseBundleHostReference()
+                try:
+                    monitor.finished()
+                except Exception:  # noqa: BLE001
+                    logger.debug("TimeoutTaskMonitor.finished basarisiz", exc_info=True)
+            if not takildi:
+                break
+            takilmalar.append({"tur": tur, "cozumleyici": bekci.takilan,
+                               "tepede_sn": bekci.tepede_sn,
+                               "an_sn": round(time.monotonic() - t0, 3)})
+            if tur == 2:
+                durma_nedeni = "ikinci turda yeniden takıldı (%s); yeniden deneme yok" % (
+                    bekci.takilan,)
+                break
+            info["ilk_tur"] = {"duration_s": round(time.monotonic() - t0, 3)}
+            try:
+                info["ilk_tur"]["analyzer_times"] = self._analyzer_task_times(program)
+            except Exception as exc:  # noqa: BLE001
+                info["ilk_tur"]["analyzer_times_error"] = "%s: %s" % (type(exc).__name__, exc)
+            kapatildi = self._disable_analyzers(program, [bekci.takilan])
+            info["kapatilan_cozumleyiciler"] = kapatildi
+            # İkinci tur kalan süre bütçesiyle (ÖL-1 adım 3): izleyici aynı satırdan kurulur.
+            timeout_s = butce_s - int(time.monotonic() - t0)
+            if not kapatildi.get(bekci.takilan):
+                durma_nedeni = "çözümleyici seçeneği programda yok, kapatılamadı"
+                break
+            if timeout_s < 1:
+                durma_nedeni = "süre bütçesi (%d sn) bitti, ikinci tur koşulmadı" % butce_s
+                break
+            tur = 2
         info["duration_s"] = round(time.monotonic() - t0, 3)
         info["status"] = "timeout" if timed_out else "ok"
+        if okuyucu is not None:
+            info["bekci"] = bekci_kaydi
+        if takilmalar:
+            info["takilan_cozumleyici"] = takilmalar[0]["cozumleyici"]
+            info["takilmalar"] = takilmalar
+            if durma_nedeni is not None:
+                info["status"] = "timeout"
+                info["neden"] = durma_nedeni
+            elif timed_out:
+                info["neden"] = "ikinci tur süre sınırına (%d sn) ulaştı" % butce_s
+            else:
+                info["status"] = ANALIZ_COZUMLEYICI_KAPATILDI
         try:
             info["analyzer_times"] = self._analyzer_task_times(program)
         except Exception as exc:  # noqa: BLE001
@@ -1400,6 +1714,7 @@ class GhidraHeadless:
 
         chunk_outputs: list[list[dict[str, Any]] | None] = [None] * len(chunks)
         chunk_errors: list[dict[str, Any]] = []
+        biten_fonksiyon = 0  # ÖL-1: biten parçaların fonksiyon sayısı (ilerleme olayı)
         with ThreadPoolExecutor(max_workers=n_threads) as executor:
             futures = {
                 executor.submit(_timed_chunk, i, chunk): i
@@ -1408,6 +1723,9 @@ class GhidraHeadless:
 
             for future in as_completed(futures):
                 chunk_idx = futures[future]
+                biten_fonksiyon += len(chunks[chunk_idx])
+                _ilerleme(ADIM_DECOMPILE, OLAY_SURUYOR, islenen=biten_fonksiyon,
+                          toplam=actual_count, gecen_sn=round(time.time() - start_time, 1))
                 try:
                     chunk_outputs[chunk_idx] = future.result()
                     logger.info(
