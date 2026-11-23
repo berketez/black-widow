@@ -21,11 +21,11 @@ Paket: OL10 (KARARLAR A-18, A-24). Yalnız belge; kod, test, ayar yazılmadı; G
 |---|---|---|---|---|
 | K-1 | T100 kabul hedefi "ilk rapor ≤ 60 dk" üç parçaya bölünsün (§6.1) | ana oturum (ön kayıt değişikliği) | evet | Katman 1 TAHMİN [38; 72] dk, 60 dakikayı içeriyor; tembel kip Katman 1'i kısaltmıyor |
 | K-2 | Seçilen kümede "ad eşitliği %100" yerine "tam kipte olmayan ad 0, farklı ad 0; eksik ad sayılır" | ana oturum | evet | ad hattının teklik / susturma / çakışma kuralları nüfusa bağlı (§3.3); eşitlik yapı gereği garanti değil, yanlış ad üretmemek garanti edilebilir |
-| K-3 | Tembel kipte biten koşunun durumu `kismi`, çıkış kodu 3 (yeni kod yok) | ana oturum | evet | "decompile edilmedi" başarı gibi görünmemeli; var olan `partial_reasons` yolu yeter (`karadul/core/pipeline.py:81-86`) |
+| K-3 | Tembel kipte biten koşunun durumu `kismi`, çıkış kodu 3 (yeni kod yok) | ana oturum | evet | "decompile edilmedi" başarı gibi görünmemeli; var olan `partial_reasons` yolu yeter (`karadul/core/pipeline.py:80-85`) |
 | K-4 | Tembel kipte BSim ertelenir (koşmaz; `bsim_status: "ertelendi"`) | ana oturum ("kapsam küçültülmez" ile ilişkisi) | evet | gölge kipte, ad haritasına girmiyor; T100'de TAHMİN 6,6 saatten fazla; ertelenen iş sayılıyor ve istenince koşuyor |
 | K-5 | Kitaplık / çalışma zamanı sınıfı (Go `runtime`, standart kitaplık) kendiliğinden hiç seçilmez; yalnız istekle | Berke (ürün davranışı) | evet | Ollama'da kodun %58,5'i bu sınıf; adları üst veriden %99,99 kesinlikle biliniyor, kaynağı açık |
 | K-6 | KaradulLM decompile'ı kendisi başlatmaz; "decompile isteği" önerisi açar, analist onaylar | Berke (ürün davranışı) | evet | var olan sözleşme süreç başlatan aracı yasaklıyor (`karadul/lm/tools/__init__.py:50-55`) |
-| K-7 | İki yeni ayar alanı: `buyuk_ikili.decompile_butcesi_sn`, `buyuk_ikili.secim_ust_sinir` (yama ile; A-19) | ana oturum | evet | seçim sayısı sabit N değil süre bütçesinden türemeli (A-9: donanımdan bağımsız) |
+| K-7 | İki yeni ayar alanı: `buyuk_ikili.decompile_butcesi_sn`, `buyuk_ikili.secim_ust_sinir`; ayrıca `esik_mb = 0`'ın anlamı "eşik yok: `tembel` açıkken her ikili tembel kipte" olarak düzeltilsin (yama ile; A-19) | ana oturum | evet | seçim sayısı süre bütçesinden türemeli (A-9); bugünkü yorum ("0 = kip devreye girmez") küçük ikilide kipi denemeyi olanaksız kılıyor (`esik_mb` tam sayı MB) |
 | K-8 | Öntanım: kip kapalı kalır (`buyuk_ikili.tembel = False`, `esik_mb = 0`); açılış eşiği OL10-J ölçümünden sonra | ana oturum | evet; aday eşik 16 MiB kod | A-14 mantığı: ölçülmeden öntanım değişmez; 16 MiB = gösteri kodunun (5,25 MiB) 3 katı, TAHMİN |
 | K-9 | Ghidra projesi tembel kipte silinmez (çalışma alanında kalır) | ana oturum (disk) | evet | sonradan decompile ve sürdürme için şart; T100'de TAHMİN [0,3; 0,9] GB |
 | K-10 | Katman 1'i kısaltacak "bölgesel çözümleme" (yalnız seçilecek adres aralıklarını çözümlemek) bu planda yok; OL10-C ölçümünden sonra ayrı Ar-Ge | ana oturum | evet | çıktıyı tam kipten farklılaştırır (çağıran listeleri eksilir); önce Katman 1'in gerçek süresi ölçülmeli |
@@ -71,7 +71,7 @@ Decompile tarafında işe yarayan var olan düzenek:
 - Fonksiyon başına iş `_decompile_single_function` (`:1543-1744`): `.c` dosyası (başlık + C + disassembly yorumu), fonksiyonun xref'i (`_extract_func_xrefs`, `:1143`), yığın çerçevesi, seçici P-code. Fonksiyonlar arası durum taşımıyor: bir fonksiyonun çıktısı öbürünün decompile edilip edilmediğine bağlı değil (sonuç programa geri yazılmıyor). **Bu, "seçilen fonksiyonun `.c`'si tam kiptekiyle aynı" beklentisinin dayanağıdır; ölçülecek (§6, H-C1).**
 - Dosya adı planı `_plan_decompile_filenames` (`:1467-1483`) bütün fonksiyonlar üstünden, adres sırasıyla yapılıyor (`:1335-1337`). Tembel kipte de BÜTÜN fonksiyonlar üstünden yapılmalı; yoksa aynı adlı fonksiyonların dosya adı eki değişir.
 - Decompile edilmeyen fonksiyon için kayıt kalıbı var: `_lost_entry(func, error, skipped=True)` (`:1486-1494`), sayaçları `_finalize_decompile_result` (`:1497-1540`; `losses.decompile_skipped`). Bugün yalnız "toplam decompile süresi doldu" durumunda kullanılıyor (`:1355-1361`). Tembel kip bunun yanına AYRI bir durum ekler ("ertelendi"); `skipped` ile karıştırılmaz (§4).
-- Başarı hükmü `_judge_outcome` (`:833-861`): en az bir fonksiyon decompile edilmiş olmalı. Seçili küme boş olamaz (B1 basamağı en az giriş fonksiyonunu içerir; §2.3).
+- Başarı hükmü `_judge_outcome` (`:833-861`): en az bir fonksiyon decompile edilmiş olmalı. Tembel kipte K1 için ayrı hüküm gerekir (OL10-D adım 2). Seçili küme olağan durumda boş değildir (giriş fonksiyonu, kendi kod, bilinmeyenler); boş kalırsa (ör. sınırlar 0 fonksiyon bıraktı ya da bütün decompile'lar başarısız) koşu K1 sonucuyla `kismi` biter ve yeniden kurma aşaması "gövde yok" nedeniyle atlanır: bugün `.c` yoksa `binary_prep` hata fırlatıyor (`karadul/pipeline/steps/binary_prep.py:67-71`) ve aşama başarısız sayılıyor; tembel kipte bu bir hata değildir (OL10-F adım 6).
 
 Köprünün dışı:
 - Statik aşama köprüyü `MachOAnalyzer._run_ghidra_legacy` içinden çağırır (`karadul/analyzers/macho.py:1254-1307`; çağrı `:1281-1287`) ve **Ghidra projesini her koşunun sonunda siler** (`:1293-1307`; `GhidraProject.cleanup`, `karadul/ghidra/project.py:47-66`). Sonradan decompile için proje kalmalı (K-9).
@@ -166,6 +166,7 @@ Kural çağıran LİSTELERİNİN sırasına hiç bakmaz (P16e'ye kadar belirleni
 - **E (giriş kümesi):** ikilinin giriş adresini içeren Ghidra fonksiyonu (sınıfı `STANDART` olsa da seçilir; ELF'te `main` kurtarma bu fonksiyonun `.c`'sini okur: `karadul/stages.py:1816-1875`); üst veride adı `main.main` olan Go fonksiyonu; Ghidra'nın `entry` adını verdiği fonksiyon. Dışa aktarılan fonksiyonlar (dylib) E'ye girmez (sayıları binleri bulabilir); onlar B2–B4'te kanıtlarıyla sıralanır.
 - **kanıt(f)** = f'nin başvurduğu farklı dizgi adresi sayısı + f'nin çağırdığı farklı `TASLAK` fonksiyon (içe aktarım) sayısı. İkisi de küme boyutudur.
 - Bir fonksiyon ilk girdiği basamakta sayılır.
+- **Ana modül bulunamazsa** (Go üst verisi var ama `ana_modul_bul` `None` döndü: `go_pclntab.py:292-303`) programın kendi paketleri bağımlılıklardan ayırt edilemez (`main` paketi dışındakiler `ucuncu_taraf` görünür). O durumda `BAGIMLILIK` sınıfı B5 yerine B2'ye alınır (`KENDI` ile aynı basamak, aynı anahtar) ve künyeye `ana_modul: "bilinmiyor"` yazılır. Programın kendi kodunu ertelemektense fazladan bağımlılık decompile etmek seçilir.
 - Adres karşılaştırması tam sayıyladır (onaltılık dizgi olarak değil).
 - Sabitler (`GIRIS_DERINLIGI = 2`, `GIRIS_UST_SINIR = 256`, `KURAL_SURUMU = 1`) tek yerde, seçim modülünde tanımlanır (`karadul/core/tembel_secim.py`, yeni); başka dosya bu sayıları yazmaz, içe aktarır.
 
@@ -248,7 +249,7 @@ Gerekçe (neden bu sıra):
 |---|---|---|---|---|---|
 | Ön ad: `main` (ELF `__libc_start_main`) | `karadul/stages.py:1816-1875` (düzenli ifade `:1720`; `.c` taraması `:1848-1859`) | C (giriş fonksiyonunun `.c`'si) | evet: giriş fonksiyonu B1'de her zaman seçili | evet (adı alan `main`'in gövdesi gerekmez; B1'de zaten seçili) | bugünkü: `on_ad:main_giris` (ölçülmüş 110 / 110, alt 0,966: `karadul/core/naming_labels.py:51`) |
 | Ön ad: Mach-O `main` (`LC_MAIN`; P-ÜV5) | bayrak `enable_macho_entry_main` (`karadul/config.py:773`; kod PUV5 paketinde, main'de yok) | B | evet | evet | P-ÜV5 / P-ÜV6b'nin vereceği (`üst veriden`) |
-| Ön ad: gnulib parmak izi | `karadul/stages.py:1877-2212` (`.c` taraması ve "bütün dizgi değişmezleri" `:1938-1944`; çağrı grafiği `:1973-1976`) | C + J | **kanıt satırı** (ad yazmaz): adayın tekliği ve varlık kanıtı yalnız S'nin `.c`'lerinden hesaplanabiliyor (S-3) | hayır | aday `static/gnulib_candidates.json`'a "kısmi nüfus" nedeniyle (var olan yol: `:1902`, `:2211`); OL10-B ölçer, sonuca göre gevşetilir |
+| Ön ad: gnulib parmak izi | `karadul/stages.py:1877-2212` (`.c` taraması ve "bütün dizgi değişmezleri" `:1938-1944`; çağrı grafiği `:1973-1978`) | C + J | **kanıt satırı** (ad yazmaz): adayın tekliği ve varlık kanıtı yalnız S'nin `.c`'lerinden hesaplanabiliyor (S-3) | hayır | aday `static/gnulib_candidates.json`'a "kısmi nüfus" nedeniyle (var olan yol: `:1902`, `:2211`); OL10-B ölçer, sonuca göre gevşetilir |
 | Ön ad: ELF önyükü | `karadul/stages.py:2253-2323` (yalnız `call_graph.json`: `:2272-2287`) | J | evet (girdi tam nüfus; teklik çağrı grafiği üstünden) | evet | bugünkü: `on_ad:elf_onyuk` (458 / 458, alt 0,992: `naming_labels.py:50`) + `govde` alanı |
 | KS-1 kesin çapalar | `karadul/reconstruction/tarif/kesin.py:245-272` (dizgi başvuruları `ghidra_xrefs.json`'dan `:251-264`; disassembly `.c`'nin sonundan `:271-280`); zorunlu dosyalar `karadul/reconstruction/tarif/baglama.py:115` | J + Jx + C (gömülü disassembly) | kısmen: yalnız S'deki fonksiyona; dizgi → fonksiyon kümesi Jx'ten tam nüfusla (S-3) | hayır | bugünkü (`kesin`); **Jx tam nüfus değilse kanal kapatılır** (§3.3) |
 | Faz 1 adları: bayt kalıbı | `karadul/pipeline/steps/byte_pattern.py:53-55` (`binary_for_byte_match`, `functions_json_path`) | B + J | evet | evet (bugünkü davranış; girdisi değişmiyor) | bugünkü (`doğrulanmadı`) + `govde` alanı |
@@ -311,18 +312,19 @@ Tembel kipte statik aşama bu dosyayı yazar; rapor, arayüz, KaradulLM, isteğe
   "sayim": {
     "fonksiyon_toplam": 163141, "taslak": 0,
     "program": 163141,
-    "decompile_edildi": 5000, "decompile_basarisiz": 3,
-    "ertelendi": {"secilmedi": 150000, "butce": 8138, "istek_bekliyor": 0},
+    "decompile_edildi": 4200, "decompile_basarisiz": 3,
+    "ertelendi": {"secilmedi": 158141, "butce": 797, "istek_bekliyor": 0},
     "sinif": {"KENDI": 0, "BILINMIYOR": 163141, "BAGIMLILIK": 0, "STANDART": 0},
-    "basamak": {"B0": 0, "B1": 212, "B2": 0, "B3": 9100, "B4a": 0, "B4b": 0, "B5": 0}
+    "basamak": {"B0": 0, "B1": 212, "B2": 0, "B3": 61000, "B4a": 30000, "B4b": 71929, "B5": 0}
   },
   "secim_sha256": "…",                               // sıralı listenin özeti
+  "ana_modul": null,                                 // Go: ana modül yolu / "bilinmiyor"; Go değilse null
   "sira_dosyasi": "tembel_sira.jsonl",               // satır: {"a": adres, "b": basamak, "s": sınıf, "d": durum}
   "proje": {"yol": "static/ghidra_project", "saklandi": true},
-  "dilimler": [ {"no": 1, "kaynak": "ilk", "istenen": 5000, "biten": 4997, "basladi": "…", "bitti": "…"} ]
+  "dilimler": [ {"no": 1, "kaynak": "ilk", "istenen": 5000, "biten": 4200, "basladi": "…", "bitti": "…"} ]
 }
 ```
-(Sayılar örnek biçimdir, ölçüm değil.) `durum` değerleri: `decompile_edildi`, `basarisiz`, `ertelendi:secilmedi`, `ertelendi:butce`, `ertelendi:istek_bekliyor`. Değişmez kural (testle kilitli): `program = decompile_edildi + decompile_basarisiz + Σ ertelendi`. Sıra dosyası JSON Lines'tır (746 814 fonksiyonda tek JSON belgesi bellekte gereksiz yer tutar); dilim bitince atomik yeniden yazılır (`os.replace`).
+(Sayılar örnek biçimdir, ölçüm değil: 4 200 + 3 + 158 141 + 797 = 163 141.) `basamak` bütün program fonksiyonlarını sayar (yalnız seçilenleri değil). `durum` değerleri: `decompile_edildi`, `basarisiz`, `ertelendi:secilmedi`, `ertelendi:butce`, `ertelendi:istek_bekliyor`. Değişmez kural (testle kilitli): `program = decompile_edildi + decompile_basarisiz + Σ ertelendi`. Sıra dosyası JSON Lines'tır (746 814 fonksiyonda tek JSON belgesi bellekte gereksiz yer tutar); dilim bitince atomik yeniden yazılır (`os.replace`).
 
 ### 4.2 Köprü ve durum dosyaları
 
@@ -334,7 +336,7 @@ Tembel kipte statik aşama bu dosyayı yazar; rapor, arayüz, KaradulLM, isteğe
 
 - **Durum:** statik aşama `stats["partial"] = True` ve `partial_reasons = ["tembel derinlik: E / T fonksiyon decompile edilmedi (büyük ikili kipi; kural sürümü 1)"]` yazar. `analysis_outcome` (`karadul/core/pipeline.py:55-95`) bunu `kismi` sayar; çıkış kodu 3 (`EXIT_ANALYSIS_PARTIAL`, `:52`). Yeni çıkış kodu yok (K-3). Ertelenen fonksiyon varken hiçbir yol "tam" / çıkış 0 üretmez.
 - **Ayırt edilebilirlik:** `pipeline_result.json` ve raporda `depth` nesnesi (`tembel_durum.json`'ın `kip`, `katman`, `sayim` alanları). Ölçüm araçları "kısmi, yalnız tembel erteleme" ile "kısmi, hata" durumunu buradan ayırır: `partial_reasons`'ın her öğesi `tembel derinlik:` ile başlıyorsa ve `losses` sıfırsa birincisidir.
-- **CLI:** koşu sonunda `--quiet` olmayan her kipte stderr'e tek satır: `TEMBEL KİP: 5 000 / 163 141 fonksiyon decompile edildi; 158 141 ertelendi (150 000 seçilmedi, 8 138 bütçe); sürdürmek için: karadul decompile <ws> --sonraki`.
+- **CLI:** koşu sonunda `--quiet` olmayan her kipte stderr'e tek satır: `TEMBEL KİP: 4 200 / 163 141 fonksiyon decompile edildi; 3 başarısız; 158 938 ertelendi (158 141 seçilmedi, 797 bütçe); sürdürmek için: karadul decompile <ws> --devam`.
 - **Rapor ("Derinlik" bölümü; `karadul/reporting/report_data.py`, fonksiyon sayacı `:734`):** dört gözlü tablo, yüzde yanında her zaman sayı:
 
   | | gövde var | gövde yok |
@@ -377,7 +379,7 @@ Tembel kipte statik aşama bu dosyayı yazar; rapor, arayüz, KaradulLM, isteğe
 ```
 karadul decompile <çalışma alanı> <adres | ad> …        # verilen fonksiyonlar (B0)
 karadul decompile <çalışma alanı> --dosya liste.txt       # satır başına adres / ad
-karadul decompile <çalışma alanı> --komsu <adres> [--derinlik 1]   # fonksiyon + çağırdıkları (STANDART / TASLAK hariç)
+karadul decompile <çalışma alanı> --komsu <adres> [--komsu-derinligi 1]   # fonksiyon + çağırdıkları (STANDART / TASLAK hariç)
 karadul decompile <çalışma alanı> --sonraki [N]           # kural sırasındaki sonraki N (öntanım secim_ust_sinir)
 karadul decompile <çalışma alanı> --devam                 # yarıda kalmış dilimi sürdür
         [--adlandir | --adlandirma-yok]                   # ad hattını şimdi yeniden koş / koşma
@@ -390,7 +392,7 @@ karadul decompile <çalışma alanı> --devam                 # yarıda kalmış
 
 1. K1, `pyghidra.open_program` bağlamında koşar ve bağlam kapanırken program kaydedilir (bağlam çıkışı = programın kaydı ve projenin kapanışı: `headless.py:712-714` `ADIM_KAPATMA`).
 2. Seçim JVM bağlamının DIŞINDA, K1'in diske yazdığı JSON'lardan yapılır (saf Python).
-3. K2: proje `analyze=False` ile yeniden açılır (`open_program` var olan programı projeden açar; `_run_auto_analysis` `shouldAskToAnalyze` yanlış dönünce `already_analyzed` ile çıkar: `headless.py:802-804`), verilen fonksiyon listesi decompile edilir, S için CFG çıkarılır, bağlam kapanır.
+3. K2: proje `analyze=False` ile yeniden açılır, verilen fonksiyon listesi decompile edilir, S için CFG çıkarılır, bağlam kapanır. Varsayım (doğrulanmadı; OL10-C adım 1'in fizibilitesi): `pyghidra.open_program` aynı proje ve program adıyla çağrılınca var olan programı açar, yeniden içe aktarmaz; çözümlenmiş programda `shouldAskToAnalyze` yanlış döner ve `_run_auto_analysis` `already_analyzed` ile çıkar (`headless.py:802-804`). Aynı varsayım `olcek/PLAN.md` ÖL-9 adım 3'te de var.
 
 Bu düzenin gerekçesi: (a) tek yol → ilk koşu ile sonradan decompile'ın çıktısı yapı gereği aynı kuralla üretilir; (b) K1 bittiği anda diskte kalıcı bir denetim noktası vardır (süreç K2'de ölürse K1 yeniden koşmaz); (c) seçim kuralı köprüye gömülmez, saf modülde kalır. Bedeli: ilk koşuda bir ek "projeyi yeniden aç" süresi. Bu süre **ölçülmedi** (büyük programda saniyeler mi dakikalar mı bilinmiyor); OL10-C ölçer. Kabul edilemez çıkarsa (ön kayıt: T100'de > 300 sn) ilk koşunun K2'si K1 ile aynı bağlamda koşar, kayıt K1 sonunda açıkça istenir; sonradan decompile yine kayıtlı projeden koşar.
 
@@ -445,7 +447,7 @@ Yerine (K-1, K-2):
 
 | Parça | Ölçüt | Nerede ölçülür |
 |---|---|---|
-| (a) süre | K0 özeti ≤ 300 sn; K1 biter ya da bütçeyle kısmi biter (süresi kayda geçer, hüküm yok); **K2: K1'in bitişinden rapora ≤ 2 700 sn** (öntanım sınırlarla: 1 200 sn decompile + ≤ 5 000 fonksiyonda ad hattı + proje açma) | T25, T100 (boş makine, `--tek`) |
+| (a) süre | K0 özeti ≤ 300 sn (kaba sınır: K0 çekirdeği T100'de 0,65 sn ölçüldü; statik aşamanın Ghidra'dan önceki öbür adımları — kopya, `strings`, `nm`, `lief`: `macho.py:265-423` — T100'de ölçülmedi); K1 biter ya da bütçeyle kısmi biter (süresi kayda geçer, hüküm yok); **K2: K1'in bitişinden rapora ≤ 2 700 sn** (öntanım sınırlarla: 1 200 sn decompile + ≤ 5 000 fonksiyonda ad hattı + proje açma; TAHMİN üst ucu 37 dk + 5 dk proje açma) | T25, T100 (boş makine, `--tek`) |
 | (b) çıktı eşitliği | S'deki her fonksiyonun ham `.c`'si tam kiptekiyle bayt eşit; `decompiled.json` / `cfg.json` S kayıtları JSON-eşit, `pcode.jsonl` S satırları bayt eşit; türetilen `function_xrefs` tam nüfusta JSON-eşit | S8, T25 |
 | (c) ad | kip kapalı: 119 / 119 `naming_map.json` bayt eşit. Kip açık: S'deki anahtarlarda tam kipte olmayan ad 0, farklı ad 0; eksik ad sayılır ve raporlanır; gövdesiz fonksiyona ad yalnız §3.2'nin "evet" dediği kanallardan | 119 (kapalı); S8 + T25 (açık) |
 | (d) görünürlük | §4.3'teki dört sahte başarı denetimi; değişmez `program = edildi + başarısız + ertelenen` | her tembel koşu |
@@ -508,7 +510,7 @@ Ortak kurallar: `docs/arge/2026-11-23_dalga1/ORTAK_D1.md` ve `docs/arge/2026-11-
 4. `tembel_xref.py`: `turet(functions_doc, strings_doc, call_graph_doc) → dict`: `function_xrefs` (bütün fonksiyonlar; alan adları ve sırası `_extract_xrefs` ile aynı: `headless.py:1896-1941`), `statistics` (`total_globals_with_xrefs: null`), ek alanlar `kapsam: "tam_nufus"`, `kaynak: "turetildi"`. `strings_used` sırası: fonksiyon içinde başvuranın adresine göre artan (dökümün gövde tarama sırası); `called_by` adrese göre artan (P16e'nin kuralı).
 5. `tembel_kuru.py`: `--ws <çalışma alanı> [--ikili <dilim>] [--ust-sinir N] [--cikti <json>]`: sınıf / basamak sayımı, gövde baytı, seçim sha256'sı; `--xref-denetle`: türetilen ↔ dökülen `function_xrefs` (alan bazında fark sayımı); `--k0 <ikili>`: yalnız K0 sınıf sayımı (Ghidra çıktısı olmayan hedefler için).
 6. Okuyucu envanteri: `grep -rn "function_xrefs\|total_globals_with_xrefs\|strings_used\|called_by" karadul ui scripts` çıktısından `xrefs.json`'ı okuyan her yer ve okuduğu alan ilerleme dosyasına tablo olarak; türetilen dosyada eksik kalan alan olmamalı.
-7. Testler (Ghidra yok, sentetik girdi; ≥ 24): her basamağın üyeliği ve sırası; E'nin sınıf istisnası; genişleme `STANDART` / `TASLAK`'tan geçmez; derinlik ve 256 sınırı; kanıt küme boyutudur (aynı dizgiye iki başvuru 1 sayılır); taslak ve `STANDART` kendiliğinden seçilmez, istekle seçilir; adres sırası tam sayıyla (`"9f0"` < `"1000"`); 20 tohumlu permütasyonda aynı sha256; `kes`; boş girdi; türetme eşitliği sentetik örnekte.
+7. Testler (Ghidra yok, sentetik girdi; ≥ 24): her basamağın üyeliği ve sırası; E'nin sınıf istisnası; genişleme `STANDART` / `TASLAK`'tan geçmez; derinlik ve 256 sınırı; kanıt küme boyutudur (aynı dizgiye iki başvuru 1 sayılır); taslak ve `STANDART` kendiliğinden seçilmez, istekle seçilir; ana modül bulunamazsa `BAGIMLILIK` B2'de; adres sırası tam sayıyla (`"9f0"` < `"1000"`); 20 tohumlu permütasyonda aynı sha256; `kes`; boş girdi; türetme eşitliği sentetik örnekte.
 8. Ölçüm (ön kayıttan sonra; Ghidra yok) ve mutasyon.
 
 **Kabul ölçütü.** İlk satır: Ollama dilimi (gösteri çalışma alanı) sınıf ve basamak sayıları §2.5 tablosuyla aynı. Testler geçer; mutantların hepsi ölür; tam takım 0 hata.
@@ -522,7 +524,7 @@ Ortak kurallar: `docs/arge/2026-11-23_dalga1/ORTAK_D1.md` ve `docs/arge/2026-11-
 > H-A6 (SINAMA; dondurma commit'inden sonra bir kez): docker-compose, iTerm2, llama-server K0 sınıf sayımı raporlanır. Öngörü: docker-compose'da `STANDART` payı ≥ %50 (dayanak: Go adlarının %72,3–%93,6'sı kitaplık, `ustveri/BULGULAR.md` satır 374).
 > H-A7 (süre, kaba sınır; yük altında): `sec` gösteri girdisinde (13 160 fonksiyon) ≤ 5 sn; 163 141 fonksiyonluk sentetik girdide ≤ 60 sn.
 
-**Mutasyon (≥ 14).** B2 ↔ B3 sırası; `STANDART` seçilir; E'nin sınıf istisnası kalkar; genişleme `STANDART`'tan geçer; derinlik 2 → 3; 256 sınırı uygulanmaz; kanıt liste uzunluğu olur (küme değil); içe aktarım kanıta katılmaz; adres dizgi olarak karşılaştırılır; B4a'nın "çağrılan" koşulu düşer; `kes` N + 1 alır; istek sırası adres sırasına döner; taslak seçilir; türetmede `called_by` ↔ `functions_called` takası; `kapsam` alanı yazılmaz; `total_globals_with_xrefs` 0 yazılır.
+**Mutasyon (≥ 14).** B2 ↔ B3 sırası; `STANDART` seçilir; E'nin sınıf istisnası kalkar; genişleme `STANDART`'tan geçer; derinlik 2 → 3; 256 sınırı uygulanmaz; kanıt liste uzunluğu olur (küme değil); içe aktarım kanıta katılmaz; adres dizgi olarak karşılaştırılır; B4a'nın "çağrılan" koşulu düşer; `kes` N + 1 alır; istek sırası adres sırasına döner; taslak seçilir; ana modül bulunamayınca `BAGIMLILIK` B5'te kalır; türetmede `called_by` ↔ `functions_called` takası; `kapsam` alanı yazılmaz; `total_globals_with_xrefs` 0 yazılır.
 **Bayrak.** Yok (modül bayrak okumaz; sınırlar parametredir).
 
 ### 7.2 OL10-B — ad hattı kesit deneyi (Ghidra'sız yeniden oynatma)
@@ -661,7 +663,7 @@ Ortak kurallar: `docs/arge/2026-11-23_dalga1/ORTAK_D1.md` ve `docs/arge/2026-11-
 3. gnulib: tembel kipte ad yazılmaz; aday `static/gnulib_candidates.json`'a `neden: "kısmi nüfus (büyük ikili kipi)"` ile (var olan yazıcı: `stages.py:2211`). OL10-B H-B6 "fazla + farklı = 0" verdiyse bu adım yazılmaz ve gerekçesi ilerleme dosyasına geçer (kural gereksizse eklenmez).
 4. KS-1 koruması: tembel kipte `ghidra_xrefs.json` `kapsam` alanı `"tam_nufus"` değilse `kesin_anchors` bağlama üretmez (`stats`'ta neden: "xref kapsamı kısmi").
 5. `tembel_koken` adımı (Faz 3'te `finalize`'dan önce; tembel kip değilse hiçbir şey yapmaz): köken kayıtlarına `govde` ve `nufus` alanlarını yazar (§3.4); gövdesiz fonksiyona ad yazmış kanalların sayımını `stats["naming_bodiless"]`'e koyar.
-6. Envanterin gösterdiği, gövde isteyip tam nüfusta dönen öbür döngüler: tek satırlık süzgeçle S'ye indirilebilenler bu pakette; daha büyüğü yama + ana oturuma not.
+6. Envanterin gösterdiği, gövde isteyip tam nüfusta dönen öbür döngüler: tek satırlık süzgeçle S'ye indirilebilenler bu pakette; daha büyüğü yama + ana oturuma not. Ayrıca: tembel kipte hiç `.c` yoksa yeniden kurma aşaması hata vermez, "seçili küme boş" nedeniyle atlanmış sayılır (`ReconstructionStage.execute`, `karadul/stages.py:1356`; bugün `binary_prep` hata fırlatıyor: `binary_prep.py:67-71`). Bu, `stages.py`'de bu paketin dokunduğu üçüncü ve son yerdir.
 7. Testler (sentetik çalışma alanı; ≥ 16) ve mutasyon.
 8. Ölçüm: OL10-B'nin düzeneğiyle önce / sonra (aynı kümeler).
 
@@ -798,7 +800,7 @@ Gece koşusu olmadan kesinleşmeyecek sayılar (belgede TAHMİN olarak duranlar)
 1. **K1 60 dakikayı aşarsa "makul sürede ilk sonuç" yalnız K0 özetidir.** K0 gerçek ama sığ (C++ ikilisinde: dizgiler, içe aktarımlar, fonksiyon sayısı; üst veri adı yok). Karşı önlem bu planda yok; aday: bölgesel çözümleme (K-10). Bedeli: çağıran listeleri ve çağrı grafiği eksilir, tam kiple eşitlik bozulur; ayrı ön kayıt ve ölçüm ister.
 2. **Otomatik analiz yarıda kesilirse (bütçe) K1 kısmi programla sürer** (`headless.py:395-403`): fonksiyon listesi eksik, seçim eksik liste üstünden yapılır. `tembel_durum.json` `katman.k1 = "kismi"` yazar; rapor bunu ilk satırda söyler. Yarıda kesilmiş analizi sürdürme bu tasarımda yok (§5.6).
 3. **Ad eşitliği tutmayabilir** (§3.3). Tasarım "yeni yanlış ad 0"ı hedefler; OL10-B bunun bile tutmadığını gösterirse farkı üreten kural tembel kipte kanıt satırına iner. En kötü durumda tembel kipte `c_namer` adları bütünüyle "kanıt satırı" olur ve adlar yalnız üst veri + ön ad kanallarından gelir; bu, kanalın bağımsız nüfustaki %79,8 kesinliğiyle (A-29) zaten gündemde olan karardır.
-4. **Sınıflandırma yanılırsa programın kendi kodu ertelenir.** Örnek: `main` modülü `buildinfo`'dan okunamayan Go ikilisi (ana modül bulunamaz → `KENDI` boş kalır, her şey `STANDART` / `BAGIMLILIK`). Koruma: `KENDI` kümesi boşsa ve Go üst verisi varsa seçim `BAGIMLILIK`'ı B2 yerine koyar ve rapora "ana modül bulunamadı" yazar (kural sürümü 1'in parçası; OL10-A testi).
+4. **Sınıflandırma yanılırsa programın kendi kodu ertelenir.** Örnek: ana modülü `buildinfo`'dan okunamayan Go ikilisi (programın `main` dışındaki paketleri `ucuncu_taraf` görünür). Koruma kuralın içinde (§2.3: ana modül bulunamazsa `BAGIMLILIK` B2'ye alınır; OL10-A testi). Kalan risk: `STANDART` sınıfına yanlış düşen kod (ör. adı standart kitaplık paketine benzetilmiş kod) kendiliğinden hiç seçilmez; yalnız istekle açılır. Üst verisi kurcalanmış ikilide bu bir saklanma yoludur; P-ÜV7'nin tutarlılık damgası gelene kadar açık kalır (madde 5).
 5. **Üst veri adına güven.** Seçilmeyen fonksiyonun adı yalnız üst veriden gelir; bozulmuş / sahte üst veri (P-ÜV7 tutarlılık denetimi main'de değil) yanlış adı gövdesiz, yani analistin gözle denetleyemeyeceği biçimde gösterir. Koruma: gövdesiz + `üst veriden` adlar arayüzde ayrı işaretlenir; `kisa` / `tasan` kayıtlar zaten ad olmuyor (PUV6a hüküm 1); P-ÜV7 gelince `tutarsiz` damgalı fonksiyon B3'e yükseltilir (gövdesi öncelikle decompile edilir). Bu son kural sürüm 2'dir, bu planda yazılmaz.
 6. **Disk.** Proje saklanır ([0,3; 0,9] GB T100, TAHMİN); T300'de [2,1; 3,3] GB (aynı oranlarla). Çalışma alanı silinince proje de silinir; ayrı temizlik komutu yok. ÖL-6'nın disk ön denetimi tembel kipte proje + K1 JSON'ları + S'nin çıktısını hesaba katmalı (ÖL-6'ya not).
 7. **İki "kısmi".** Çıkış 3 hem hatayı hem ertelemeyi taşır (K-3). Ölçüm araçları `depth` alanına bakmadan çıkış koduyla karar verirse tembel koşuları "bozuk" sayabilir. `urun_kos.py` / `masum_kapi.py` gibi araçlara tembel kol eklenirken bu ayrım testle kilitlenmeli (OL10-J adım 3'ün önkoşulu).
@@ -814,8 +816,66 @@ Gece koşusu olmadan kesinleşmeyecek sayılar (belgede TAHMİN olarak duranlar)
 
 ## Ek A — atıf doğrulama
 
-YAZILMADI
+- Yöntem: belgedeki her dosya:satır atfı için "o satırda (ya da verilen aralığın içinde) beklenen metin var mı" denetimi; ayrıca "var" denen dosyalar var mı, "yeni" denen dosyalar bugün yok mu. Komut metni: `~/karadul_olcum/runs/dalga1-2026-11-23/OL10/atif_denetimi_komutu.txt` (depo dışı; worktree kökünden `/opt/anaconda3/bin/python - < <dosya>`).
+- Sonuç (main `f2b0db5`, 2026-11-23 08:46): satır atfı 174 denetimin 170'i birebir satırda tuttu; kalan 4'ü belgede verilen ARALIĞIN içinde (çapa metni aralığın başka satırında: `stages.py:1976`, `stages.py:2277`, `c_namer.py:2836`, `pipeline.py:80`); belge bu dördünde aralıkla yazılıdır. Var olması gereken 18 dosyanın 18'i var; "yeni" denen 8 dosyanın 8'i bugün yok.
+- Denetlenmeyen atıf türü: başka belgelere "§" ile yapılan atıflar (ör. `olcek/BULGULAR.md` §3.4) satır numarasıyla değil bölüm adıyla verildi; sayıların kendisi bu turda o belgelerden okunarak yazıldı.
+- Satır numaraları P16e ve PUV6a main'e girince kayar (§0). Kaymayacak olan çapalar (işlev adları):
 
-## Ek B — bu turda koşulan komutlar
+| Dosya | Çapalar (işlev / sabit) |
+|---|---|
+| `karadul/ghidra/headless.py` | `analyze`, `_analyze_pyghidra`, `_run_auto_analysis`, `_judge_outcome`, `_extract_functions`, `_extract_strings`, `_extract_call_graph`, `_extract_func_xrefs`, `_decompile_functions`, `_parallel_decompile_java_threads`, `_plan_decompile_filenames`, `_lost_entry`, `_finalize_decompile_result`, `_decompile_single_function`, `_serial_decompile_fallback`, `_extract_types`, `_extract_xrefs`, `_write_pcode_jsonl`, `_extract_cfg`, `_extract_function_id_matches`, `_analyze_cli`, `ADIM_*` |
+| `karadul/analyzers/macho.py` | `analyze_static`, `_record_ghidra_outcome`, `_run_ghidra_legacy` |
+| `karadul/stages.py` | `_recover_main_from_entry`, `_recover_gnulib_from_fingerprints`, `_recover_elf_boilerplate`, `_apply_manual_overrides`, `_execute_binary` (üç `PipelineRunner(steps=[…])` listesi) |
+| `karadul/reconstruction/c_namer.py` | `analyze_and_rename`, `_load_strings_full`, `_strategy_*`, `_propagate_passthrough_params` |
+| `karadul/pipeline/steps/` | `collect_candidates`, `GhidraFunctionIndex`, `load_ghidra_index`, `add_k4_channels`, `_add_*`, `run_name_merger`, `_apply_aho_replace`, `force_manual_names`, `_run_c_namer`, `BinaryPrepStep.run`, `GhidraMetadataStep._resolve_json_paths` |
+| `karadul/config.py` | `BuyukIkiliConfig` (`tembel`, `esik_mb`), `INERT_SETTINGS`, `Timeouts.ghidra` |
+| `karadul/lm/tools/` | `TOOL_CLASS_ACTIONS`, `ERR_NO_DATA`, `Workspace.read_code`, `get_decompiled`, `get_evidence`, `get_xrefs` |
 
-YAZILMADI
+## Ek B — bu turda koşulan komutlar ve çıktıları
+
+Hepsi salt okur; Ghidra yok; ürün kodu ve taban kökleri değişmedi. Komut metinleri depo dışında (`~/karadul_olcum/runs/dalga1-2026-11-23/OL10/`); worktree kökünden `PYTHONDONTWRITEBYTECODE=1 /opt/anaconda3/bin/python - < <komut dosyası>` ile yeniden üretilir. Bunlar ölçüm aracı değildir; ürün aracı OL10-A'nın `tembel_kuru.py`'sidir.
+
+**B-1. Kuru seçim, Ollama dilimi** (`kuru_secim_v1_komutu.txt`; girdi: gösteri çalışma alanının `static/ghidra_{functions,strings,call_graph}.json`'ı ve `raw/Ollama_arm64`; okuyucular bu worktree'nin `karadul/analyzers/ustveri/`'si). Çıktı (2026-11-23 08:3x):
+
+```
+sinif {'BAGIMLILIK': 594, 'BILINMIYOR': 2619, 'KENDI': 1406, 'STANDART': 8541} taslak 399
+giris kumesi [('FUN_10038e740', 'main.main', 'KENDI')]
+B1 giris                                   36 fn     24444 B | kumulatif     36 fn (0.3%)     24444 B (0.5%)
+B2 kendi                                 1373 fn    624256 B | kumulatif   1409 fn (10.7%)    648700 B (12.0%)
+B3 bilinmiyor+kanit                      1236 fn    938516 B | kumulatif   2645 fn (20.1%)   1587216 B (29.3%)
+B4a bilinmiyor, secilenin cagirdigi       547 fn    227380 B | kumulatif   3192 fn (24.3%)   1814596 B (33.5%)
+B4b bilinmiyor, kalan                     836 fn    132589 B | kumulatif   4028 fn (30.6%)   1947185 B (36.0%)
+B5 bagimlilik                             591 fn    298060 B | kumulatif   4619 fn (35.1%)   2245245 B (41.5%)
+otomatik secilmeyen (STANDART) 8541 fn 3168916 B; program 13160 fn 5414161 B
+B1 sinif dagilimi {'KENDI': 33, 'BAGIMLILIK': 3}
+secim sirasi sha256 16fd504d3548fb68
+gosterinin ad verdigi 17 fonksiyonun basamagi {'B4a': 5, 'B3': 10, 'B4b': 2} | en gec konum 3831
+```
+
+Notlar: (1) kuru sayım giriş adresini yalnız program fonksiyonları arasında aradı; adresteki `entry` taslağı (`100081fb0`, 4 B, `is_thunk`) ayrı bir sorguyla bulundu, tabloya girmedi. (2) İlk keşif sayımı (`kuru_secim_komutu.txt`): okuyucunun Go sınıf sayımı `kendi` 1 257, `ucuncu_taraf` 594, `standart` 6 657, `calisma_zamani` 1 580, `derleyici` 435, `paketsiz` 77, `adsiz` 1 (toplam 10 601); Ghidra program fonksiyonlarına eşlenen: `kendi` 1 256, ObjC 150; üst veri okuma 0,46 sn (yük 2,8); en az bir dizgiye başvuran program fonksiyonu 1 040; en az bir içe aktarım çağıran 702; çağıranı olmayan 5 585. (3) Gösterinin ad haritası `reconstructed/src/naming_map.json` `global`: 17 anahtar, 17'si `FUN_`.
+
+**B-2. xref türetme denetimi, Ollama dilimi** (`xref_turetme_komutu.txt`; girdi: aynı çalışma alanının `static/ghidra_{xrefs,strings,call_graph}.json`'ı). Çıktı:
+
+```
+fonksiyon (xrefs.json) 13559 | dizgi kullanan fonksiyon: xrefs.json 1040 strings.json 1040
+dizgi kumesi esit fonksiyon 13559 / 13559
+farkli 0 | xrefs.json fazlasi olan 0 | strings.json fazlasi olan 0
+(fonksiyon, dizgi) cifti: xrefs.json 2993 strings.json 2993
+dizgi basina basvuran kumesi esit 1803 / 1803
+tek basvuranli dizgi: xrefs.json 1533 strings.json 1533
+called_by == call_graph.callers: 13559 | farkli 0
+functions_called == call_graph.callees: 13559 | farkli 0
+```
+
+**B-3. K0 çekirdeği, T100 ve T300** (satır içi komut: `goruntu.ac` → `fonksiyon_baslangiclari` → `go_pclntab.oku` → `objc.oku`; `uptime` yük ortalaması 5,00). Çıktı:
+
+```
+T100 ac 0.62 sn fonksiyon_baslangiclari 0.03 sn 163141 go 0.01 sn veri_yok objc 0.00 sn veri_yok 0 giris 0x100001380
+T300 ac 3.68 sn fonksiyon_baslangiclari 0.14 sn 746814 go 0.10 sn veri_yok objc 0.00 sn veri_yok 0 giris None
+```
+
+Süreler yük altında ve tek ölçümdür; yalnız mertebe için kullanıldı.
+
+**B-4. TAHMİN tablosunun kaynağı.** `~/karadul_olcum/runs/arge-2026-11-19/olcek/egri.json` → `dis_degerleme_TAHMIN` (ÖLÇEK tur 1'in dış değerlemesi; `olcek/BULGULAR.md` §3.5'in verisi). Bu turda yalnız okundu: T100 `otomatik_analiz+fonksiyonlar` alt / üst / kötümser 1 829,9 / 3 810,7 / 19 846,7 sn; `dizgiler` 26,8 sn; `cagri_grafigi` 425,6 / 489,6 / 2 206,0 sn; `decompile` 16 213,5 / 58 633,5 sn; `xref` 3 203,6 / 3 999,2 sn; `cfg` 6 932,6 / 10 711,4 sn; `bsim` 23 638,1 / 64 149,0 sn. T300: ilk adım 5 040 / 16 085 (kötümser 218 802), çağrı grafiği 1 390 / 1 735, dizgi 104 sn. K1 = ilk adım + dizgi + çağrı grafiği toplamıdır (bu belgenin türetmesi).
+
+## PAKET BİTTİ
