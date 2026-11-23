@@ -16,7 +16,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PK1/` (ölçüm özetleri 
 | 5 testler + mutasyon | 24 test (commit iletisindeki "25" yanlış; doğrusu 24); 11 / 11 mutant öldü | `cd7d2e8` |
 | 6 ölçüm (`urun_bindiff.py --kapi`; PK-11 çifti; H4 yeniden oynatma) | bitti | `c503075` (betik), bu belge |
 | 7 uçtan uca duman | Ghidra'lı koşu yapılmadı (veri yok + kuyruk dolu); Ghidra'sız tesisat dumanı yapıldı | bu belge |
-| 8 tam takım | aşağıda | — |
+| 8 tam takım | 10 878 geçti / 88 atlandı / 9 kaldı; 9'un hepsi ayrıldı (aşağıda) | bu belge |
 
 ## Tasarım (koddan)
 
@@ -101,6 +101,13 @@ Sürücü `PK1/olc_kapi.py` (ürün kodu worktree'den: günlükte `karadul.__fil
 
   Çıktı `PK1/duman/duman_once_ana_agac_ozet.json`, `PK1/duman/duman_ozet.json`.
 
+## Tam takım (kalem 8)
+
+- Komut `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökü, kod `c503075` = son kod; 19:51–19:57, 387 sn, yük altında, `load averages` 5–7): **10 878 geçti / 88 atlandı / 9 kaldı** (152 seçim dışı). Günlük `PK1/ozet/tam_takim.log`.
+- 2'si bu paketin beklenen kırmızısı, yamayla yeşil: `test_mutbakim_p13a::test_ad04_olculmus_on_ad_bindiff_ile_iki_kaynak_sayilmaz`, `test_p13a_birlestirici::test_ad04_bindiff_adi_on_ad_olarak_ikinci_kez_sayilmaz` (kurgusal `"string"` yöntemi; yamalar yukarıda, yamalı kopyada geçti).
+- 7'si ortam: worktree'de git'in izlemediği çalışma verisi yok (`scripts/node_modules` → `@babel/parser` bulunamadı: `test_deobfuscator` ×2, `test_pipeline::test_identify_and_static`, `test_project_reconstructor::…explicit_modules_dir`; `vendor/gnulib-ref` yok: `test_ps3b_full_write`, `test_ps3b_gnulib_varlik`, `test_ps3b_ic_ad`). `vendor` ve `scripts/node_modules` geçici bağla bağlanınca 7'si **7 / 7 geçti** (`PK1/ozet/tam_takim_ortam7.log`); bağlar sonra silindi, `git status` temiz. Atlanan 88 (main'de 18) aynı nedenle (bağsız çalışma verisi); bu paketin değişikliğiyle ilgili değil.
+- Bu paketin değişikliğinden kaynaklanan başka kırmızı yok.
+
 ## Riskler ve ana oturum için notlar
 
 1. **Yön başına sayım (A-14, A-15):** tablo plan gereği iki yönün havuzu. `string_refs` tmux mac → debian yönünde tek başına Wilson alt **0,9057 < 0,909** (167 / 9); havuz 0,9197. Kural yön başına okunursa `string_refs` bu yönde eşiğin altında. Hüküm 2 tabloyu "TÜM GRUPLAR" satırlarına bağladığı için kod değişmedi; karar ana oturumun.
@@ -114,3 +121,19 @@ Sürücü `PK1/olc_kapi.py` (ürün kodu worktree'den: günlükte `karadul.__fil
 - `karadul/reconstruction/kimlik/` paketi açıldı: `__init__.py` (yalnız belge dizgisi; PK-2'nin `olgu.py`, `esleyici.py`, `ad_ailesi.py`, PK-4'ün `kanal.py` dosyalarını anıyor) ve `yontem_kapisi.py`. PK-2 `__init__.py`'ye dokunmadan yeni dosya ekleyebilir.
 - PK-4 kendi kanalının kanıt satırları için `yontem_kapisi.kanit_satiri` biçimini ve `write_reference_evidence`'ı (bölüm `reference_evidence`, `kaynak` alanıyla ayrılır; yazıcı yalnız kendi kaynağının satırlarını değiştirir) kullanabilir; ölçülmüş satırlarını `naming_labels.py`'ye yazacaksa `OLCULMUS_SAYIM` ile aynı (doğru, ad verilen) biçimi ve hesaplanan alt sınırı izlemesi önerilir.
 - PK-4 `_feedback_naming_bindiff.py`'ye PK-1'den sonra yazacak: kapı `split_by_method_gate`'te; yeni kanal bu fonksiyonu kullanırsa yöntem adı tabloda olmalı (yoksa kanıt satırı olur).
+
+## Özet: hükümler (ön kayıt `174831a`)
+
+| | Hüküm | Sayı |
+|---|---|---|
+| Kabul | TUTTU | tmux `config` 326 / 16, `refdb` `call_pattern` adı 0, `refdiffer` 304 / 12; havuz 414 / 24, 476 / 18 (4 grup ölçüldü; `sinama_cu_mac` dizgi yöntemi 0, tur 1 kaydı) |
+| H1 | TUTTU | yeni yanlış 0 |
+| H2 | yön ve büyüklük tuttu; kesin sayı doğrulanamadı | 4 grupta kayıp doğru 532 / 1 519, giderilen yanlış 430 / 1 178 (ön kayıt 5 grupta 544 / 1 580, 580 / 1 341) |
+| H3 | TUTTU (tasarım) | `cfg_fingerprint` tek satır, ad vermez |
+| H4 | TUTTU | 14 / 14 ikilide öntanımlı davranış aynı (ad 0) |
+| H5 | TUTTU | PK-11 çifti Q → R: `config` 36 / 88 → 6 / 0 (alt 0,6097), `refdb` 45 / 90 → 6 / 0, `ReferenceDiffer` 175 / 115 → 12 / 0 (alt 0,7575); yeni yanlış 0 |
+| Adım 7 | Ghidra'lı koşu yok (veri yok, plan gereği atlandı); Ghidra'sız tesisat dumanı: 137 ad → 44 ad + 93 kanıt satırı | — |
+
+Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/PK1/` 2,1 MB (ürün çalışma alanı yok; `duman/` başvuru JSON kopyaları içerir, commit'lenmedi).
+
+## PAKET BİTTİ
