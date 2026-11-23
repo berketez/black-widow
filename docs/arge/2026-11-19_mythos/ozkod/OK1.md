@@ -65,3 +65,76 @@ K1 → K2 ikili başına: zstd 117 (harf 47, yeni 70), mac/tmux 110 (yeni), debi
 | Giderilen / yeni yanlış | — | **0 / 4** (debian/tmux `12296c`, zstd `1b80c0` ve `1f14b0`, mac/tmux `100004b58`: P12d raporundaki dört adresin aynısı) |
 
 `karsilastir`: kaybedilen doğru 0 / 562 → `beklenen_aralikta`; `yanlis_yonu` `incele` (P12d'deki gibi; ad ekleyen değişiklik). **H0 tuttu** (sapma 0). Özet `ozet/fark_K0_K1.{json,md}`.
+
+### K1 → K2 ve K0 → K2 (ÖK-1, bayrak açık), 23 ikili
+
+- Yeniden oynatılan: K2 23 / 23 `basari True`; K1 için 19 + 4 ek (openssl, pzstd, sqlite3, factor; 4 / 4). K0'ın bu 4 ikilisi koşulmadı: tanıda K0 = K1 (aynı `string_context` çıktısı), K0 görünümünde K1'in bu 4 koşusu kullanıldı (`gorunum_K0`; etiket: "tanı düzeyinde aynı").
+- `urun_olc` 22 ikiliyi ölçtü: `debian/zstd/pzstd` C++ (ölçüm aracı C++ ikiliyi dışarıda bırakır; ks1 kuralı).
+- Altküme dışındaki 97 ikilide `string_context` çıktısı dört kolda aynı (tanı); onların `oz_ad` sayıları P12d tabanından (`olc_taban.json`, `2381dce`; altküme içi sayısı K0'ınkiyle birebir aynı: 178 / 88 / 90): 17 ad / 5 doğru / 12 yanlış. 119'luk satırlar bu türetmeyle yazıldı ve öyle etiketli.
+
+**`string_context/oz_ad` (ad / doğru / yanlış; tam eşitlik):**
+
+| | K0 | K1 (+ P12d) | K2 (+ ÖK-1) |
+|---|---|---|---|
+| Ölçülen altküme (22 ikili) | 178 / 88 / 90 | 199 / 105 / 94 | **351 / 236 / 115** |
+| 119, türetilmiş (altküme dışı 17 / 5 / 12 eklendi) | 195 / 93 / 102 | 216 / 110 / 106 | 368 / 241 / 127 |
+| Kanal kesinliği, tam (altküme; Wilson %95) | 88 / 178 (%49,4; %42,2–%56,7) | 105 / 199 (%52,8; %45,8–%59,6) | **236 / 351 (%67,2; %62,2–%71,9)** |
+| Kanal kesinliği, tam + biçim (A-3; altküme) | 125 / 178 (%70,2; %63,1–%76,5) | 143 / 199 (%71,9; %65,2–%77,7) | **243 / 351 (%69,2; %64,2–%73,8)** |
+| Kanal kesinliği, tam, 119 türetilmiş | — | 110 / 216 | 241 / 368 (%65,5; %60,5–%70,2); tam + biçim: altküme dışı 17 adın biçim hükmü yok, ölçülmedi |
+
+**Havuz (22 ikili, `karsilastir`):** K1 730 / 621 / 109 → K2 882 / 752 / 130; kaybedilen doğru 0 / 621 (`beklenen_aralikta`); öbür 7 kanal ve "kesin" etiketli adlar (262 / 249) aynı; program düzeyi makro yanlış %33,4 → %22,9 (altküme, 6 birim). Birim yanlış oranı: zstd %84,2 → %27,0, openssl %11,5 → %7,7; **debian/tmux %10,8 → %16,3, mac/tmux %13,1 → %18,1, sqlite3 %58,3 → %61,5** (`yanlis_yonu` `incele`). Özetler `ozet/fark_K1g_K2.{json,md}`, `ozet/fark_K0g_K2.{json,md}`, `ozet/analiz.json`.
+
+**K1 → K2 öğe geçişleri:**
+
+| Geçiş | Sayı | Birim |
+|---|---:|---|
+| yanlış → doğru (harf korundu) | 33 | zstd 32, openssl 1 |
+| yanlış → yanlış (ad değişti) | 16 | zstd 14, coreutils 2 (4'ü tam + biçim doğru) |
+| doğru → yanlış | 0 | — |
+| yanlış → adsız | 1 | openssl |
+| adsız → doğru (yeni ad) | 98 | zstd 51, mac/tmux 25, debian/tmux 21, coreutils 1 |
+| adsız → yanlış (yeni ad) | 55 | mac/tmux 20, zstd 18, debian/tmux 15, openssl 1, sqlite3 1 (2'si tam + biçim doğru) |
+
+zstd birimi yanlış ad: **K0 46 → K1 48 → K2 34** (34 = harf korununca da yanlış kalan 14 + yeni yanlış 18 + `ks1:assert_ust` 2).
+
+**H10 (yeni adlar):** tanıda 256 fonksiyon yeni aday aldı; üründe 153'ü ad oldu (98 doğru, 55 yanlış: **%64,1; Wilson %56,2–%71,2**). Tanı → ürün farkı (256 → 153) ayrıştırılmadı (ad geçerliliği süzgeci, ön ad önceliği, C++ pzstd ölçüm dışı; ölçülmedi). Bu yeni adların kesinliği A-13 eşiğinin (0,909) çok altında; A-29'da elenen G1'e (bağımsız nüfusta %69,2) yakın.
+
+**Türetilmiş (ayrı kol koşulmadı):** yeni adlar çıkarılsa (yalnız harf koruma: verbatim, adayın anahtar sözcük adı zaten `e.lower()` iken) K2 `oz_ad` altkümede 198 / 138 / 60 (%69,7) olurdu, yeni yanlış 0. Etkileşim (çakışma eki, ad geçerliliği) yüzünden kesin değildir; ölçülmesi gerekir.
+
+### Dört yeni yanlış (P12d; H8)
+
+Adlar ve GT adları depo dışı: `ozet/dort_yeni_yanlis_ADLI_DEPO_DISI.json`.
+
+| Adres | K1 | K2 | Fark türü |
+|---|---|---|---|
+| debian/tmux `12296c` | yanlış | yanlış (aynı ad) | gerçekten farklı işlev (GT başka bir işlev; mekanizmaya bakılmadı) |
+| zstd `1b80c0` | yanlış | yanlış (harf korundu) | gerçekten farklı işlev (GT başka bir işlev) |
+| zstd `1f14b0` | yanlış; tam + biçim **doğru** | **doğru** (tam) | yalnız biçim (A-3: K1'de "tam + biçim" doğru; ÖK-1 tam doğruya çevirdi) |
+| mac/tmux `100004b58` | yanlış | yanlış (aynı ad) | gerçekten farklı işlev (debian/tmux ile aynı ad / GT çifti) |
+
+H8: 4'ün **1'i** yalnız biçim farkı; 3'ü gerçekten farklı işlev. `urun_olc` biçim satırı (P-Ö1): K0 → K1'in 4 yeni yanlışından tam + biçim doğru olan 1 (`analiz.json` `yeni_yanlis_bicim_dogru`).
+
+### H9 — bayrak kapalı
+
+- Tanı: K1 ↔ K2k **119 / 119 aynı**.
+- Ürün: K2k yeniden oynatması zstd, cp, install (3 / 3 `basari True`); `naming_map.json` K1 ile **3 / 3 aynı** (`harita_esit.py`). Kalan 20 ikilide ürün düzeyinde K2k koşulmadı (süre).
+
+### Ön kayıt hükümleri
+
+| # | Beklenti | Ölçülen | Hüküm |
+|---|---|---|---|
+| H0 | K0 → K1: +17 doğru, 0 yanlış geri, 4 yeni yanlış, öbür kanallar aynı (± 1) | +17, 0, 4 (aynı adresler), aynı | **tuttu** |
+| H1 | K1 → K2 yanlıştan doğruya 36–44 | 33 (zstd 32, openssl 1; coreutils 0, mac/tmux 0) | **tutmadı** |
+| H2 | doğrudan yanlışa 0 | 0 | **tuttu** |
+| H3 | zstd yanlış ≤ 12 | 34 | **tutmadı** |
+| H4 | öbür kanallar aynı | aynı (7 kanal + kesin etiket) | **tuttu** |
+| H5 | yeni yanlış ≤ 2 | 55 | **tutmadı** (H10 genişlemesi) |
+| H6 (karar dışı) | makro yanlış düşer | altkümede %33,4 → %22,9 | düştü (altküme; tmux birimlerinde arttı) |
+| H7 | K0 → K2: `oz_ad` doğru ≥ +53; yeni yanlış ≤ 6; öbür kanallar aynı | +148; **58**; aynı | **tutmadı** (yeni yanlış) |
+| H8 | bilgi | 1 / 4 yalnız biçim | — |
+| H9 | K2k = K1 | tanı 119 / 119; ürün 3 / 3 | **tuttu** (ürün düzeyi altkümede) |
+| H10 | bilgi | tanı 256 yeni aday; ürün 153 yeni ad, %64,1 doğru | gerçekleşti |
+
+Kabul ölçütü (plan): "kanalın ad sayısı değişmez (± 2)" — 199 → 351: **tutmadı**; "yeni yanlış ≤ 2": tutmadı; "yanlıştan doğruya ≥ 36": tutmadı; "doğrudan yanlışa 0": tuttu; "öbür kanallar aynı": tuttu. **Bayrak öntanımda kapalı kalmalı** (ölçüm tutmadı; yama öntanımı değiştirmiyor).
+
+**Hedef seti:** bu kanal C kodundaki öz-ad dizgileri içindir; hedef setinin Go / ObjC uygulamalarında (Ollama, docker-cli, terminal-notifier …) etkisi beklenmez. Hedef setinde ölçülmedi (Ghidra koşusu yok).
