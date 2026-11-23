@@ -9,11 +9,11 @@ Paket: OL10 (KARARLAR A-18, A-24). Yalnız belge; kod, test, ayar yazılmadı; G
 3. **Katman 1:** Ghidra programı çözümler; fonksiyon listesi, çağrı grafiği, dizgi başvuruları çıkar. Kod üretilmez. 100 MB'ta 38–72 dakika (TAHMİN).
 4. **Katman 2:** okunabilir C kodu yalnız seçilen fonksiyonlar için üretilir: programın kendi kodu önce; dilin standart kitaplığı ve çalışma zamanı kendiliğinden hiç. Ollama'da kendiliğinden seçilebilen küme 13 160 fonksiyonun 4 619'u (%35,1) çıktı; gösterinin ad verdiği 17 fonksiyonun 17'si de sıranın ilk 4 028'inde.
 5. Analist ne görür: birkaç dakikada ilk özet; 100 MB'lık programda yaklaşık 1–2 saatte (TAHMİN 60–110 dk) öncelikli 3 000–5 000 fonksiyonun okunabilir kodu ve adları. Kötü senaryoda süre bütçesi keser; kısmi ama açık etiketli rapor çıkar.
-6. Seçilmeyen her fonksiyon listede "decompile edilmedi" diye görünür; adı üst veriden biliniyorsa adıyla. Analist ya da KaradulLM istediği fonksiyonu sonradan tek komutla ya da tıklayarak açtırır.
-7. Bilerek sonraya bırakılanlar: kitaplık ve çalışma zamanı fonksiyonlarının gövdesi, seçilmeyenlerin akış grafiği, BSim. Hiçbiri silinmez; "ertelendi" diye sayılır ve istenince yapılır.
+6. Seçilmeyen her fonksiyon listede "kodu üretilmedi" diye görünür; adı programın içinde yazılıysa adıyla. Analist istediği fonksiyonu sonradan tek komutla ya da tıklayarak açtırır; KaradulLM de isteyebilir, ama onay analisttedir.
+7. Bilerek sonraya bırakılanlar: dilin kendi kitaplığına ait fonksiyonların kodu, seçilmeyen fonksiyonların ayrıntılı dökümü, benzerlik araması (BSim). Hiçbiri silinmez; "ertelendi" diye sayılır ve istenince yapılır. Böyle biten koşu "tam" değil "kısmi" görünür: yapılmayan iş başarı gibi gösterilmez.
 8. Planın eski hedefi ("100 MB'ta ilk rapor ≤ 60 dakika") bu hâliyle tutmaz: Ghidra'nın kendi çözümlemesi tek başına 38–72 dakika (TAHMİN) ve tembel kip onu kısaltmaz. Hedef üç parçaya bölündü (§6).
 9. Bu turda ölçülen yeni bulgu: pahalı "çapraz başvuru" adımının fonksiyon başına çıktısı, Katman 1'in iki dosyasından Ghidra'sız türetilebiliyor (Ollama: 13 559 / 13 559 fonksiyonda aynı). Bu hem süreyi düşürür hem kısmi analizde ad kurallarını bozulmaktan korur.
-10. İş 10 alt pakete bölündü; ilk üçü (seçim modülü, Ghidra'sız kesit deneyi, köprü kesit ölçümü) bugün yazılabilir, köprü değişikliği `headless.py` zincirinin sonunu bekler.
+10. İş 10 alt pakete bölündü. İlk üçü bugün yazılabilir ve en büyük bilinmeyenleri ürüne dokunmadan ölçer; ürün değişikliği, Ghidra köprüsü dosyasında sırada bekleyen altı paketten sonra girer.
 
 ## Karar listesi (Berke / ana oturum)
 
@@ -397,7 +397,7 @@ karadul decompile <çalışma alanı> --devam                 # yarıda kalmış
 
 1. K1, `pyghidra.open_program` bağlamında koşar ve bağlam kapanırken program kaydedilir (bağlam çıkışı = programın kaydı ve projenin kapanışı: `headless.py:712-714` `ADIM_KAPATMA`).
 2. Seçim JVM bağlamının DIŞINDA, K1'in diske yazdığı JSON'lardan yapılır (saf Python).
-3. K2: proje `analyze=False` ile yeniden açılır, verilen fonksiyon listesi decompile edilir, S için CFG çıkarılır, bağlam kapanır. Varsayım (doğrulanmadı; OL10-C adım 1'in fizibilitesi): `pyghidra.open_program` aynı proje ve program adıyla çağrılınca var olan programı açar, yeniden içe aktarmaz; çözümlenmiş programda `shouldAskToAnalyze` yanlış döner ve `_run_auto_analysis` `already_analyzed` ile çıkar (`headless.py:802-804`). Aynı varsayım `olcek/PLAN.md` ÖL-9 adım 3'te de var.
+3. K2: proje `analyze=False` ile yeniden açılır, verilen fonksiyon listesi decompile edilir, S için CFG çıkarılır, bağlam kapanır. Dayanak (kurulu pyghidra 3.0.0'ın kaynağı okundu: `site-packages/pyghidra/core.py`): proje varsa açılır ve program adı (öntanım: ikili dosyanın adı) projede kayıtlıysa `project.openProgram` ile açılır, yeniden içe aktarılmaz (`:121-127`); `open_program` bağlamı çıkışta `project.save(program)` ve `project.close()` çağırır (`:262-264`). Çözümlenmiş programda `shouldAskToAnalyze`'ın yanlış dönmesi ve `_run_auto_analysis`'in `already_analyzed` ile çıkması (`headless.py:802-804`) koşuyla doğrulanmadı: OL10-C adım 1'in fizibilitesi. (Aynı varsayım `olcek/PLAN.md` ÖL-9 adım 3'te de var.)
 
 Bu düzenin gerekçesi: (a) tek yol → ilk koşu ile sonradan decompile'ın çıktısı yapı gereği aynı kuralla üretilir; (b) K1 bittiği anda diskte kalıcı bir denetim noktası vardır (süreç K2'de ölürse K1 yeniden koşmaz); (c) seçim kuralı köprüye gömülmez, saf modülde kalır. Bedeli: ilk koşuda bir ek "projeyi yeniden aç" süresi. Bu süre **ölçülmedi** (büyük programda saniyeler mi dakikalar mı bilinmiyor); OL10-C ölçer. Kabul edilemez çıkarsa (ön kayıt: T100'de > 300 sn) ilk koşunun K2'si K1 ile aynı bağlamda koşar, kayıt K1 sonunda açıkça istenir; sonradan decompile yine kayıtlı projeden koşar.
 
@@ -823,6 +823,7 @@ Gece koşusu olmadan kesinleşmeyecek sayılar (belgede TAHMİN olarak duranlar)
 
 - Yöntem: belgedeki her dosya:satır atfı için "o satırda (ya da verilen aralığın içinde) beklenen metin var mı" denetimi; ayrıca "var" denen dosyalar var mı, "yeni" denen dosyalar bugün yok mu. Komut metni: `~/karadul_olcum/runs/dalga1-2026-11-23/OL10/atif_denetimi_komutu.txt` (depo dışı; worktree kökünden `/opt/anaconda3/bin/python - < <dosya>`).
 - Sonuç (main `f2b0db5`, 2026-11-23 08:53): satır atfı 181 denetimin 177'si birebir satırda tuttu; kalan 4'ü belgede verilen ARALIĞIN içinde (çapa metni aralığın başka satırında: `stages.py:1976`, `stages.py:2277`, `c_namer.py:2836`, `pipeline.py:80`); belge bu dördünde aralıkla yazılıdır. Var olması gereken 18 dosyanın 18'i var; "yeni" denen 9 dosyanın 9'u bugün yok.
+- Depo dışı tek kod atfı: kurulu pyghidra 3.0.0, `/opt/anaconda3/lib/python3.12/site-packages/pyghidra/core.py` `:121-127` (`openProject` / `openProgram`) ve `:262-264` (`project.save(program)`, `project.close()`); `sed -n` ile okundu.
 - Denetlenmeyen atıf türü: başka belgelere "§" ile yapılan atıflar (ör. `olcek/BULGULAR.md` §3.4) satır numarasıyla değil bölüm adıyla verildi; sayıların kendisi bu turda o belgelerden okunarak yazıldı.
 - Satır numaraları P16e ve PUV6a main'e girince kayar (§0). Kaymayacak olan çapalar (işlev adları):
 
