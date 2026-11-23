@@ -22,9 +22,14 @@ Süre kaydı denetimi (HZ-1 ön kaydı H3 / H4; sonra kolunda): ``analysis.analy
 ``adim_sureleri`` anahtarları ``GHIDRA_ADIMLARI``'nda mı, değerler ≥ 0, toplam ≤ ``duration_seconds``
 + 0,01 mi; ``decompile_parcalari.parca_sayisi`` ≥ 1 mi.
 
+``--sira-normal`` (P16e ön kaydı H3; öntanım kapalı, ham kıyas bugünkü gibi): JSON'da adı
+``SIRA_NORMAL_LISTELERI``'nde olan her liste iki tarafta da ``caller_sort_key`` ile sıralanır
+(başka liste sıralanmaz, başka alan çıkarılmaz); ``.c``'de ``// Callers:`` satırları iki tarafta da
+çıkarılıp kalan kıyaslanır, ham hâlde farklı ``// Callers:`` satırı olan dosyalar ayrıca sayılır.
+
 Kullanım (depo kökünden):
     python scripts/arge/hiz/s8_esitlik.py --once <kök> --sonra <kök> [--aa <kök>] \
-        [--json <çıktı.json>] [--md <çıktı.md>]
+        [--sira-normal] [--json <çıktı.json>] [--md <çıktı.md>]
 """
 
 from __future__ import annotations
@@ -40,7 +45,7 @@ DEPO = Path(__file__).resolve().parents[3]
 if str(DEPO) not in sys.path:
     sys.path.insert(0, str(DEPO))
 
-from karadul.ghidra.headless import DURUM_SURE_ALANLARI, GHIDRA_ADIMLARI  # noqa: E402
+from karadul.ghidra.headless import DURUM_SURE_ALANLARI, GHIDRA_ADIMLARI, caller_sort_key  # noqa: E402
 
 # S8 alt kümesi (hiz/PLAN.md §1; ORTAK_D0 §6'daki koşu sırası).
 S8_ANAHTARLARI: tuple[str, ...] = (
@@ -68,6 +73,30 @@ NAMING_MAP_YERLERI: tuple[str, ...] = (
 # Toplam süre denetiminde yuvarlama payı (her değer üç basamağa yuvarlanır).
 TOPLAM_PAYI_SN = 0.01
 S8_FARK_ORNEK_SAYISI = 5
+# Sıra-normal kıyasta sıralanan listeler (P16e ön kaydı H3; ölçümden önce sabit) ve .c'de
+# çıkarılan başlık satırı.
+SIRA_NORMAL_LISTELERI: tuple[str, ...] = ("callers", "called_by")
+CALLERS_SATIRI_ONEKI = "// Callers:"
+
+
+def sira_normal(veri: Any) -> Any:
+    """``SIRA_NORMAL_LISTELERI`` adlı her sözlük listesini ``caller_sort_key`` ile sıralar."""
+    if isinstance(veri, dict):
+        return {k: (sorted((sira_normal(x) for x in v), key=caller_sort_key)
+                    if k in SIRA_NORMAL_LISTELERI and isinstance(v, list)
+                    and all(isinstance(x, dict) for x in v) else sira_normal(v))
+                for k, v in veri.items()}
+    if isinstance(veri, list):
+        return [sira_normal(x) for x in veri]
+    return veri
+
+
+def _callers_satirlari(metin: bytes) -> tuple[list[bytes], list[bytes]]:
+    """(``// Callers:`` satırları, kalan satırlar)."""
+    onek = CALLERS_SATIRI_ONEKI.encode()
+    satirlar = metin.split(b"\n")
+    return ([s for s in satirlar if s.startswith(onek)],
+            [s for s in satirlar if not s.startswith(onek)])
 
 
 def _calisma_alani(ikili_koku: Path) -> Path:
@@ -134,11 +163,15 @@ def _json_dosyalari(static: Path) -> dict[str, Path]:
     return dosyalar
 
 
-def ikili_kiyasla(once: Path, sonra: Path) -> dict[str, Any]:
-    """Bir ikilinin iki koşusunu kıyaslar. Dönüş: birim → fark ayrıntısı ve özet sayılar."""
+def ikili_kiyasla(once: Path, sonra: Path, sira_normal_kiyas: bool = False) -> dict[str, Any]:
+    """Bir ikilinin iki koşusunu kıyaslar. Dönüş: birim → fark ayrıntısı ve özet sayılar.
+
+    ``sira_normal_kiyas``: P16e H3 kıyası (modül belgesi); öntanım ham kıyas.
+    """
     wa, wb = _calisma_alani(once), _calisma_alani(sonra)
     sa, sb = wa / "static", wb / "static"
     sonuc: dict[str, Any] = {"json": {}, "c": {}, "naming_map": {}, "durum": {}, "ek_pcode_jsonl": None}
+    hazirla = sira_normal if sira_normal_kiyas else (lambda v: v)
 
     ja, jb = _json_dosyalari(sa), _json_dosyalari(sb)
     sonuc["json_dosya_sayisi"] = len(set(ja) | set(jb))
@@ -146,18 +179,31 @@ def ikili_kiyasla(once: Path, sonra: Path) -> dict[str, Any]:
         if ad not in ja or ad not in jb:
             sonuc["json"][ad] = {"<dosya>": "yalnız " + ("sonra" if ad not in ja else "önce")}
             continue
-        f = json_farklari(_temizle(_oku(ja[ad]), HARIC_ALANLAR), _temizle(_oku(jb[ad]), HARIC_ALANLAR))
+        f = json_farklari(hazirla(_temizle(_oku(ja[ad]), HARIC_ALANLAR)),
+                          hazirla(_temizle(_oku(jb[ad]), HARIC_ALANLAR)))
         if f:
             sonuc["json"][ad] = f
 
     ca = {p.name: p for p in (sa / "ghidra_output" / "decompiled").glob("*.c")}
     cb = {p.name: p for p in (sb / "ghidra_output" / "decompiled").glob("*.c")}
     sonuc["c_dosya_sayisi"] = {"once": len(ca), "sonra": len(cb)}
+    if sira_normal_kiyas:
+        sonuc["c_callers_satiri_farkli"] = 0
     for ad in sorted(set(ca) | set(cb)):
         if ad not in ca or ad not in cb:
             sonuc["c"][ad] = "yalnız " + ("sonra" if ad not in ca else "önce")
-        elif ca[ad].read_bytes() != cb[ad].read_bytes():
+            continue
+        ba, bb = ca[ad].read_bytes(), cb[ad].read_bytes()
+        if ba == bb:
+            continue
+        if not sira_normal_kiyas:
             sonuc["c"][ad] = "bayt farkı"
+            continue
+        (cs_a, kalan_a), (cs_b, kalan_b) = _callers_satirlari(ba), _callers_satirlari(bb)
+        if cs_a != cs_b:
+            sonuc["c_callers_satiri_farkli"] += 1
+        if kalan_a != kalan_b:
+            sonuc["c"][ad] = "bayt farkı (// Callers: dışında)"
 
     def nm_yolu(kok: Path, w: Path, yer: str) -> Path:
         return w / yer[len("ws/"):] if yer.startswith("ws/") else kok / yer
@@ -238,7 +284,7 @@ def birimler(k: dict[str, Any]) -> set[str]:
 
 
 def ozet_satiri(k: dict[str, Any]) -> dict[str, Any]:
-    return {
+    oz = {
         "json_farkli_dosya": len(k["json"]), "json_dosya": k["json_dosya_sayisi"],
         "c_farkli": len(k["c"]), "c_dosya": k["c_dosya_sayisi"],
         "naming_map_farkli": len(k["naming_map"]), "naming_map_dosya": k["naming_map_sayisi"],
@@ -246,30 +292,36 @@ def ozet_satiri(k: dict[str, Any]) -> dict[str, Any]:
         "durum_yeni_alanlar": k["durum_yeni_alanlar"],
         "ek_pcode_jsonl_esit": k["ek_pcode_jsonl"],
     }
+    if "c_callers_satiri_farkli" in k:  # yalnız --sira-normal
+        oz["c_callers_satiri_farkli"] = k["c_callers_satiri_farkli"]
+    return oz
 
 
 def _bitti_mi(kok: Path, anahtar: str) -> bool:
     return (kok / anahtar / "BITTI").exists()
 
 
-def kos(once: Path, sonra: Path, aa: Path | None) -> dict[str, Any]:
+def kos(once: Path, sonra: Path, aa: Path | None, sira_normal_kiyas: bool = False) -> dict[str, Any]:
     rapor: dict[str, Any] = {"once": str(once), "sonra": str(sonra), "aa": str(aa) if aa else None,
                              "haric_alanlar": list(HARIC_ALANLAR),
                              "durum_haric_alanlar": list(DURUM_HARIC_ALANLAR),
                              "ikililer": {}}
+    if sira_normal_kiyas:
+        rapor["sira_normal"] = {"listeler": list(SIRA_NORMAL_LISTELERI),
+                                "c_cikarilan_satir": CALLERS_SATIRI_ONEKI}
     for anahtar in S8_ANAHTARLARI:
         satir: dict[str, Any] = {}
         if not (_bitti_mi(once, anahtar) and _bitti_mi(sonra, anahtar)):
             satir["durum"] = "koşu bitmedi (BITTI yok)"
             rapor["ikililer"][anahtar] = satir
             continue
-        hz = ikili_kiyasla(once / anahtar, sonra / anahtar)
+        hz = ikili_kiyasla(once / anahtar, sonra / anahtar, sira_normal_kiyas)
         satir["sonra"] = {"ozet": ozet_satiri(hz), "farklar": {k: hz[k] for k in
                                                               ("json", "c", "naming_map", "durum")}}
         satir["sure_kaydi"] = sure_kaydi_denetle(sonra / anahtar)
         b_hz = birimler(hz)
         if aa is not None and _bitti_mi(aa, anahtar):
-            k_aa = ikili_kiyasla(once / anahtar, aa / anahtar)
+            k_aa = ikili_kiyasla(once / anahtar, aa / anahtar, sira_normal_kiyas)
             satir["aa"] = {"ozet": ozet_satiri(k_aa), "farklar": {k: k_aa[k] for k in
                                                                  ("json", "c", "naming_map", "durum")}}
             b_aa = birimler(k_aa)
@@ -328,6 +380,9 @@ def markdown(r: dict[str, Any]) -> str:
                     f"{_d(k.get('duration_seconds'))} | {_d(k.get('parca_sayisi'))} | "
                     f"{'tuttu' if k['H3_analyzer_times_dolu'] else 'TUTMADI'} | "
                     f"{'tuttu' if k['H4_tutarli'] else 'TUTMADI'} |")
+        if "c_callers_satiri_farkli" in o:
+            ayrinti.append(f"- {anahtar} — sıra-normal: ham `// Callers:` satırı farklı `.c`: "
+                           f"{o['c_callers_satiri_farkli']} / {o['c_dosya']['sonra']}")
         for etiket, liste in (("sonraya yüklenebilir", s.get("sonraya_yuklenebilir")),
                               ("belirlenimsizlik (A/A'da da)", s.get("belirlenimsizlik")),
                               ("yalnız A/A", s.get("yalniz_aa"))):
@@ -339,7 +394,9 @@ def markdown(r: dict[str, Any]) -> str:
     return "\n".join([
         f"Önce: `{r['once']}`  ",
         f"Sonra: `{r['sonra']}`  ",
-        f"A/A: `{r['aa']}`",
+        f"A/A: `{r['aa']}`  ",
+        ("Kıyas: **sıra-normal** (`" + "`, `".join(SIRA_NORMAL_LISTELERI) + "` listeleri sıralı; `.c`'de `"
+         + CALLERS_SATIRI_ONEKI + "` satırı dışarıda)") if r.get("sira_normal") else "Kıyas: ham",
         "",
         "**T-HZ1 (önce ↔ sonra)**", "", *sat, "",
         "**T-AA (önce ↔ A/A)**", "", *(aa if len(aa) > 2 else ["A/A yok ya da bitmedi."]), "",
@@ -359,8 +416,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--aa", type=Path, default=None, help="önce kolunun A/A tekrarı (isteğe bağlı)")
     ap.add_argument("--json", type=Path, default=None, help="ayrıntılı rapor (JSON)")
     ap.add_argument("--md", type=Path, default=None, help="tablo (Markdown)")
+    ap.add_argument("--sira-normal", action="store_true",
+                    help="çağıran listeleri sıralı, .c'de // Callers: satırı dışarıda kıyasla (P16e H3)")
     a = ap.parse_args(argv)
-    r = kos(a.once.expanduser(), a.sonra.expanduser(), a.aa.expanduser() if a.aa else None)
+    r = kos(a.once.expanduser(), a.sonra.expanduser(), a.aa.expanduser() if a.aa else None,
+            a.sira_normal)
     md = markdown(r)
     if a.json:
         a.json.write_text(json.dumps(r, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

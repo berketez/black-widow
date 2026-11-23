@@ -82,6 +82,30 @@
       "find": "if ca != func_addr and ca not in seen_callers:",
       "replace": "if ca != func_addr:",
       "occurrence": 2
+    },
+    {
+      "id": "p16e_s8_sira_normal_siralamaz",
+      "desc": "s8_esitlik --sira-normal çağıran listelerini sıralamaz (H3 kıyası ham kıyasa döner)",
+      "module": "scripts/arge/hiz/s8_esitlik.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_s8_sira_normal_cagiran_sirasini_ve_callers_satirini_yok_sayar_ham_saymaz",
+      "find": "if k in SIRA_NORMAL_LISTELERI and isinstance(v, list)",
+      "replace": "if False and k in SIRA_NORMAL_LISTELERI and isinstance(v, list)"
+    },
+    {
+      "id": "p16e_s8_callers_satiri_cikarilmaz",
+      "desc": "s8_esitlik --sira-normal .c'de // Callers: satırını çıkarmaz",
+      "module": "scripts/arge/hiz/s8_esitlik.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_s8_sira_normal_cagiran_sirasini_ve_callers_satirini_yok_sayar_ham_saymaz",
+      "find": "[s for s in satirlar if not s.startswith(onek)])",
+      "replace": "list(satirlar))"
+    },
+    {
+      "id": "p16e_s8_cagrilan_da_siralanir",
+      "desc": "s8_esitlik --sira-normal çağrılan listelerini de sıralar (ön kayıttan geniş; gerçek sıra farkını gizler)",
+      "module": "scripts/arge/hiz/s8_esitlik.py",
+      "test": "tests/test_p16e_belirlenimcilik.py::test_s8_sira_normal_baska_listeyi_ve_baska_satiri_saymaya_devam_eder",
+      "find": "SIRA_NORMAL_LISTELERI: tuple[str, ...] = (\"callers\", \"called_by\")",
+      "replace": "SIRA_NORMAL_LISTELERI: tuple[str, ...] = (\"callers\", \"called_by\", \"callees\")"
     }
   ]
 }

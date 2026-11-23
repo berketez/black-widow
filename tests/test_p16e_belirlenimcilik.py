@@ -400,3 +400,77 @@ def test_callers_satiri_cagiransiz(tmp_path):
     satir, sonuc = _callers_satiri(tmp_path, _Program([H], [], _ters), H)
     assert satir == ["// Callers:  0"]
     assert sonuc["xrefs"]["callers"] == []
+
+
+# ---------------------------------------------------------------------------
+# scripts/arge/hiz/s8_esitlik.py --sira-normal (ön kayıt H3)
+# ---------------------------------------------------------------------------
+
+
+def _s8_modulu():
+    import importlib.util
+    from pathlib import Path
+
+    yol = Path(__file__).resolve().parents[1] / "scripts" / "arge" / "hiz" / "s8_esitlik.py"
+    spec = importlib.util.spec_from_file_location("s8_esitlik_p16e", yol)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _s8_kosu(kok, zaman, *, cagiranlar, cagrilanlar, c_govde):
+    ikili = kok / "debian" / "coreutils" / "cat"
+    st = ikili / "ws" / "workspaces" / "cat" / zaman / "static"
+    (st / "ghidra_output" / "decompiled").mkdir(parents=True)
+    cg = {"nodes": {"00001000": {"callers": [{"name": n, "address": a} for n, a in cagiranlar],
+                                 "callees": [{"name": n, "address": a} for n, a in cagrilanlar]}}}
+    (st / "ghidra_output" / "call_graph.json").write_text(json.dumps(cg), encoding="utf-8")
+    (st / "ghidra_output" / "decompiled" / "f.c").write_text(c_govde, encoding="utf-8")
+    (st / "ghidra_status.json").write_text(json.dumps({"success": True}), encoding="utf-8")
+    (ikili / "out").mkdir()
+    (ikili / "out" / "naming_map.json").write_text('{"a": 1}', encoding="utf-8")
+    (ikili / "BITTI").write_text("0\n", encoding="utf-8")
+
+
+C_A = "// Function: f\n// Callers:  2 (b, a)\n// Callees:  0\n\nvoid f(void) {}\n"
+C_B = "// Function: f\n// Callers:  2 (a, b)\n// Callees:  0\n\nvoid f(void) {}\n"
+
+
+def test_s8_sira_normal_cagiran_sirasini_ve_callers_satirini_yok_sayar_ham_saymaz(tmp_path):
+    m = _s8_modulu()
+    _s8_kosu(tmp_path / "once", "1", cagiranlar=[("b", "00003000"), ("a", "00002000")],
+             cagrilanlar=[("x", "00005000")], c_govde=C_A)
+    _s8_kosu(tmp_path / "sonra", "2", cagiranlar=[("a", "00002000"), ("b", "00003000")],
+             cagrilanlar=[("x", "00005000")], c_govde=C_B)
+    ham = m.kos(tmp_path / "once", tmp_path / "sonra", None)["ikililer"]["debian/coreutils/cat"]
+    assert ham["sonra"]["ozet"]["json_farkli_dosya"] == 1 and ham["sonra"]["ozet"]["c_farkli"] == 1
+    assert "c_callers_satiri_farkli" not in ham["sonra"]["ozet"]  # ham kıyas eskisi gibi
+    sn = m.kos(tmp_path / "once", tmp_path / "sonra", None, True)
+    s = sn["ikililer"]["debian/coreutils/cat"]
+    assert s["cikti_esit"] is True
+    assert s["sonra"]["ozet"]["c_callers_satiri_farkli"] == 1
+    assert sn["sira_normal"]["listeler"] == ["callers", "called_by"]
+    assert "sıra-normal" in m.markdown(sn)
+
+
+def test_s8_sira_normal_baska_listeyi_ve_baska_satiri_saymaya_devam_eder(tmp_path):
+    m = _s8_modulu()
+    _s8_kosu(tmp_path / "once", "1", cagiranlar=[("a", "00002000")],
+             cagrilanlar=[("x", "00005000"), ("y", "00004000")], c_govde=C_A)
+    _s8_kosu(tmp_path / "sonra", "2", cagiranlar=[("a", "00002000")],
+             cagrilanlar=[("y", "00004000"), ("x", "00005000")],
+             c_govde=C_B.replace("void f(void) {}", "int f(void) {}"))
+    s = m.kos(tmp_path / "once", tmp_path / "sonra", None, True)["ikililer"]["debian/coreutils/cat"]
+    assert s["cikti_esit"] is False
+    assert "json:ghidra_output/call_graph.json:nodes.00001000.callees[].name" in s["sonraya_yuklenebilir"]
+    assert "c:f.c" in s["sonraya_yuklenebilir"]
+
+
+def test_s8_sira_normal_kume_farkini_gizlemez(tmp_path):
+    m = _s8_modulu()
+    _s8_kosu(tmp_path / "once", "1", cagiranlar=[("a", "00002000"), ("b", "00003000")],
+             cagrilanlar=[], c_govde=C_A)
+    _s8_kosu(tmp_path / "sonra", "2", cagiranlar=[("a", "00002000")], cagrilanlar=[], c_govde=C_A)
+    s = m.kos(tmp_path / "once", tmp_path / "sonra", None, True)["ikililer"]["debian/coreutils/cat"]
+    assert s["cikti_esit"] is False
+    assert any("callers[]" in b for b in s["sonraya_yuklenebilir"])
