@@ -9,11 +9,11 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (özet `ozet/`).
 | Sıra | Kalem | Durum | Commit |
 |---|---|---|---|
 | 1 | Ön kayıt (`on_kayit_PUV7.md`) | yazıldı | aee60c3 |
-| 2 | Tip verisi okuyucu (`go_tip.py`) + sentetik testler | yazıldı | (kitaplık commit'i) |
-| 3 | Denetimler T1, T2, T2p, T5, T6 (güçlü); T3, T4 (zayıf) | yazıldı | (kitaplık commit'i) |
-| 4 | Damga + ikili özeti | yazıldı | (kitaplık commit'i) |
-| 5 | Bozma deneyi betiği (A–E) | yazıldı; H2 TUTTU | (betik commit'i) |
-| 6 | Kalem 6 (K10) ölçümü ve kararı | bekliyor | — |
+| 2 | Tip verisi okuyucu (`go_tip.py`) + sentetik testler | yazıldı | 52c3f9a |
+| 3 | Denetimler T1, T2, T2p, T5, T6 (güçlü); T3, T4 (zayıf) | yazıldı | 52c3f9a |
+| 4 | Damga + ikili özeti | yazıldı | 52c3f9a |
+| 5 | Bozma deneyi betiği (A–E) | yazıldı; H2 TUTTU | 85f8a03 |
+| 6 | Kalem 6 (K10) ölçümü ve kararı | ölçüldü (≥ %99) → eklendi; H5 TUTMADI | (K10 commit'i) |
 | 7 | Mutasyon (≥ 8) | bekliyor | — |
 | 8 | Kabul ölçümü (H1, H2, H4, H6, H7; ek ikililer) | bekliyor | — |
 | 9 | Dondurma → H3-sınama (docker-compose) | bekliyor | — |
@@ -96,3 +96,55 @@ Okuma:
   üst veriyi yakalar; tek tek ad tahrifatını fonksiyon başına damga yakalıyor (H7'ye bakınız).
 - limactl E'de güçlü T ürün 71, araştırma 67: araştırmanın güçlü tanımı T3'ü de içerdiği için
   tabanda T3 işaretli fonksiyonlar "yeni" sayılmıyordu; ürün sütunu T3'süz tabana göre sayar.
+
+## Kalem 6: K10 içerik denetimi — önce ölçüm, sonra karar
+
+### Ölçüm (kod yazmadan önce; `ustveri_bozma.py k10`, `capstone` 5.0.7)
+
+Bakılan: `pcsp` tablosu olan, birleştirici dili bayraklı olmayan, `pcsp`'si en az bir yerde
+sıfırdan farklı fonksiyonlar. Uyum: `pcsp` değerinin ilk kez sıfırdan farklı olduğu pc'den önceki
+komut aynı büyüklükte yığın ayarı.
+
+| Dilim | Bakılan | Ön kayıtlı kural: uyumlu (oran) | Tanınmayan / uyumsuz | Genişletilmiş kural: uyumlu (Wilson %95) |
+|---|---|---|---|---|
+| gh (keşif) | 32 581 | 32 437 (%99,558) | 143 / 1 | 32 581 / 32 581 (%99,988–%100) |
+| limactl (keşif) | 32 249 | 32 214 (%99,891) | 34 / 1 | 32 249 / 32 249 (%99,988–%100) |
+| Ollama arm64 | 9 254 | 9 240 (%99,849) | 14 / 0 | 9 254 / 9 254 (%99,959–%100) |
+| colima | 10 885 | 10 871 (%99,871) | 14 / 0 | 10 885 / 10 885 (%99,965–%100) |
+
+(Bakılmayan: çerçevesiz gh 7 458, limactl 7 717, Ollama 1 047, colima 1 888; birleştirici dili
+342 / 352 / 297 / 306; `pcsp` yok 3 / 3 / 3 / 3.)
+
+- **Ön kayıtlı kuralla eşik tuttu** (dört dilimde de ≥ %99) → plan gereği K10 eklendi.
+- Tanınmayan / uyumsuz girişlerin hepsi aynı türdü: `mov sp, x20` ile biten büyük çerçeve giriş
+  bölümü. Ön kayıtlı kural yalnız `sub xR, sp, #N` + `mov sp, xR`'yi tanıyordu; Go arm64 ayrıca
+  (a) `mov x27, #N` [+ `movk x27, #M, lsl #16`] + `sub x20, sp, x27` + `mov sp, x20` ve (b) iki
+  parçalı `sub x20, sp, #a` + `sub x20, x20, #b, lsl #12` yazıyor (gh'te 3 örneğin sökümüyle
+  görüldü; tek "uyumsuz" (b) kalıbının ilk parçasını tam sanan kuraldandı: 0x610 ↔ 0x19610).
+  Kural keşif ikililerinde (gh, limactl) bu iki kalıbı tanıyacak biçimde genişletildi; sonra dört
+  dilimde de yanlış alarm 0. Kural değişikliği karardan sonra; karar ön kayıtlı kuralla verildi.
+- Ürün çözücüsü `capstone`'a bağlı değil: beş komut biçimi + üç büyük çerçeve biçimi A64 bit
+  kodlamasından (`tutarlilik.arm64_yigin_komutu`, `arm64_buyuk_cerceve_komutu`). Ölçüm betiği
+  `capstone` ile bağımsız ikinci uygulama: dört dilimde sayımlar ve ihlal kümesi birebir aynı
+  (`ozet/k10_<ad>.json` → `urun_cozucusu.ayni_kume = true`).
+
+### E yeniden ölçüldü (`deney --k10`; ürün damgası K10 dahil)
+
+| İkili | E bozulan | K10'suz ürün | K10'lu ürün | Wilson %95 | K10 tek başına | Bozulmayanda yeni K10 | Tabanda K10 ihlali |
+|---|---|---|---|---|---|---|---|
+| gh | 200 | 181 | 181 | %85,6–%93,8 | 119 | 0 | 0 |
+| limactl | 200 | 177 | 183 | %86,8–%94,6 | 115 | 0 | 0 |
+
+- **H5 → TUTMADI:** E yakalaması %90,5 / %91,5; ≥ %95 beklentisi tutmadı. K10 K4'ün kaçırdığı
+  çiftlerden yalnız 0 / 6'sını ekledi.
+- Neden: K4 komşu fonksiyonların **boyu** farklıysa yakalıyor; boyu aynı olan çiftlerin çoğunun
+  çerçeve büyüklüğü ve giriş bölümü de aynı (aynı biçimde üretilmiş kardeş fonksiyonlar), bu
+  yüzden giriş bölümüne bakan bir içerik denetimi de onları ayıramıyor. Kalan 19 / 17 çift için
+  fonksiyon gövdesinin daha derin bir imzası gerekir (ör. `pcdata` / `funcdata` yığın haritaları ↔
+  komut akışı); bu pakette yazılmadı (ölçülmedi).
+- A–D'de K10 değişiklik yapmadı (tabanda K10 ihlali 0 olduğu için sayılar K10'suz koşuyla aynı:
+  gh A 66, B 68, C 73, D 0; limactl A 84, B 92, C 82, D 0). Araştırma sütunu yine başvuruyla aynı.
+- Testler +11 (toplam 44): komut çözümü, uyumlu str / stp / sub sp ×3, büyüklük uyuşmazlığı,
+  yığın komutu olmayan, büyük çerçeve `movz` + `movk` + `sub` yazmaç (ve `movk` atlanırsa
+  yakalanır), iki parçalı `sub` ×2, çerçevesiz ve birleştirici dili bakılmaz, arm64 dışı
+  `desteklenmiyor`, kapatılabilir.

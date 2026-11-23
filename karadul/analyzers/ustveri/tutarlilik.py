@@ -25,6 +25,10 @@ Denetimler (``docs/arge/2026-11-19_mythos/ustveri/BULGULAR.md`` §6.2):
 - T6 (güçlü) biçim: ad geçerli UTF-8, denetim karakteri yok.
 - T3 (zayıf) dosya ↔ paket; T4 (zayıf) derleme birimi çoğunluk paketi. Hesaplanır, ayrı
   raporlanır; damgaya ve ikili kararına girmez (T3'ün yanlış alarmı derleme düzenine bağlı).
+- K4 (yapısal, P-ÜV1) ``pcsp`` tablosu gövdeyi kaplamıyor (``kisa`` / ``tasan``); K10 (yapısal,
+  yalnız arm64) ``pcsp``'nin ilk sıfırdan farklı değeri, o pc'den önceki komutun yığın
+  ayarlamasıyla aynı değil (üst veriyi fonksiyonun içeriğine bağlar; bozma E türü). İkisi
+  fonksiyonun damgasını ``tutarsiz`` yapar; güçlü işaret oranına (ikili kararı) girmez.
 
 İkili kararı: güçlü işaretli fonksiyon varsa ``uyari``; oranı ``UST_VERI_SUPHELI_ESIGI``'ni
 aşarsa ya da P-ÜV1'in yapı kararı ihlal veriyorsa ``ust_veri_supheli``; yoksa ``temiz``.
@@ -42,6 +46,7 @@ from typing import Any
 
 from karadul.analyzers.ustveri.go_pclntab import (
     DURUM_TUTARSIZ,
+    FUNC_FLAG_ASM,
     PCSP_KISA,
     PCSP_TASAN,
     GoOkumaHatasi,
@@ -79,6 +84,18 @@ IKINCI_KAYNAK_DENETIMLERI = ("T1", "T2", "T5")
 # P-ÜV1'in fonksiyon başına K4 sonucu: bu değerlerde üst veri gövdeye uymuyor → tutarsız.
 K4_UYUMSUZ = frozenset({PCSP_KISA, PCSP_TASAN})
 DENETIM_K4 = "K4"
+# K10 (kalem 6; yalnız arm64): pcsp'nin ilk sıfırdan farklı değeri, o pc'den önceki komutun
+# yaptığı yığın ayarlamasıyla aynı olmalı (üst veriyi fonksiyonun içeriğine bağlar). Bozulmamış
+# gh / limactl / Ollama / colima'da uyum %99,56 / %99,89 / %99,85 / %99,87 (P-UV7.md, kalem 6).
+DENETIM_K10 = "K10"
+K10_UYUMLU = "uyumlu"
+K10_UYUMSUZ = "uyumsuz"          # komut yığın ayarı ama büyüklük farklı
+K10_TANINMAYAN = "taninmayan"    # pc'den önceki komut yığın ayarı değil
+K10_OKUNAMADI = "okunamadi"
+K10_CERCEVESIZ = "cercevesiz"    # pcsp hep 0: bakılmaz
+K10_IHLAL = frozenset({K10_UYUMSUZ, K10_TANINMAYAN, K10_OKUNAMADI})
+K10_GERI_ARAMA = 8               # büyük çerçevede `sub xR, sp, #N` için geriye bakılan en çok komut
+YAPISAL_ISARETLER = frozenset({DENETIM_K4, DENETIM_K10})
 
 UNREACHABLE_METHOD = "runtime.unreachableMethod"
 
@@ -144,6 +161,154 @@ def bicim_bozuk(ad: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# K10: arm64 giriş bölümü yığın ayarlaması (Arm ARM, A64 komut kodlaması)
+# ---------------------------------------------------------------------------
+
+_SP = 31
+
+
+def _isaretli(v: int, bit: int) -> int:
+    return v - (1 << bit) if v & (1 << (bit - 1)) else v
+
+
+def arm64_yigin_komutu(w: int) -> tuple[str, int, int] | None:
+    """Tek A64 komutunun yığın etkisi; ilgisizse None.
+
+    - ``("dus", N, 0)``: ``str x30, [sp, #-N]!`` / ``stp x29, x30, [sp, #-N]!`` /
+      ``sub sp, sp, #N`` (sp N azalır);
+    - ``("kayit", N, R)``: ``sub xR, sp, #N`` (büyük çerçeve hazırlığı);
+    - ``("mov", 0, R)``: ``mov sp, xR`` (= ``add sp, xR, #0``).
+    """
+    if w & 0xFFE00C00 == 0xF8000C00:            # STR (64 bit, ön indeksli)
+        rt, rn, imm9 = w & 31, (w >> 5) & 31, _isaretli((w >> 12) & 0x1FF, 9)
+        if rn == _SP and rt == 30 and imm9 < 0:
+            return "dus", -imm9, 0
+        return None
+    if w & 0xFFC00000 == 0xA9800000:            # STP (64 bit, ön indeksli)
+        rt, rn, rt2 = w & 31, (w >> 5) & 31, (w >> 10) & 31
+        imm7 = _isaretli((w >> 15) & 0x7F, 7)
+        if rn == _SP and rt == 29 and rt2 == 30 and imm7 < 0:
+            return "dus", -imm7 * 8, 0
+        return None
+    if w & 0xFF800000 == 0xD1000000:            # SUB (anlık, 64 bit)
+        rd, rn = w & 31, (w >> 5) & 31
+        deger = ((w >> 10) & 0xFFF) << (12 if (w >> 22) & 1 else 0)
+        if rn == _SP:
+            return ("dus", deger, 0) if rd == _SP else ("kayit", deger, rd)
+        if rn == rd:
+            return "ek", deger, rd                  # sub xR, xR, #N (iki parçalı büyük çerçeve)
+        return None
+    if w & 0xFF800000 == 0x91000000:            # ADD (anlık, 64 bit): mov sp, xR
+        rd, rn = w & 31, (w >> 5) & 31
+        if rd == _SP and rn != _SP and (w >> 10) & 0xFFF == 0:
+            return "mov", 0, rn
+    return None
+
+
+def arm64_buyuk_cerceve_komutu(w: int) -> tuple[str, int, int, int] | None:
+    """Büyük çerçeve sabiti: ``("sub_reg", Rd, Rm, 0)`` = ``sub xRd, sp, xRm`` (UXTX, kaydırma 0);
+    ``("movz", Rd, değer, kaydırma)``; ``("movk", Rd, değer, kaydırma)``. İlgisizse None."""
+    if w & 0xFFE0FC00 == 0xCB206000 and (w >> 5) & 31 == _SP:   # SUB (genişletilmiş yazmaç), UXTX #0
+        return "sub_reg", w & 31, (w >> 16) & 31, 0
+    if w & 0xFF800000 == 0xD2800000:            # MOVZ (64 bit)
+        return "movz", w & 31, (w >> 5) & 0xFFFF, 16 * ((w >> 21) & 3)
+    if w & 0xFF800000 == 0xF2800000:            # MOVK (64 bit)
+        return "movk", w & 31, (w >> 5) & 0xFFFF, 16 * ((w >> 21) & 3)
+    return None
+
+
+def _buyuk_cerceve_degeri(g: Any, mov_pc: int, reg: int) -> int | None:
+    """``mov sp, xR``'den geriye: xR = sp − N ise N; bulunamazsa None.
+
+    Go arm64 büyük çerçeve kalıpları: ``sub xR, sp, #N[, lsl #12]``; ``sub xR, sp, #a`` +
+    ``sub xR, xR, #b, lsl #12``; ``mov xK, #N`` [+ ``movk``] + ``sub xR, sp, xK``.
+    """
+    toplam = 0
+    sabit_reg: int | None = None
+    parcalar = 0
+    for geri in range(1, 1 + K10_GERI_ARAMA):
+        w = _u32(g, mov_pc - 4 * geri)
+        if w is None:
+            return None
+        if sabit_reg is None:
+            k = arm64_yigin_komutu(w)
+            if k is not None and k[2] == reg and k[0] == "kayit":
+                return toplam + k[1]
+            if k is not None and k[2] == reg and k[0] == "ek":
+                toplam += k[1]
+                continue
+            b = arm64_buyuk_cerceve_komutu(w)
+            if b is not None and b[0] == "sub_reg" and b[1] == reg:
+                sabit_reg = b[2]
+            continue
+        b = arm64_buyuk_cerceve_komutu(w)
+        if b is not None and b[1] == sabit_reg and b[0] == "movk":
+            parcalar |= b[2] << b[3]
+        elif b is not None and b[1] == sabit_reg and b[0] == "movz":
+            return toplam + ((b[2] << b[3]) | parcalar)
+    return None
+
+
+def _u32(g: Any, adres: int) -> int | None:
+    try:
+        b = g.oku(adres, 4)
+    except Exception:  # noqa: BLE001
+        return None
+    return int.from_bytes(b, "little") if b is not None and len(b) == 4 else None
+
+
+def k10_sinifi(g: Any, tablo: list[tuple[int, int, int]]) -> tuple[str, int | None]:
+    """Bir fonksiyonun K10 sınıfı: pcsp tablosunun ilk sıfırdan farklı değeri ↔ önceki komut."""
+    ilk = next(((v, a) for v, a, _b in tablo if v != 0), None)
+    if ilk is None:
+        return K10_CERCEVESIZ, None
+    deger, pc = ilk
+    w = _u32(g, pc - 4)
+    if w is None:
+        return K10_OKUNAMADI, None
+    k = arm64_yigin_komutu(w)
+    n = None
+    if k is not None and k[0] == "dus":
+        n = k[1]
+    elif k is not None and k[0] == "mov":
+        n = _buyuk_cerceve_degeri(g, pc - 4, k[2])
+    if n is None:
+        return K10_TANINMAYAN, None
+    return (K10_UYUMLU if n == deger else K10_UYUMSUZ), n
+
+
+def k10_denetle(g: Any, pcln: GoPclntab, fs: list) -> tuple[set[int], dict[str, Any]]:
+    """K10 bütün fonksiyonlarda (yalnız arm64). Döner: (ihlal veren girişler, sayım).
+
+    Bakılmayanlar: ``pcsp`` tablosu yok, birleştirici dili bayraklı, çerçevesiz (pcsp hep 0).
+    """
+    if getattr(g, "mimari", "") != "arm64":
+        return set(), {"durum": "desteklenmiyor", "neden": f"mimari {getattr(g, 'mimari', '')!r}"}
+    say: collections.Counter = collections.Counter()
+    ihlal: set[int] = set()
+    for f in fs:
+        if f.pcsp == 0:
+            say["pcsp_yok"] += 1
+            continue
+        if f.flag & FUNC_FLAG_ASM:
+            say["asm"] += 1
+            continue
+        try:
+            tablo = pcln.pc_tablosu(f.pcsp, f.giris)
+        except _Kesik:
+            say[K10_OKUNAMADI] += 1
+            ihlal.add(f.giris)
+            continue
+        sinif, _n = k10_sinifi(g, tablo)
+        say[sinif] += 1
+        if sinif in K10_IHLAL:
+            ihlal.add(f.giris)
+    bakilan = sum(say[k] for k in (K10_UYUMLU, *K10_IHLAL))
+    return ihlal, {"durum": DURUM_CALISTI, "sayim": dict(say), "bakilan": bakilan,
+                   "ihlal": len(ihlal), "uyumlu": say[K10_UYUMLU]}
+
+
+# ---------------------------------------------------------------------------
 # Sonuç
 # ---------------------------------------------------------------------------
 
@@ -154,7 +319,7 @@ class TutarlilikSonucu:
     neden: str = ""
     # giriş adresi → damga (bütün ftab girişleri; adsız giriş tek_kaynak)
     damgalar: dict[int, str] = field(default_factory=dict)
-    # giriş adresi → işaret kümesi (güçlü + zayıf + K4)
+    # giriş adresi → işaret kümesi (güçlü + zayıf + K4 / K10)
     isaretler: dict[int, frozenset[str]] = field(default_factory=dict)
     # denetim → kapsanan giriş adresleri
     kapsam: dict[str, set[int]] = field(default_factory=dict)
@@ -177,15 +342,17 @@ def denetle(
     fonksiyonlar: list | None = None,
     buildinfo: dict[str, Any] | None = None,
     butunluk: dict[str, Any] | None = None,
+    k10: bool = True,
 ) -> TutarlilikSonucu:
     """Görüntüdeki Go modülünün adlarını denetle. İstisna atmaz.
 
     ``pcln`` / ``fonksiyonlar`` / ``buildinfo`` / ``butunluk`` verilmezse burada okunur
     (``go_pclntab.oku`` sonucundan gelenler yeniden kullanılabilir). ``butunluk`` verilmezse
     P-ÜV1'in yapı denetimleri koşulur (fonksiyon başına ``pcsp_kapsama`` için de gerekir).
+    ``k10`` yanlışsa K10 koşulmaz (yalnız ölçüm karşılaştırması için).
     """
     try:
-        return _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk)
+        return _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10)
     except GoOkumaHatasi as e:
         return TutarlilikSonucu(durum=e.durum, neden=e.neden)
     except _Kesik as e:
@@ -194,7 +361,7 @@ def denetle(
         return TutarlilikSonucu(durum=DURUM_HATA, neden=f"{type(e).__name__}: {e}")
 
 
-def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk) -> TutarlilikSonucu:
+def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> TutarlilikSonucu:
     p = pcln if pcln is not None else GoPclntab(goruntu)
     fs = fonksiyonlar if fonksiyonlar is not None else p.fonksiyonlar()
     if butunluk is None:
@@ -329,6 +496,15 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk) -> TutarlilikS
             isaret[f.giris].add(DENETIM_K4)
             k4 += 1
 
+    # ---- K10 (yalnız arm64; içerik ↔ pcsp) -----------------------------------
+    if k10:
+        k10_ihlal, k10_sayim = k10_denetle(goruntu, p, fs)
+        for e in k10_ihlal:
+            isaret[e].add(DENETIM_K10)
+    else:
+        k10_sayim = {"durum": "kapali"}
+    ozet["K10"] = k10_sayim
+
     # ---- damga --------------------------------------------------------------
     ikinci = kapsam["T1"] | kapsam["T2"] | kapsam["T5"]
     damgalar: dict[int, str] = {}
@@ -337,7 +513,7 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk) -> TutarlilikS
         im = isaret.get(f.giris, ())
         guclu = bool(GUCLU_DENETIMLER.intersection(im))
         guclu_isaretli += guclu
-        if guclu or DENETIM_K4 in im:
+        if guclu or YAPISAL_ISARETLER.intersection(im):
             damgalar[f.giris] = DAMGA_TUTARSIZ
         elif f.giris in ikinci:
             damgalar[f.giris] = DAMGA_CIFT_KAYNAK
@@ -348,10 +524,11 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk) -> TutarlilikS
     adli = [f for f in fs if f.ad]
     ozet["fonksiyon"] = n
     ozet["adli"] = len(adli)
-    # T denetimleri (araştırma tanımı; K4 ayrı satırda).
-    ozet["isaretli_fonksiyon"] = sum(1 for v in isaret.values() if v - {DENETIM_K4})
+    # T denetimleri (araştırma tanımı; K4 / K10 ayrı satırda).
+    ozet["isaretli_fonksiyon"] = sum(1 for v in isaret.values() if v - YAPISAL_ISARETLER)
     ozet["isaret_dagilimi"] = dict(collections.Counter(
-        k for v in isaret.values() for k in v if k != DENETIM_K4))
+        k for v in isaret.values() for k in v if k not in YAPISAL_ISARETLER))
+    ozet["K10_ihlal_fonksiyon"] = sum(1 for v in isaret.values() if DENETIM_K10 in v)
     ozet["cift_kaynakli_fonksiyon"] = len(ikinci)
     ozet["guclu_isaretli_fonksiyon"] = guclu_isaretli
     ozet["guclu_isaret_orani"] = guclu_isaretli / n if n else 0.0

@@ -396,7 +396,7 @@ def _sayi(s: str) -> int:
     return int(s, 16) if s.lstrip("-").startswith("0x") else int(s)
 
 
-def k10_sinifla(g: Any, f: Any, tb: list, md: Any) -> tuple[str, int | None]:
+def k10_sinifla(g: Any, f: Any, tb: list, md: Any, genis: bool = True) -> tuple[str, int | None]:
     """Bir fonksiyonun K10 sonucu: (sınıf, komuttan okunan yığın ayarı)."""
     ilk = next(((v, a, b) for v, a, b in tb if v != 0), None)
     if ilk is None:
@@ -421,25 +421,53 @@ def k10_sinifla(g: Any, f: Any, tb: list, md: Any) -> tuple[str, int | None]:
     elif mn in ("mov", "add"):
         m = _RE_MOV_SP.match(op) if mn == "mov" else re.match(r"^sp, (x\d+), #0$", op)
         if m:
-            reg = m.group(1)
-            # büyük çerçeve: önceki komutlarda `sub xR, sp, #N[, lsl #12]`
-            for geri in range(2, 10):
-                bb = g.oku(pc - 4 * geri, 4)
-                if not bb:
-                    break
-                i2 = next(md.disasm(bb, pc - 4 * geri, 1), None)
-                if i2 is None:
-                    continue
-                m2 = re.match(rf"^{reg}, sp, " + _IMM + r"(?:, lsl #(\d+))?$", i2.op_str)
-                if i2.mnemonic == "sub" and m2:
-                    n = _sayi(m2.group(1)) << int(m2.group(2) or 0)
-                    break
+            n = _buyuk_cerceve(g, md, pc - 4, m.group(1), genis)
     if n is None:
         return "taninmayan", None
     return ("uyumlu" if n == deger else "uyumsuz"), n
 
 
-def k10_isaretleri(g: Any, p: GoPclntab, fs: list) -> tuple[set[int], dict[str, Any]]:
+def _buyuk_cerceve(g: Any, md: Any, mov_pc: int, reg: str, genis: bool) -> int | None:
+    """``mov sp, xR``'den geriye (en çok 8 komut): xR = sp − N ise N.
+
+    Ön kayıtlı kural (``genis`` yanlış): yalnız ``sub xR, sp, #N[, lsl #12]``. Genişletilmiş
+    kural (keşif ikililerinde görülen Go kalıpları): ek olarak ``sub xR, xR, #b[, lsl #12]``
+    parçaları ve ``mov xK, #N`` [+ ``movk xK, #M, lsl #s``] + ``sub xR, sp, xK``.
+    """
+    toplam = 0
+    sabit: str | None = None
+    parcalar = 0
+    for geri in range(1, 9):
+        bb = g.oku(mov_pc - 4 * geri, 4)
+        if not bb:
+            return None
+        i2 = next(md.disasm(bb, mov_pc - 4 * geri, 1), None)
+        if i2 is None:
+            continue
+        mn, op = i2.mnemonic, i2.op_str
+        if sabit is None:
+            m2 = re.match(rf"^{reg}, sp, " + _IMM + r"(?:, lsl #(\d+))?$", op)
+            if mn == "sub" and m2:
+                return toplam + (_sayi(m2.group(1)) << int(m2.group(2) or 0))
+            if not genis:
+                continue
+            m3 = re.match(rf"^{reg}, {reg}, " + _IMM + r"(?:, lsl #(\d+))?$", op)
+            if mn == "sub" and m3:
+                toplam += _sayi(m3.group(1)) << int(m3.group(2) or 0)
+                continue
+            m4 = re.match(rf"^{reg}, sp, (x\d+)$", op)
+            if mn == "sub" and m4:
+                sabit = m4.group(1)
+            continue
+        m5 = re.match(rf"^{sabit}, " + _IMM + r"(?:, lsl #(\d+))?$", op)
+        if mn == "movk" and m5:
+            parcalar |= _sayi(m5.group(1)) << int(m5.group(2) or 0)
+        elif mn == "mov" and m5:
+            return toplam + (_sayi(m5.group(1)) | parcalar)
+    return None
+
+
+def k10_isaretleri(g: Any, p: GoPclntab, fs: list, genis: bool = True) -> tuple[set[int], dict[str, Any]]:
     """K10 ölçüsü. Döner: (uyumsuz / tanınmayan fonksiyon girişleri, sayım)."""
     if g.mimari != "arm64":
         return set(), {"durum": "desteklenmiyor", "neden": f"mimari {g.mimari}"}
@@ -462,7 +490,7 @@ def k10_isaretleri(g: Any, p: GoPclntab, fs: list) -> tuple[set[int], dict[str, 
             say["tablo_okunamadi"] += 1
             isaret.add(f.giris)
             continue
-        sinif, _n = k10_sinifla(g, f, tb, md)
+        sinif, _n = k10_sinifla(g, f, tb, md, genis)
         say[sinif] += 1
         if sinif in ("uyumsuz", "taninmayan", "okunamadi"):
             isaret.add(f.giris)
@@ -521,9 +549,15 @@ def main(argv: list[str] | None = None) -> int:
         g = GR.ac(a.ikili)
         p = GoPclntab(g)
         fs = p.fonksiyonlar()
-        _isaret, r = k10_isaretleri(g, p, fs)
+        i_on, r_on = k10_isaretleri(g, p, fs, genis=False)
+        i_gen, r = k10_isaretleri(g, p, fs, genis=True)
+        # ürün çözücüsüyle (bit maskesi) bağımsız karşılaştırma: aynı küme mi?
+        u_ihlal, u_sayim = TU.k10_denetle(g, p, fs)
         r["ikili"] = a.ikili
         r["esik"] = K10_ESIGI
+        r["on_kayitli_kural"] = r_on
+        r["urun_cozucusu"] = {"sayim": u_sayim.get("sayim"), "ayni_kume": u_ihlal == i_gen}
+        r["on_kayitli_ile_fark"] = len(i_on ^ i_gen)
     s = json.dumps(r, ensure_ascii=False, indent=1, default=str)
     if a.cikti:
         Path(a.cikti).write_text(s + "\n", encoding="utf-8")

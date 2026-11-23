@@ -126,8 +126,12 @@ def kur(
     struct_uncommon: bool = True,
     itab_araligi_bozuk: bool = False,
     tip_bolgesi_kes: int | None = None,
+    kod_yamalari: dict[int, list[tuple[int, int]]] | None = None,
+    bayraklar: dict[int, int] | None = None,
+    mimari: str = "arm64",
 ) -> tuple[BellekGoruntu, dict]:
     adlar = adlar or {}
+    bayraklar = bayraklar or {}
     dosyalar = dosyalar or {}
     pcsp = pcsp or {}
     fl = [(adlar.get(i, a), fid, dosyalar.get(i, d)) for i, (a, fid, d) in enumerate(FONKSIYONLAR)]
@@ -169,7 +173,7 @@ def kur(
     for i, (_a, fid, _d) in enumerate(fl):
         ftab += struct.pack("<II", girisler[i], ftab_boy + len(funcs))
         funcs += struct.pack("<IiiIIIIIIiBBBB", girisler[i], name_off[i], 0, 0, pcsp_off[i],
-                             pcfile_off[i], 0, 0, 0, 10 + i, fid, 0, 0, 0)
+                             pcfile_off[i], 0, 0, 0, 10 + i, fid, bayraklar.get(i, 0), 0, 0)
     ftab += struct.pack("<II", son, 0)
     pclntable = bytes(ftab + funcs)
     baslik = struct.pack("<IBBBBQQQQQQQQ", G.MAGIC_120, 0, 0, 4, 8, n, len(dosya_off), 0,
@@ -318,7 +322,11 @@ def kur(
         rk[md_adres + 8 * i] = v
     modul = b"\x11" * 0x40 + bytes(md) + b"\x22" * 0x40
 
-    kod = struct.pack("<I", 0xD503201F) * (son // 4) + b"\0" * 0x100
+    kod = bytearray(struct.pack("<I", 0xD503201F) * (son // 4) + b"\0" * 0x100)
+    for i, yamalar in (kod_yamalari or {}).items():
+        for ofs, w in yamalar:
+            struct.pack_into("<I", kod, girisler[i] + ofs, w)
+    kod = bytes(kod)
     bolumler = [
         ("__text", GO_METIN, kod, True),
         ("__gopclntab", PCLN, pclntab, False),
@@ -327,7 +335,7 @@ def kur(
         ("__go_buildinfo", BINFO, _buildinfo(surum), False),
         ("__rodata", TIPLER, tip_baytlari, False),
     ] + ek_bolumler
-    g = BellekGoruntu(bolumler, mimari="arm64", yeniden_konumlamalar=rk, fonksiyon_baslangiclari=gabs)
+    g = BellekGoruntu(bolumler, mimari=mimari, yeniden_konumlamalar=rk, fonksiyon_baslangiclari=gabs)
     bilgi = {"girisler": gabs, "tipler": {"T": t_t, "PT": t_pt, "PL": t_pl, "F": t_f, "U": t_u,
                                            "PU": t_pu, "I": i_i}}
     return g, bilgi
@@ -555,3 +563,123 @@ def test_son_bilesen_ve_koseli_ayrac() -> None:
     assert T.son_bilesen("p.(*T[a.B[c.D]]).M-fm") == "M"
     assert T.koseli_soy("T[x[y]].M") == "T.M"
     assert T.dosya_paketi("github.com/x/y@v1.2.3/z/f.go") == "github.com/x/y/z"
+
+
+# ---------------------------------------------------------------------------
+# K10: pcsp ↔ giriş bölümü yığın ayarlaması (arm64)
+# ---------------------------------------------------------------------------
+
+NOP = 0xD503201F
+
+
+def str_on(n: int) -> int:          # str x30, [sp, #-n]!
+    return 0xF8000C00 | (((-n) & 0x1FF) << 12) | (31 << 5) | 30
+
+
+def stp_on(n: int) -> int:          # stp x29, x30, [sp, #-n]!
+    return 0xA9800000 | ((((-n) // 8) & 0x7F) << 15) | (30 << 10) | (31 << 5) | 29
+
+
+def sub_sp(n: int) -> int:          # sub sp, sp, #n
+    return 0xD1000000 | (n << 10) | (31 << 5) | 31
+
+
+def sub_kayit(rd: int, n: int, sh: int = 0) -> int:   # sub xRd, sp, #n[, lsl #12]
+    return 0xD1000000 | (sh << 22) | (n << 10) | (31 << 5) | rd
+
+
+def sub_ek(rd: int, n: int, sh: int = 0) -> int:      # sub xRd, xRd, #n[, lsl #12]
+    return 0xD1000000 | (sh << 22) | (n << 10) | (rd << 5) | rd
+
+
+def movz(rd: int, v: int, hw: int = 0) -> int:
+    return 0xD2800000 | (hw << 21) | (v << 5) | rd
+
+
+def movk(rd: int, v: int, hw: int) -> int:
+    return 0xF2800000 | (hw << 21) | (v << 5) | rd
+
+
+def sub_yazmac(rd: int, rm: int) -> int:              # sub xRd, sp, xRm
+    return 0xCB206000 | (rm << 16) | (31 << 5) | rd
+
+
+def mov_sp(rn: int) -> int:                           # mov sp, xRn
+    return 0x91000000 | (rn << 5) | 31
+
+
+def _k10(s: T.TutarlilikSonucu, b: dict, i: int) -> bool:
+    return T.DENETIM_K10 in s.isaretler.get(b["girisler"][i], frozenset())
+
+
+def test_arm64_yigin_komutu_cozumu() -> None:
+    assert T.arm64_yigin_komutu(str_on(32)) == ("dus", 32, 0)
+    assert T.arm64_yigin_komutu(stp_on(48)) == ("dus", 48, 0)
+    assert T.arm64_yigin_komutu(sub_sp(64)) == ("dus", 64, 0)
+    assert T.arm64_yigin_komutu(sub_kayit(20, 0x19, 1)) == ("kayit", 0x19000, 20)
+    assert T.arm64_yigin_komutu(sub_ek(20, 0x610)) == ("ek", 0x610, 20)
+    assert T.arm64_yigin_komutu(mov_sp(20)) == ("mov", 0, 20)
+    assert T.arm64_yigin_komutu(NOP) is None
+    assert T.arm64_yigin_komutu(0xF81E0FFD) is None          # str x29 (x30 değil)
+    assert T.arm64_buyuk_cerceve_komutu(sub_yazmac(20, 27)) == ("sub_reg", 20, 27, 0)
+    assert T.arm64_buyuk_cerceve_komutu(movz(27, 0x9610)) == ("movz", 27, 0x9610, 0)
+    assert T.arm64_buyuk_cerceve_komutu(movk(27, 1, 1)) == ("movk", 27, 1, 16)
+
+
+@pytest.mark.parametrize("komut,deger", [(str_on(32), 32), (stp_on(48), 48), (sub_sp(64), 64)])
+def test_k10_uyumlu_giris_bolumu_isaretlenmez(komut: int, deger: int) -> None:
+    g, b = kur(kod_yamalari={F_YARDIM: [(12, komut)]}, pcsp={F_YARDIM: [(0, 16), (deger, BOY - 16)]})
+    s = T.denetle(g)
+    assert not _k10(s, b, F_YARDIM) and _damga(s, b, F_YARDIM) == T.DAMGA_TEK_KAYNAK
+    assert s.ozet["K10"]["uyumlu"] == 1 and s.ozet["K10"]["ihlal"] == 0
+
+
+def test_k10_buyukluk_uyusmazsa_tutarsiz() -> None:
+    g, b = kur(kod_yamalari={F_PT_AD: [(12, str_on(32))]}, pcsp={F_PT_AD: [(0, 16), (48, BOY - 16)]})
+    s = T.denetle(g)
+    assert _k10(s, b, F_PT_AD) and _damga(s, b, F_PT_AD) == T.DAMGA_TUTARSIZ
+    assert s.ozet["guclu_isaretli_fonksiyon"] == 0          # K10 güçlü T oranına girmez
+    assert s.ozet["K10_ihlal_fonksiyon"] == 1
+
+
+def test_k10_yigin_komutu_olmayan_tutarsiz() -> None:
+    g, b = kur(pcsp={F_YARDIM: [(0, 16), (32, BOY - 16)]})     # pc−4'te nop
+    s = T.denetle(g)
+    assert _k10(s, b, F_YARDIM) and _damga(s, b, F_YARDIM) == T.DAMGA_TUTARSIZ
+
+
+def test_k10_buyuk_cerceve_movz_movk_yazmac() -> None:
+    kod = [(0, movz(27, 0x9610)), (4, movk(27, 1, 1)), (8, sub_yazmac(20, 27)), (12, NOP), (16, mov_sp(20))]
+    g, b = kur(kod_yamalari={F_YARDIM: kod}, pcsp={F_YARDIM: [(0, 20), (0x19610, BOY - 20)]})
+    assert not _k10(T.denetle(g), b, F_YARDIM)
+    g, b = kur(kod_yamalari={F_YARDIM: kod}, pcsp={F_YARDIM: [(0, 20), (0x9610, BOY - 20)]})
+    assert _k10(T.denetle(g), b, F_YARDIM)                     # movk parçası atlanırsa uyuşur: yanlış
+
+
+def test_k10_buyuk_cerceve_iki_parcali_sub() -> None:
+    kod = [(0, sub_kayit(20, 0x610)), (4, sub_ek(20, 0x19, 1)), (8, NOP), (12, mov_sp(20))]
+    g, b = kur(kod_yamalari={F_YARDIM: kod}, pcsp={F_YARDIM: [(0, 16), (0x19610, BOY - 16)]})
+    assert not _k10(T.denetle(g), b, F_YARDIM)
+    kod = [(0, sub_kayit(20, 0x2, 1)), (4, NOP), (8, mov_sp(20))]
+    g, b = kur(kod_yamalari={F_YARDIM: kod}, pcsp={F_YARDIM: [(0, 12), (0x2000, BOY - 12)]})
+    assert not _k10(T.denetle(g), b, F_YARDIM)
+
+
+def test_k10_cercevesiz_ve_asm_bakilmaz() -> None:
+    g, b = kur(pcsp={F_GOGO: [(0, 16), (32, BOY - 16)]}, bayraklar={F_GOGO: G.FUNC_FLAG_ASM})
+    s = T.denetle(g)
+    assert not _k10(s, b, F_GOGO) and not _k10(s, b, F_YARDIM)
+    assert s.ozet["K10"]["sayim"]["asm"] == 1
+    assert s.ozet["K10"]["sayim"]["cercevesiz"] == len(FONKSIYONLAR) - 1
+
+
+def test_k10_arm64_disinda_desteklenmiyor() -> None:
+    g, b = kur(pcsp={F_YARDIM: [(0, 16), (32, BOY - 16)]}, mimari="x86_64")
+    s = T.denetle(g)
+    assert s.ozet["K10"]["durum"] == "desteklenmiyor" and not _k10(s, b, F_YARDIM)
+
+
+def test_k10_kapatilabilir() -> None:
+    g, b = kur(pcsp={F_YARDIM: [(0, 16), (32, BOY - 16)]})
+    s = T.denetle(g, k10=False)
+    assert s.ozet["K10"] == {"durum": "kapali"} and not _k10(s, b, F_YARDIM)
