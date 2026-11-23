@@ -388,7 +388,7 @@ kaydı yeşil).
 | H6 | TUTTU | T3 yanlış alarmı %0,486 … %16,34 (33,6 kat) |
 | H7 | koşul sağlandı | 11 dilimde güçlü oran en çok 0 (T2p düzeltmesi öncesi limactl %0,206 → 4,9 kat; dürüst not yukarıda) |
 
-Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (144 KB; ölçüm özeti `ozet/`:
+Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (`du -sh` 188 KB, tam takım günlüğü dahil; ölçüm özeti `ozet/`:
 `taban_*.json`, `sinama_docker-compose.json`, `deney_k10_*.json` (son), `deney_*.json` (ilk, K10'suz
 ve T2p düzeltmesi öncesi), `k10_*.json`, `kabul_10_dilim.json`, `hipotezler.json`).
 
