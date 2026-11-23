@@ -439,7 +439,7 @@ class RttiTarayici:
             if ott is None:
                 continue
             v = VtableKaydi(loc - SOZCUK, c[1], ott)
-            self._yuvalari_oku(v, loc + SOZCUK, ti, ic)
+            self._yuvalari_oku(v, loc + SOZCUK, ti)
             if v.yuvalar:
                 vt.append(v)
         return vt
@@ -459,9 +459,11 @@ class RttiTarayici:
             return None
         return deger
 
-    def _yuvalari_oku(self, v: VtableKaydi, a: int, ti: dict[int, TypeinfoKaydi], ic: set[int]) -> None:
+    def _yuvalari_oku(self, v: VtableKaydi, a: int, ti: dict[int, TypeinfoKaydi]) -> None:
+        # Yürüyüş bir typeinfo nesnesinin başında biter (ilk sözcüğü cxxabiv1 bağı). typeinfo'nun içinden başlayan
+        # aday dış döngüde elenir (``ic``): bu yüzden burada iç sözcük denetimi yok.
         while True:
-            if a in ti or a in ic:
+            if a in ti:
                 return
             c = self._coz(a)
             if c is None:

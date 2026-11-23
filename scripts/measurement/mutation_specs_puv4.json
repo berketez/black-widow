@@ -1,0 +1,133 @@
+{
+ "_comment": "P-ÜV4 (2026-11-23): C++ RTTI sembolsüz tarayıcı ve rtti_recovery adımı. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv4.json. İlk sekiz plan listesi (PLAN.md P-ÜV4 'Sınama ve mutasyon'), kalanı ek.",
+ "mutants": [
+  {
+   "id": "puv4_en_ust_bit_maskelenmez",
+   "desc": "ad göstericisinin en üst bitleri (tekil değil işareti) maskelenmez",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestTypeinfo::test_tekil_olmayan_bit_maskelenir_ve_kaydedilir",
+   "find": "return (_YEREL, ham & AD_MASKE, zayif, bool(ham >> AD_TEKIL_OLMAYAN_BITI))",
+   "replace": "return (_YEREL, ham, zayif, bool(ham >> AD_TEKIL_OLMAYAN_BITI))"
+  },
+  {
+   "id": "puv4_typeinfo_ici_vtable_sayilir",
+   "desc": "typeinfo nesnesinin içindeki typeinfo başvurusu vtable adayı sayılır",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestVtable::test_typeinfo_icindeki_basvuru_vtable_sayilmaz",
+   "find": "if loc in ic or loc in ti:",
+   "replace": "if loc in ti:"
+  },
+  {
+   "id": "puv4_tepeye_uzaklik_pozitif",
+   "desc": "tepeye uzaklık pozitif kabul edilir",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestVtable::test_vtable_listesi_ve_tuzaklar",
+   "find": "if not TEPEYE_UZAKLIK_ALT <= deger <= 0:",
+   "replace": "if not TEPEYE_UZAKLIK_ALT <= deger:"
+  },
+  {
+   "id": "puv4_ice_aktarim_yuvasi_sira_ilerletmez",
+   "desc": "içe aktarım yuvası atlanır ama sıra numarası ilerlemez",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestVtable::test_ice_aktarim_yuvasi_sirayi_ilerletir",
+   "find": "                yuva: Optional[int] = None  # içe aktarılan işlev (ör. saf sanal): sıra ilerler",
+   "replace": "                a += SOZCUK\n                continue"
+  },
+  {
+   "id": "puv4_zayif_bag_cozulmez",
+   "desc": "zayıf bağ adı aynı ikilide tanımlı olsa da yerel adrese çevrilmez",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestTypeinfo::test_zayif_bagli_ad_yerel_adrese_cevrilir",
+   "find": "yerel = self._yerel().get(p.ad)",
+   "replace": "yerel = None"
+  },
+  {
+   "id": "puv4_vmi_taban_adimi_8",
+   "desc": "vmi taban kaydı adımı 16 yerine 8 bayt",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestTypeinfo::test_tabanlar_si_ve_vmi",
+   "find": "VMI_TABAN_KAYDI = 16      # (__base_type, __offset_flags)",
+   "replace": "VMI_TABAN_KAYDI = 8  # (__base_type, __offset_flags)"
+  },
+  {
+   "id": "puv4_yuva_siniri_yok",
+   "desc": "yuva üst sınırı uygulanmaz",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestVtable::test_yuva_ust_siniri_keser_ve_sayar",
+   "find": "if len(v.yuvalar) >= self.azami_yuva:",
+   "replace": "if False:"
+  },
+  {
+   "id": "puv4_belirsiz_ilk_sinifa",
+   "desc": "taban ilişkisi olmayan çok sınıflı işlev ilk sınıfa bağlanır",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestYuvaSinif::test_taban_iliskisi_yoksa_belirsiz_aday_yok",
+   "find": "                    ib.karar = BAG_BELIRSIZ",
+   "replace": "                    ib.sinif, ib.karar = siniflar[0], BAG_BELIRSIZ"
+  },
+  {
+   "id": "puv4_tepeye_uzaklik_duzeltme_yeri",
+   "desc": "tepeye uzaklık sözcüğü yeniden konumlama yeri olsa da kabul edilir",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestVtable::test_vtable_listesi_ve_tuzaklar",
+   "find": "if p is not None and p != ham:",
+   "replace": "if p is not None and p != ham and False:"
+  },
+  {
+   "id": "puv4_gcc_yerel_ad_soyulmaz",
+   "desc": "GCC '*' yerel ad işareti adda kalır",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestElf::test_elf_adlari_ve_gcc_yerel_ad",
+   "find": "ad = ad[len(GCC_YEREL_AD_ON):]",
+   "replace": "ad = ad"
+  },
+  {
+   "id": "puv4_macho_oneki_soyulmaz",
+   "desc": "Mach-O bağ adının fazladan alt çizgisi soyulmaz (cxxabiv1 vtable adı tanınmaz)",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestTypeinfo::test_bes_typeinfo_tur_ve_ad",
+   "find": "return ad[1:] if ad.startswith(\"__Z\") else ad",
+   "replace": "return ad"
+  },
+  {
+   "id": "puv4_devralinan_yuva_sifirlanmaz",
+   "desc": "rtti_classes'ta başka sınıfa bağlı (devralınan) yuva da yazılır",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestYuvaSinif::test_rtti_classes_add_rtti_bicimi",
+   "find": "[y if (y and bag.get(y) == t.adres) else 0 for y in v.yuvalar]",
+   "replace": "[y or 0 for y in v.yuvalar]"
+  },
+  {
+   "id": "puv4_adim_bayrak_dogruluk",
+   "desc": "adım bayrağı 'is True' yerine doğruluk değeriyle okunur",
+   "module": "karadul/pipeline/steps/rtti_recovery.py",
+   "test": "tests/test_puv4_rtti.py::TestAdim::test_bayrak_tam_true_degilse_kapali",
+   "find": "return getattr(recon, \"enable_rtti_recovery\", False) is True",
+   "replace": "return bool(getattr(recon, \"enable_rtti_recovery\", False))"
+  },
+  {
+   "id": "puv4_adim_sinir_iletilmez",
+   "desc": "adım config'teki yuva üst sınırını tarayıcıya iletmez",
+   "module": "karadul/pipeline/steps/rtti_recovery.py",
+   "test": "tests/test_puv4_rtti.py::TestAdim::test_yuva_siniri_configden",
+   "find": "return rtti.tara(g, azami_yuva=azami_yuva)",
+   "replace": "return rtti.tara(g)"
+  },
+  {
+   "id": "puv4_vmi_sinir_yok",
+   "desc": "vmi taban sayısı üst sınırı uygulanmaz",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestSaglamlik::test_vmi_taban_sayisi_siniri",
+   "find": "if n is None or n > VMI_TABAN_AZAMI:",
+   "replace": "if n is None:"
+  },
+  {
+   "id": "puv4_kodda_denetimi_yok",
+   "desc": "yuva göstericisinin kod bölümünde olduğu denetlenmez",
+   "module": "karadul/analyzers/ustveri/cpp_rtti_tara.py",
+   "test": "tests/test_puv4_rtti.py::TestVtable::test_sayilar",
+   "find": "if c[1] in ti or not self._kodda(c[1]):",
+   "replace": "if c[1] in ti:"
+  }
+ ]
+}
