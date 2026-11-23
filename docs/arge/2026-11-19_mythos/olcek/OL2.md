@@ -17,7 +17,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`). 
 | 7 | sqlite3 (H2) | bitti: **TUTTU** (çıkış 3; sınırsız adımların en uzunu 2,069 sn) | bu commit |
 | 8 | S8 (H3, H5) | bitti: H3 **metne göre TUTMADI (cat'te `total_queries` 107 → 0; ön kayıtta önceden yazılı fark)**, `total_queries` dışında 8 / 8 tuttu; H5 **TUTTU** (kesilen adım 0) | bu commit |
 | 8b | Ek koşu (ön kayıt dışı): sqlite3, bütçe 1 sn | bitti: xref (genel sembol sayımında) ve BSim ingest gerçek Ghidra'da kesildi | bu commit |
-| 9 | T25 (H1, H4) | koşuyor (20:49:08'den beri, yuva 1) | — |
+| 9 | T25 (H1, H4) | köprü bitti (20:49:08–21:15:25): **H1 TUTTU** (BSim 582,95 sn; sorgu atlandı; ingest 576,3 sn, bitti), **H4 TUTTU** (decompile dışı en uzun sessizlik 22 sn); statik aşamanın köprü sonrası kısmı koşuyor | bu commit |
 | 10 | Tam takım (yamasız) | bitti: 11 029 geçti / 19 atlandı / 1 kaldı (beklenen) | bu commit |
 
 **20:52 — bekliyorum (T25):** T25 20:49:08'de yuva 1'de başladı (1 dk yük 9,60; ana oturumun Ollama koşusu 20:44'te bitti). TAHMİNİ bitiş 21:35–21:55 (gösteri / ana oturum koşusunda BSim'e kadar ~28 dk + ingest ≤ 900 sn + sorgu atlanır). 21:58'de bitmemişse durdurulur, ölçülebilen kadarı yazılır.
@@ -111,6 +111,23 @@ Yamalı öntanımda (`bos_depoda_sorgu_atla: True`) iki P16b testi boş depoda a
 - Amaç: H2 koşusunda döküm adımları 2 sn'nin altında kaldığı için döküm işlevlerinin kesilme yolu gerçek Ghidra'da görülmemişti. 20:48:30–20:49:04 (yuva 2; 1 dk yük 14,29), ayar `…/OL2/sqlite3_1sn/ol2_ek_1sn.yaml`, çıkış **3**. Ölçüm `ozet/ek_sqlite3_1sn.json`, `ozet/ek_xref_kiyas.json`.
 - Kesilen adımlar: **`ghidra.xref`** 1,023 sn (fonksiyon bölümü bitti 1 144 / 1 144; genel sembol sayımında kesildi: `neden` "adım bütçesi (1 sn) doldu; genel sembol sayımı yarıda (5120 sembol)"; `xrefs.json` geçerli JSON, `kismi: true`, `islenen 1144`, `toplam 1144`; `function_xrefs` S8'deki tam sqlite3 çıktısıyla **eşit**, yalnız `total_globals_with_xrefs` 3 979 (tam 7 591); kısmi alanlar sözlüğün sonunda) ve **`ghidra.bsim.ingest`** 1,027 sn (74 / 429 fonksiyon tarandı ve eklendi, `bsim_status: kismi`; sorgu atlandı). `call_graph` 0,970 sn ve `cfg` 0,816 sn bütçeye sığdı: fonksiyon döngüsünün içinden kesilme gerçek Ghidra'da yine görülmedi (birim testlerinde sınandı).
 - Olaylar: `ghidra.xref durum=kismi islenen=1144 toplam=1144 gecen_sn=1.023 neden="xrefs: …"`, `ghidra.bsim.ingest durum=kismi islenen=74 toplam=429 …`, `ghidra.bsim.query durum=atlandi …`.
+
+## Kalem 9 — T25 (H1, H4)
+
+- Koşu: kuyruk `OL2 T25:ollama`, yuva 1, 20:49:08 başladı (1 dk yük 9,60 / 16,98 / 20,91; aynı anda PUV5 ve başka ajanlar: **yük altında**). Sürücü `betik/tek_kos.zsh`: `python -m karadul analyze …/gosteri-2026-11-19/ollama/girdi/Ollama --stage static --skip-dynamic --config t25/ol2_t25.yaml --verbose`, taze `KARADUL_CACHE_DIR` (`t25/cache`), ürün ağacı `urun-d83f100`, dış `timeout 4500`. Ayar: ana oturum koşusunun `analysis` bölümü (ObjC ileti çözümleyicisi kapalı) + üç alan (3 600 / true / 900). Ölçüm `betik/t25_olc.py` → `ozet/t25_olc.json`.
+- Köprü 20:49:11 (ilk `ILERLEME`) → 21:15:25 (`ghidra.kapatma bitti`): adım süreleri (HZ-1 saati, sn): jvm 2,1 · içe aktarma 2,7 · otomatik analiz 107,5 · functions 0,6 · strings 1,5 · call_graph 26,0 · decompile 448,5 · types 0,03 · xref 132,6 · pcode 2,1 · cfg 267,4 · function_id 0,08 · **bsim.ingest 576,3** · **bsim.query 6,6** · combined 0,01 · kapatma 0,3. `step_errors` boş.
+- **BSim:** ingest 13 160 / 13 160 fonksiyonu taradı ve ekledi, bütçe (900 sn) dolmadı (`bsim_detail.ingest_s` 569,6; durum `bitti`); sorgu **atlandı** (taze depo: `bsim_status: atlandi`, `sorgu_atlandi: true`, `neden` "depoda başka program yok; …", `total_queries` 0, `total_matches` 0, `known_executables` 1, `h2_released: true`). **BSim adımı 582,95 sn** (ingest 576,30 + sorgu 6,65); önce aynı dilimde 1 781 sn (ana oturum koşusu 10:02:41 → 10:32:22; 13 160 sorgu 714 sn, 0 eşleşme). Ingest bu yükte 900 sn'ye ulaşmadığı için ingest bütçesinin kesmesi T25'te görülmedi (H2 ve ek koşuda görüldü).
+- Adım içi olaylar (gerçek sayaçla): 106 `ILERLEME` satırı; `suruyor` olayları call_graph (1), xref, cfg ve BSim ingest'te (32; ör. `islenen=8294 toplam=13559 gecen_sn=15.0` çağrı grafiğinde, `islenen=12643 toplam=13160 gecen_sn=554.5` ingest'te), decompile parça olayları (ÖL-1).
+- **H4:** 20:49:11 → 21:15:25 arasında ardışık `ILERLEME` satırları arasındaki en uzun boşluk, decompile dışındaki adımlarda **22 sn** (BSim ingest içinde, 21:11:16 → 21:11:38; tek fonksiyonun taraması); adım başına en uzun: otomatik analiz 15, call_graph 15, xref 20, cfg 21, BSim ingest 22, BSim sorgu 7 sn; 60 sn'yi geçen boşluk 0. Decompile içinde (hükümsüz, HZ-3'ün işi): **332 sn** (`decompile basladi` 20:51:31 → ilk parça olayı 20:57:03; parçalar aynı anda başlayıp sona yakın bittiği için).
+- Ön kayıt hükümleri:
+
+| Ön kayıt | Ölçülen | Hüküm |
+|---|---|---|
+| H1 BSim adımı ≤ 930 sn | **582,95 sn** (önce 1 781) | TUTTU |
+| H1 `total_matches` 0 → 0 | 0 | TUTTU |
+| H1 `bsim_status` `atlandi` (taze depo); ingest bütçeyi aşarsa `kismi` | `atlandi`; ingest bütçeyi aşmadı (576 sn < 900) | TUTTU |
+| H4 decompile dışı en uzun `ILERLEME` sessizliği ≤ 60 sn | **22 sn** | TUTTU |
+| (ek, hükümsüz) decompile içi en uzun sessizlik | 332 sn | rapor |
 
 ## Kalem 10 — tam takım (yamasız)
 
