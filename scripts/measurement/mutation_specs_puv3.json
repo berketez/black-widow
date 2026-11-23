@@ -1,0 +1,149 @@
+{
+ "_comment": "P-ÜV3 (2026-11-23): Swift tip üst verisi okuyucu ve swift_metadata_recovery adımı. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv3.json",
+ "mutants": [
+  {
+   "id": "puv3_genel_hizalama_yok",
+   "desc": "genel bağlam parametre baytlarından sonra 4 bayt hizalaması atlanır",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_vtable_yuvalari",
+   "find": "        pos += (-pos) % 4\n",
+   "replace": "        pos += 0\n"
+  },
+  {
+   "id": "puv3_dirençli_ust_yok",
+   "desc": "dirençli üst sınıf (bit 13) artçısı atlanmaz",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_vtable_yuvalari",
+   "find": "            pos += RESILIENT_SUPER_SIZE\n",
+   "replace": "            pos += 0\n"
+  },
+  {
+   "id": "puv3_tekil_baslatma_4",
+   "desc": "tekil başlatma artçısı 12 yerine 4 bayt atlanır",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_vtable_yuvalari",
+   "find": "            pos += SINGLETON_INIT_SIZE\n",
+   "replace": "            pos += FOREIGN_INIT_SIZE\n"
+  },
+  {
+   "id": "puv3_yontem_betimleyici_12",
+   "desc": "yöntem betimleyicisi 8 yerine 12 bayt alınır",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_vtable_yuvalari",
+   "find": "                pos += METHOD_DESCRIPTOR_SIZE\n",
+   "replace": "                pos += OVERRIDE_DESCRIPTOR_SIZE\n"
+  },
+  {
+   "id": "puv3_dolayli_bit_maskelenmez",
+   "desc": "dolaylı göreli göstericide düşük bit maskelenmez",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_nitelikli_adlar",
+   "find": "            return self.g.gosterici(adres + (v & ~1))\n",
+   "replace": "            return self.g.gosterici(adres + v)\n"
+  },
+  {
+   "id": "puv3_slots_ad_adayi",
+   "desc": "swift_slots kayıtları ad adayı olarak swift_types'a eklenir",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_swift_slots_ad_adayi_degil",
+   "find": "        return [t.as_dict() for t in self.tipler if t.erisim is not None]\n",
+   "replace": "        return [t.as_dict() for t in self.tipler if t.erisim is not None] + [dict(y, ad=y.get(\"tip\")) for y in self.yuvalar]\n"
+  },
+  {
+   "id": "puv3_tanik_tablo_sinirinda_durmaz",
+   "desc": "dış protokol tanık taraması başka tablonun başlangıcında durmaz",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_tanik_yuvalari",
+   "find": "if sinir is None and (a in wt_adresleri or j > MAX_WITNESS_SCAN):",
+   "replace": "if sinir is None and (j > MAX_WITNESS_SCAN):"
+  },
+  {
+   "id": "puv3_ice_aktarim_kisa_ad",
+   "desc": "içe aktarım ABI adı (N) yerine kısa ad yazılır",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_nitelikli_adlar",
+   "find": "            abi = parcalar.get(IMPORT_TAG_ABI_NAME, ad)\n",
+   "replace": "            abi = ad\n"
+  },
+  {
+   "id": "puv3_uzanti_genel_baslik_8",
+   "desc": "uzantının genel başlığı +12 yerine +8'de okunur",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_kaynaksiz_adsiz_ve_kisitli_uzanti_ad_almaz",
+   "find": "EXTENSION_GENERIC_HEADER = 12 ",
+   "replace": "EXTENSION_GENERIC_HEADER = 8 "
+  },
+  {
+   "id": "puv3_kisitli_uzantiya_ad",
+   "desc": "kısıtlı uzantı (genel gereksinimli) içindeki tipe ad verilir",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_kaynaksiz_adsiz_ve_kisitli_uzanti_ad_almaz",
+   "find": "            if nreq:\n                raise _Baglam(N_UZANTI_KISITLI)\n",
+   "replace": "            if nreq is None:\n                raise _Baglam(N_UZANTI_KISITLI)\n"
+  },
+  {
+   "id": "puv3_vtable_ust_siniri_yok",
+   "desc": "vtable boyutu üst sınırı uygulanmaz",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestSaglamlik::test_vtable_ust_siniri",
+   "find": "            if boyut > MAX_VTABLE:\n",
+   "replace": "            if boyut > MAX_VTABLE * 100_000:\n"
+  },
+  {
+   "id": "puv3_objc_ayrac_ad_denetimi_yok",
+   "desc": "ObjC adında ayraçtan sonra tipin adı denetlenmez",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_ayrac_yardimcilari",
+   "find": "        if len(ayrac) == uz and objc_adi.startswith(ad, m.end() + uz):\n",
+   "replace": "        if len(ayrac) == uz:\n"
+  },
+  {
+   "id": "puv3_karisik_ayrac_LL_yok",
+   "desc": "adsız bağlamın karışık adında ayraçtan sonra LL denetlenmez",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_ayrac_yardimcilari",
+   "find": "            if len(ayrac) == uz and karisik[sonra:sonra + 2] == \"LL\":\n",
+   "replace": "            if len(ayrac) == uz:\n"
+  },
+  {
+   "id": "puv3_std_kisaltma_yanlis",
+   "desc": "SS kısaltması Swift.String yerine Swift.Substring",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_nitelikli_adlar",
+   "find": "\"S\": \"Swift.String\",",
+   "replace": "\"S\": \"Swift.Substring\","
+  },
+  {
+   "id": "puv3_paylasimli_erisim",
+   "desc": "paylaşımlı erişim fonksiyonu eşiği > 1 yerine >= 3",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_paylasimli_erisim_ad_yazilamaz",
+   "find": "            t.erisim_paylasimli = sayim[t.erisim] > 1\n",
+   "replace": "            t.erisim_paylasimli = sayim[t.erisim] >= 3\n"
+  },
+  {
+   "id": "puv3_gk_hedef_sira",
+   "desc": "geçersiz kılma kaydında yöntem alanı (+4) yerine sınıf alanı (+0) okunur",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv3_swift.py::TestOkuyucu::test_gecersiz_kilma_hedefi_ve_async_govde",
+   "find": "OVERRIDE_METHOD_OFS = 4\n",
+   "replace": "OVERRIDE_METHOD_OFS = 0 \n"
+  },
+  {
+   "id": "puv3_bayrak_dogruluk_degeri",
+   "desc": "adım bayrağı 'is True' yerine doğruluk değeriyle okunur",
+   "module": "karadul/pipeline/steps/swift_metadata_recovery.py",
+   "test": "tests/test_puv3_swift.py::TestAdim::test_bayrak_tam_true_degilse_kapali",
+   "find": "    return getattr(recon, \"enable_swift_metadata_recovery\", False) is True\n",
+   "replace": "    return bool(getattr(recon, \"enable_swift_metadata_recovery\", False))\n"
+  },
+  {
+   "id": "puv3_tutarsiz_ad_listesi",
+   "desc": "tutarsız durumda da ad listesi (swift_types) döner",
+   "module": "karadul/pipeline/steps/swift_metadata_recovery.py",
+   "test": "tests/test_puv3_swift.py::TestAdim::test_tutarsizsa_ad_listesi_yok_kanit_var",
+   "find": "        if sonuc.durum == swift.DURUM_TUTARSIZ:\n",
+   "replace": "        if sonuc.durum == \"hic_olmayan\":\n"
+  }
+ ]
+}

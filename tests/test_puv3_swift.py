@@ -419,6 +419,8 @@ class TestOkuyucu:
     def test_ayrac_yardimcilari(self) -> None:
         assert swift._karisik_ayrac(f"$s3Mod5Gizli{len(DISC)}{DISC}LLV", "Gizli") == DISC
         assert swift._karisik_ayrac("$s3Mod1f5YerelL_V", "Yerel") is None  # yerel tip: ayraç yok
+        assert swift._karisik_ayrac("$s3Mod5Gizli3abcV", "Gizli") is None  # ad + tanımlayıcı ama LL yok
+        assert swift._karisik_ayrac(f"$s3Mod5Gizli3abcV5Gizli{len(DISC)}{DISC}LLV", "Gizli") == DISC
         assert swift._objc_ayrac(f"_TtC3ModP{len(DISC)}{DISC}10GizliSinif", "GizliSinif") == DISC
         assert swift._objc_ayrac("_TtC3Mod10GizliSinif", "GizliSinif") is None
         assert swift._objc_ayrac("_TtCF3Mod1fFT_T_L_10GizliSinif", "GizliSinif") is None
