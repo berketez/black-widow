@@ -68,6 +68,47 @@ Kök `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/ollama_ustveri/` (özet `ozet/O
 - **Sonraki adım (mola sonrası; ürün kodu, Opus):** BA-1 paketi — üç kalıbın geri izlemesiz yazımı + bu satırla süre testi (mutasyonlu) + `block_annotator.py`'deki öbür kalıpların aynı sınıf için taranması; kabul: Ollama uçtan uca koşusu bayraklar açıkken biter, `out/naming_map.json`'da `üst veriden` sayılır. Dosya kümesi yalnız `block_annotator.py` + yeni test: üç zincirin hiçbirine girmez, PUV5 / PK1 / OK1 / OL10A ile birlikte gidebilir. Geçici yol (kod değişmeden): `binary_reconstruction.enable_block_annotation: false` ile yeniden koşu (~95 dk); koşulmadı (Berke'nin mola talimatı).
 - Üst veri bayraklarının öntanımda açılması BA-1'e de bağlandı: bayrak açıkken Go ikilisinde koşu bitmiyor.
 
+## Oturum kapanışı (15:2x) — kalan iş sayımı ve süre tahmini
+
+Berke: "Karadul'un aktif kullanılmasına kaç iş var, ne kadar sürer; hedefe ulaşılacağı varsayımıyla." Sayım ana oturumun (kaynak: hat planlarının paket başlıkları `docs/arge/2026-11-19_mythos/*/PLAN.md`, `olcek/OL10_TASARIM.md` §7, bu dosya). Süreler ölçüm değil TAHMİN.
+
+**Biten:** iki uygulama oturumunda 18 paket (20 Kas 11, 23 Kas 7), 4–5 ajanla yaklaşık 6,5 saat ajan çalışması → ölçülen hız yaklaşık 2,8 paket / saat. Önceki onarım turu ayrı.
+
+**Kalan: yaklaşık 81 paket** (plan 74 diyordu; fark: ÖL-10 tek paketken 10 alt pakete açıldı, HZ-7 dört alt paket sayıldı, 6 yeni iş eklendi, A-29 ile 3 paket düştü).
+
+| Hat | Kalan | Paketler |
+|---|---|---|
+| Üst veri | 4 | PUV5 (metin hazır), P-ÜV6b, açılış ölçümü (A-14; P-ÜV9 kalem 3), P-ÜV8 kalem 4 |
+| Kimlik | 9 | PK-1 (metin hazır), PK-2, PK-3, PK-4, PK-5, PK-7, PK-8, PK-9, PK-10 |
+| Öz kod | 4 | P12d + ÖK-1 (OK1; metin hazır), ÖK-2, ÖK-4a, ÖK-7 |
+| Ölçü | 6 | P-Ö2, P-Ö3′, P-Ö5, P-Ö6, P-Ö7, P-Ö8 |
+| Ölçek | 23 | ÖLÇ-1, ÖLÇ-2, ÖL-2, ÖL-3, ÖL-3b, ÖL-4, ÖL-5a, ÖL-5b, ÖL-6, ÖL-7, ÖL-8, ÖL-9, ÖL-11; ÖL-10 A … J (OL10A metni hazır) |
+| Hız | 13 | HZ-0, HZ-2, HZ-3, HZ-4a, HZ-4b (koşullu), HZ-5, HZ-6, HZ-7a / b / c / d, HZ-8 (koşullu), HZ-9 |
+| Küçükler ve onarım | 16 | BA-1, P16f, MUTBAKIM-2, OKUMA, D1, D2, D4, D5, D7, G7, P24, P18, P10b, P08b, P03b, P23 |
+| Kapanış | 6 | 119 birleşik + hedef seti ölçümü, bayrak kararları (K-1 / K-4), Y8 (derle + kur), Y7, Y6, sürüm + kılavuz |
+
+**Kritik yol (seri zincirler; ajan sayısı artsa da kısalmaz):**
+- Ghidra köprüsü (`headless.py`): ÖL-2 → HZ-2 → ÖL-3 + HZ-4a → HZ-3 → ÖL-6 → ÖL-10'un köprüye dokunan alt paketleri (en az OL10-D). Yaklaşık 8 seri paket; paket başına 1–1,5 saat + doğrulama → TAHMİN 10–14 oturum saati.
+- Ad bağlama: PUV5 → PK-1 → PK-5 → PK-4 → PK-7 → P-ÜV6b (PK-4'ten önce PK-2 → PK-3). 6 seri paket → TAHMİN 8–10 oturum saati.
+
+**Toplam süre (TAHMİN):**
+- Her ön kayıt ilk seferde tutarsa: 30–40 oturum saati (kalan paketler bitenlerden ortalama daha ağır: ÖL-10, PK-4, Y8) + 4 gece koşusu.
+- Gerçekçi: iki oturumda 18 paket biterken plan dışı 7 iş çıktı (P16e, P16f, MUTBAKIM-2, OKUMA, BA-1, açılış ölçümü, P-ÜV6 bölünmesi) → aynı oranla 40–55 oturum saati; bugünkü uzunlukta 10–14 oturum ya da 5–7 tam gün; 5–7 gece koşusu (Gece 1, Gece 2, "sonra" ölçümü, 119 birleşik + hedef seti, OL10-J büyük ikili kabulü, KIMLIK'in kalan 35 çifti).
+- Takvim (18–23 Kasım'daki sıklıkla, 6 günde 4 oturum): Aralık'ın ikinci yarısı; iyimser 10 Aralık dolayı; aşağıdaki risklerden biri gerçekleşirse Ocak başı.
+
+**Ara duraklar (bitiş çizgisi A-7 değişmez; bu yalnız sıra önerisi):**
+1. **Orta boy uygulamada kullanılır hâl (yaklaşık 11 paket; 2–3 oturum + 1 gece):** BA-1, PUV5, PK-1, P-ÜV6b, açılış ölçümü, ÖL-2, ÖL-4, HZ-7a, D5 + G7, Y8'in ilk derlemesi; kabul: Ollama dilimi bayraklar açıkken uçtan uca biter, çıktıda yaklaşık 10 600 ad, ilerleme görünür. Süre beklentisi (TAHMİN): bugünkü 2 saat → yaklaşık 1 saat (BSim'in boşa giden 30 dakikası atlanır).
+2. **Büyük ikili ve `.app` paketi (yaklaşık 25 paket; 4–6 oturum + 3–4 gece):** köprü zinciri, ÖL-5a / 5b, ÖL-7, ÖL-9, ÖL-10 A … J, HZ-5, ÖLÇ-1 / 2, HZ-0 / 9.
+3. **Tanıma, model katmanı, kapanış (yaklaşık 45 paket; 4–6 oturum + 2 gece):** kimlik 9, ölçü 6, öz kod 4, küçükler, MCP (P24), KaradulLM duman listesi (Y7), gerçek büyük uygulama (Y6), son ölçümler. Çoğu ayrık dosyalı, paralel gider.
+
+**Riskler (tahmini en çok oynatacak olanlar):**
+- ÖL-10: tasarımı var, kodu yok; 95 MB için bugünkü ürünün Ghidra aşaması TAHMİN 14–39 saat; kabul sınırları (K0 ≤ 300 sn, K2 ≤ 2 700 sn) hiçbir ölçümle sınanmadı.
+- Ghidra sonrası adımlar büyük ve adlı girdide ilk kez koşuyor: BA-1 bugün böyle çıktı; yeniden kurmada 3,68 M düzenli ifade derlemesi var (HZ-7). Aynı sınıftan yeni takılma beklenir; Ghidra sonrası adımlarda takılma bekçisi yok.
+- Y8: uygulama en son Temmuz'da derlendi (5 belgelenmiş paketleme tuzağı); o günden beri kod çok değişti. Öneri: sona bırakmak yerine 1. durakta bir kez derlenip kurulsun.
+- Beklenti sınırı: bitişte de ad kapsamı dile göre çok farklı olacak. Go %92–100, ObjC / Swift kısmi; soyulmuş saf C / C++'ta üst veri 0, öz kod kuralları kör nüfusta tutmadı (A-29); oradaki tek aday kimlik hattı (başvuru ikilisi varsa kapsam %80–88).
+
+**Kapanıştaki durum:** main `f23e285` + bu commit; çalışan ajan, koşu ve Ghidra süreci yok; push YOK (origin `9c9b2d4`). Duran ağaçlar (silme Berke'nin kalem kalem onayına bağlı): bugünkü 7 ajan worktree'si + P12d (`agent-a733cb2eb8bc2b9fd`, OK1 okuyacak) + `dogrulama-d1`, `dogrulama-d2`; `~/karadul_olcum/runs/dalga1-2026-11-23/` 8,4 GB (P16e `s8_sonra_3` S8 tabanı, `ANA/ollama_ustveri` BA-1 kanıtı). Disk: kullanılan 706,7 GB.
+
 ## Berke (09:2x): "bu tüm ajanlar bitince bir duralım, mola vermek istiyorum"
 
 - Yeni ajan gönderilmez. Çalışan dördü (PUV6a, PUV7, PUV4, OL1) bitince doğrulanıp main'e alınır, sonra durulur.
