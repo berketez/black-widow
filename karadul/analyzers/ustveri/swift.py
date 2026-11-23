@@ -353,6 +353,7 @@ class SwiftOkuyucu:
         self._kod_baslari = [a for a, _ in self._kod_araliklari]
         self._ad_onbellek: dict[int, tuple[Optional[str], set[str], Optional[str]]] = {}
         self._objc_ayrac: Optional[dict[int, str]] = None
+        self._adsiz_ayrac: Optional[dict[int, str]] = None
 
     # ---- temel okuma -------------------------------------------------------------------------
     def kodda(self, adres: Optional[int]) -> bool:
@@ -541,10 +542,38 @@ class SwiftOkuyucu:
                     a = _karisik_ayrac(karisik, kisa)
                     if a is not None:
                         return a
-        objc_adi = self.objc_ayraclari().get(cocuk)
-        if objc_adi is not None:
-            return _objc_ayrac(objc_adi, kisa)
-        return None
+        return self.adsiz_ayraclari().get(adsiz)
+
+    def adsiz_ayraclari(self) -> dict[int, str]:
+        """Adsız bağlam → ayraç, Swift sınıflarının ObjC çalışma zamanı adlarından.
+
+        ObjC adı sınıfın bütün bağlam yolunu taşır (``_TtCV5OrnekP33_<ayraç>8GizliKap7IcSinif``). Sınıf
+        betimleyicisinden üst bağlam zinciri yürünür; zincirdeki her adsız bağlam için altındaki tipin kısa
+        adıyla ``P<uz><ayraç><uz><kısa ad>`` bileşeni aranır. Eşleme yapısaldır (aynı betimleyici zinciri);
+        aynı adsız bağlama iki farklı ayraç düşerse o bağlam eşlenmez (tahmin yok).
+        """
+        if self._adsiz_ayrac is not None:
+            return self._adsiz_ayrac
+        aday: dict[int, set[str]] = {}
+        for d, objc_adi in self.objc_ayraclari().items():
+            cocuk = d
+            for _ in range(MAX_CONTEXT_DEPTH):
+                ust = self._yerel(self.rel_ind(cocuk + OFS_PARENT))
+                fu = self.g.u32(ust) if ust is not None else None
+                if ust is None or fu is None:
+                    break
+                if fu & FLAG_KIND_MASK == KIND_ANONYMOUS:
+                    fc = self.g.u32(cocuk)
+                    kisa = (self._cstr(self.rel(cocuk + OFS_NAME))
+                            if fc is not None and fc & FLAG_KIND_MASK in TYPE_KINDS else None)
+                    a = _objc_ayrac(objc_adi, kisa) if kisa else None
+                    if a is not None:
+                        aday.setdefault(ust, set()).add(a)
+                if fu & FLAG_KIND_MASK == KIND_MODULE:
+                    break
+                cocuk = ust
+        self._adsiz_ayrac = {k: next(iter(v)) for k, v in aday.items() if len(v) == 1}
+        return self._adsiz_ayrac
 
     def objc_ayraclari(self) -> dict[int, str]:
         """Swift sınıf betimleyicisi → ObjC çalışma zamanı adı (``__objc_classlist``'teki Swift sınıfları)."""
@@ -1026,19 +1055,20 @@ def _karisik_ayrac(karisik: str, kisa: str) -> Optional[str]:
 
 
 def _objc_ayrac(objc_adi: str, kisa: str) -> Optional[str]:
-    """ObjC çalışma zamanı adının sonundaki ``P<uz><ayraç><uz><kısa ad>`` bölümünden ayraç."""
+    """ObjC çalışma zamanı adındaki ``P<uz><ayraç><uz><kısa ad>`` bileşeninden ayraç (eski karışık ad biçimi:
+    özel bildirim adı ``P`` + ayraç tanımlayıcısı + ad). Birden çok farklı eşleşme → ``None``."""
     if not kisa.isascii():
         return None
-    son = f"{len(kisa.encode())}{kisa}"
-    if not objc_adi.endswith(son):
-        return None
-    on = objc_adi[:-len(son)]
-    for m in _PRIVATE_OBJC_RE.finditer(on):
+    ad = f"{len(kisa.encode())}{kisa}"
+    bulunan: set[str] = set()
+    for m in _PRIVATE_OBJC_RE.finditer(objc_adi):
+        if m.group(1).startswith("0"):
+            continue
         uz = int(m.group(1))
-        ayrac = on[m.end():]
-        if len(ayrac) == uz and not m.group(1).startswith("0"):
-            return ayrac
-    return None
+        ayrac = objc_adi[m.end():m.end() + uz]
+        if len(ayrac) == uz and objc_adi.startswith(ad, m.end() + uz):
+            bulunan.add(ayrac)
+    return next(iter(bulunan)) if len(bulunan) == 1 else None
 
 
 def tutarsizlik_nedeni(sonuc: SwiftSonuc) -> Optional[str]:

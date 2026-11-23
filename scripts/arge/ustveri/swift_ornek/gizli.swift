@@ -36,6 +36,17 @@ private final class GizliSon {
     func son() -> Int { IcYapi().u }
 }
 
+// özel yapı / enum içinde sınıf: sınıfın ObjC adı dış tipin ayracını taşır
+private struct GizliKap {
+    final class IcSinif { var w = 12 }
+    struct IcIc { var z = 13 }
+}
+
+fileprivate enum GizliDurum {
+    case a
+    final class DurumSinifi { var d = 14 }
+}
+
 private protocol GizliProtokol {
     func gp() -> Int
 }
@@ -49,5 +60,6 @@ func gizliKullan() -> [Any] {
     struct Yerel { var q = 9 }
     final class YerelSinif { var r = 10 }
     return [GizliYapi(), GizliYapi.IcAcik(), DosyaSinifi().g(), DosyaAltSinifi().f(), GizliEnum.y(1),
-            AcikYapi().yap(), AcikYapi.IcDosya.p, GizliGenel(5).al(), GizliUyan().gp(), Yerel(), YerelSinif().r, GizliSon().son(), GizliSon.IcYapi()]
+            AcikYapi().yap(), AcikYapi.IcDosya.p, GizliGenel(5).al(), GizliUyan().gp(), Yerel(), YerelSinif().r, GizliSon().son(), GizliSon.IcYapi(),
+            GizliKap(), GizliKap.IcSinif().w, GizliKap.IcIc(), GizliDurum.a, GizliDurum.DurumSinifi().d]
 }

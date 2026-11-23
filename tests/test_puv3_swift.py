@@ -422,6 +422,32 @@ class TestOkuyucu:
         assert swift._objc_ayrac(f"_TtC3ModP{len(DISC)}{DISC}10GizliSinif", "GizliSinif") == DISC
         assert swift._objc_ayrac("_TtC3Mod10GizliSinif", "GizliSinif") is None
         assert swift._objc_ayrac("_TtCF3Mod1fFT_T_L_10GizliSinif", "GizliSinif") is None
+        ic = f"_TtCV3ModP{len(DISC)}{DISC}3Kap7IcSinif"
+        assert swift._objc_ayrac(ic, "Kap") == DISC and swift._objc_ayrac(ic, "IcSinif") is None
+        iki = f"_TtCV3ModP{len(DISC)}{DISC}1AP{len(DISC)}{DISC[::-1]}1A"
+        assert swift._objc_ayrac(iki, "A") is None  # iki farklı ayraç: tahmin yok
+
+    def test_ayrac_ic_sinifin_objc_adindan(self) -> None:
+        k = Kurucu()
+        m = k.modul("Mod")
+        a = k.adsiz(m)
+        kap = k.tip(swift.KIND_STRUCT, "Kap", a)
+        ic = k.tip(swift.KIND_CLASS, "IcSinif", kap)
+        yapi = k.tip(swift.KIND_STRUCT, "IcIc", kap)
+        b = k.adsiz(m)
+        yalniz = k.tip(swift.KIND_STRUCT, "Yalniz", b)
+        ro = k.ekle("__data", bytes(48), 8)
+        k.yaz(ro + 24, struct.pack("<Q", k.cstr(f"_TtCV3ModP{len(DISC)}{DISC}3Kap7IcSinif")))
+        cls = k.ekle("__data", bytes(72), 8)
+        k.yaz(cls + 32, struct.pack("<Q", ro | 2))
+        k.yaz(cls + 64, struct.pack("<Q", ic))
+        k.gosterici("__objc_classlist", cls)
+        for d in (kap, ic, yapi, yalniz):
+            k.kayit(d)
+        s = swift.oku(k.goruntu())
+        assert [t.nitelikli_ad for t in s.tipler] == [f"Mod.(Kap in {DISC})", f"Mod.(Kap in {DISC}).IcSinif",
+                                                      f"Mod.(Kap in {DISC}).IcIc", None]
+        assert all(t.alt_kume == swift.ALT_ADSIZ for t in s.tipler)
 
 
 # --- sağlamlık -------------------------------------------------------------------------------
