@@ -104,3 +104,11 @@ Kök `PUV5/urun/kapali` (dal `caa14e3`, ayar dosyası yok) ve `PUV5/urun/taban` 
 | htop | **bayt aynı / aynı / aynı** | 1 (`entry`) | 0 | 0 / 0 (giriş thunk; nüfus dışı) |
 
 **Kuyruk notu (20:13):** zincirim kuyruğun ikinci yuvasını OL2'den önce kapıyordu (yeni çağrı beklemesiz, bekleyen öbür çağrı 5 sn uykulu); OL2 20:08'den beri bekliyordu. Kuyruğun paket bekletme dosyasıyla (`ghidra_kuyruk.bekle.PUV5`) kendi yeni çağrılarımı OL2 bir iş başlatana dek durdurdum (20:10–20:13). Sonra OL2'nin S8 zinciri yuvayı aynı yolla tutuyor; benim kalan 7 çiftim sırada.
+
+## Kalem 5 — tam takım (yamasız; 19:59–20:16, 1 014 sn, yük altında; kod `caa14e3` = şimdiki kod, sonraki commit'ler yalnız belge / yama)
+
+`PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` → **10 916 geçti / 62 atlandı / 5 kaldı** (152 seçim dışı). Günlük `PUV5/tam_takim.log`.
+
+- 1 beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — "kayıtta ama okunuyor: {'binary_reconstruction.enable_macho_entry_main': ['karadul/stages.py']}" (yama kaldırır).
+- 4 ortam: `test_deobfuscator.py::TestExtractModules::{test_extract_webpack_modules, test_extract_from_sample_minified}`, `test_pipeline.py::TestPipelineExecution::test_identify_and_static`, `test_project_reconstructor.py::TestReconstructIntegration::test_reconstruct_with_explicit_modules_dir` — worktree'de `scripts/node_modules` bağı takım başlarken yoktu (`node … deobfuscate.mjs` çıkış 1). Bağ kurulunca dördü yeniden koşuldu: **4 / 4 geçti**. Değişiklikle ilgisiz.
+- Yamalı kopya (`PUV5/yamali_agac/`, depo dışı; `config.py` yaması `patch -p1` ile orada uygulandı, worktree'deki `config.py`'ye dokunulmadı): `test_p15a_etkisiz` + `test_bayrak_on_paketi` + `test_puv5_macho_main` → **195 geçti / 8 atlandı / 0 kaldı**.
