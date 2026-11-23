@@ -1,0 +1,86 @@
+{
+  "_comment": "ÖK-1 mutasyon koruması (plan adım 6). Onarım: c_namer._oz_ad_verbatim_name (bayrak oz_ad_verbatim açık ∧ kanıt tek tanımlayıcı ∧ iç alt çizgi ∧ küçük harf → ad = kanıt) ve alt_kanal._is_own_name tanım sürümü 2 (ad == e ya da ad == e.lower()). Her mutant onarımın bir parçasını bozar; ilgili test KIRMIZI olmalı. find metinleri dosyada tekil; mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ok1.json",
+  "mutants": [
+    {
+      "id": "ok1_ic_alt_cizgi_sarti_yok",
+      "desc": "koşuldaki iç alt çizgi şartı kalkar (_private, trailing_ aynen ad olur)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_e_kosulu_tutmayan_kanitta_bugunku_yol",
+      "find": "and \"_\" in e.strip(\"_\")",
+      "replace": "and True",
+      "expect": "killed"
+    },
+    {
+      "id": "ok1_kucuk_harf_sarti_yok",
+      "desc": "küçük harf şartı kalkar (EXIT_FAILURE aynen ad olur)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_e_kosulu_tutmayan_kanitta_bugunku_yol",
+      "find": "                and any(c.islower() for c in e)):",
+      "replace": "                and True):",
+      "expect": "killed"
+    },
+    {
+      "id": "ok1_ad_kucuk_harfe_cevrilir",
+      "desc": "new_name = e yerine e.lower() (eski kusur geri gelir)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_a_karisik_harfli_tanimlayici_aynen",
+      "find": "            return e\n",
+      "replace": "            return e.lower()\n",
+      "expect": "killed"
+    },
+    {
+      "id": "ok1_is_own_name_harf_kolu_yok",
+      "desc": "_is_own_name'de ad == e kolu silinir (harfi korunan ad tanimlayici'ya düşer, susar)",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_a_karisik_harfli_tanimlayici_aynen",
+      "find": "            and (inp.name == inp.stripped or inp.name == inp.stripped.lower()))",
+      "replace": "            and (inp.name == inp.stripped.lower()))",
+      "expect": "killed"
+    },
+    {
+      "id": "ok1_bayrak_ters",
+      "desc": "bayrak denetimi ters çevrilir (kapalıyken harf korunur)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_f_bayrak_kapaliyken_bugunku_kucuk_harfli_ad",
+      "find": "        if not getattr(br, \"oz_ad_verbatim\", False):",
+      "replace": "        if getattr(br, \"oz_ad_verbatim\", False):",
+      "expect": "killed"
+    },
+    {
+      "id": "ok1_ad_kullanilmaz",
+      "desc": "yardımcının sonucu ada yazılmaz (strateji bugünkü yola döner)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_a_karisik_harfli_tanimlayici_aynen",
+      "find": "            new_name = verbatim\n",
+      "replace": "            pass\n",
+      "expect": "killed"
+    },
+    {
+      "id": "ok1_bosluk_atilmaz",
+      "desc": "kanıtın baştaki / sondaki boşluğu atılmaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_e2_bastaki_sondaki_bosluk_atilir",
+      "find": "        e = evidence.strip()\n",
+      "replace": "        e = evidence\n",
+      "expect": "killed"
+    },
+    {
+      "id": "ok1_isci_bayragi_gormez",
+      "desc": "bayrak config yerine sabit False okunur (işçide ve ana süreçte ölü)",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_gercek_havuzda_harf_korunur",
+      "find": "        br = getattr(getattr(self, \"_config\", None), \"binary_reconstruction\", None)\n",
+      "replace": "        br = None\n",
+      "expect": "killed"
+    },
+    {
+      "id": "ok1_tanim_surumu_1",
+      "desc": "tanım sürümü 2 → 1 (köken kaydı eski tanımı yazar)",
+      "module": "karadul/reconstruction/tarif/alt_kanal.py",
+      "test": "tests/test_ok1_oz_ad_harf.py::test_g_is_own_name_surum_2",
+      "find": "DEFINITION_VERSION = 2\n",
+      "replace": "DEFINITION_VERSION = 1  # eski\n",
+      "expect": "killed"
+    }
+  ]
+}
