@@ -120,7 +120,6 @@ def test_duzenli_ifadeler_basvuruyla_ayni(urun, basvuru):
 
 
 @pytest.mark.parametrize("urun, basvuru", [
-    ("DEFINITION_VERSION", "TANIM_SURUMU"),
     ("STRATEGY", "STRATEJI"),
     ("PATH_AGGRESSIVE", "AGRESIF_YOL"),
     ("PATH_CLASSIC", "KLASIK_YOL"),
@@ -146,7 +145,16 @@ def test_alt_kanal_listesi_ve_sirasi():
         "kebap_ad", "hata_iletisi", "bicim_dizgisi", "duz_metin", "diger")
     assert [s.name for s in U.SUBCHANNELS] == [a.ad for a in R.ALT_KANALLAR]
     assert len(set(U.SUBCHANNEL_NAMES)) == len(U.SUBCHANNEL_NAMES) == 11
-    assert U.DEFINITION_VERSION == 1
+    assert U.DEFINITION_VERSION == 2
+
+
+def test_tanim_surumu_urun_2_basvuru_donuk_1():
+    """ÖK-1: ürün kopyası tanım sürümü 2 (``_is_own_name`` harfi korunan adı da ``oz_ad`` sayar);
+    başvuru betiği N0b'nin sha256'sı kilitli donuk sürüm 1 kopyasıdır ve değişmez. Sürüm 1'in
+    kabul ettiği her kayıt sürüm 2'de de ``oz_ad``: küçük harfli adlarda iki kopya aynı sınıflar
+    (bu dosyadaki sınıflama eşitliği testleri)."""
+    assert R.TANIM_SURUMU == 1
+    assert U.DEFINITION_VERSION == 2
 
 
 # --------------------------------------------------------------------------------------------

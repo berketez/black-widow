@@ -748,7 +748,7 @@ class BinaryReconstructionConfig:
     # PK-7: satır içi tanığı olan başvuru eşlemesi ad değil kanıt satırı yazar.
     anchored_reference_witness_gate: bool = False  # ETKİSİZ: PK-7 bağlayacak (INERT_SETTINGS)
     # ÖZ KOD. ÖK-1: kanıt dizgisi tek tanımlayıcıysa ad dönüştürülmeden yazılır.
-    oz_ad_verbatim: bool = False  # ETKİSİZ: ÖK-1 bağlayacak (INERT_SETTINGS)
+    oz_ad_verbatim: bool = False  # okuyan: reconstruction/c_namer.py _oz_ad_verbatim_name (ÖK-1)
     # ÖK-2: R1 teklik kapısı; tutmayan oz_ad adayı ad değil kanıt satırı olur.
     oz_ad_uniqueness_gate: bool = False  # ETKİSİZ: ÖK-2 bağlayacak (INERT_SETTINGS)
     # ÖK-3: G1; fonksiyonun tek başına andığı tanımlayıcı dizgi ad olur.
@@ -1314,7 +1314,6 @@ INERT_SETTINGS: dict[str, str] = {
     # başladığında yalnız kendi satırlarını siler ve alan satırındaki `# ETKİSİZ:` yorumunu
     # kaldırır (yama; ana oturum uygular). Tablo: docs/arge/2026-11-20_dalga0/BAYRAK.md.
     # ÖK-1 (Dalga 1)
-    "binary_reconstruction.oz_ad_verbatim": _pending_binding("ÖK-1"),
     # P-ÜV5 (Dalga 1)
     "binary_reconstruction.enable_macho_entry_main": _pending_binding("P-ÜV5"),
     # ÖK-2 (Dalga 2)
