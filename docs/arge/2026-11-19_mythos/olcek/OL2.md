@@ -11,13 +11,15 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`). 
 | 1 | Kod: döküm işlevlerine adım bütçesi + adım içi `suruyor` (`headless.py`) | bitti | `d83f100` |
 | 2 | Kod: BSim boş depo sorusu, ingest bütçesi, sorgu bütçe denetimi (`bsim.py` + `headless.py` BSim bloğu) | bitti | `d83f100` |
 | 3 | Testler (`tests/test_ol2_adim_butcesi.py` 39, `tests/test_ol2_bsim_kosul.py` 24) | bitti: 63 / 63 | `0fff66d` |
-| 4 | Mutasyon (`mutation_specs_ol2.json`) + sekiz eski tanım | ol2 33 / 33 bitti; eskiler koşuyor | `47947da` |
-| 5 | `config.py` yaması (`yamalar/OL2__config.py.patch`; `git apply --check` temiz; uygulanmadı) | bitti | `0fff66d` |
+| 4 | Mutasyon (`mutation_specs_ol2.json` 33 / 33) + sekiz eski tanım (161 / 161) | bitti | `47947da` |
+| 5 | `config.py` yaması (`yamalar/OL2__config.py.patch`; `git apply --check` temiz; uygulanmadı) + `test_p16b_bsim.py` yaması | bitti | `0fff66d`, `84d222b` |
 | 6 | Ön kayıt (`on_kayit_ol2.md`; ölçümden önce ayrı commit) | bitti | `1740d82` |
-| 7 | sqlite3 (H2) | sırada | — |
-| 8 | S8 (H3, H5) | sırada | — |
-| 9 | T25 (H1, H4) | sırada | — |
-| 10 | Tam takım (yamasız) | sırada | — |
+| 7 | sqlite3 (H2) | bitti: **TUTTU** (çıkış 3; sınırsız adımların en uzunu 2,069 sn) | bu commit |
+| 8 | S8 (H3, H5) | kuyrukta (20:08'den beri) | — |
+| 9 | T25 (H1, H4) | kuyruğa giriyor | — |
+| 10 | Tam takım (yamasız) | koşuyor (20:04'ten beri, arka planda) | — |
+
+**20:09 — bekliyorum:** S8 (8 ikili, tek kök `…/OL2/s8`, sıra ORTAK_D0 §6) ikinci yuvada PUV5 ile sırayla; birinci yuvayı ana oturumun Ollama koşusu tutuyor (19:36'dan beri, TAHMİN 1,5–2 sa). T25 kuyruğa giriyor: yuva boşalınca (büyük olasılıkla ana oturumun koşusu bitince) başlar. TAHMİNİ bitiş: S8 20:45–21:15; T25 başlangıcı 21:05–21:35, süresi 45–60 dk (yük altında; BSim'e kadar ~28 dk + ingest ≤ 900 sn), bitiş 21:50–22:05 (sert son 22:05: yetişmezse "kalan"). Tam takım arka planda (TAHMİN 12–20 dk).
 
 ## Kalem 1–2 — kod (`d83f100`)
 
@@ -48,6 +50,34 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`). 
 ## Kalem 4 — mutasyon
 
 - `scripts/measurement/mutation_specs_ol2.json`: **33 mutant, 33 öldü**, hata 0 (üretici `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/betik/spec_uret.py`: her `find` tekil, `replace` farklı uzunlukta). Günlük `…/OL2/mutasyon/ol2.log`.
+- **Sekiz eski tanım** (`headless.py` / `bsim.py`'de `find` tutan) değişiklikten sonra yeniden koşuldu, tanımlara dokunulmadı: hz1 13 / 13, ol1 29 / 29, p13a 22 / 22, p16a 33 / 33, p16c 16 / 16, p16d 11 / 11, p16e 13 / 13, p16b 24 / 24 öldü (**161 / 161**); hata 0; **bayatlayan `find` yok**; `git diff` temiz. Günlükler `…/OL2/mutasyon/{hz1,ol1,p13a,p16a,p16c,p16d,p16e,p16b}.log`, özet `eski_ozet.txt`. Not (bu paketten önce de böyleydi): p16b'nin `p16b_mesgul_lite` (`if _is_busy_error(exc):`) ve `p16b_yuva_eki_yok` (`query.max = …`) `find` metinleri `bsim.py`'de iki kez geçiyor ve tanımda `occurrence` yok (ilk eşleşme mutasyona uğrar); taban `0b4d948`'de de iki kez geçiyordu, bu paket sayıyı değiştirmedi.
+
+## Kalem 5 ek — `test_p16b_bsim.py` yaması (`84d222b`)
+
+Yamalı öntanımda (`bos_depoda_sorgu_atla: True`) iki P16b testi boş depoda aynı programı ingest edip sorgunun koştuğunu bekliyor: `TestGhidra01Kilit::test_oturum_kilidi_ingestten_sorgu_sonuna_kadar` (`total_queries == 2` → 0) ve `TestGhidra02Kimlik::test_ingest_kaynak_kaydi_yazar` (`excluded.self >= 2` → 0). İkisi de ÖL-2'nin bilerek değiştirdiği davranış (boş depoda sorgu kendi kendine eşleşirdi). Dosya listemde değil → yama `docs/arge/2026-11-23_dalga1/yamalar/OL2__test_p16b_bsim.py.patch`: dosyanın `_cfg` yardımcısında `cfg.bsim.bos_depoda_sorgu_atla = False` (dosya sorgunun kendisini sınıyor). Denetim worktree DIŞINDA bir kopyada (`…/OL2/yamali_kopya/`, `patch -p1`; ağaca uygulanmadı): yalnız config yamasıyla BSim / bütçe alanlarına dokunan 13 test dosyasında 426 testten 2 kırmızı (bu ikisi), iki yamayla `test_p16b_bsim` + `test_bsim` + `test_p16c_bsim_toplu` + `test_ol2_bsim_kosul` 89 / 89. **Ana oturum config yamasını uygularken bu yamayı da uygulamalı.**
+
+## Kalem 7 — sqlite3 (H2)
+
+- Koşu 20:07:05–20:08:01 (kuyruk `OL2 H2:debian/sqlite3`, yuva 2; 1 dk yük 23,65 → 20,63; **yük altında**). `python -m karadul analyze <S8 raw kopyası> --stage static --config ol2_h2.yaml` (`timeouts.ghidra_adim: 2`, `bos_depoda_sorgu_atla: true`, `ingest_butcesi_sn: 900` → ingest bütçesi 2), taze `KARADUL_CACHE_DIR`, ürün ağacı `urun-d83f100`. Ölçüm `betik/h2_olc.py` → `ozet/h2_sqlite3.json`.
+- **Çıkış kodu 3** ("analiz kısmi tamamlandı … static: Ghidra adımı başarısız (bsim_ingest): adım bütçesi (2 sn) doldu").
+
+| Adım (HZ-1 saati, sn) | sqlite3, bütçe 2 sn | ≤ 7 sn? | Not |
+|---|---|---|---|
+| ghidra.strings | 0,140 | evet | bütçe dolmadı |
+| ghidra.call_graph | 1,102 | evet | bütçe dolmadı |
+| ghidra.types | 0,023 | evet | |
+| ghidra.xref | 1,347 | evet | bütçe dolmadı |
+| ghidra.pcode | 0,032 | evet | JSONL yolu (Ghidra döngüsü yok) |
+| ghidra.cfg | 0,992 | evet | |
+| ghidra.function_id | 0,009 | evet | |
+| **ghidra.bsim.ingest** | **2,069** | evet | **kesildi**: 253 / 429 fonksiyon tarandı ve eklendi; `bsim_status: kismi` |
+| ghidra.bsim.query | 0,241 | evet | taze depo: sorgu atlandı (`sorgu_atlandi: true`) |
+| (sınırsız olmayanlar) jvm 4,512 · içe aktarma 5,418 · otomatik analiz 19,147 · functions 0,081 · decompile 11,654 · combined 0,009 · kapatma 0,037 | | | |
+
+- Kesilen adımın çıktısı geçerli JSON: `bsim_matches.json` `json.loads` ile okunuyor; `bsim_status: "kismi"`, `bsim_detail.neden` "ingest: adım bütçesi (2 sn) doldu; depoda başka program yok; sorgu kendi kendine eşleşirdi ve dışlanırdı", `ingest_islenen 253`, `ingest_toplam 429`, `ingested_functions 253`. BSim'in kısmi işareti ön kayıttaki `kismi: true` değil `bsim_status: kismi` (BSim şemasında durum alanı; tasarım).
+- Olaylar: `ghidra.bsim.ingest durum=kismi islenen=253 toplam=429 gecen_sn=2.069 neden="bsim_ingest: adım bütçesi (2 sn) doldu"`, `ghidra.bsim.query durum=atlandi neden=…`.
+- Karşılaştırma için (salt okunur, aynı ikili, bütçesiz): P16e `s8_sonra_3` sqlite3'te ingest 11,788 sn, sorgu 11,775 sn.
+- **Hüküm H2: TUTTU** (her sınırsız adım ≤ 7 sn: en uzun 2,069 sn; bütçesi dolan adımın çıktısı geçerli JSON ve kısmi işaretli; çıkış 3). **Sınır:** sqlite3'te döküm adımları zaten 2 sn'nin altında; bu koşuda bütçesi gerçekten dolan tek adım BSim ingest. Döküm işlevlerinin kesilme yolu gerçek Ghidra'da bu koşuyla SINANMADI (birim testlerinde sınandı); ön kayıt dışı ek koşu aşağıda (koşulursa).
 
 ## Kalem 5 — `config.py` yaması (`0fff66d`)
 
