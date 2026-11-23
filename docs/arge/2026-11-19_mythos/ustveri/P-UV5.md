@@ -8,8 +8,31 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV5/` (ölçüm özetleri
 
 | Kalem | Durum | Commit |
 |---|---|---|
-| 1 ön kayıt | sürüyor | — |
-| 2 kod + birim testleri + mutasyon | başlamadı | — |
-| 3 Ghidra'sız yeniden oynatma (Mac 8, ELF 5, hedef seti) | başlamadı | — |
-| 4 ürün koşusu (kuyruk) | başlamadı | — |
+| 1 ön kayıt | bitti | `bdd058f` |
+| 2 kod + birim testleri + mutasyon | bitti: 32 test, 15 / 15 mutant öldü | `a731db6`, `caa14e3` |
+| 3 Ghidra'sız yeniden oynatma (Mac 8, ELF 5, hedef seti) | sürüyor | — |
+| 4 ürün koşusu (kuyruk) | bayrak açık 8 Mach-O kuyrukta (19:54'te başlatıldı) | — |
 | 5 tam takım (yamasız) | başlamadı | — |
+
+**Şu an bekleniyor (19:55):** bayrak açık ürün koşusu, 8 Mach-O (htop, tmux, gmktemp, idn2, gettext, envsubst, xz, gsort), ikili başına ayrı kuyruk çağrısı (`kos.sh acik …`, kök `PUV5/urun/acik`). Kuyruğun bir yuvası ana oturumun Ollama koşusunda; öbür yuva OL2 ile paylaşılıyor. TAHMİN bitiş 20:20–20:45 (P-S3b'de bu altı ikili 29–174 sn sürmüştü; yük altında, sıra beklemesi dahil). Beklerken yeniden oynatma ve belge.
+
+## Kalem 2 — kod (`karadul/stages.py`)
+
+- `_recover_main_from_entry(…, config=None)`: ELF kalıbı (`__libc_start_main(FUN_…`) önce, değişmeden. Kalıp bulunamazsa ve `_macho_entry_main_enabled(config)` (yalnız gerçek `True`) → `_recover_macho_entry_main`.
+- `_recover_macho_entry_main`: `static/load_commands.txt` yoksa sessiz döner (Mach-O değil; kayıt da yazılmaz). Sonra sırayla: tek `LC_MAIN` `entryoff` (yoksa `lc_unixthread` / `lc_main_yok`; birden çoksa `lc_main_belirsiz`); `__TEXT` `vmaddr` ve Ghidra görüntü tabanı (`taban_okunamadi`); P-ÜV0 görüntüsü Mach-O (`ikili_okunamadi`) ve `MH_EXECUTE` (`mh_execute_degil`); `load_ghidra_index` (içe aktarıldı) + `delta = image_base − __TEXT vmaddr`; girişte Ghidra fonksiyonu (`ghidra_fonksiyonu_yok`), jenerik ad (`kesin.is_generic_name`: `entry` / `FUN_…`; değilse `ghidra_adli`), `<ad>.c` decompile çıktısında (`kodda_yok`); Go istisnası (`_go_entry_block`, ürünün `go_pclntab.oku`'su: `veri_yok` → engel yok; `calisti` → girişi kapsayan kaydın adı `main.main` değilse `go_giris_main_main_degil`, kapsayan yoksa `go_giris_pclntab_disinda`; başka durum → `go_okunamadi:<durum>`). Geçerse `extracted_names[<Ghidra adı>] = "main"`, `stats["main_recovered"]`; neden / kanıt `stats["macho_entry_main"]` (`durum`, `neden`, `giris`, `ghidra_adi`, `go_adi`, `kanit`).
+- Künye: tohum sırasındaki `mark_changed(…, KIND_MAIN)` aynen → `main_giris` (kanal `on_ad:main_giris`); `üst veriden` kullanılmadı (gönderim hüküm 3).
+- İkili görüntüsü: `static/universal_slice.json`'un seçtiği `raw/<ad>_<mimari>`, yoksa `raw/<ad>`, yoksa `target_info.path`; evrensel dosyada `goruntu.urun_dilimi`.
+
+### Kapsam sapması (1; gerekçeli)
+
+Gönderim "`stages.py`'de yalnız `_recover_main_from_entry` ve yardımcıları; başka yöntemler değişmez" diyor. `_recover_main_from_entry` ayar nesnesine erişemiyor (imzası `extracted_names, static_dir, stats`; `ReconstructionStage`'de `self.config` yok; aşamanın ayarı yalnız `_seed_recovery_pre_names`'in aldığı `context`'te). Bayrağı okumak için `_seed_recovery_pre_names`'teki iki çağrıya `getattr(context, "config", None)` argümanı eklendi (iki satır; mantık değişmedi). Bu olmadan bayrak üründe hiç okunamaz ve ürün koşusu (H1) yapılamazdı. Bu akşam `stages.py`'ye başka paket dokunmuyor (ORTAK_D1 §5 tablosu). Mutant `puv5_ayar_iletilmez` bu iletimi kilitler. Ana oturum istemezse geri alınabilir: o zaman kural yalnız birim düzeyinde kalır.
+
+### Testler ve mutasyon
+
+- `tests/test_puv5_macho_main.py`: 24 test fonksiyonu, parametrelerle 32 koşu (Mach-O + `LC_MAIN`; bayrak kapalı ×5 biçim; `LC_UNIXTHREAD`; ELF kalıbı önce; ELF biçimli görüntü; `load_commands.txt` yok; Go iç bağlayıcı `_rt0_arm64_darwin`; Go dış bağlayıcı `main` saplaması; Go `main.main`; Go okunamaz ×3; Go tablosu girişi kapsamaz; sembol adlı giriş ×3; `FUN_` adlı giriş; görüntü tabanı farkı; thunk; `MH_DYLIB`; ikili açılamaz; çoklu `LC_MAIN`; kodda tanım yok; girişte fonksiyon yok; önceki ad ezilir + ikinci çağrı; tohum künyesi `main_giris`; `otool -l` ayrıştırıcı; dilim seçimi).
+- `scripts/measurement/mutation_specs_puv5.json`: **15 / 15 öldü** (günlük `PUV5/mutasyon.log`); sonrasında `git diff` temiz.
+- İlgili 11 test dosyası: 427 geçti, 8 atlandı; tek kırmızı beklenen `test_p15a_etkisiz::test_inert_registry_is_accurate` ("kayıtta ama okunuyor: `binary_reconstruction.enable_macho_entry_main`", `karadul/stages.py`). (Worktree'de `vendor` bağı yokken iki P-S3b testi `vendor/gnulib-ref` bulamadı; bağ kurulunca geçti.)
+
+### Yama
+
+`docs/arge/2026-11-23_dalga1/yamalar/PUV5__config.py.patch`: INERT satırı (ve grup yorumu `# P-ÜV5 (Dalga 1)`) silinir; alan yorumu `okuyan: stages.py _recover_main_from_entry (P-ÜV5)`. `git apply --check` temiz; ağaca uygulanmadı (A-34).
