@@ -23,6 +23,7 @@ Bağlayıcılık sırası (çelişkide üstteki geçerli): `docs/arge/2026-11-19
 | `config.py` | Kimse yazmaz (A-19). Bağlayan paket INERT satırını silen ve alan satırındaki `# ETKİSİZ` yorumunu düzelten yamayı bırakır; tam takımı yama geçici uygulanmış hâlde koşar, sonra geri alır (yama commit'li, `config.py` değişikliği commit'siz) |
 | Sert son | gönderim metninde saatle yazılı. O saatte dur: bitmeyeni ilerleme dosyasına "kalan" diye yaz, commit'le, dön. `## PAKET BİTTİ` yalnız her şey bittiyse |
 | Disk | boş alan 08:05'te 191,8 GB. 10 GB'ı aşacak veri üretmeden önce dur ve bildir |
+| Koşu çıktısının ömrü (08:40'tan sonra gönderilen paketler) | Ürün koşusunun çalışma alanları (`ws/`, `out/`, `cache/`) kanıt değil ara üründür. Paket bitince dönüş mesajına koşu kökünün yolunu ve boyutunu (`du -sh`) yaz; ölçüm özetini (sayım JSON'u, ad haritaları, fark tabloları) kökün içinde `ozet/` altına topla. Çalışma alanlarını sen silme: ana oturum bağımsız doğrulamadan sonra `ozet/` dışını siler. 13 Ekim – 23 Kasım arasında bu kökler 103 GB birikmişti |
 
 ## 3. Değişmeyenler (hatırlatma; ayrıntı ORTAK_D0)
 
