@@ -96,8 +96,10 @@ from typing import Any, NamedTuple, Optional
 
 from karadul.core.naming_labels import LABEL_UNVERIFIED, LABEL_VERIFIED
 
-# Tanım sürümü: ölçüm betiğindeki ``TANIM_SURUMU`` ile aynı. Köken kaydına yazılır.
-DEFINITION_VERSION = 1
+# Tanım sürümü. Köken kaydına yazılır. Sürüm 1 ölçüm betiğindeki ``TANIM_SURUMU`` (donuk
+# başvuru kopyası, sha256'sı N0b ön kaydında); sürüm 2 (ÖK-1): ``_is_own_name`` harfi korunan
+# adı da kabul eder (``ad == e``). Sürüm 1'in kabul ettiği her kayıt sürüm 2'de de ``oz_ad``.
+DEFINITION_VERSION = 2
 
 # Sınıflamanın geçerli olduğu strateji. Başka stratejinin adayı sınıflanmaz (çağıran denetler).
 STRATEGY = "string_context"
@@ -279,8 +281,9 @@ def _is_underscored_identifier(stripped: str) -> bool:
 
 
 def _is_own_name(inp: ClassifierInput) -> bool:
+    # ÖK-1 (tanım sürümü 2): ad dizginin kendisi (harf korunmuş) ya da küçük harfli hâli.
     return (_is_underscored_identifier(inp.stripped) and any(c.islower() for c in inp.stripped)
-            and inp.name == inp.stripped.lower())
+            and (inp.name == inp.stripped or inp.name == inp.stripped.lower()))
 
 
 def _is_single_word(inp: ClassifierInput) -> bool:

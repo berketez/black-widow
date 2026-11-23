@@ -3557,6 +3557,10 @@ class CVariableNamer:
         # Isim olustur: kelimeleri birlestir
         new_name = "_".join(best_keywords[:3])
         new_name = _sanitize_c_name(new_name)
+        # ÖK-1: kanıt dizgisi tek bir C tanımlayıcısıysa ad dizginin kendisi (bayrakla).
+        verbatim = self._oz_ad_verbatim_name(best_string)
+        if verbatim is not None:
+            new_name = verbatim
 
         if not new_name or new_name == "unnamed":
             return
@@ -3575,6 +3579,26 @@ class CVariableNamer:
             rule="keywords",
             evidence_origin=_string_evidence_origin(best_idx, len(strings)),
         ), func_name=func_info.name)
+
+    def _oz_ad_verbatim_name(self, evidence: str) -> str | None:
+        """Klasik aşamada kanıt dizgisinin kendisi ad olacaksa o dizgi; yoksa None (ÖK-1).
+
+        ``binary_reconstruction.oz_ad_verbatim`` açıkken ve kanıt (baştaki / sondaki boşluk
+        atılmış) tek bir C tanımlayıcısı, iç kısmında en az bir alt çizgi ve en az bir küçük harf
+        taşıyorsa ad dönüştürülmeden yazılır: harf, rakam ve belirteç sayısı korunur
+        (``ZSTD_getCParamsFromCDict`` → ``ZSTD_getCParamsFromCDict``; anahtar sözcük yolu
+        ``zstd_getcparamsfromcdict`` kurardı). ``_sanitize_c_name`` çağrılmaz. Tamamı büyük harfli
+        dizgi (``EXIT_FAILURE``) ve alt çizgisiz tek sözcük bu yola girmez. Bayrak kapalıyken
+        her zaman None: bugünkü yol aynen.
+        """
+        br = getattr(getattr(self, "_config", None), "binary_reconstruction", None)
+        if not getattr(br, "oz_ad_verbatim", False):
+            return None
+        e = evidence.strip()
+        if (re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", e) and "_" in e.strip("_")
+                and any(c.islower() for c in e)):
+            return e
+        return None
 
     def _classic_evidence(
         self, scored: list[tuple[float, str, list[str], int]], n_refs: int,
