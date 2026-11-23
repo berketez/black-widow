@@ -275,3 +275,18 @@ bozma / bozuk üst veri içindir.
 (`paket` alanında `(` / `)` geçen fonksiyon): gh 10, limactl 71, Ollama arm64 4, ollama-cli arm64
 10, colima 11, docker-brew 270, arduino-cli 10, docker-cli 264. Bu fonksiyonların `paket` ve
 `sinif` alanı yanlış (ad doğru). Okuyucu bu pakette değiştirilmedi.
+
+## Kalem 9: dondurma
+
+Dondurulan dosyalar (bu commit'ten sonra SINAMA ölçümüne dek değişmez; SINAMA ikilisi
+docker-compose bu commit'e kadar hiç açılmadı — ne `taban`, ne `deney`, ne `k10`):
+
+| Dosya | sha256 |
+|---|---|
+| `karadul/analyzers/ustveri/go_tip.py` | `286a810eb1075fbcde0d88d9b8420a96b4709cc8096abac1b26631687646f9f8` |
+| `karadul/analyzers/ustveri/tutarlilik.py` | `bd785a6651b0a336c98465b482eae576c7a3884d6c4b69c4016a8f5d5d025b94` |
+| `scripts/measurement/ustveri_bozma.py` | `6551351ebb4da07952e82f1764d60fea706aacc1acada78f5d1c51ffdde570e5` |
+| (içe aktarılan, değiştirilmedi) `go_pclntab.py` | `8b1d38ff4dc145d6985ce744c936f266f4c5d3d073a0992c9847067382fd3597` (P-ÜV1 dondurmasıyla aynı) |
+| (içe aktarılan, değiştirilmedi) `goruntu.py` | `fe3584624119b60c3633dc8eb8f44f746cd3859da62f52d298b646bf44604417` |
+
+Dondurma commit'i: bu commit (kısa hash bir sonraki satırda, sınama sonucunun yanında).
