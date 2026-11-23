@@ -140,16 +140,19 @@ Berke: "Karadul'un aktif kullanılmasına kaç iş var, ne kadar sürer; hedefe 
 Berke (19:27): "kaldığımız yerden devam edelim, max 4 ajan." Düzen sabahla aynı: planlama ve doğrulama ana oturumda (Mythos), kod Opus'ta, aynı anda en çok 4 ajan.
 
 - **Başlangıç durumu (doğrulandı):** main = origin/main = `152176b`, ağaç temiz; çalışan ajan / koşu / Ghidra süreci yok; yük 5,4; kullanılan 706,7 GB, boş 259,5 GB.
-- **Bu dilim 6 ajan** (aynı anda en çok 4; CLAUDE.md §26): BA1, PUV5, PK1, OL2 (19:5x'te gönderildi); yer açıldıkça OK1, OL10A. Takılan ajanın yerine açılan sayıya dahildir. Dilim bitince sonraki dilim ayrıca ilan edilir.
+- **Bu dilim 6 ajan** (aynı anda en çok 4; CLAUDE.md §26): BA1, PUV5, PK1, OL2 (19:36'da gönderildi); yer açıldıkça OK1, OL10A. Takılan ajanın yerine açılan sayıya dahildir. Dilim bitince sonraki dilim ayrıca ilan edilir.
 - **Sıra gerekçesi:** OL2 `headless.py` zincirinin (kritik yol) sıradaki halkası; PUV5 ve PK1 ad bağlama zincirinin ayrık dosyalı iki halkası; BA1 Ollama'nın uçtan uca bitmesinin önündeki kusur. OK1 (`c_namer`) ve OL10A (yalnız yeni dosya) zincir beklemez, ilk açılan yuvalara.
 - Yeni gönderim metinleri: `gonderim/BA1.md`, `gonderim/OL2.md`; ortak brifin akşam eki `ORTAK_D1.md` §5.
 - **Ana oturumun koşusu:** Ollama dilimi uçtan uca, üst veri bayrakları açık, `enable_block_annotation: false` ve BSim kapalı (geçici yol; amaç blok açıklamadan SONRAKİ adımların büyük ve adlı girdide bitip bitmediğini BA1 beklenmeden görmek). Kök `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/ollama_ba_kapali/`, ürün ağacı `~/karadul_olcum/urun-152176b`.
 
 | Paket | Ajan | Model | Durum | Not |
 |---|---|---|---|---|
-| BA1 | — | Opus | gönderiliyor | `gonderim/BA1.md` |
-| PUV5 | — | Opus | gönderiliyor | `gonderim/PUV5.md` |
-| PK1 | — | Opus | gönderiliyor | `gonderim/PK1.md` |
-| OL2 | — | Opus | gönderiliyor | `gonderim/OL2.md` |
+| BA1 | a6cebf741f6009eac | Opus | çalışıyor (19:36; sert son 21:05) | `gonderim/BA1.md` |
+| PUV5 | a277a10ca22f7524d | Opus | çalışıyor (19:36; sert son 21:25) | `gonderim/PUV5.md` |
+| PK1 | ab1e189470f79388e | Opus | çalışıyor (19:36; sert son 21:25) | `gonderim/PK1.md` |
+| OL2 | af188ae0aaac8598e | Opus | çalışıyor (19:36; sert son 22:05) | `gonderim/OL2.md` |
 | OK1 | — | Opus | sırada (ilk açılan yuva) | `gonderim/OK1.md` |
 | OL10A | — | Opus | sırada (ikinci açılan yuva) | `gonderim/OL10A.md` |
+
+- 19:36 dört ajan gönderildi; bekçi kuruldu (`bekci_d0.py`, Monitor; 30 dk'da bir yeniden). 19:40 ana oturumun Ollama koşusu başladı (`ANA ollama:ba_kapali`; süre sınırı 9 000 sn).
+- Berke (19:3x): "asıl mimari falan Mythos olsun, geri kalanları Opus yapsın" → düzen aynı: mimari / tasarım / gönderim metni / doğrulama ana oturumda (Mythos; gerekirse tek Mythos tasarım ajanı), kodun tamamı Opus'ta.
