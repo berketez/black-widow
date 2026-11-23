@@ -51,4 +51,9 @@ P-ÜV6 ikiye bölündü (ana oturum kararı): plan P-ÜV6'yı altı okuyucu main
 - Ollama'nın uçtan uca ürün koşusu (bayraklar açık): PUV6a main'e girince ana oturum kuyruğa koyar (2 saatten uzun).
 - Gece koşusu (HZ-0 + ÖLÇ-1; A-26) ve KIMLIK'in kalan 35 çifti: Berke'nin izniyle.
 - Push: oturum sonunda sorulur.
-- Disk: kullanılan alan 13 Ekim'de 568 GB'tı, bugün 774 GB. `.claude/worktrees` 4,0 GB (70 ağaç). Nereye gittiği ölçülecek; silme kalem kalem Berke'nin onayıyla.
+- **Disk temizliği (08:15–08:40; Berke: "100 GB kadarını sil" → liste sunuldu → "onları sil, gerisi kalsın şimdilik"):** kullanılan alan 774,2 → **698,4 GB** (75,8 GB açıldı; boş 267,7 GB). Ölçüm `diskutil` + `~/.claude/scripts/disk/tara.py`. 13 Ekim'den beri büyüme: `~/karadul_olcum` +103 GB (her onarım paketi 119 ikilinin çalışma alanlarını saklamış), `~/HRMA-wt` +69, `~/HRMA-calisma` +43, `~/Library` +51.
+  - Silinen (Berke'nin onayıyla): **A** `~/karadul_olcum/runs/onarim-2026-11-18/{P-S3,P12a,P12b,P13a,P13b,P15b,P15c,P16a,P16b,P16c,P07,P-S1,P-S2}` ve `onarim-2026-11-19/{P12c,P-S4,P16d}` (main'e girmiş paketlerin koşu çıktıları; sayıları raporlarda); **C** 72 eski ajan / doğrulama worktree'si (77 dalın hepsi duruyor; kalan ağaçlar: bugünkü dört ajan + P12d `agent-a733cb2eb8bc2b9fd`); **D** HRMA `v307/` altı onarım ağacı; **E** HRMA `v306-bakim` + `yayin/3.0.7-paket` (dallar ve `v3.0.7` etiketi duruyor); **H** Homebrew indirme önbelleği.
+  - Kalan, karar bekleyen: **B** `~/karadul_olcum/ozkod_nufus/runs` 8,7 GB (kör nüfus önbelleği); **F** HRMA harita indirilenleri 10,4 GB; **G** HRMA eski çalışma dizinleri 15,7 GB; **I** Claude masaüstü `vm_bundles` 12,2 GB.
+  - Saklananlar (bekleyen işler okuyor): `onarim-2026-11-18/{P-S3b,P10,P00,ana,…}`, `onarim-2026-11-19/{P12d,P18,OLCUM}`, `urun-onarim-a62f15e`, `urun-yeni2-f30ac9a`, `urun-yeni-93a2956` (yerleşim betikleri), `dalga0-2026-11-20`, `arge-2026-11-19`, `gosteri-2026-11-19`.
+  - Doğrulama ağaçları (`dogrulama-d0`, `-d0b`, `-aksam`) silindi; bağımsız doğrulama için yenisi açılacak.
+  - Ders: koşu çıktısı üreten paketin metnine "main'e girince çalışma alanlarını sil, yalnız ölçüm özetini sakla" satırı yazılacak.
