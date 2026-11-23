@@ -138,3 +138,54 @@ H8: 4'ün **1'i** yalnız biçim farkı; 3'ü gerçekten farklı işlev. `urun_o
 Kabul ölçütü (plan): "kanalın ad sayısı değişmez (± 2)" — 199 → 351: **tutmadı**; "yeni yanlış ≤ 2": tutmadı; "yanlıştan doğruya ≥ 36": tutmadı; "doğrudan yanlışa 0": tuttu; "öbür kanallar aynı": tuttu. **Bayrak öntanımda kapalı kalmalı** (ölçüm tutmadı; yama öntanımı değiştirmiyor).
 
 **Hedef seti:** bu kanal C kodundaki öz-ad dizgileri içindir; hedef setinin Go / ObjC uygulamalarında (Ollama, docker-cli, terminal-notifier …) etkisi beklenmez. Hedef setinde ölçülmedi (Ghidra koşusu yok).
+
+### K2h — yalnız harf koruma (ÖN KAYIT DIŞI keşif kolu; ölçüm sonrası tanım)
+
+H10'un ayrıştırılması için, K2 sonucu görüldükten sonra açıldı; hüküm değil, ÖK-2 / ana oturum kararı için ölçüm. Kod depoda YOK: yalnız koşu kökündeki kol ağacında (`agac_K2h`) tek satır, `if verbatim is not None and verbatim.lower() == new_name:` (ad yalnız anahtar sözcük adı zaten `e.lower()` iken korunur; yani bugün `oz_ad`'a düşen adayların harfi). Bayrak açık.
+- Tanı (119): K1 ↔ K2h 4 ikilide farklı (cp, install, openssl, zstd), 51 fonksiyon, **hepsi yalnız harf**, yeni aday 0.
+- Ürün (bu 4 ikili; 4 / 4 `basari True`): `oz_ad` K1 60 / 9 / 51 → K2h **59 / 42 / 17**; yanlıştan doğruya **33**, doğrudan yanlışa 0, **yeni yanlış 0**, yanlış → adsız 1 (openssl); öbür kanallar aynı. zstd birimi yanlış **48 → 16** (K2: 34). Kanal kesinliği bu 4 ikilide: tam 42 / 59 (%71,2; %58,6–%81,2), tam + biçim 46 / 59 (%78,0; %65,9–%86,7). Öbür 18 ikilide K2h = K1 (tanı).
+- Yani planın H2 / H4 / H5 / "ad sayısı ± 2" şartları bu dar biçimde tutar; H1 (33 < 36) ve H3 (16 > 12) yine tutmaz. Özet `ozet/K2h_kesif/`.
+
+## Kalem 6 — Testler (tam takım)
+
+- İlgili takım (alt kanal, `c_namer` susturma, P12d, adım 3 hattı): 175 test, 173 geçti; 2 kırmızı = `test_tarif_alt_kanal.py`'nin iki sürüm satırı (beklenen, yama var).
+- **Tam takım, yamasız, veri bağlarıyla** (worktree kökü, `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`, 20:37–20:49, yük altında): **10 999 geçti / 18 atlandı / 3 kaldı** (718 sn). Kalan üçü beklenen:
+  1. `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `kayıtta ama okunuyor: {'binary_reconstruction.oz_ad_verbatim': ['karadul/reconstruction/c_namer.py']}` (config yaması kapatır).
+  2. `tests/test_tarif_alt_kanal.py::test_sabitler_basvuruyla_ayni[DEFINITION_VERSION-TANIM_SURUMU]` — `2 == 1`.
+  3. `tests/test_tarif_alt_kanal.py::test_alt_kanal_listesi_ve_sirasi` — `U.DEFINITION_VERSION == 1`.
+  (2 ve 3'ü `OK1__test_tarif_alt_kanal.py.patch` kapatır.)
+- Main `95d4e3c`'de 10 968 geçti / 18 atlandı; fark +34 = P12d 18 + OK1 16 test.
+- İlk tam takım koşusu veri bağları olmadan başlatılmıştı (10 887 / 88 atlandı / 10 kaldı); fazladan 7 kırmızı (`vendor/`, `scripts/node_modules` eksikliği: deobfuscator 2, pipeline 1, project_reconstructor 1, ps3b 3) bağlar kurulunca 21 / 21 geçti; bağlar iş bitince kaldırıldı.
+- **İki yama birlikte** (koşu kökündeki `agac_K2k` kopyasında `patch -p1`; depo ağacına uygulanmadı): `test_p15a_etkisiz`, `test_tarif_alt_kanal`, `test_bayrak_on_paketi`, `test_ok1_oz_ad_harf`, `test_alt_kanal`, `test_alt_kanal_olc` → **293 geçti / 10 atlandı / 0 kaldı**.
+- Mutasyon: P12d 10 / 10, OK1 9 / 9.
+
+## ÖK-2 ve ana oturum için notlar
+
+1. **Bayrak öntanımda kapalı kalmalı.** Plan ÖK-1'in adım 2 koşulu iki şeyi birden açıyor: (a) bugün `oz_ad`'a düşen adların harf koruması (ölçülmüş kusurun onarımı), (b) `tanimlayici` / `tek_sozcuk` adaylarının dizginin kendisiyle ad olması (rakamlı, 3'ten çok parçalı, durak sözcüklü tanımlayıcılar). (b) 153 yeni ad getirdi, %64,1 doğru (Wilson alt %56,2): A-13 eşiğinin çok altında, A-29'da elenen G1 ile aynı sınıf. tmux birimlerinde yanlış oranı arttı.
+2. (a) tek başına (K2h, keşif) 4 ikilide 33 yanlışı doğruya çevirdi, yeni yanlış 0. Ana oturum (a)'yı isterse kod değişikliği tek satır (yardımcıya `verbatim.lower() == anahtar sözcük adı` şartı) + yeni ön kayıt + 119 yeniden oynatma gerekir; bu pakette yapılmadı (ön kayıtlı plan metni (a + b) uygulandı).
+3. Planın 40'lık beklentisinden ölçülen 33: zstd 37 → 32, coreutils 1 → 0, mac/tmux 1 → 0, openssl 1 → 1. Harf korunduğu hâlde yanlış kalan 16 ad (zstd 14, coreutils 2; 4'ü tam + biçim doğru). Neden ayrıştırılmadı (P12d D2'nin kanıt seçimi ve a62f15e'den bu yana değişen dizgi sırası adaydır; ölçülmedi).
+4. `oz_ad` kanal kesinliği (ÖK-2'nin "ad mı kanıt satırı mı" kararı için): K2 altkümede tam %67,2 (alt %62,2), tam + biçim %69,2 (alt %64,2); K2h'nin 4 ikilisinde tam + biçim %78,0 (alt %65,9). Hiçbiri A-13 eşiğine (0,909) yakın değil; bağımsız nüfusta R1 %79,8 (A-29).
+5. Dört P12d yanlışından üçü (tmux iki kopyada aynı ad / GT çifti, zstd bir) harf korumayla düzelmez: kanıt dizgisi başka bir işlevin adı. Bunlar ÖK-2'nin teklik kapısının (R1) hedef sınıfı.
+6. `scripts/measurement/alt_kanal.py` (donuk sürüm 1) ile ürün kopyası artık bilinçli olarak farklı sürümde; `urun_olc` ve `ks1_olc` sınıflayıcıyı ürün ağacından (`--siniflayici-agac`) yükledikçe sorun yok.
+7. Kayda `verbatim` alanı eklenmedi (izinli alan dışı); gerekirse `_NamingCandidate` / köken yazıcısı için ayrı paket.
+
+## Kalan
+
+- K2k ürün yeniden oynatması yalnız 3 ikilide (zstd, cp, install); kalan 20 ikilide H9 yalnız tanı düzeyinde.
+- 119 ikilinin tamamında ürün yeniden oynatması koşulmadı: tanıda kollar arasında aynı çıkan 96 ikili (K0 → K2) koşulmadı; 119 satırları türetilmiş ve etiketli.
+- Hedef setinde ölçüm yok (Ghidra koşusu yasak; bu kanal C kodu içindir, Go / ObjC hedeflerinde etkisi beklenmez).
+
+## Özet
+
+| Kalem | Durum | Önce → sonra | Test / mutant | Commit |
+|---|---|---|---|---|
+| 1 P12d cherry-pick | iki kod commit'i alındı; dört belge commit'i boş (içerik main'de) | — | 18 test; 10 / 10 | `4d3afca`, `45f7f85`, `3a63646b` |
+| 2 Ön kayıt | ölçümden önce | — | — | `9ec2980f` |
+| 3 ÖK-1 kodu + yamalar | bayrak arkasında, öntanım kapalı; donuk betik değişmedi (gerekçeli sapma) | — | 16 test (eski kodda 6 kırmızı); 9 / 9 | `08bad683`, `499cd614`, `f1de99b3` |
+| 4 Tanı | 119 / 119, dört kol | K1 → K2k 0 fark | — | `f1de99b3` |
+| 5 Ölçüm | H0 tuttu; H1 / H3 / H5 / H7 tutmadı; H2 / H4 / H9 tuttu | `oz_ad` doğru 88 → 105 → 236 (altküme); zstd yanlış 46 → 48 → 34 | — | `f1b30769`, `2c909a45`, bu commit |
+| 6 Tam takım | 10 999 / 18 / 3 (üçü beklenen, yamalı kopyada 0) | — | — | bu commit |
+
+Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/OK1/` (6,9 GB; `ozet/` 1,7 MB + günlükler).
+
+## PAKET BİTTİ
