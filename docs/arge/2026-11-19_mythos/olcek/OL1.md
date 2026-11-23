@@ -14,9 +14,9 @@ Taban: main `e2c079d` (`git merge --ff-only main` sonrası; P16e içinde: `calle
 | 5 | Testler (`tests/test_ol1_kopru_bekci.py`, 30) | bitti | `627e3de` |
 | 6 | Mutasyon (`mutation_specs_ol1.json` 29 / 29) + altı eski tanım (108 / 108) | bitti | `d23e05e` |
 | 7 | `config.py` yaması (`yamalar/OL1__config.py.patch`; `git apply --check` temiz; uygulanmadı) | bitti | `627e3de` |
-| 8 | S8 (8 ikili, taban `P16e/s8_sonra_3`) | bitti: **8 / 8 eşit** (ham kıyas) | bu commit |
-| 9 | T25 (Ollama dilimi) | koşuyor (09:56:19–) | — |
-| 10 | Tam takım (yamasız) | bitti: 10 851 geçti / 14 atlandı / 1 kaldı (beklenen) | bu commit |
+| 8 | S8 (8 ikili, taban `P16e/s8_sonra_3`) | bitti: **8 / 8 eşit** (ham kıyas) | `0b4d4e6` |
+| 9 | T25 (Ollama dilimi) | bitti (2. tur bitişine kadar; koşu orada durduruldu): tetiklenme 600 sn, kalan analiz 68 sn, en uzun sessizlik 15 sn | bu commit |
+| 10 | Tam takım (yamasız) | bitti: 10 851 geçti / 14 atlandı / 1 kaldı (beklenen) | `0b4d4e6` |
 
 ## Kalem 1 — fizibilite (plan adım 1)
 
@@ -76,7 +76,32 @@ Betik: `pyghidra.open_program(analyze=False)` + ana iş parçacığında `FlatPr
 
 ## Kalem 9 — T25 (kabul a, c)
 
-- **09:57 — bekliyorum:** T25 09:56:19'da başladı (kuyruk `OL1 T25:ollama`, yuva 2; yük 8,95 / 12,99 / 14,54). Sürücü `betik/t25_kos.zsh`: gösteri 1. denemenin komutu (`python -m karadul analyze …/girdi/Ollama --skip-dynamic --output-dir … --output …`) + `--config t25/ol1.yaml` (600 / 15) + `--verbose`, ürün ağacı `urun-1b97c2f`, "Objective-C Message Analyzer" AÇIK (yaml'da `ghidra_disabled_analyzers` yok). Otomatik analizin bitiş olayı görülünce ya da 75 dk dolunca durdurulur. TAHMİNİ: tetiklenme Objective-C çözümleyicisi başladıktan 600–615 sn sonra, bitiş 10:20–10:40.
+- 09:57'de yazılan bekleme satırı: T25 09:56:19'da başladı (kuyruk `OL1 T25:ollama`, yuva 2; yük 8,95 / 12,99 / 14,54). Sürücü `betik/t25_kos.zsh`: gösteri 1. denemenin komutu (`python -m karadul analyze …/girdi/Ollama --skip-dynamic --output-dir … --output …`) + `--config t25/ol1.yaml` (600 / 15) + `--verbose`, ürün ağacı `urun-1b97c2f`, "Objective-C Message Analyzer" AÇIK (yaml'da `ghidra_disabled_analyzers` yok). Otomatik analizin bitiş olayı görülünce ya da 75 dk dolunca durdurulur. TAHMİNİ: tetiklenme Objective-C çözümleyicisi başladıktan 600–615 sn sonra, bitiş 10:20–10:40.
+- **Sonuç (koşu 09:56:19–10:09:12, kuyruk 773 sn; koşu başında 1 dk yük 8,95, sonunda 8,27; yük altında).** Ölçüm `betik/t25_olc.py` → `ozet/t25_olc.json`; `ILERLEME` satırları `ozet/t25_ilerleme_satirlari.txt` (66 satır).
+
+| Zaman | Olay |
+|---|---|
+| 09:56:22 | ilk `ILERLEME` (`ghidra.jvm_baslatma basladi`) |
+| 09:56:27 | `ghidra.otomatik_analiz basladi` |
+| 09:56:42 | ilk bekçi okuması (tepede çözümleyici olmayan bir komut: `cozumleyici` alanı yazılmadı) |
+| 09:57:57 | "Objective-C Message Analyzer" ilk görüldü (`gecen_sn=90.1`) |
+| 09:57:57 → 10:07:57 | aynı görev 41 okumada tepede (her 15 sn bir `suruyor` satırı) |
+| 10:07:57 | tetiklenme: `cozumleyici="Objective-C Message Analyzer" neden="600 sn tepede (eşik 600 sn); kapatılıyor"`, `gecen_sn=690.3` |
+| 10:08:12 → 10:08:57 | 2. tur okumaları: "Basic Constant Reference Analyzer", "Mach-O Function Starts", "Stack", "Stack" (iptal 15 sn içinde etki etti; kapatılan bir daha görülmedi) |
+| 10:09:05 | `ghidra.otomatik_analiz durum=kismi gecen_sn=757.467 neden="analysis: takılan çözümleyici kapatıldı: 'Objective-C Message Analyzer' 600.2 sn tepede kaldı (eşik 600 sn); otomatik analiz onsuz yeniden koşuldu ve bitti; analiz kısmi"` → `analysis.status = ok_cozumleyici_kapatildi` |
+| 10:09:05–10:09:06 | köprü sürdü: `gdt atlandi`, `pdb`, `functions`, `strings` `basladi` / `bitti`, `call_graph basladi` |
+| 10:09:07 | sürücü otomatik analizin bitiş olayını gördü, koşuyu durdurdu (SIGTERM; çıkış 143) |
+
+| Ön kayıt | Ölçülen | Hüküm |
+|---|---|---|
+| B1 tetiklenme ≤ 660 sn (takılan çözümleyicinin ilk göründüğü okuma → tetiklenme) | **600 sn** (ek, hükümsüz: otomatik analiz başı → tetiklenme 690 sn) | TUTTU |
+| B2 kapatılan "Objective-C Message" ailesinden | **"Objective-C Message Analyzer"** | TUTTU |
+| B3 kalan analiz ≤ 600 sn (tetiklenme → otomatik analizin bitiş olayı) | **68 sn** (gösteri 2. denemede çözümleyici baştan kapalıyken otomatik analiz 226,4 sn; burada 2. tur baştan koştu, sürenin içinde 1. turun iptalle dönüşü ve kapatma da var) | TUTTU |
+| B4 `ILERLEME` sessizliği ≤ 60 sn (09:56:22 → 10:09:05) | **en uzun 15 sn** (60 sn'yi geçen boşluk 0); günlük zaman damgası saniye çözünürlüğünde | TUTTU |
+| kabul (a)'nın kalanı: koşu biter (çıkış 0 / 3), `ghidra_status.json` `analysis.takilan_cozumleyici` | **ölçülmedi** (gönderim metni gereği koşu 2. tur bitince durduruldu; `ghidra_status.json` yazılmadı). Aynı yol birim testlerde sınandı (`_record_ghidra_outcome` `analysis`'i aynen taşır, HZ-1) | ölçülmedi |
+
+- Not: B4 yalnız otomatik analiz boyunca anlamlı (bekçi okuması). Koşu tamamlansaydı xref / CFG / BSim adımlarında adım içi olay yok (bkz. ÖL-4 / ÖL-2 notları); T25'in tamamı için ölçülmedi.
+- Not: 1. tur süresince bekçinin okuması 41 / 41 kez aynı adı verdi; okunamayan okuma günlükte yok (`ghidra_status.json` yazılmadığı için `bekci.okunamayan` sayısı ölçülmedi).
 
 ## Sonraki paketlere not
 
