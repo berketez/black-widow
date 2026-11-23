@@ -19,6 +19,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`). 
 | 9 | T25 (H1, H4) | kuyruğa giriyor | — |
 | 10 | Tam takım (yamasız) | bitti: 11 029 geçti / 19 atlandı / 1 kaldı (beklenen) | bu commit |
 
+**20:37 — bekliyorum (güncelleme):** S8 5 / 8 bitti (cat, sort, tree, sqlite3, htop; ara kıyas: sort, tree, sqlite3, htop ham eşit, BSim dosyaları dahil; cat'te yalnız BSim durum alanları + `total_queries`); debian tmux koşuyor, kalan zstd ve mac/tmux (yük 20–40, ikili başına 3–6 dk). TAHMİNİ S8 bitişi 20:50–21:00. T25 20:09'dan beri kuyrukta; S8 bitince ikinci yuvaya ya da ana oturumun koşusu bitince birinciye girer; TAHMİNİ başlangıç 20:55–21:10, süre 45–60 dk (yük altında), bitiş 21:45–22:05. 21:58'de bitmemişse durdurulur ve ölçülebilen kadarı yazılır. (Ön kayıt dışı "1 sn bütçeli sqlite3 ek koşusu" T25'le yuva için yarışmasın diye iptal edildi.)
+
 **20:09 — bekliyorum:** S8 (8 ikili, tek kök `…/OL2/s8`, sıra ORTAK_D0 §6) ikinci yuvada PUV5 ile sırayla; birinci yuvayı ana oturumun Ollama koşusu tutuyor (19:36'dan beri, TAHMİN 1,5–2 sa). T25 kuyruğa giriyor: yuva boşalınca (büyük olasılıkla ana oturumun koşusu bitince) başlar. TAHMİNİ bitiş: S8 20:45–21:15; T25 başlangıcı 21:05–21:35, süresi 45–60 dk (yük altında; BSim'e kadar ~28 dk + ingest ≤ 900 sn), bitiş 21:50–22:05 (sert son 22:05: yetişmezse "kalan"). Tam takım arka planda (TAHMİN 12–20 dk).
 
 ## Kalem 1–2 — kod (`d83f100`)
