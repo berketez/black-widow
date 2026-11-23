@@ -28,7 +28,7 @@ Plan: `ustveri/PLAN.md` "P-ÜV4". Kararlar: A-10, A-13, A-14, A-27, A-32, A-34.
 | Ölçüm betiği | `scripts/arge/ustveri/puv4_olc.py` | `ce3ea34` |
 | Keşif ölçümü (H0, H1 keşif satırları, H3, H4, H5, H6) | bitti (aşağıda) | — |
 | Dondurma + H1 sınama satırları + H2 (bir kez) | bitti; H1 5 / 5 aynı, H2 tuttu (aşağıda) | dondurma `ce3ea34` |
-| Tam takım (yamasız) | koşuyor (09:30'da başladı; tahmini bitiş 09:45–09:50, yük altında) | — |
+| Tam takım (yamasız) | 10 799 geçti / 13 atlandı / 1 kaldı (beklenen tek kırmızı) | — |
 
 ## Tasarım (koddan)
 
@@ -185,3 +185,31 @@ llama-server'da typeinfo adlarının 562'si "tekil değil" işaretli, 20'si zay�
 - `rtti_status` demet `(durum, neden)`; `_add_rtti` `calisti` dışındaki durumu kanala aynen yazar (`kapali` dahil).
 - Adım çıktısında `_add_rtti`'nin kullanmadığı alanlar var (`typeinfo`, `mangled`); birleştirici bunları yok sayar.
 - Durum sabitleri: `DURUM_KAPALI` `cpp_rtti_tara.py`'de yerel (objc.py ile aynı ad) → tek tanım P-ÜV6b.
+
+## Tam takım — yamasız (09:29–09:41, yük altında, load ≈ 12)
+
+- `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökü; ORTAK §2 çalışma verisi bağları
+  geçici kuruldu, sonra kaldırıldı): **10 799 geçti / 13 atlandı / 152 seçilmedi / 1 kaldı** (698 sn). Günlük
+  `…/PUV4/ozet/tam_takim.log`.
+- Tek kırmızı, beklenen (ORTAK_D1 §2, A-34): `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` —
+  `AssertionError: kayıtta ama okunuyor: {'binary_reconstruction.enable_rtti_recovery':
+  ['karadul/pipeline/steps/rtti_recovery.py']}`. Başka kırmızı yok.
+- `config.py` hiçbir yolla değiştirilmedi; yamalar yalnız `git apply --check` ile denetlendi (ikisi de temiz).
+
+## Yamalar (ana oturum main'e alırken uygular)
+
+1. `docs/arge/2026-11-23_dalga1/yamalar/PUV4__config.py.patch`: `INERT_SETTINGS`'ten
+   `binary_reconstruction.enable_rtti_recovery` kaydı silinir; alan yorumu `# okuyan: pipeline/steps/rtti_recovery.py
+   (P-ÜV4; Faz 1 listesine P-ÜV6b ekler)` olur. Yukarıdaki kırmızıyı kaldırır.
+2. `docs/arge/2026-11-23_dalga1/yamalar/PUV4__test_p15b_etkisiz_bayraklar.py.patch` (listede olmayan var olan test
+   dosyası → yama): `binary_reconstruction.enable_rtti_recovery` `ETKISIZ` listesinden `BAGLI` listesine taşınır.
+   Gerekçe: 1. yama uygulanınca `test_etkisiz_alan_kayitta_ve_yaml_kirilmiyor[binary_reconstruction.enable_rtti_recovery]`
+   kayıtta alanı aradığı için kırmızı olur; bu yama onu bağlı alan denetimine çevirir. İki yama birlikte uygulanmalı.
+   (Yamalı hâlde tam takım bu ajanda koşulmadı: A-34 gereği yama ağaca uygulanmaz.)
+
+## Koşu kökü
+
+`~/karadul_olcum/runs/dalga1-2026-11-23/PUV4/` — `ozet/` (ölçüm JSON'ları, tam takım ve mutasyon günlükleri), `ornek/`
+(yerel derlemeler; ara ürün), `yama/` (yama üretim kopyaları; ara ürün), günlükler.
+
+## PAKET BİTTİ
