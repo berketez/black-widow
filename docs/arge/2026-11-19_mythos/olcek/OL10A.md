@@ -23,7 +23,7 @@
 | 9 | okuyucu envanteri (adım 6) | bitti | bu commit |
 | 10 | mutasyon: 21 / 21 öldü (tasarımın 17'si + 4 ek) | bitti | `6869854` |
 | 11 | SINAMA H-A6 (dondurmadan sonra bir kez, 20:46) | bitti | bu commit |
-| 12 | tam takım | koşuyor (20:43'te başladı) | — |
+| 12 | tam takım: 11 044 geçti / 18 atlandı / 0 kaldı (152 seçilmedi; 688,9 sn, yük altında) | bitti | bu commit |
 
 ## Kural metni ↔ Ek B-1 betiği: uygulanan okuma
 
@@ -148,6 +148,14 @@ Sonuç: türetilen dosyada ürün okuyucularının istediği alanların hepsi va
 - **OL10-D:** H-A3 katı eşitlikte tutmadı; neden tek ve dar (aynı komut adresinden çok dizgi başvurusunun sırası). Seçenekler: (a) tasarımın yedeği: seçili küme için xref Ghidra'da, seçilmeyenler türetmeyle; (b) K1'in `strings.json`'ına başvurunun komut içi sırası eklenir (`headless.py`, `_extract_strings`) ve türetme o alanla birebir olur; (c) fark kabul edilir ve kayda geçer. (b) kısmi ve tam kipte aynı çıktıyı verir; karar OL10-D'nin (ön kayıtla). `total_globals_with_xrefs` tembel kipte `null`; köprünün günlük satırı (`headless.py` xref adımı) tembel kipte koşmayacağı için ürün okuyucusu kalmıyor.
 - **Seçim kuralı için (sürüm 2 adayları; bu pakette değiştirilmedi):** (1) ELF C'de B1 yalnız `entry` (main çağrılmıyor, gösterici olarak geçiyor); `main` kurtarma (`_recover_main_from_entry`) sonrası `main`'i E'ye almak ayrı karar. (2) iTerm2'de 68 303 fonksiyon `BILINMIYOR` (Swift / C++ okuyucuları kurala bağlanınca azalır).
 
+## Tam takım
+
+- Komut: worktree kökünden `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider`; çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`) geçici symlink olarak kuruldu, koşudan sonra kaldırıldı (commit'lenmedi).
+- Sonuç (HEAD `6869854`, 20:44:24 – 20:55:56): **11 044 geçti / 18 atlandı / 0 kaldı**, 152 seçilmedi; 688,85 sn. Yük altında: başlangıçta `uptime` 26,40 / 22,12 / 23,50, sonda 15,44 / 13,45 / 17,37. Koşu sırasında kaynak dosya değişmedi (aynı sırada yalnız salt okur ölçüm koştu ve belge commit'lendi). Akşam tabanındaki (`95d4e3c`) 10 968 / 18 / 0'a göre +76 geçen: 32'si bu paketin testleri; kalan 44'ün dağılımı sayılmadı (o commit'ten sonra main'e BA1 ve PK1'in test dosyaları girdi).
+- Günlük: `~/karadul_olcum/runs/dalga1-2026-11-23/OL10A/tam_takim.log`.
+
 ## Kalan
 
-- tam takım (koşuyor; sonuç bu dosyaya eklenecek).
+- Yok. Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/OL10A/` (Ghidra çalışma alanı yok; yalnız özetler, betikler ve günlükler).
+
+## PAKET BİTTİ
