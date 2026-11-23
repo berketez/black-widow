@@ -120,3 +120,25 @@ Betik: `pyghidra.open_program(analyze=False)` + ana iş parçacığında `FlatPr
 - `_run_auto_analysis`'te izleyici tek satırdan döngüyle kurulur (`timeout_s` ikinci turda kalan bütçeye yeniden bağlanır); P16c'nin dört `find` metni bu yüzden tekil. İkinci bir `TimeoutTaskMonitor.timeoutIn(...)` satırı p16c tanımını bayatlatır.
 - Bekçinin eşiği (600 sn) sabit bir süre: büyük ikilide (A-8) meşru ama uzun süren bir çözümleyici de 600 sn tepede kalırsa kapatılır. Bu pakette ölçülmedi. "İlerlemeyen" ile "yavaş ilerleyen"i ayırmanın yolu (analiz izleyicisinin ilerleme sayacı; `TimeoutTaskMonitor`'un temsilcisi `TaskMonitorAdapter` ilerlemeyi de saklamıyor) ya da boyuta bağlı eşik ÖL-2 / ÖL-10'un sorusu.
 - İkinci tur `analyzeAll` = `reAnalyzeAll(null)`: kapatılan dışındaki bütün çözümleyiciler baştan koşar (birinci turda bitenler dahil); maliyeti T25'te ölçüldü (aşağıda).
+
+## Riskler
+
+- **Ghidra iç alanlarına bağlılık:** okuyucu `AutoAnalysisManager.activeTask` ve `AnalysisTaskWrapper.task` özel alanlarını yansımayla okuyor (Ghidra 12.1.2). Ghidra sürümü değişip alan adı değişirse okuyucu kurulamaz → `analysis.bekci_hatasi` + uyarı, analiz bekçisiz ve bugünkü gibi koşar (sessiz bozulma yok, ad uydurulmaz).
+- **Sabit 600 sn eşiği:** büyük ikilide meşru ama uzun süren bir çözümleyici de kapatılır (ölçülmedi; ÖL-2 / ÖL-10 notu). Kapatma analizi kısmi yapar ve `step_errors["analysis"]`'ta adıyla görünür; sessiz değil.
+- **İkinci tur maliyeti:** `reAnalyzeAll` kapatılan dışındaki bütün çözümleyicileri baştan koşar; T25'te 68 sn (yük altında). Büyük ikilide daha uzun olabilir; kalan bütçeyle sınırlı.
+- **Yarış:** bekçi `analyzeAll`'ın kendiliğinden bittiği anda tetiklenirse gereksiz bir ikinci tur koşulur (sonuç yine doğru: `ok_cozumleyici_kapatildi`); görülmedi.
+- **`_jvm_den_ayril`** `jpype.isThreadAttachedToJVM` kullanıyor (JPype'ta kullanımdan kalkıyor; tam takımda bir `DeprecationWarning`). İşlev aynı; ölçülen kod (`1b97c2f`) değişmesin diye bu pakette `java.lang.Thread.isAttached`'a geçilmedi — küçük bir sonraki iş.
+- **Yamasız ağaçta yanıltıcı uyarı:** yaml'da bu iki alan verilince `Uyarı: … etkisiz: henüz hiçbir kod okumuyor` basılıyor (INERT kaydı); yama main'e girince kalkar.
+- **Ürün ağacı `~/karadul_olcum/urun-1b97c2f`** (detached worktree, altı bağ) silinmedi (ana oturum siler). Kökünde git'in izlemediği bir `karadul.yaml` (600 / 15) var: bu ağaçla başka koşu yapılırsa bekçi açık koşar.
+- Worktree'de çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules` `git status`'ta `??`; ayrıca `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`): commit'lenmedi.
+- Olaylar bugün yalnız `--verbose` ile koşu günlüğüne düşüyor (ÖL-4 gelene kadar); arayüz göstermiyor.
+
+## Koşu kökü
+
+`~/karadul_olcum/runs/dalga1-2026-11-23/OL1/` — 1,3 GB (10:10, `du -sh`). Ölçüm özeti `ozet/`: `fizibilite_cat.json`, `s8_ham.{md,json}`, `s8_bekci.md`, `s8_kuyruk.txt`, `t25_olc.json`, `t25_ilerleme_satirlari.txt`, `t25_{zamanlar,SONUC,uptime_bas,uptime_son}.txt`, `kuyruk_OL1.txt`, `tam_takim_ozet.txt`, `mutasyon/*.log`, `s8_ol1.yaml`, `t25_ol1.yaml`. Betikler `betik/` (`s8_kos.zsh`, `t25_kos.zsh`, `t25_olc.py`, `s8_bekci.py`, `spec_uret.py`, `yama_uret.py`), fizibilite `fizibilite/`. Çalışma alanları (`s8_sonra/*/ws|out`, `t25/ws|cache`, `s8_sonra/cache`) silinmedi.
+
+## Commit'ler (dal `worktree-agent-a3162396aa0075ecd`, push yok)
+
+`b8ba866` ilerleme dosyası · `51d7f0a` fizibilite · `880b2d4` ön kayıt · `1b97c2f` kod (bekçi + olaylar) · `627e3de` testler + yama · `d23e05e` mutasyon tanımı · `ccef020`, `98c14db` ilerleme / notlar · `0b4d4e6` S8 + tam takım · `7bdb7d4` T25 · bu commit kapanış.
+
+## PAKET BİTTİ
