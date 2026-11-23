@@ -9,15 +9,15 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/`.
 | Kalem | Durum | Commit |
 |---|---|---|
 | 1 ön kayıt + taban | bitti (taban 0 / 40 hazır kökten okundu) | `3374382` |
-| 2 kanal kodu | bitti | `0f46e6d` |
-| 3 etiket, `ozgun_ad`, tablo, kanıt satırı; etiketi okuyan yerler | bitti | `de3b463`, `8bede53` |
-| 4 Faz 1 listesi + kayıt; yamalar | bitti | `52e28c3` |
-| 5 birim testleri | 24 / 24 | `eec6bd9` |
-| 6 mutasyon | 20 / 20 öldü | `f2f97a6` |
-| 7 Ghidra'sız ölçüm (H4, H5, H6) | bitti: H4, H5, H6 TUTTU | `5da70a7` (araç), bu commit |
-| 8 Ghidra'lı ölçüm (H3, H1, H2) | kuyrukta (08:43 başladı) | — |
-| 9 dondurma + H8 | bekliyor | — |
-| 10 tam takım | bekliyor | — |
+| 2 kanal kodu | bitti; A-28 anahtarı onarıldı (`Sınıf::seçici_`) | `0f46e6d`, `5d23182` |
+| 3 etiket, `ozgun_ad`, tablo, kanıt satırı; etiketi okuyan yerler | bitti | `de3b463`, `8bede53`, `e5c813c` |
+| 4 Faz 1 listesi + kayıt; yamalar (4) | bitti | `52e28c3`, `7d1ceb0` |
+| 5 birim testleri | 26 + 4 (`test_puv8_urun.py`) | `eec6bd9`, `5da70a7`, `5d23182` |
+| 6 mutasyon | 20 / 20 öldü (A-28 onarımından sonra yinelendi) | `f2f97a6`, `5d23182` |
+| 7 Ghidra'sız ölçüm (H4, H5, H6) | bitti: üçü TUTTU | `5da70a7`, `d601e22` |
+| 8 Ghidra'lı ölçüm (H3, H1, H2) | bitti: H3 kısmen, H1 şerhli tuttu, H2 tuttu | `3c5acf1`, `e578f49`, `b86c1de`, `d5d10bd` |
+| 9 dondurma + H8 | dondurma `5e33849`; H8 TUTTU | `5baad39` |
+| 10 tam takım | 2 koşu (aşağıda) | — |
 
 ## Tasarım (koddan)
 
@@ -45,7 +45,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/`.
 
 ## Testler ve mutasyon
 
-- `tests/test_puv6a_baglama.py`: 24 test (gönderim kalem 5'in bütün maddeleri + üretici durumu, c_namer kararı, output_formatter, rapor).
+- `tests/test_puv6a_baglama.py`: 24 test (gönderim kalem 5'in bütün maddeleri + üretici durumu, c_namer kararı, output_formatter, rapor); A-28 onarımında 26 (iki sınıf aynı seçici, aynı sınıf örnek + sınıf yöntemi, geçersiz sınıf adı). `tests/test_puv8_urun.py`: 4.
 - `scripts/measurement/mutation_specs_puv6a.json`: **20 / 20 öldü** (hüküm 1, 2 ×3, 3 ×3, 4, 5, 7 ×2 + plan listesi). `git status` sonrası temiz.
 - İlgili test dosyaları (değişen modülleri içe aktaran 48 dosya + P13b, P17, P-ÜV1/2, bayrak, p15a): 1 207 geçti; kalan 3'ün 2'si yukarıdaki kilitli sözlük testleri (yama), 1'i (`test_olcum_araci_d0::test_siniflayici_denetle_durumlar`) `naming_labels.py` commit'lenmemişken HEAD ile çalışma dosyası farkından; commit'ten sonra geçti.
 
