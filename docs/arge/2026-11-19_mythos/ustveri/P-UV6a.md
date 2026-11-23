@@ -100,3 +100,15 @@ Dondurma commit'i: **bu commit** (üst: `0b70f48`; kural kodu `5d23182`'de). Bu 
 | `karadul/analyzers/ustveri/objc.py` | `faece6a003852680` | okuyucu (P-ÜV2'de dondurulan) |
 
 H8 Ghidra'sızdır (aday listesi ↔ GT); terminal-notifier'ın ikinci ürün koşusu (A-28 anahtarı) H8'in süzgeç kurallarını değiştirmez.
+
+## H8 — SINAMA, bir kez (09:05:43–09:05:54; dondurma `5e33849`'dan sonra; Ghidra'sız aday listesi ↔ GT)
+
+Çıktılar `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/h8_{iTerm2,docker-compose}.json` (yalnız sayı).
+
+| İkili (soyulmuş, sha256 ilk 12) | Kanal | Kayıt | Elenen (süzgeç) | Aday | Doğru | Yanlış | GT'siz | Yazım | Kesinlik (Wilson %95) |
+|---|---|---|---|---|---|---|---|---|---|
+| iTerm2 arm64 (`4c3e96a2593d`) | `objc_method` | 41 305 | `swift_kopru` 7 420 | 33 885 | **33 611** | **274** (%0,81) | 0 | birebir 31 431 / kategori 2 180 | %99,19 (%99,09–%99,28) |
+| docker-compose (`9f39c9662989`) | `go_pclntab` | 90 078 | adsız 1 | 90 077 | **90 077** | **0** | 0 | birebir 89 699 / `.abi0` 360 / orta nokta 18 | %100 (alt 0,999957) |
+
+- **H8 TUTTU:** iTerm2 yanlış %0,81 ≤ %1 ve doğru 33 611 ≥ 33 000; docker-compose yanlış 0 ≤ %0,1.
+- **Risk (ana oturum kararı gerekir):** `MEASURED_METADATA_PRECISION[objc_method]` hüküm 5 gereği P-UV2'nin 33 611 / 33 611'i (alt 0,9998). O sayı yalnız GT adı ObjC olan adresleri sayıyordu; ürünün hüküm 3 süzgeçlerinden geçen aday kümesinde kesinlik 33 611 / 33 885 = %99,19 (Wilson alt 0,9909). Kanal yine ad eşiğinin (0,909) çok üstünde, ama köken kaydındaki güven (0,9998) ürün düzeyi ölçümden yüksek. Yanlış 274'ün kümesi P-UV2'nin "Swift işaretsiz 274 kayıt"ıyla aynı sayı (GT adı ObjC değil); türleri sınama kuralı gereği ikinci kez bakılmadı. Öneri: tablo satırı (33 611, 33 885, 0,9909) — değiştirmedim (hüküm 5 bağlayıcı).
