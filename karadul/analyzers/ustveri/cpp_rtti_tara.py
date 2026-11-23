@@ -29,6 +29,7 @@ artar; ad uydurulmaz. Tarayıcı istisna atmaz (beklenmeyen hata ``hata`` durumu
 from __future__ import annotations
 
 import bisect
+import itertools
 import logging
 import time
 from collections import Counter
@@ -308,31 +309,37 @@ class RttiTarayici:
         """Mach-O C önekini soy (``__ZTV…`` → ``_ZTV…``); ELF adı değişmez."""
         return ad[1:] if ad.startswith("__Z") else ad
 
-    def _yerler(self) -> list[int]:
-        """Gösterici olabilecek sözcük adresleri.
+    def _yerler(self) -> list[Iterable[int]]:
+        """Gösterici olabilecek sözcük adresleri (yeniden yinelenebilir parçalar; ``_yerleri_gez`` ile gezilir).
 
         Zincirli düzeltmeli Mach-O'da bütün göstericiler düzeltme yeridir (yalnız onlar); öbür biçimlerde (ELF,
-        eski ``LC_DYLD_INFO`` Mach-O, bellek görüntüsü) kod dışı her yüklenen bölümün sözcükleri.
+        eski ``LC_DYLD_INFO`` Mach-O, bellek görüntüsü) kod dışı her yüklenen bölümün sözcükleri (``range``: büyük
+        bölümde bellek şişmez).
         """
         g = self.g
         if getattr(g, "zincirli_duzeltme", False) and callable(getattr(g, "duzeltmeler", None)):
-            return sorted(g.duzeltmeler())
-        out: list[int] = []
+            return [sorted(g.duzeltmeler())]
+        out: list[Iterable[int]] = []
         for b in g.bolumler:
             if b.kod or not b.bellekte or b.boyut < SOZCUK:
                 continue
             if g.oku(b.adres, SOZCUK) is None:  # dosyada karşılığı yok (sıfır dolgulu)
                 continue
             ilk = b.adres + (-b.adres) % SOZCUK
-            out.extend(range(ilk, b.adres + b.boyut - SOZCUK + 1, SOZCUK))
+            out.append(range(ilk, b.adres + b.boyut - SOZCUK + 1, SOZCUK))
         return out
+
+    @staticmethod
+    def _yerleri_gez(yerler: list[Iterable[int]]) -> Iterable[int]:
+        return itertools.chain.from_iterable(yerler)
 
     # ---- tarama -----------------------------------------------------------------------------------------------
     def tara(self) -> RttiSonuc:
-        self._yerel()  # sembol tablosu okuması süre sınırına girmez (görüntü hazırlığı)
-        self._bas = self.zaman()
+        # Görüntü hazırlığı (sembol tablosu, düzeltme zinciri) süre sınırına girmez; sınır taramanın kendisi için.
+        self._yerel()
         yerler = self._yerler()
-        ti = self._typeinfolar(yerler)
+        self._bas = self.zaman()
+        ti = self._typeinfolar(self._yerleri_gez(yerler))
         if ti is None:
             return self._sure_sonucu()
         duz = (getattr(self.g, "durum", None) or {}).get(KISIM_DUZELTME, {})
@@ -342,7 +349,7 @@ class RttiTarayici:
         if not ti:
             return RttiSonuc(DURUM_VERI_YOK, "Itanium typeinfo nesnesi bulunamadı", sayaclar=dict(self.sayac),
                              sure_sn=round(self.zaman() - self._bas, 3))
-        vt = self._vtablelar(yerler, ti)
+        vt = self._vtablelar(self._yerleri_gez(yerler), ti)
         if vt is None:
             return self._sure_sonucu()
         islevler = self._islev_baglari(vt, ti)
