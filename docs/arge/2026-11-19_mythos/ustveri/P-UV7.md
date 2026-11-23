@@ -14,8 +14,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (özet `ozet/`).
 | 4 | Damga + ikili özeti | yazıldı | 52c3f9a |
 | 5 | Bozma deneyi betiği (A–E) | yazıldı; H2 TUTTU | 85f8a03 |
 | 6 | Kalem 6 (K10) ölçümü ve kararı | ölçüldü (≥ %99) → eklendi; H5 TUTMADI | 896753a |
-| 7 | Mutasyon (≥ 8) | 15 / 15 öldü | (mutasyon commit'i) |
-| 8 | Kabul ölçümü (H1, H2, H4, H6, H7; ek ikililer) | bekliyor | — |
+| 7 | Mutasyon (≥ 8) | 17 / 17 öldü | a048bfe, 4607a31, 9be3eab |
+| 8 | Kabul ölçümü (H1, H2, H4, H6, H7; ek ikililer) | ölçüldü (10 dilim) | (kabul commit-i) |
 | 9 | Dondurma → H3-sınama (docker-compose) | bekliyor | — |
 | 10 | Tam takım | bekliyor | — |
 
@@ -221,3 +221,57 @@ denetimsiz).
 - Araştırma tanımlı T2p sayaçları (`paket_bakilan_arastirma_tanimi`, `paket_uyan_arastirma_tanimi`)
   bu daldan bağımsız: gh 26 236 / 26 238 değişmedi.
 - Test +1 (46), mutant +1 (`puv7_derleyici_oneki_t2p`): 17 / 17 öldü.
+
+## Kalem 8: kabul ölçümü (sınama hariç 10 dilim; son kural kümesi)
+
+Komut: `python scripts/measurement/ustveri_bozma.py taban $V/hedef/<ad> --cikti
+~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/ozet/taban_<ad>.json`; toplu özet
+`ozet/kabul_10_dilim.json`. Girdiler araştırma kopyaları (ince dilim; sha256 P-ÜV1 tablosuyla
+aynı). Süre yük altında (`uptime` yük ortalaması 9–15); boş makine ölçümü değil.
+
+| Dilim | Go | itab yolu | Adlı | T1 uyan / bakılan | T2 | T2p (ürün) | T5 | Adlı damga çift / tek / tutarsız | Güçlü işaretli | K4 / K10 | Karar | sn | sha256 (12) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| gh | go1.27.4 | moduledata.itaboffset | 40 383 | 6333 / 6333 | 26258 / 26258 | 26238 / 26238 | 19 / 19 | 13188 / 27194 / 1 | 0 | 1 / 0 | temiz | 0.8 | ca6c859f0ff8 |
+| limactl | go1.27.3 | moduledata.itaboffset | 40 320 | 8426 / 8426 | 31105 / 31105 | 31057 / 31057 | 20 / 20 | 15608 / 24711 / 1 | 0 | 1 / 0 | temiz | 1.2 | f0b05d095116 |
+| Ollama.arm64 | go1.26.0 | itablink | 10 600 | 1063 / 1063 | 7579 / 7579 | 7563 / 7563 | 20 / 20 | 3907 / 6693 / 0 | 0 | 0 / 0 | temiz | 0.3 | 7d5b1e847e1b |
+| Ollama.x86_64 | go1.26.0 | itablink | 10 675 | 1063 / 1063 | 7589 / 7589 | 7573 / 7573 | 20 / 20 | 3912 / 6763 / 0 | 0 | 0 / — | temiz | 0.2 | 72edc4c1e8cf |
+| ollama-cli.arm64 | go1.26.0 | itablink | 25 163 | 2735 / 2735 | 25183 / 25183 | 25156 / 25156 | 21 / 21 | 12715 / 12448 / 0 | 0 | 0 / 0 | temiz | 0.6 | 65484dbd099f |
+| ollama-cli.x86_64 | go1.26.0 | itablink | 25 266 | 2735 / 2735 | 25185 / 25185 | 25158 / 25158 | 21 / 21 | 12716 / 12550 / 0 | 0 | 0 / — | temiz | 0.5 | b1ecfea3e35a |
+| colima | go1.26.4 | itablink | 13 081 | 1447 / 1447 | 13192 / 13192 | 13148 / 13148 | 20 / 20 | 6704 / 6377 / 0 | 0 | 0 / 0 | temiz | 0.3 | 55278419bd42 |
+| docker-brew | go1.27.4 | moduledata.itaboffset | 35 748 | 5399 / 5399 | 30814 / 30814 | 29858 / 29858 | 20 / 20 | 15466 / 20282 / 0 | 0 | 0 / 0 | temiz | 0.9 | cd9e0b149e44 |
+| arduino-cli | go1.27.3 | moduledata.itaboffset | 29 710 | 4611 / 4611 | 19829 / 19829 | 19809 / 19809 | 20 / 20 | 9963 / 19746 / 1 | 0 | 1 / 0 | temiz | 0.7 | e47aa40da285 |
+| docker-cli | go1.24.4 | itablink | 35 048 | 5803 / 5803 | 44274 / 44274 | 43306 / 43306 | 18 / 18 | 22293 / 12755 / 0 | 0 | 0 / 0 | temiz | 0.9 | 1b2b4029ea6b |
+
+(K10 "—": x86_64, denetim `desteklenmiyor`. Adlı damganın `tutarsiz` 1'i gh / limactl /
+arduino-cli'de P-ÜV1'in K4 `kisa` fonksiyonu.)
+
+**Gerçek uygulama sayıları (A-17, A-27):**
+- **Ollama arm64 (uygulama ikilisi, ürünün dilimi): 10 600 adın 3 907'si `cift_kaynak` (%36,9),
+  6 693'ü `tek_kaynak`, 0'ı `tutarsiz`; karar `temiz`.**
+- **docker-cli: 35 048 adın 22 293'ü `cift_kaynak` (%63,6), 12 755'i `tek_kaynak`, 0'ı `tutarsiz`.**
+  (docker-cli sembollü: P-ÜV1'de bu adların 35 048 / 35 048'i sembolle aynıydı; yani burada
+  `tutarsiz` 0, doğru adlara yanlış alarm 0 demek.)
+
+### Hipotezler (sınama öncesi)
+
+| | Hüküm | Sayı |
+|---|---|---|
+| H1 | **TUTTU** | gh T1 6 333 / 6 333, T2 26 258 / 26 258, T2p (araştırma tanımı) 26 236 / 26 238, T3 31 330 / 31 483, T4 38 356 / 39 697, T5 19 / 19, ikinci kaynaklı 13 188; limactl 8 426 / 8 426, 31 105 / 31 105, 30 891 / 31 057, 30 167 / 32 532, 38 372 / 39 647, 20 / 20, 15 608 — hepsi başvuruyla aynı |
+| H2 | **TUTTU** | A–E araştırma sütunu 10 / 10 koşuda başvuruyla aynı (yukarıda) |
+| H3 (keşif yarısı) | **TUTTU** | Go 1.26 `itablink` yolu (Ollama ×2, ollama-cli ×2, colima) ve 1.24 (docker-cli): T1 ve T2 6 / 6 dilimde %100 (≥ %99,9). Sınama yarısı (docker-compose, 1.23.8) dondurmadan sonra |
+| H4 | **TUTTU** (beklenen olumsuz) | D: 0 / 86, 0 / 451 |
+| H5 | **TUTMADI** | K10 ≥ %99 uyum verdi (eklendi) ama E %90,5 / %92,5 (< %95) |
+| H6 | **TUTTU** | T3 yanlış alarm oranı gh %0,486 … Ollama arm64 %16,34 (33,6 kat; gh ↔ limactl 15,0 kat) → T3 karara girmiyor |
+| H7 (10 dilim) | eşik kalır (koşul sağlandı) | güçlü işaretli oranın en büyüğü **0** (10 / 10 dilimde 0). **Dürüst not:** ilk taban koşusunda (T2p önek düzeltmesinden önce) en büyük oran limactl %0,206'ydı (eşik bunun yalnız 4,9 katı → H7 tutmazdı). Düzeltme eşiği değil T2p'nin ad ayrıştırma hatasını onardı (ara düzeltme 1–2); ana oturum isterse ilk ölçümü esas alabilir. docker-compose dondurmadan sonra |
+
+Ek bulgu (ikili kararı): bozulmamış 10 dilim 10 / 10 `temiz`; A / B / C / E bozmalarının 8 / 8'i
+`uyari`, D 2 / 2 `temiz`. `ust_veri_supheli` (> %1) hiçbir bozmada çıkmadı (200 fonksiyon
+40 000'de %0,5'in altında). Yani karar düzeyinde ayırt edici olan `uyari`; %1 eşiği yalnız toplu
+bozma / bozuk üst veri içindir.
+
+### P-ÜV1 `paket_adi` yanılgısının büyüklüğü (P-ÜV6b / P-ÜV1 notu)
+
+`go_pclntab.paket_adi` yükseltilmiş dışa kapalı yöntemde paketi yöntem adının içinden çıkarıyor
+(`paket` alanında `(` / `)` geçen fonksiyon): gh 10, limactl 71, Ollama arm64 4, ollama-cli arm64
+10, colima 11, docker-brew 270, arduino-cli 10, docker-cli 264. Bu fonksiyonların `paket` ve
+`sinif` alanı yanlış (ad doğru). Okuyucu bu pakette değiştirilmedi.
