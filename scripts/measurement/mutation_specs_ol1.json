@@ -1,0 +1,237 @@
+{
+  "_comment": "ÖL-1 (Ghidra köprüsünde takılan çözümleyici bekçisi + ilerleme olayları) mutasyon koruması: eşik karşılaştırması, görev kimliği, iptal, ikinci tur sayacı ve bütçesi, kapatılan ad, durum ve adım hatası, olay alanları / biçimi / günlükçüsü, decompile sayaçları, yansıma okuyucusu. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ol1.json",
+  "mutants": [
+    {
+      "id": "ol1_esik_kati_buyuk",
+      "desc": "Eşik karşılaştırması: eşiğe eşit tepede kalma tetiklemez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_esikte_tetikler_iptal_eder_ve_durur",
+      "find": "if ad is not None and tepede >= self._esik:",
+      "replace": "if ad is not None and tepede > self._esik:"
+    },
+    {
+      "id": "ol1_esik_yarisi",
+      "desc": "Eşik yarıya iner (585 sn'de tetikler)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_esik_altinda_tetiklemez",
+      "find": "if ad is not None and tepede >= self._esik:",
+      "replace": "if ad is not None and tepede >= self._esik / 2:"
+    },
+    {
+      "id": "ol1_cozumleyici_olmayan_kapatilir",
+      "desc": "Çözümleyici olmayan görev (ad yok) de kapatılmaya çalışılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_cozumleyici_olmayan_gorevi_kapatmaz",
+      "find": "if ad is not None and tepede >= self._esik:",
+      "replace": "if tepede >= self._esik:"
+    },
+    {
+      "id": "ol1_iptal_cagrilmaz",
+      "desc": "Bekçi tetiklenir ama izleyiciyi iptal etmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_esikte_tetikler_iptal_eder_ve_durur",
+      "find": "            self._iptal()\n",
+      "replace": "            pass  # iptal yok\n"
+    },
+    {
+      "id": "ol1_gorev_kimligi_yok",
+      "desc": "Görev değişince süre sayacı sıfırlanmaz (ad / kimlik denetimi yok)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_gorev_degisince_sayac_sifirlanir",
+      "find": "if self._onceki is None or not (anahtar == self._onceki):",
+      "replace": "if self._onceki is None:"
+    },
+    {
+      "id": "ol1_bos_tepe_sifirlamaz",
+      "desc": "Tepede görev yokken önceki görev unutulmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_bos_tepe_olay_uretmez_ve_sayaci_sifirlar",
+      "find": "        if okunan is None:\n            self._onceki = None\n            return False\n",
+      "replace": "        if okunan is None:\n            return False\n"
+    },
+    {
+      "id": "ol1_ikinci_tur_sinirsiz",
+      "desc": "İkinci takılmada da yeniden denenir (tur sayacı)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_ikinci_turda_yeniden_takilirsa_yeniden_deneme_yok",
+      "find": "            if tur == 2:\n",
+      "replace": "            if tur == 99:\n"
+    },
+    {
+      "id": "ol1_ikinci_tur_yok",
+      "desc": "Takılmadan sonra ikinci analyzeAll turu koşulmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_takilan_cozumleyici_kapatilir_ikinci_tur_bir_kez",
+      "find": "            tur = 2\n",
+      "replace": "            break  # tek tur\n"
+    },
+    {
+      "id": "ol1_kalan_butce_yok",
+      "desc": "İkinci tur kalan bütçe yerine tam bütçeyle koşar",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_ikinci_tur_kalan_butceyle",
+      "find": "timeout_s = butce_s - int(time.monotonic() - t0)",
+      "replace": "timeout_s = butce_s"
+    },
+    {
+      "id": "ol1_butce_denetimi_yok",
+      "desc": "Bütçe bitmişken de ikinci tur koşulur",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_butce_bitince_ikinci_tur_yok",
+      "find": "            if timeout_s < 1:\n",
+      "replace": "            if timeout_s < -10**9:\n"
+    },
+    {
+      "id": "ol1_kapatilamayan_ad_yine_kosar",
+      "desc": "Kapatılamayan adla ikinci tur yine koşulur",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_kapatilamayan_adla_ikinci_tur_yok",
+      "find": "if not kapatildi.get(bekci.takilan):",
+      "replace": "if not True:"
+    },
+    {
+      "id": "ol1_kapatilan_ad_yanlis",
+      "desc": "Takılan yerine başka ad kapatılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_takilan_cozumleyici_kapatilir_ikinci_tur_bir_kez",
+      "find": "kapatildi = self._disable_analyzers(program, [bekci.takilan])",
+      "replace": "kapatildi = self._disable_analyzers(program, [str(bekci.okuma)])"
+    },
+    {
+      "id": "ol1_kapatildi_durumu_ok",
+      "desc": "İkinci tur bitince durum ok (kısmi görünmez)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_takilan_cozumleyici_kapatilir_ikinci_tur_bir_kez",
+      "find": "                info[\"status\"] = ANALIZ_COZUMLEYICI_KAPATILDI\n",
+      "replace": "                info[\"status\"] = \"ok\"\n"
+    },
+    {
+      "id": "ol1_takilan_ad_yazilmaz",
+      "desc": "analysis.takilan_cozumleyici yazılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_takilan_cozumleyici_kapatilir_ikinci_tur_bir_kez",
+      "find": "info[\"takilan_cozumleyici\"] = takilmalar[0][\"cozumleyici\"]",
+      "replace": "info[\"takilan_cozumleyici\"] = None"
+    },
+    {
+      "id": "ol1_takilmada_isaretler",
+      "desc": "Bekçinin kestiği tur 'analiz edildi' diye işaretlenir",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_takilan_cozumleyici_kapatilir_ikinci_tur_bir_kez",
+      "find": "                    if not takildi:\n                        GhidraProgramUtilities",
+      "replace": "                    if True:\n                        GhidraProgramUtilities"
+    },
+    {
+      "id": "ol1_bekci_hep_acik",
+      "desc": "Eşik 0 iken de bekçi kurulur (kapalı kol bugünküyle aynı değil)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_kapaliyken_davranis_bugunku_gibi",
+      "find": "if esik_sn > 0 and aralik_sn > 0:",
+      "replace": "if aralik_sn > 0:"
+    },
+    {
+      "id": "ol1_kapatildi_adim_hatasi_yok",
+      "desc": "ok_cozumleyici_kapatildi adım hatası (kısmi) yazdırmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_cozumleyici_kapatildi_adim_hatasi_ve_kismi",
+      "find": "elif analysis_info.get(\"status\") == ANALIZ_COZUMLEYICI_KAPATILDI:",
+      "replace": "elif analysis_info.get(\"status\") == \"x\" + ANALIZ_COZUMLEYICI_KAPATILDI:"
+    },
+    {
+      "id": "ol1_bekci_zaman_asimi_eski_metin",
+      "desc": "Bekçinin durdurduğu analiz 'zaman aşımı' diye yazılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_zaman_asimi_metni_nedeni_soyler",
+      "find": "if analysis_info.get(\"takilmalar\"):  # ÖL-1: bekçi durdurdu",
+      "replace": "if False:  # ÖL-1: bekçi durdurdu"
+    },
+    {
+      "id": "ol1_analiz_bitisi_erken",
+      "desc": "Otomatik analiz bitiş olayı durum işlenmeden üretilir (kısmi görünmez)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_cozumleyici_kapatildi_adim_hatasi_ve_kismi",
+      "find": "                    _step_failed(\"analysis\", exc)\n                if analysis_info.get(\"status\") == \"timeout\":",
+      "replace": "                    _step_failed(\"analysis\", exc)\n                saat.bitti(ADIM_OTOMATIK_ANALIZ)\n                if analysis_info.get(\"status\") == \"timeout\":"
+    },
+    {
+      "id": "ol1_adim_hatasi_kismi_degil",
+      "desc": "Düşen adımın bitiş olayı 'bitti' der",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_dusen_adim_kismi_olay_nedeniyle",
+      "find": "yeni = [k for k in (self._hatalar or {}) if k not in onceki]",
+      "replace": "yeni = []"
+    },
+    {
+      "id": "ol1_eski_hata_tasinir",
+      "desc": "Önceki adımın hatası sonraki adımı da kısmi gösterir",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_dusen_adim_kismi_olay_nedeniyle",
+      "find": "yeni = [k for k in (self._hatalar or {}) if k not in onceki]",
+      "replace": "yeni = [k for k in (self._hatalar or {})]"
+    },
+    {
+      "id": "ol1_bitis_suresi_baska_saat",
+      "desc": "Bitiş olayının süresi adim_sureleri'ndekinden farklı",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_her_adimin_basladi_bitti_olayi_ayni_saatle",
+      "find": "_ilerleme(adim, OLAY_BITTI, gecen_sn=self._sureler[adim], **alanlar)",
+      "replace": "_ilerleme(adim, OLAY_BITTI, gecen_sn=t0, **alanlar)"
+    },
+    {
+      "id": "ol1_basladi_olayi_yok",
+      "desc": "Adım başı olayı üretilmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_her_adimin_basladi_bitti_olayi_ayni_saatle",
+      "find": "        _ilerleme(adim, OLAY_BASLADI)\n",
+      "replace": "        pass  # olay yok\n"
+    },
+    {
+      "id": "ol1_tirnak_yok",
+      "desc": "Boşluklu değer tırnaksız yazılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_satir_bicimi_sozlesmedeki_sira_ve_tirnak",
+      "find": "if metin == \"\" or re.search(r'[\\s\"=\\\\]', metin):",
+      "replace": "if metin == \"\":"
+    },
+    {
+      "id": "ol1_asama_alani_yok",
+      "desc": "asama alanı yazılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_satir_bicimi_sozlesmedeki_sira_ve_tirnak",
+      "find": "\"asama=\" + ILERLEME_ASAMA, ",
+      "replace": ""
+    },
+    {
+      "id": "ol1_gunlukcu_adi_yanlis",
+      "desc": "Olay başka günlükçüye yazılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_bekci_esikte_tetikler_iptal_eder_ve_durur",
+      "find": "ILERLEME_GUNLUKCU = \"karadul.ilerleme\"",
+      "replace": "ILERLEME_GUNLUKCU = \"karadul.ilerleme_x\""
+    },
+    {
+      "id": "ol1_parca_islenen_sabit",
+      "desc": "Decompile parça olayında işlenen sayı parça sayısı olur",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_decompile_parca_olaylari_biten_fonksiyon_sayisi",
+      "find": "biten_fonksiyon += len(chunks[chunk_idx])",
+      "replace": "biten_fonksiyon += 1"
+    },
+    {
+      "id": "ol1_decompile_islenen_basarisizsiz",
+      "desc": "Decompile bitiş olayında başarısızlar işlenen sayılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_decompile_bitis_olayi_islenen_toplam",
+      "find": "+ int(decomp_data.get(\"failed\") or 0),",
+      "replace": "+ 0,"
+    },
+    {
+      "id": "ol1_okuyucu_her_gorev_ad",
+      "desc": "Gerçek okuyucu çözümleyici olmayan komuta da ad verir",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol1_kopru_bekci.py::test_gercek_okuyucu_yalniz_analysistask_adini_verir",
+      "find": "return sarmal, (str(gorev.getName()) if isinstance(gorev, AnalysisTask) else None)",
+      "replace": "return sarmal, str(gorev.getName())"
+    }
+  ]
+}
