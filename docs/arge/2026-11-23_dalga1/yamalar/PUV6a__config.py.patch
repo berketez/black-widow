@@ -1,0 +1,23 @@
+--- a/karadul/config.py
++++ b/karadul/config.py
+@@ -764,9 +764,9 @@
+     # P-ÜV3: Swift tip üst verisi üretici adımı.
+     enable_swift_metadata_recovery: bool = False  # ETKİSİZ: P-ÜV3 bağlayacak (INERT_SETTINGS)
+     # P-ÜV6: Go pclntab ad kanalı.
+-    enable_go_pclntab_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
++    enable_go_pclntab_naming: bool = False  # okuyan: pipeline/steps/_feedback_naming_candidates.py (P-ÜV6a)
+     # P-ÜV6: Objective-C yöntem ad kanalı.
+-    enable_objc_metadata_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
++    enable_objc_metadata_naming: bool = False  # okuyan: pipeline/steps/_feedback_naming_candidates.py (P-ÜV6a)
+     # P-ÜV6: Swift erişim fonksiyonu ad kanalı.
+     enable_swift_metadata_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
+     # P-ÜV5: Mach-O LC_MAIN girişindeki fonksiyona main adı verilir.
+@@ -1354,8 +1354,6 @@
+     "binary_reconstruction.enable_separate_debug_naming": _pending_binding("PK-5"),
+     "binary_reconstruction.debug_file_dirs": _pending_binding("PK-5"),
+     # P-ÜV6 (Dalga 3)
+-    "binary_reconstruction.enable_go_pclntab_naming": _pending_binding("P-ÜV6"),
+-    "binary_reconstruction.enable_objc_metadata_naming": _pending_binding("P-ÜV6"),
+     "binary_reconstruction.enable_swift_metadata_naming": _pending_binding("P-ÜV6"),
+     "binary_reconstruction.enable_go_metadata_integrity": _pending_binding("P-ÜV6"),
+     # PK-4 (Dalga 3)

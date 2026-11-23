@@ -43,6 +43,9 @@ from karadul.pipeline.steps import (  # noqa: F401
     pdb_symbol_recovery,
     # v1.15 Dalga 1: Binary Ninja experimental (lisanssiz graceful skip)
     binaryninja_analysis,
+    # P-ÜV6a: üst veri üreticileri (P-ÜV1 / P-ÜV2; bayrak kapalıyken iş yapmaz)
+    go_metadata_recovery,
+    objc_metadata_recovery,
     # B7 (2026-05-13): TRex/PDB/BN JSON tuketici
     type_recovery_consumer,
     # Plan v2.2 N1 adım 3: KS-1 kesin çapaları (bayrak kapalıyken iş yapmaz)
@@ -69,8 +72,10 @@ __all__ = [
     "finalize",
     "flow_simplify",
     "ghidra_metadata",
+    "go_metadata_recovery",
     "inline_detection",
     "kesin_anchors",
+    "objc_metadata_recovery",
     "packer_fingerprint",
     "parallel_algo_eng",
     "pcode_cfg_analysis",

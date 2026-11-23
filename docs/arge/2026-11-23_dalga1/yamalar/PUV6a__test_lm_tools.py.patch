@@ -1,0 +1,12 @@
+--- a/tests/test_lm_tools.py
++++ b/tests/test_lm_tools.py
+@@ -565,7 +565,8 @@
+     assert ws.name_tag(HUB_CALLERS[0]) is None and ws.name_tag(HUB) is None and ws.raw_name(HUB) is None
+     assert ws.name_tag(HUB_CALLERS[1]) == ("y" * 128, "unverified")
+     assert T.format_tag(("ad", "proven")) == "[proven: ad]" and T.format_tag(None) is None
+-    assert T.LABEL_TAGS == {"kesin": "proven", "doğrulandı": "verified", "doğrulanmadı": "unverified"}
++    assert T.LABEL_TAGS == {"kesin": "proven", "doğrulandı": "verified", "doğrulanmadı": "unverified",
++                            "üst veriden": "metadata"}   # P-ÜV6a
+     assert ws.name_lookup()(B) == ("parse_header", "proven") and ws.name_lookup()("0x" + B.upper()) == ("parse_header", "proven")
+     assert ws.name_lookup()("ffff0000") is None
+ 

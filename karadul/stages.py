@@ -2521,6 +2521,10 @@ class ReconstructionStage(Stage):
                 "pdb_symbol_recovery",
                 "trex_struct_recovery",
                 "binaryninja_analysis",
+                # P-ÜV6a: üst veri üreticileri (Go pclntab, ObjC yöntem listesi). Bayrak
+                # kapalıyken iş yapmaz (durum `kapali`); adlar Faz 2 ad kanallarına gider.
+                "go_metadata_recovery",
+                "objc_metadata_recovery",
                 # B7 (2026-05-13): type recovery JSON tüketici
                 "type_recovery_consumer",
                 "pcode_cfg_analysis",
