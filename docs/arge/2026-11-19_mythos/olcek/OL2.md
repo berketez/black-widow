@@ -2,19 +2,53 @@
 
 Paket: uygulama oturumu 2, akşam dilimi, OL2 (`docs/arge/2026-11-23_dalga1/gonderim/OL2.md`). Plan: `docs/arge/2026-11-19_mythos/olcek/PLAN.md` "ÖL-2" (gönderim metnindeki hükümlerle).
 Taban: main `0b4d948` (`git merge --ff-only main` sonrası; ürün kodu `152176b` ile aynı, arada yalnız belge). Başlangıç: 2026-11-23 19:37. Sert son: 22:05.
-Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`).
+Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`). Ürün ağacı: `~/karadul_olcum/urun-d83f100` (kod commit'i `d83f100`; altı bağ; kökte S8 için `karadul.yaml`).
 
 ## Kalemler
 
 | # | Kalem | Durum | Commit |
 |---|---|---|---|
-| 1 | Kod: döküm işlevlerine adım bütçesi + adım içi `suruyor` (`headless.py`) | başlıyor | — |
-| 2 | Kod: BSim boş depo sorusu, ingest bütçesi, sorgu bütçe denetimi (`bsim.py` + `headless.py` BSim bloğu) | sırada | — |
-| 3 | Testler (`tests/test_ol2_adim_butcesi.py`, `tests/test_ol2_bsim_kosul.py`) | sırada | — |
-| 4 | Mutasyon (`mutation_specs_ol2.json` ≥ 10) + sekiz eski tanım | sırada | — |
-| 5 | `config.py` yaması (`yamalar/OL2__config.py.patch`; `git apply --check`) | sırada | — |
-| 6 | Ön kayıt (`on_kayit_ol2.md`; ölçümden önce ayrı commit) | sırada | — |
+| 1 | Kod: döküm işlevlerine adım bütçesi + adım içi `suruyor` (`headless.py`) | bitti | `d83f100` |
+| 2 | Kod: BSim boş depo sorusu, ingest bütçesi, sorgu bütçe denetimi (`bsim.py` + `headless.py` BSim bloğu) | bitti | `d83f100` |
+| 3 | Testler (`tests/test_ol2_adim_butcesi.py` 39, `tests/test_ol2_bsim_kosul.py` 24) | bitti: 63 / 63 | `0fff66d` |
+| 4 | Mutasyon (`mutation_specs_ol2.json`) + sekiz eski tanım | ol2 33 / 33 bitti; eskiler koşuyor | `47947da` |
+| 5 | `config.py` yaması (`yamalar/OL2__config.py.patch`; `git apply --check` temiz; uygulanmadı) | bitti | `0fff66d` |
+| 6 | Ön kayıt (`on_kayit_ol2.md`; ölçümden önce ayrı commit) | bitti | `1740d82` |
 | 7 | sqlite3 (H2) | sırada | — |
 | 8 | S8 (H3, H5) | sırada | — |
 | 9 | T25 (H1, H4) | sırada | — |
 | 10 | Tam takım (yamasız) | sırada | — |
+
+## Kalem 1–2 — kod (`d83f100`)
+
+### `karadul/ghidra/headless.py`
+
+- **`_AdimDenetcisi`** (tek denetim noktası): döngü her birimin başında `denetle(islenen[, toplam])` çağırır. Adımın başlangıcı + bütçe geçildiyse `True` (döngüden çık) ve kesildiği andaki gerçek sayaçlar saklanır (`islenen` = biten birim, `toplam` biliniyorsa). Geçilmediyse ve adımın son olayından beri `analysis.bekci_aralik_sn` geçtiyse aynı noktada `ILERLEME … durum=suruyor islenen=n [toplam=N] gecen_sn=…` (ÖL-1'in `_ilerleme` / `ilerleme_satiri` yolu; yeni günlükçü / biçim yok). Zamanlayıcıyla olay yok. `neden()` = `"adım bütçesi (S sn) doldu"` (+ gerekirse `; <ek>`). `kismi_alanlari()` bütçe dolmadıysa `{}` (çıktı bayt bayt aynı), dolduysa `{"kismi": true, "islenen": n, ["toplam": N,] "neden": …}`.
+- **Tek zamanlayıcı:** denetçi `_AdimSaati.denetci(adim, butce_sn, aralik_sn, toplam)` ile kurulur ve başlangıcını `_AdimSaati.basla` anından alır (başlamamış adıma denetçi kurulamaz). `_AdimSaati.bitti`, adım sürerken eklenen hata varsa ve denetçi dolduysa kısmi olaya denetçinin gerçek sayaçlarını ekler. Çağrı noktalarındaki `saat.bitti(ADIM_…)` satırları değişmedi (HZ-1 mutantı `hz1_cfg_bitisi_yanlis_yerde` bu satırı tutuyor).
+- **Ayarlar** (kodda sabit sayı yok; A-9): `timeouts.ghidra_adim` (adım bütçesi), `analysis.bekci_aralik_sn` (olay aralığı), `bsim.ingest_butcesi_sn`; `getattr` ile okunur, yok / 0 = kapalı. Küçük birimli iki döngüde (P-code komut sayımı, xref'in genel sembol sayımı) saat `KUCUK_BIRIM_DENETIM_ADIMI = 1024` birimde bir okunur; öbür döngülerde her birimde (plan "500 fonksiyonda bir" diyordu; birim başına birkaç Java çağrısı varken bir `time.monotonic()` ihmal edilir, sınır daha sıkı).
+- **Döküm işlevleri** (`_extract_strings` veri, `_extract_call_graph` / `_extract_xrefs` / `_extract_cfg` / `_extract_function_id_matches` / `_extract_pcode` fonksiyon, `_extract_types` veri tipi, `_extract_pcode_stats_only` komut): isteğe bağlı `denetci` parametresi (plan `son_an` diyordu; denetçi son anı taşır ve olayları da üretir). Bütçe dolunca döngü birim sınırında biter, çıktıya kısmi alanlar eklenir; birim sınırında kesildiği için her liste P16e'nin sıra kuralını korur (fonksiyon listeleri giriş adresi sırasında, çağıran listeleri `caller_sort_key` ile). `toplam` fonksiyon döngülerinde `functions` adımının `total`'ı (= `getFunctions(True)` yinelemesinin uzunluğu); dizgi / tip / komutta bilinmiyor → yazılmaz. `_extract_xrefs` iki bölümlü: bütçe fonksiyonlarda dolarsa genel sembol sayımı koşmaz (`neden` "…; genel sembol sayımı yapılmadı"), sayımda dolarsa "…; genel sembol sayımı yarıda (k sembol)".
+- **`_analyze_pyghidra`**: her döküm adımında `_denetci(ADIM_…)`; bütçe dolunca `step_errors[<adım>] = neden` + `WARN` satırı (bitiş olayı `durum=kismi islenen=… toplam=… neden="<adım>: adım bütçesi (S sn) doldu"`; önek ÖL-1'in `_AdimSaati.bitti` biçimi). `static` aşaması adım hatasını kısmi sayar (çıkış 3). Decompile, otomatik analiz, functions, GDT, PDB adımlarına dokunulmadı.
+- **BSim bloğu:** ingest denetçisi bütçesi `min(timeouts.ghidra_adim, bsim.ingest_butcesi_sn)` (sıfır olmayanların küçüğü; H2'de 2 sn bütçe ingest'e de uygulanır), sorgu denetçisi `timeouts.ghidra_adim`. Denetçi `BSimDatabase`'e **öznitelikle** verilir (`bsim_db.denetci = …`): yöntem imzaları değişmedi (HZ-1'in sahte köprüsü ve P16b / P16c'nin sahte `_native`'leri konum argümanlı; yeni anahtar argüman onları kırardı). Bütçe dolunca `step_errors["bsim_ingest"]` / `["bsim_query"]` (ayrı anahtar: ingest kısmıysa sorgunun kendi kısmi olayı da görünsün). Boş depoda atlanan sorgu adım hatası DEĞİL (her taze koşu çıkış 3 olurdu); `durum=atlandi neden=…` olayı üretilir. `saat.bitti(ADIM_BSIM_INGEST)` / `saat.bitti(ADIM_BSIM_QUERY)` kuyruk satırları değişmedi (HZ-1 mutantı).
+
+### `karadul/ghidra/bsim.py`
+
+- `STATUS_ATLANDI = "atlandi"`, `STATUS_KISMI = "kismi"`, `BOS_DEPO_NEDENI`.
+- **`BSimDatabase.bos_depo_durumu(program, db)`** (hüküm 7): köken kaydı (`_ProvenanceStore.load`) okunur, programın kimliği `_Exclusion.classify` ile dışarıda tutulur (md5 = kendisi, sha256 = aynı dosya, derleme kimliği = aynı yapı); kalan kayıt yoksa `bos: true`. Atlanmaz (neden yazılır): kayıt bozuk / okunamıyor (`load_error`), karantinada yedeği var (`*.provenance.json.bozuk-*`), kayıt yokken depo dosyası var (`<db>.mv.db` ya da lite dizini). Karar `ingest_program` içinde, depo kilidi alındıktan sonra ve ingest'ten ÖNCE verilir (eşzamanlı bir koşunun kaydı yarıda okunmasın); ingest'siz sorguda (CLI) sorgu anında. Ayar `bsim.bos_depoda_sorgu_atla` (`getattr`; kapalıysa hiç okunmaz).
+- **`query_all_functions`**: ayar açık + depo boş → sorgu çağrılmaz; `_atlanan_sorgu` aynı şemada sonuç: `total_matches 0`, `matches []`, **`total_queries 0`** (atlanan sorgu "sorgulandı" sayılmaz), `bsim_status atlandi` (ingest kısmıysa `kismi` kalır), `bsim_detail.sorgu_atlandi true`, `bsim_detail.neden`. Depo dolu → bugünkü yol, durum alanlarına yeni anahtar eklenmez (S8'in 7 ikilisinde ham eşitlik için). Karar verilemediyse sorgu koşar, `bsim_detail.bos_depo_denetimi` = neden. Depo kilidi alınamadıysa (`skipped_busy`) ya da liste düştüyse (`failed`) atlama yolu devreye girmez.
+- **Ingest bütçesi** (hüküm 6; tarama döngüsü yeniden yazılmadı): `_BSimNativeWrapper.ingest_program`'da `_iter_real_functions` listesi bir kez alınır, döngünün başına denetim + sayaç; dolunca tarama durur, **taranan kısım eklenir** (`InsertRequest`; gelecek koşuların sorgusu için, "kapsam küçültülmez"), `last_ingest_kismi = {islenen, toplam}`. `BSimDatabase` durumu `kismi`, `neden "ingest: adım bütçesi (S sn) doldu"`, `ingest_islenen`, `ingest_toplam`. Lite ingest'te aynı denetim (toplam bilinmiyor). `InsertRequest.execute` tek Java çağrısıdır, bütçeye dahil değildir ve kesilmez.
+- **Sorgu bütçesi** (hüküm 5): fonksiyon başına yolda (native tekli, lite) parça sınırında; dolunca eldeki eşleşmelerle `kismi`, `total_queries` = sorgulanan, `sorgu_islenen` / `sorgu_toplam`. Toplu yolda (`query_functions`) tarama döngüsü Python'da fonksiyon başına ilerliyor: orada denetim; ayrıca **`QueryNearest.execute`'tan hemen önce** kalan bütçe denetlenir. Dolduysa çağrı yapılmaz (`last_query_kismi`, eşleşme 0, `neden` "…; toplu sorgu çağrılmadı (t / N fonksiyon tarandı)"). **`QueryNearest.execute` tek bir Java çağrısıdır ve kendisi kesilemez** (bölünmesi HZ-2'nin alanı): bütçe çağrı başlamadan önce yetiyorsa çağrı bitene kadar sürer.
+- Dokunulmayan: `_Exclusion`, `_matches_from_notes`, `_bsim_shadow.py`, `bsim_match.py`, eşleşme / dışlama mantığı.
+
+## Kalem 3 — testler (`0fff66d`)
+
+- `tests/test_ol2_adim_butcesi.py` (39): denetçi birimi (sınırda eşit dolmaz, bütçe 0, toplam yok, olay aralığı ve gerçek sayaç, aralık 0, dolunca olay yok, en küçük bütçe), `_AdimSaati.denetci` (başlamamış adım reddi, kısmi olay sayaçları, dolmayan denetçi alan eklemez); yedi döküm işlevi sahte programla: denetçisiz ve bütçesiz çıktı **bayt eşit**, bütçe dolunca birim sınırında kısmi ve geçerli JSON (fonksiyon döngülerinde toplam, öbürlerinde yok), birim sayılarının tutarlılığı, xref'in iki bölümü, P-code komut adımı, döngü içi olay; köprü (HZ-1'in sahte köprüsü): bütçe / aralık / toplam ayardan ve functions adımından, bütçe dolunca adım hatası + kısmi olay + kısmi JSON + `WARN` satırı, altı döküm adımının bağlı olduğu, BSim ingest / sorgu denetçilerinin bütçesi (900 / 3 600; 2 sn'de ikisi de 2), ingest dolunca `bsim_ingest` hatası ve kısmi olay, boş depoda `atlandi` olayı ve adım hatası olmadığı, öntanım bütçede hiçbir çıktıya alan eklenmediği.
+- `tests/test_ol2_bsim_kosul.py` (24; P16c'nin sahte BSim dünyası): boş depo kararı (taze, aynı ikili ikinci kez, aynı yapının kopyası, başka program, bozuk kayıt dosyaya dokunmadan, karantina, kayıtsız depo dosyası); sorgu atlama (çağrı yok, aynı anahtar sırası, `total_queries 0`), ayar kapalı, dolu depoda durum alanları ayar kapalıyla aynı, okunamayan kayıtta sorgu + neden, kararın ingest'ten önce verildiği (ingest sırasında başka program kaydı düşse de), ingest'siz sorgu, meşgul depo; gerçek `_BSimNativeWrapper.ingest_program` tarama döngüsünde bütçe (taranan kısım eklenir), bütçesiz hepsi; `BSimDatabase` ingest kısmi durumu + boş depoda iki neden birlikte; tekli sorgu parça sınırında kesilir / bütçe dolmazsa alan yok; toplu sorgu taramada ya da çağrı öncesi dolarsa `QueryNearest` kurulmaz; bütçe içinde eski yolla aynı eşleşmeler; toplu kısmi tekli yola düşmez; ingest döngüsünde `suruyor` olayı.
+- 63 / 63 geçti; ilgili eski testler (hz1, ol1, p16b, p16c, bsim, p16e, p16c analiz, p13a, p16a) 225 / 225.
+
+## Kalem 4 — mutasyon
+
+- `scripts/measurement/mutation_specs_ol2.json`: **33 mutant, 33 öldü**, hata 0 (üretici `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/betik/spec_uret.py`: her `find` tekil, `replace` farklı uzunlukta). Günlük `…/OL2/mutasyon/ol2.log`.
+
+## Kalem 5 — `config.py` yaması (`0fff66d`)
+
+`docs/arge/2026-11-23_dalga1/yamalar/OL2__config.py.patch` (`betik/yama_uret.py`, `difflib`; dosyaya dokunulmadı): `timeouts.ghidra_adim` 0 → **3600** (`# okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)`), `bsim.bos_depoda_sorgu_atla` False → **True** (`# okuyan: ghidra/bsim.py BSimDatabase (ÖL-2)`), `bsim.ingest_butcesi_sn` 0 → **900** (`# okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)`); `INERT_SETTINGS`'ten `# ÖL-2 (Dalga 2)` grubu (başlık + üç satır) silinir. `git apply --check` temiz (A-34: uygulanmadı).
