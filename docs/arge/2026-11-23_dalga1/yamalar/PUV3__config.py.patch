@@ -1,0 +1,21 @@
+diff --git a/karadul/config.py b/karadul/config.py
+index 9573d4d..246ffca 100644
+--- a/karadul/config.py
++++ b/karadul/config.py
+@@ -762,7 +762,7 @@ class BinaryReconstructionConfig:
+     # P-ÜV2: Objective-C yöntem listesi üretici adımı.
+     enable_objc_metadata_recovery: bool = False  # okuyan: pipeline/steps/objc_metadata_recovery.py (P-ÜV2)
+     # P-ÜV3: Swift tip üst verisi üretici adımı.
+-    enable_swift_metadata_recovery: bool = False  # ETKİSİZ: P-ÜV3 bağlayacak (INERT_SETTINGS)
++    enable_swift_metadata_recovery: bool = False  # okuyan: pipeline/steps/swift_metadata_recovery.py (P-ÜV3)
+     # P-ÜV6: Go pclntab ad kanalı.
+     enable_go_pclntab_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
+     # P-ÜV6: Objective-C yöntem ad kanalı.
+@@ -1326,7 +1326,6 @@ INERT_SETTINGS: dict[str, str] = {
+     # ÖK-2 (Dalga 2)
+     "binary_reconstruction.oz_ad_uniqueness_gate": _pending_binding("ÖK-2"),
+     # P-ÜV1 / P-ÜV2 / P-ÜV3 (Dalga 2; üretici adımı okuyan ilk kod; Faz 1 listesine P-ÜV6 ekler)
+-    "binary_reconstruction.enable_swift_metadata_recovery": _pending_binding("P-ÜV3"),
+     # ÖL-2 (Dalga 2)
+     "timeouts.ghidra_adim": _pending_binding("ÖL-2"),
+     "bsim.bos_depoda_sorgu_atla": _pending_binding("ÖL-2"),
