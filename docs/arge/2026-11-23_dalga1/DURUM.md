@@ -52,10 +52,21 @@ P-ÜV6 ikiye bölündü (ana oturum kararı): plan P-ÜV6'yı altı okuyucu main
 
 - Bugün main'e giren 7 paket (hepsi bağımsız test + mutasyonla doğrulandı): OL10 (tasarım), PUV3, P16e, PUV6a, PUV4, PUV7, OL1. Gönderilen ajan 8 (7 Opus + 1 Mythos); ilan edilen ilk dilimden gönderilmeyen tek paket PUV5.
 - **Birleşik main `95d4e3c` tam takımı: 10 968 geçti / 18 atlandı / 0 kaldı** (670 sn, yük altında; `dogrulama-d1`). Oturum başında 10 756 / 13 / 0'dı. Atlanan 5 fazla: nedenine tek tek bakılmadı (doğrulama ağacında izlenmeyen çalışma verisi olabilir).
-- **Süren tek iş:** Ollama'nın uçtan uca ürün koşusu (üst veri bayrakları açık; 09:33:58'de başladı; kök `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/ollama_ustveri/`, ürün ağacı `~/karadul_olcum/urun-d2134d5`). Gösteri koşusu 129 dk sürmüştü. Bitince sayılacaklar: `out/naming_map.json`'da `üst veriden` etiketli kayıt (üst sınır Go 10 475 + ObjC 151; taban 17 ad), `naming_channels`, çıkış kodu.
+- **Ollama'nın uçtan uca ürün koşusu bitmedi** (09:33:58 → 11:34:37; ana oturum durdurdu). Ayrıntı ve sayılar aşağıda: "Ollama uçtan uca koşusu" bölümü.
 - **Mola sonrası ilk dört paket (metinleri hazır):** PUV5 (Mach-O `main`), PK1 (başvuru yolunun yöntem kapısı), OK1 (P12d + ÖK-1) — üçünün dosya kümeleri ayrık, birlikte gidebilir; OL10A (büyük ikili kipinin çekirdeği; yalnız yeni dosya). `headless.py` zincirinde sırada ÖL-2 (metni yazılacak).
 - **Yazılacak paketler:** P-ÜV6b (Swift / RTTI / Go damgası / `main` künyesi bağlama; ilk kalem ObjC güven satırı), açılış ölçümü (A-14: kanal başına 3. program), ÖL-2, ÖL-4, P16f (decompiler belirlenimsizliği), MUTBAKIM-2, OKUMA.
 - Push yapılmadı (origin `9c9b2d4`); Berke'ye sorulacak.
+
+## Ollama uçtan uca koşusu (09:34 → 11:34): adlar kodda, koşu blok açıklamada takıldı
+
+Kök `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/ollama_ustveri/` (özet `ozet/OZET.md`), ürün ağacı `~/karadul_olcum/urun-d2134d5`, üst veri bayrakları açık.
+
+- **Ad sayısı (ara dosyalardan; `reconstructed/src/naming_provenance.json`):** ad birleştirici 10 632 karar verdi (gösteri koşusunda 6): `üst veriden` 10 626 (Go `pclntab` 10 475 + ObjC yöntem 151) + `function_id` 6; hepsi uygulandı, düşen 0. Yeniden oynatmanın sayısıyla (10 475 + 151) aynı. `reconstructed/merged/` dosyalarında tanım / çağrı olarak doğrulanan 10 454; kalan 172'nin (ObjC 149, Go 23) `FUN_<adres>.c` dosyası yok — Ghidra'nın önceden adlandırdığı işlevler; bunların dosyada durduğu doğrulanmadı. `c_namer`'ın kendi haritası 17 ad (gösteriyle aynı). Doğruluk bu koşuda ölçülmez (Ollama soyulmuş; kanal kesinliği GT'li programlardan: PUV6a satırı).
+- **Koşu bitmedi (yeni kusur, BA-1):** blok açıklama adımı (`engineering_annotation` → `CodeBlockAnnotator._detect_memory_ops`) 13 554 dosyanın 7 310'unu 36 sn'de yazdı, sonra `FUN_100295d40.c` satır 211'de 31 dakika döndü. Satır: `runtime_memmove(field_ptr_3,iVar14,status_2 << 3,ctx,…,` (Ghidra uzun çağrıyı satıra böldüğü için kapanan ayraç yok). Kalıp `karadul/reconstruction/engineering/block_annotator.py:340` (aynı yapı 324 `memcpy`, 332 `memset`): `((?:[^()]+|\([^)]*\))+)` — iç içe niceleyici, üstel geri izleme. Ana oturumun ölçümü (aynı dosya, ayrı süreç): üçüncü argümanın ilk 20 / 24 / 28 karakteri 0,043 / 0,693 / 11,1 sn; 32 karakter 20 sn'de bitmedi; satır 89 karakter. Gösteri koşusunda aynı satır `FUN_100084880(…)` idi, kalıp hiç başlamıyordu: kusur eski, Go adları erişilir kıldı. Aynı çalışma alanında bu üç addan birini çağıran 1 262 dosya / 3 631 satır var.
+- **İkinci bulgu:** süreç SIGTERM'e yanıt vermedi (C düzeyinde düzenli ifade eşleşmesi içinde işaret işlenmiyor); SIGKILL gerekti. Çıkış 1; 7 238 sn; en yüksek bellek 6,2 GB. `out/` yazılmadı (finalize'a gelinmedi). ÖL-1'in bekçisi yalnız Ghidra köprüsünü izliyor; Ghidra sonrası adımlarda takılma bekçisi yok → ÖL-4 / ÖL-2 metnine not.
+- **BSim yine boşa:** 13 160 sorgu, 714 sn sorgu süresi (adım toplamı 10:02:41 → 10:32:22), 0 eşleşme (ÖL-2'nin kalemi).
+- **Sonraki adım (mola sonrası; ürün kodu, Opus):** BA-1 paketi — üç kalıbın geri izlemesiz yazımı + bu satırla süre testi (mutasyonlu) + `block_annotator.py`'deki öbür kalıpların aynı sınıf için taranması; kabul: Ollama uçtan uca koşusu bayraklar açıkken biter, `out/naming_map.json`'da `üst veriden` sayılır. Dosya kümesi yalnız `block_annotator.py` + yeni test: üç zincirin hiçbirine girmez, PUV5 / PK1 / OK1 / OL10A ile birlikte gidebilir. Geçici yol (kod değişmeden): `binary_reconstruction.enable_block_annotation: false` ile yeniden koşu (~95 dk); koşulmadı (Berke'nin mola talimatı).
+- Üst veri bayraklarının öntanımda açılması BA-1'e de bağlandı: bayrak açıkken Go ikilisinde koşu bitmiyor.
 
 ## Berke (09:2x): "bu tüm ajanlar bitince bir duralım, mola vermek istiyorum"
 
@@ -73,7 +84,7 @@ P-ÜV6 ikiye bölündü (ana oturum kararı): plan P-ÜV6'yı altı okuyucu main
 ## Açık kararlar ve bekleyenler
 
 - **Üst veri bayraklarının öntanımda açılması (K-4):** A-14 kanal başına en az 3 bağımsız program ister; bugün Go'da 2, ObjC'de 2 GT'li program var. Üçüncü programlar: Go için P-ÜV9 kalem 3 (Go derleyicisiyle sembollü + soyulmuş derleme çifti; A-23 izni var), ObjC için hedef setine üçüncü sembollü ObjC ikilisi. PUV6a main'e girince küçük bir "açılış ölçümü" paketiyle kapatılacak; o zamana kadar adlar yalnız bayrak açıkken yazılır.
-- Ollama'nın uçtan uca ürün koşusu (bayraklar açık): PUV6a main'e girince ana oturum kuyruğa koyar (2 saatten uzun).
+- Ollama'nın uçtan uca ürün koşusu (bayraklar açık): koşuldu, bitmedi (BA-1; yukarıdaki bölüm). BA-1'den sonra yinelenecek.
 - Gece koşusu (HZ-0 + ÖLÇ-1; A-26) ve KIMLIK'in kalan 35 çifti: Berke'nin izniyle.
 - Push: oturum sonunda sorulur.
 - **Disk temizliği (08:15–08:40; Berke: "100 GB kadarını sil" → liste sunuldu → "onları sil, gerisi kalsın şimdilik"):** kullanılan alan 774,2 → **698,4 GB** (75,8 GB açıldı; boş 267,7 GB). Ölçüm `diskutil` + `~/.claude/scripts/disk/tara.py`. 13 Ekim'den beri büyüme: `~/karadul_olcum` +103 GB (her onarım paketi 119 ikilinin çalışma alanlarını saklamış), `~/HRMA-wt` +69, `~/HRMA-calisma` +43, `~/Library` +51.
