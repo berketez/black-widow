@@ -71,22 +71,22 @@ Betik `PUV5/oynat.py` (koşu kökünde; ürün kodunu dalın ağacından yükler
 
 Hedef setinde ad bekleyen 40'lık terminal-notifier nüfusuna (HEDEF tanımı) etkisi ürün koşusunda ölçülmedi (terminal-notifier ürün koşusu bu paketin kuyruk sırasında yok); kural düzeyinde +1 doğru ad (`main`).
 
-## Kalem 4 — ürün koşusu (kuyruk; yük altında, `load averages` 6–12)
+## Kalem 4 — ürün koşusu (kuyruk; yük altında)
 
 Ürün ağacı `~/karadul_olcum/urun-caa14e3` (dalın `caa14e3` commit'i; altı çalışma verisi bağı; `agac_kunyesi` kirli 0). Komut `ustveri_urun.py kos` (`urun_kos.calistir` + `--config`), ikili başına ayrı kuyruk çağrısı (`PUV5/kos.sh`); bayrak yaml'ı `PUV5/bayraklar_acik.yaml` (yalnız `enable_macho_entry_main: true`; yamasız dalda "etkisiz" uyarısı basılır ama değer okunur — `stats` bunu gösteriyor). Ölçüm `PUV5/urun_olc_puv5.py` (c_namer'ın son haritası + köken kaydı, `out/naming_map.json`, `out/src` kodu, `pipeline_result.json`; GT ve nüfus `ks1_olc.gt_mac` kuralı). Çıktı `PUV5/ozet/urun_*.json`.
 
-### Bayrak açık, 8 Mach-O (19:54–20:07; süre 27–268 sn) → H1 ürün düzeyi
+### Bayrak açık, 8 Mach-O (19:54–20:07; süre koşu künyesinden, 26,9–267,2 sn, yük 6,9–16,8) → H1 ürün düzeyi
 
 | İkili | Süre (sn) | c_namer haritası `entry` → `main` | GT'ye göre | Nüfusta | Künye / etiket / güven | `out/src`'de `main(` tanımı | `out/naming_map.json`'da | `stats.macho_entry_main` |
 |---|---|---|---|---|---|---|---|---|
-| htop | 71 | evet | doğru | hayır (thunk) | `main_giris` / doğrulanmadı / 0,966 | 1 | **yok** | `yazildi` |
-| tmux | 268 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
-| gmktemp | 71 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
-| idn2 | 27 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
-| gettext | 34 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
-| envsubst | 34 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
-| xz | 82 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
-| gsort | 186 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
+| htop | 70,8 | evet | doğru | hayır (thunk) | `main_giris` / doğrulanmadı / 0,966 | 1 | **yok** | `yazildi` |
+| tmux | 267,2 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
+| gmktemp | 70,0 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
+| idn2 | 26,9 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
+| gettext | 32,4 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
+| envsubst | 34,2 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
+| xz | 80,9 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
+| gsort | 182,7 | evet | doğru | evet | aynı | 1 | yok | `yazildi` |
 
 - **H1 ürün düzeyi: `main` 8 / 8 (önce 0 / 8), GT'ye göre 8 / 8 doğru, yanlış `main` 0** (her ikilide `main` alan tek anahtar `entry`). Kodda (`out/src`) 8 / 8; künye 8 / 8 `main_giris`, güven `on_ad:main_giris` satırından (0,966).
 - **Bulgu: `out/naming_map.json` `mappings`'te 0 / 8.** `output_formatter._build_naming_map` c_namer haritasından yalnız yer tutucu önekli anahtarları (`FUN_`, `DAT_`, `sub_`, `thunk_`) alıyor; `entry` öneki yok → ad kodda var, analistin ad haritasında yok (yanlış ad değil, görünmeyen ad). Yama: `docs/arge/2026-11-23_dalga1/yamalar/PUV5__output_formatter.py.patch` (`orig == "entry"` da kabul; `git apply --check` temiz; ağaca uygulanmadı). Yan etki sayımı: a62f15e'nin 119 çıktısında c_namer haritasında `entry` anahtarı **0** (ELF'te `entry` adlandırılmıyor) → bugünkü 119'da haritaya yeni satır girmez. Yamanın ürün koşusu: ölçülmedi.
