@@ -15,8 +15,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (özet `ozet/`).
 | 5 | Bozma deneyi betiği (A–E) | yazıldı; H2 TUTTU | 85f8a03 |
 | 6 | Kalem 6 (K10) ölçümü ve kararı | ölçüldü (≥ %99) → eklendi; H5 TUTMADI | 896753a |
 | 7 | Mutasyon (≥ 8) | 17 / 17 öldü | a048bfe, 4607a31, 9be3eab |
-| 8 | Kabul ölçümü (H1, H2, H4, H6, H7; ek ikililer) | ölçüldü (10 dilim) | (kabul commit-i) |
-| 9 | Dondurma → H3-sınama (docker-compose) | bekliyor | — |
+| 8 | Kabul ölçümü (H1, H2, H4, H6, H7; ek ikililer) | ölçüldü (10 dilim) | 4ac01c3 |
+| 9 | Dondurma → H3-sınama (docker-compose) | dondurma e9ae89d; H3-sınama TUTTU | e9ae89d + (sınama commit-i) |
 | 10 | Tam takım | bekliyor | — |
 
 ## Kalem 2–4: kitaplık (`go_tip.py`, `tutarlilik.py`)
@@ -290,3 +290,29 @@ docker-compose bu commit'e kadar hiç açılmadı — ne `taban`, ne `deney`, ne
 | (içe aktarılan, değiştirilmedi) `goruntu.py` | `fe3584624119b60c3633dc8eb8f44f746cd3859da62f52d298b646bf44604417` |
 
 Dondurma commit'i: bu commit (kısa hash bir sonraki satırda, sınama sonucunun yanında).
+
+### H3-sınama — docker-compose (bir kez, dondurma `e9ae89d`'den sonra) → TUTTU
+
+Koşu anında `go_tip.py` / `tutarlilik.py` sha256'sı dondurulanla aynı (`286a810eb107…`,
+`bd785a6651b0…`); ikili sha256 `fc9b9e22a113…` (P-ÜV1'in kopyası); yük ortalaması 7,0 / 9,6 / 14,3;
+çıktı `ozet/sinama_docker-compose.json`. Denetimler bu sonuca göre değiştirilmedi.
+
+| | Sayı |
+|---|---|
+| Go / itab yolu | go1.23.8 / `itablink` |
+| Fonksiyon / adlı | 90 078 / 90 077 |
+| **T1** | **12 969 / 12 969** (%100; itab 4 574) |
+| **T2** | **140 217 / 140 217** (%100; ulaşılan tip 37 149) |
+| T2p (ürün) | 139 261 / 139 261 (araştırma tanımı 139 245 / 139 261: 16 yanlış alarm olurdu) |
+| T3 / T4 (zayıf) | 62 992 / 63 666 (yanlış alarm %1,06) / 82 068 / 87 685 |
+| T5 | 19 / 19 (sürüm tablosu eşleşmedi: sarmalayıcı kimliği 22 → yalnız `runtime.` öneki) |
+| Güçlü işaretli | **0** |
+| K4 / K10 | 0 / 0 (K10 bakılan 73 654, uyumlu 73 654) |
+| Adlı damga çift / tek / tutarsız | **70 364 / 19 713 / 0** |
+| Karar | `temiz` |
+| Süre | 2,8 sn (yük altında) |
+
+- docker-compose sembollü: P-ÜV1'de 90 077 / 90 077 ad sembolle aynıydı → burada `tutarsiz` 0 =
+  doğru adlara yanlış alarm 0 (sınama ikilisinde de).
+- **H7 (11 dilim) → koşul sağlandı:** güçlü işaretli oranın en büyüğü 11 / 11 dilimde 0; %1 eşiği
+  kalır (düzeltme öncesi %0,206 notu yukarıda).
