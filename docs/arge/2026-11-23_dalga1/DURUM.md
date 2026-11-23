@@ -37,16 +37,29 @@ P-ÜV6 ikiye bölündü (ana oturum kararı): plan P-ÜV6'yı altı okuyucu main
 | Paket | Ajan | Model | Durum | Not |
 |---|---|---|---|---|
 | PUV6a | a42e3d495be90379d | Opus | çalışıyor (08:11) | sert son 11:45; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV6a.md` |
-| P16e | a55c97e3a05c70d6f | Opus | çalışıyor (08:11) | sert son 10:45; ilerleme `docs/arge/2026-11-19_mythos/hiz/P16e.md` |
+| P16e | a55c97e3a05c70d6f | Opus | **bitti 09:14; main'de** (`…627d30f`, 14 commit) | `headless.py`'de `caller_sort_key` + üç listede tek `sort` (+20 satır): çağıran sırasından gelen ham fark 8 / 8 ikilide 0; 2 020 `.c`'de `// Callers:` artık en küçük adresli 5 çağıran. Envanter 15 nokta, 3'ü onarıldı. **Ön kayıt: H1 7 / 8, H2 7 / 8 TUTMADI** (Ghidra decompiler'ı zstd `FUN_001063c0`'da 6 koşunun 1'inde iki geçici değişkeni yer değiştirdi; `out/naming_map.json` 8 / 8 eşit); **H3 TUTMADI** (gönderim metnindeki koşu sırası BSim deposunu farklı doldurdu — ana oturumun hatası; taban sırasıyla ek koşu `sonra_3`'te fark 8 / 8'de 0); H4 yük altında, hükümsüz (mikro ölçüm: sıralama döküm süresinin %0,014'ü). 22 test, mutant 13 / 13; ajanın tam takımı 10 778 / 0. **Bağımsız doğrulama (main `e2c079d`, `dogrulama-d1`): 4 test dosyası 70 / 0; mutasyon p16e 13 / 13, hz1 13 / 13, p16a 33 / 33, p13a 22 / 22; S8 taban ↔ `sonra_3` sıra-normal fark 8 / 8'de 0; `sonra_2` ↔ `sonra_3` ham: `.c` 0, ad haritası 0, JSON farkı yalnız `ghidra_bsim.json` (koşu sırası).** Koşu kökü 3,5 GB (`~/karadul_olcum/runs/dalga1-2026-11-23/P16e/`; `s8_sonra_3` OL1'in tabanı, silinmez) |
 | PUV3 | a14ae2562cbc29126 | Opus | **bitti 09:04; main'de** (`f518836..7e65127`, 12 commit + yama `a750673`) | `karadul/analyzers/ustveri/swift.py` + `swift_metadata_recovery` adımı (bayrak kapalı; Faz 1'e P-ÜV6b'de). **iTerm2 (SINAMA, bir kez): 2 627 / 3 659 tipe ad, yanlış 0** (Wilson alt 0,9985); H3 sayı şartı (≥ 3 477) TUTMADI: adsız kalan 1 032 tipin 1 030'u `private` tip, ayracı öntanımlı derlemede ikilide yok (Swift çalışma zamanı da `(unknown context at $…)` diyor). Rectangle 186 tip okundu, 180'ine ad (GT yok). H0, H1, H2, H4, H5 tuttu. Keşif verisi yerelde derlenen Swift örnekleri (3 derleme biçimi). 45 test, mutant 18 / 18; ajanın tam takımı (yamasız) 10 800 / 1 beklenen kırmızı. **Bağımsız doğrulama (main `a750673`, `dogrulama-d1`): 4 test dosyası 267 / 0 (3 atlandı); mutasyon 18 / 18; gerçek dosyada iTerm2 `ad_yazilabilir` 2 627, Rectangle 180, H1 iki ikilide tuttu.** Dürüstlük notu (ajan): dondurmadan önce iTerm2'nin GT'siz alt küme sayılarını gördü; okuyucuyu ona göre değiştirmedi. A-14 için GT'li 2. ve 3. Swift programı gerekiyor |
 | OL10 | a8420740e5db17ed4 | Mythos | **bitti 08:55; main'de** (`2cc31dc..15013bb`, 8 commit, yalnız belge) | `olcek/OL10_TASARIM.md` 896 satır: üç katman (K0 Ghidra'sız, K1 çözümleme, K2 seçilenlerin decompile'ı), seçim kuralı, ad kanalı sözleşmesi, 10 alt paket (OL10-A … J). Ollama'da kendiliğinden seçilebilen küme 4 619 / 13 160; gösterinin 17 adının 17'si ilk 4 028'de; xref dökümü K1'in iki dosyasından türetilebiliyor (13 559 / 13 559 aynı). **Bağımsız denetim (ana oturum):** tam yollu 39 atıfta dosya yok 0, satır aşımı 0; 8 işlev adı çapası 8 / 8 tuttu. Kararlar A-33 |
 | PUV5 | — | Opus | sırada (PUV6a main'e girince; `stages.py`) | metin hazır: `gonderim/PUV5.md` |
-| OL1 | — | Opus | sırada (P16e main'e girince; `headless.py`) | metin hazır: `gonderim/OL1.md` |
+| OL1 | a3162396aa0075ecd | Opus | çalışıyor (09:18) | sert son 12:15; ilerleme `docs/arge/2026-11-19_mythos/olcek/OL1.md`; ölçüm koşularında eşik yaml ile (yamasız ağaçta öntanım 0) |
 | PUV4 | a515cf9fb1be48c2d | Opus | çalışıyor (09:07) | sert son 11:45; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV4.md` |
 | PUV7 | ade3c0e98c5bfe6e0 | Opus | çalışıyor (08:57) | sert son 11:30; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV7.md` |
 | PK1 | — | Opus | sırada (PUV6a main'e girince; ikinci dilim) | metin hazır: `gonderim/PK1.md` |
 | OK1 | — | Opus | sırada (PUV6a main'e girince; `alt_kanal.py`; ikinci dilim) | metin hazır: `gonderim/OK1.md` (P12d + ÖK-1) |
 | OL10A | — | Opus | sırada (yer açılınca; yalnız yeni dosya; ikinci dilim) | metin hazır: `gonderim/OL10A.md` |
+
+## Berke (09:2x): "bu tüm ajanlar bitince bir duralım, mola vermek istiyorum"
+
+- Yeni ajan gönderilmez. Çalışan dördü (PUV6a, PUV7, PUV4, OL1) bitince doğrulanıp main'e alınır, sonra durulur.
+- Gönderilmeyen, metni hazır paketler (sonraki oturum / mola sonrası): PUV5, PK1, OK1 (üçü de PUV6a main'e girince; dosya kümeleri ayrık), OL10A (yalnız yeni dosya).
+
+## P16e'den çıkan işler
+
+- **Decompiler belirlenimsizliği (yeni kusur):** zstd `FUN_001063c0`, 6 koşunun 1'inde geçici değişken takası. Sıklığı ve nedeni ölçülmedi → küçük ölçüm paketi (P16f: aynı ikili N kez, tek iş parçacığı ↔ çok iş parçacığı kolu; ürün kodu değişmez). O ölçüme kadar "çıktı eşit" denetimlerinde tek seferlik `.c` farkı bir kez daha koşularak ayrılır.
+- **S8 kıyası kuralı:** "sonra" kökü tabanla aynı ikili sırasıyla ve tek kökte koşulur (BSim deposu kökte birikiyor).
+- `karadul/ghidra/scripts/{call_graph,xref_analysis,decompile_all}.py` (CLI yedek betikleri) aynı sırasız yinelemeyi kullanıyor; ürün öntanımı pyghidra yolu. P16f'ye ek kalem.
+- `binary_name_extractor._get_caller_class_hint` artık en küçük adresli adlı çağıranı seçiyor; S8'de bu yoldan gelen ad 0; 119'daki etkisi bir sonraki birleşik ölçümde görülecek.
+- `call_site` (ilk görülen başvuru) olduğu gibi bırakıldı (ana oturum kararı: ölçülen 5 koşuda değişmedi; değiştirmek tabandaki 35 kaydı oynatır).
 
 ## Açık kararlar ve bekleyenler
 
