@@ -27,8 +27,8 @@ Plan: `ustveri/PLAN.md` "P-ÜV4". Kararlar: A-10, A-13, A-14, A-27, A-32, A-34.
 | Mutasyon | 16 / 16 öldü | `be20612` |
 | Ölçüm betiği | `scripts/arge/ustveri/puv4_olc.py` | `ce3ea34` |
 | Keşif ölçümü (H0, H1 keşif satırları, H3, H4, H5, H6) | bitti (aşağıda) | — |
-| Dondurma + H1 sınama satırları + H2 (bir kez) | sırada | — |
-| Tam takım (yamasız) | sırada | — |
+| Dondurma + H1 sınama satırları + H2 (bir kez) | bitti; H1 5 / 5 aynı, H2 tuttu (aşağıda) | dondurma `ce3ea34` |
+| Tam takım (yamasız) | koşuyor (09:30'da başladı; tahmini bitiş 09:45–09:50, yük altında) | — |
 
 ## Tasarım (koddan)
 
@@ -131,3 +131,57 @@ btop'ta 9 belirsiz işlev (ürün bağı 75 işlev); Ollama'da 0.
 
 Yerel örnekler 0 / 53, 0 / 31 (her derleme); btop 75 aday, 2'si sembollü, tam eşit 0. **H6 tuttu** (beklenen sınır:
 yuvadan yöntem adı çıkmaz → kanıt satırı).
+
+## Sınama — dondurmadan (`ce3ea34`) sonra, BİR KEZ (09:29, yük altında, load ≈ 12)
+
+Komutlar: `puv4_olc.py say llama-server.arm64 iTerm2.arm64 --sinama-izni` (H1; GT'siz), ardından
+`puv4_olc.py sinama --sinama-izni` (H2). Çıktılar `…/PUV4/ozet/say_llama-server.arm64_iTerm2.arm64.json`, `sinama.json`.
+İkisi de birer kez koşuldu; tarayıcı bu sonuçlardan sonra değiştirilmedi.
+
+### H1 — sınama satırları (üç sayı ↔ `$V/rtti/<ad>.json`)
+
+| Hedef | typeinfo | vtable | işlev | başvuru | aynı | tarama süresi | belirsiz işlev | ürün bağı olan işlev |
+|---|---|---|---|---|---|---|---|---|
+| llama-server arm64 | 1 994 | 1 317 | 7 053 | 1 994 / 1 317 / 7 053 | evet | 0,18 sn | 42 | 7 011 |
+| iTerm2 arm64 | 18 | 10 | 64 | 18 / 10 / 64 | evet | 1,40 sn (görüntü dahil) | 0 | 64 |
+
+**H1 tuttu: 5 / 5 hedefte üç sayı başvuruyla aynı** (btop, Ollama ×2 yukarıda). Yuva üst sınırını (64) aşan vtable 0.
+llama-server'da typeinfo adlarının 562'si "tekil değil" işaretli, 20'si zayıf bağla geliyor.
+
+### H2 — sembolle eşitlik (btop + iTerm2 + llama-server; typeinfo'da + Ollama x86_64)
+
+| Ölçü | btop | iTerm2 | llama-server | Ollama x86_64 | Toplam | Wilson %95 | Eşik | Hüküm |
+|---|---|---|---|---|---|---|---|---|
+| typeinfo adı = `_ZTI` | 1 / 1 | 18 / 18 | 1 994 / 1 994 | 15 / 15 | **2 028 / 2 028** | 0,9981–1 | 2 028 / 2 028 | tuttu |
+| vtable (birincil, `_ZTV` adresinde) = `_ZTV` | 1 / 1 | 10 / 10 | 1 317 / 1 317 | — | **1 328 / 1 328** | 0,9971–1 | 1 328 / 1 328 | tuttu |
+| yuva → sınıf (a) başvuru kuralı | 2 / 2 | 64 / 64 | 7 032 / 7 053 | — | **7 098 / 7 119** | 0,9955–0,9981 | ≥ 7 098, alt ≥ 0,99 | tuttu |
+| yuva → sınıf (b) ürün bağı (belirsiz hariç) | 2 / 2 | 64 / 64 | 6 990 / 7 011 | — | **7 056 / 7 077** | 0,9955–0,9981 | alt ≥ 0,99 | tuttu |
+
+- **H2 tuttu** (dört satır). Sınıf adı kesinliği ve yuva → sınıf bağı kesinliği ayrı ayrı yukarıda (gönderim hükmü 1).
+- Yanlışların sınıf türü: typeinfo 0, vtable 0; yuva (a) ve (b) 21'er, hepsi "öbür" (şablon / sanal kalıtım / adsız ad
+  alanı sınıfında yanlış 0). BULGULAR §4'teki 21 "başka (şablon yardımcıları)" ile aynı sayı; bu 21 işlevin adlarına
+  ayrıca bakılmadı (sınama GT'si bir kez açıldı; ikinci bakış yok).
+- (b)'de belirsiz bırakılan 42 sembollü işlev paydaya girmedi (ad adayı verilmiyor); hepsi llama-server'da.
+- llama-server'da adresinde `_ZTI` sembolü olup typeinfo kaydı bulunmayan 12 adres: ilk sözcükleri cxxabiv1 sınıf tip
+  bilgisi bağı değil (sınıf dışı typeinfo: işaretçi / temel tip / enum) — tarayıcının kapsamı dışında; sınıf typeinfo'su
+  kaçan 0. `_ZTV` adresinde birincil kaydı olmayan 0.
+- Tarama süreleri (görüntü hazırlığı hariç): llama-server 0,11 sn, iTerm2 0,23 sn (yük altında; boş makine ölçümü değil).
+
+## P-ÜV6b'ye notlar
+
+- **Kanıt satırının alanları** (`static/rtti_classes.json` → `islevler[]`): `adres`, `karar` (`tek_sinif` /
+  `en_taban_sinif` / `belirsiz`), `sinif` (çözülmüş ad; belirsizse `None`), `sinif_typeinfo`, `siniflar` (göründüğü bütün
+  sınıflar), `yerler` (`vtable` adresi + `sira`). Sınıf düzeyinde `siniflar[]`: `name`, `mangled`, `methods` (birincil
+  vtable sırasıyla; başka sınıfa bağlı / içe aktarım / belirsiz yuva 0), `bases`, `vtable`, `typeinfo`. `typeinfolar[]`'da
+  `tekil_olmayan`, `yerel_ad`, `zayif_adla_bagli`, taban ayrıntısı (sanal / açık / ofset).
+- `_add_rtti` bugünkü hâliyle `methods`'tan `Sınıf_vfunc_N` ADI üretir (güven 0,6): H6 tam eşitlikte 0 → P-ÜV6b bunu
+  ad kanalı olarak değil kanıt satırı olarak bağlamalı (A-32). Sınıf adı kesinliği (2 028 / 2 028) ve yuva → sınıf bağı
+  kesinliği (7 056 / 7 077, alt 0,9955) A-13 eşiğinin (0,909) üstünde; ama A-14'ün "en az 3 bağımsız programda" şartı:
+  yuva bağı sembollü 3 programda (btop 2, iTerm2 64, llama-server 7 011) ölçüldü, btop'un n'si 2.
+- **Belirsiz işlev sayıları:** llama-server 42, btop 9, Ollama 0 / 0, iTerm2 0, pzstd 0; yerel örnekler -O2'de 3
+  (derleyicinin ortak yıkıcı gövdesi).
+- Sanal tabanlı sınıfta vtable kaydının adresi `_ZTV` grubunun başı değil, tepeye uzaklık sözcüğü (yerel örneklerde
+  8 bayt sonra); grup başı gerekirse sanal taban ofsetleri geri sayılmalı.
+- `rtti_status` demet `(durum, neden)`; `_add_rtti` `calisti` dışındaki durumu kanala aynen yazar (`kapali` dahil).
+- Adım çıktısında `_add_rtti`'nin kullanmadığı alanlar var (`typeinfo`, `mangled`); birleştirici bunları yok sayar.
+- Durum sabitleri: `DURUM_KAPALI` `cpp_rtti_tara.py`'de yerel (objc.py ile aynı ad) → tek tanım P-ÜV6b.
