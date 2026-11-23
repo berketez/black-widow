@@ -41,4 +41,20 @@ Gerekçe:
 
 **Testler:** `tests/test_ba1_blok_kalip_suresi.py`, 20 sınama (9 işlev; parametreli): gerçek satır + devam satırı ayrı süreçte; kapanan ayraçsız 1 000 / 10 000 / 100 000 karakter (üç ad, ayrı süreçte); ana oturumun 32 karakter eşiği (ayrı süreçte); iç içe ayraçlı geçerli çağrılar ve kenar durumlar eski kalıpla aynı span + grup (10 durum; önekli ad dahil, kural değişmedi); rastgele kısa satırlarda eski = yeni (3 × 1 500); `_detect_memory_ops` açıklama metni eski kalıplarla aynı; yapı denetimi (atomik grup dışında iç içe sınırsız yineleme yok, `re._parser` ağacı). Süre sınamaları `subprocess.run(timeout=15)`; eski kalıpla asılı kalmaz, kırmızı olur. İlgili takım: `test_ba1_blok_kalip_suresi.py` + `test_p04a_blok_yorumu.py` + `test_step_engineering_annotation.py` → 30 geçti / 0 kaldı.
 
+Commit: `09060ad`.
+
 **Mutasyon:** `scripts/measurement/mutation_specs_ba1.json`, 7 mutant (üçü eski kalıbın geri konması: memmove / memcpy / memset; ayraç içi daralma; ayraçlı seçeneğin düşmesi; boş üçüncü argüman; atomik grubun kalkması) → **7 / 7 öldü**, toplam süre **54 sn** (üç zaman aşımı × 15 sn dahil). Sonra `git diff` yalnız onarım.
+
+## Kalem 4a — Ghidra'sız yeniden oynatma, Ollama (H2, H3) (19:47)
+
+**Girdi / çıktı (`karadul/pipeline/steps/engineering_annotation.py`'den çıkarıldı):** `CodeBlockAnnotator(config).annotate(decompiled_dir=capa_annotation_decompiled_dir, functions_json=functions_json_path, call_graph_json=call_graph_json_path, output_dir=reconstructed/annotated, algorithm_matches=_collect_all_algorithms(algo_result, eng_result))`.
+- `capa_annotation_decompiled_dir` = `reconstructed/commented/` (`capa_annotation` dizini değiştirmeden geçirir; CAPA kod beslemesi K-1 gereği kapalı).
+- `functions_json_path` / `call_graph_json_path` = `ghidra_metadata._resolve_json_paths`: önce `deobfuscated/`, yoksa `static/` (`ghidra_functions.json`, `ghidra_call_graph.json`).
+- `algo_result` / `eng_result`: `reconstructed/algorithms.json` (yalnız `success` iken yazılır) + `reconstructed/engineering_algorithms.json` (`success` alanı). `algorithms.json` `detection_method` / `address` taşımaz; bu iki alan yalnız başlık kutusu kategorilerinde (`_ALGORITHM_HEADER_CATEGORIES`) çıktıya girer. Ollama'da 2 algoritma (`hash`), başlık kategorisinde 0 → kayıp yok.
+- `config` adımda yalnız `CodeBlockAnnotator.__init__`'te saklanıyor, hiçbir dedektörde okunmuyor; yeniden oynatmada `None`.
+- Çıktı: her `*.c` (açıklamalı ya da değişmeden kopya) + `block_annotations.json`. Çıktıda zaman, rastgelelik, süreç kimliği yok (`block_annotator.py`'de `time` / `random` / `datetime` kullanımı yok; dosya sırası `sorted(rglob)`): karşılaştırmada ayrılan alan yok, tam bayt karşılaştırması.
+- Araçlar: `scripts/arge/ba1/yeniden_oynat.py` (ayrı çocuk süreç + zaman aşımı; her dosyaya başlarken `ilerleme.txt`; dosya başına süre `_extract_functions` çağrı damgalarından), `scripts/arge/ba1/cikti_karsilastir.py`. Çıktı `~/karadul_olcum/runs/dalga1-2026-11-23/BA1/ollama_yeni/` (çalışma alanına yazılmadı).
+
+**H2 (yük altında; başta load 5,48, sonda 6,13):** 13 554 / 13 554 dosya işlendi ve yazıldı, toplam **61,9 sn** (çocuk süreç duvarı 62,5 sn), en uzun tek dosya **0,70 sn** (`FUN_1002c6eb0`; sonraki 0,29 / 0,28 / 0,27 / 0,25 sn). Eşikler ≤ 300 sn ve ≤ 5 sn → **TUTTU**. 8 981 açıklama (`loop_purpose` 8 585, `memory_op` 396); hata 0. Ham: `…/BA1/ollama_yeni/zamanlama.json`.
+
+**H3:** eski koşunun yazdığı 7 310 dosyanın (`ANA/ollama_ustveri/ws/…/reconstructed/annotated/`, ürün ağacı `urun-d2134d5`; `block_annotator.py` `d2134d5` ile `0b4d948` arasında değişmemiş) **7 310 / 7 310**'u yeni çıktıyla bayt eşit, farklı 0, eksik 0 → **TUTTU**. Ayrılan alan yok (yukarıda). Yeni çıktının tamamı 13 555 dosya (13 554 `.c` + `block_annotations.json`), dizin özeti sha256 `ba1fb761e227…`. Ham: `…/BA1/ozet/H3_karsilastirma.json`.
