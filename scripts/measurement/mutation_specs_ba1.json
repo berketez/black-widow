@@ -1,0 +1,61 @@
+{
+  "_comment": "BA1 (BA-1: blok açıklama kalıplarında üstel geri izleme) mutasyon koruması. Eski kalıbı geri koyan mutantlarda süre testi AYRI SÜREÇTE zaman aşımıyla kırmızı olur (asılı kalmaz). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ba1.json",
+  "mutants": [
+    {
+      "id": "ba1_eski_memmove",
+      "desc": "memmove kalıbı BA-1 öncesine döner (iç içe niceleyici, üstel geri izleme); gerçek satırda süre testi zaman aşımıyla kırmızı",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_ba1_blok_kalip_suresi.py::test_gercek_satir_ayri_surecte_bitiyor",
+      "find": "r\"memmove\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^)]*\\))+))\\s*\\)\"",
+      "replace": "r\"memmove\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?:[^()]+|\\([^)]*\\))+)\\s*\\)\""
+    },
+    {
+      "id": "ba1_eski_memcpy",
+      "desc": "memcpy kalıbı BA-1 öncesine döner",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_ba1_blok_kalip_suresi.py::test_kapanmayan_uzun_satir_ayri_surecte_bitiyor",
+      "find": "r\"memcpy\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^)]*\\))+))\\s*\\)\"",
+      "replace": "r\"memcpy\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?:[^()]+|\\([^)]*\\))+)\\s*\\)\""
+    },
+    {
+      "id": "ba1_eski_memset",
+      "desc": "memset kalıbı BA-1 öncesine döner",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_ba1_blok_kalip_suresi.py::test_kisa_kapanmayan_arguman_ayri_surecte_bitiyor",
+      "find": "r\"memset\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^)]*\\))+))\\s*\\)\"",
+      "replace": "r\"memset\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?:[^()]+|\\([^)]*\\))+)\\s*\\)\""
+    },
+    {
+      "id": "ba1_memcpy_ayrac_ici_daralir",
+      "desc": "memcpy ayraç seçeneği iç ayracı kabul etmez ([^)]* -> [^()]*): f(g(x)) eşleşmesi kaybolur (davranış değişir)",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_ba1_blok_kalip_suresi.py::test_ic_ice_ayracli_cagrilar_eski_ile_ayni",
+      "find": "r\"memcpy\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^)]*\\))+))\\s*\\)\"",
+      "replace": "r\"memcpy\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^()]*\\))+))\\s*\\)\""
+    },
+    {
+      "id": "ba1_memset_ayrac_secenegi_yok",
+      "desc": "memset döngüsünden ayraçlı seçenek düşer: (size_t)len * 8 eşleşmez",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_ba1_blok_kalip_suresi.py::test_ic_ice_ayracli_cagrilar_eski_ile_ayni",
+      "find": "r\"memset\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^)]*\\))+))\\s*\\)\"",
+      "replace": "r\"memset\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+)+))\\s*\\)\""
+    },
+    {
+      "id": "ba1_memmove_bos_arguman",
+      "desc": "memmove üçüncü argümanı boş olabilir (+ -> {0,}): memmove(d,s,) eşleşir (eskisi eşleşmezdi)",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_ba1_blok_kalip_suresi.py::test_rastgele_kisa_satirlarda_eski_ile_ayni",
+      "find": "r\"memmove\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^)]*\\))+))\\s*\\)\"",
+      "replace": "r\"memmove\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^)]*\\)){0,}))\\s*\\)\""
+    },
+    {
+      "id": "ba1_memset_atomik_degil",
+      "desc": "memset döngüsü atomik gruptan çıkar ((?> -> (?:(?: ... )): aynı dil, üstel geri izleme geri gelir; yapı denetimi kırmızı",
+      "module": "karadul/reconstruction/engineering/block_annotator.py",
+      "test": "tests/test_ba1_blok_kalip_suresi.py::test_kalipta_atomik_disi_ic_ice_yineleme_yok",
+      "find": "r\"memset\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?>(?:[^()]+|\\([^)]*\\))+))\\s*\\)\"",
+      "replace": "r\"memset\\s*\\(\\s*(\\w+)\\s*,\\s*(\\w+)\\s*,\\s*((?:(?:(?:[^()]+|\\([^)]*\\))+)))\\s*\\)\""
+    }
+  ]
+}

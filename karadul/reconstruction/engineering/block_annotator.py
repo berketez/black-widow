@@ -318,10 +318,20 @@ MEMORY_PATTERNS: list[tuple[re.Pattern, str, float]] = [
         "Free: release {0}",
         0.90,
     ),
+    # BA-1 (2026-11-23): üçüncü argümanın döngüsü atomik grupta: (?>...).
+    # Eski yazım ``((?:[^()]+|\([^)]*\))+)`` iç içe niceleyiciydi; kapanan
+    # ayracı olmayan satırda (Ghidra uzun çağrıyı satıra böler) ``[^()]+``
+    # koşusunun bütün bölünüşlerini deniyordu: üstel geri izleme (Ollama
+    # FUN_100295d40.c: 89 karakterlik satır 20 sn'de bitmedi). Döngünün dili
+    # belirlenimli (ayraç dışı: ``(`` ve ``)`` olmayan karakter; ``(`` açar,
+    # ilk ``)`` kapatır), bu yüzden geri izlemenin bulabileceği tek eşleşme
+    # açgözlü en uzun eşleşmedir; atomik grup yalnız sonuçsuz denemeleri
+    # keser. Eşleşme ve gruplar eskisiyle aynı (eşdeğerlik tablosu
+    # docs/arge/2026-11-23_dalga1/BA1.md). Python >= 3.11 gerekir.
     # memcpy(dst, src, n)
     (
         re.compile(
-            r"memcpy\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*((?:[^()]+|\([^)]*\))+)\s*\)"
+            r"memcpy\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*((?>(?:[^()]+|\([^)]*\))+))\s*\)"
         ),
         "Copy memory: {0} <- {1}, size={2}",
         0.88,
@@ -329,7 +339,7 @@ MEMORY_PATTERNS: list[tuple[re.Pattern, str, float]] = [
     # memset(ptr, val, n)
     (
         re.compile(
-            r"memset\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*((?:[^()]+|\([^)]*\))+)\s*\)"
+            r"memset\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*((?>(?:[^()]+|\([^)]*\))+))\s*\)"
         ),
         "Zero/fill memory: {0} set to {1}, size={2}",
         0.85,
@@ -337,7 +347,7 @@ MEMORY_PATTERNS: list[tuple[re.Pattern, str, float]] = [
     # memmove
     (
         re.compile(
-            r"memmove\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*((?:[^()]+|\([^)]*\))+)\s*\)"
+            r"memmove\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*((?>(?:[^()]+|\([^)]*\))+))\s*\)"
         ),
         "Move memory (overlap-safe): {0} <- {1}, size={2}",
         0.85,
