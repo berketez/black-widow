@@ -87,3 +87,16 @@ Girdi: `~/karadul_olcum/runs/gosteri-2026-11-19/ollama/ws/workspaces/Ollama/2026
 - Ayrıca sayaçlar Faz 2'nin iki turunda birikiyordu (`kayit` 64 = 2 × 32).
 - **Onarım (`5d23182`):** A-28 anahtarı `Sınıf::code_name(seçici)` (yöntemin koddaki tanım adı; saplama `objc_stub::` ad alanında kalır); sayaçlar yineleme başına; aynı sınıf + seçici (örnek + sınıf yöntemi) → `cift_kayit` kanıt satırı. Ollama gösteri çalışma alanında yeniden oynatma: ObjC aday 151 / 151 (A-28 149 + adsız 2), 149 nitelikli anahtarın 149'u Ghidra'nın decompile çıktısında geçiyor (`PUV6a/ollama_kodda.py`). Go sayıları değişmedi (10 475).
 - Not: S8 koşuları (`s8_kapali`, `s8_acik`) `urun-5da70a7` ile başlatıldı. Onarım yalnız ObjC kanalı açıkken çalışan kodu ve üst veri köken kaydına `adres` alanını değiştirdi; bayraklar kapalıyken ve ObjC'siz ikilide (S8'in 5'i düz C) ad haritasına etkisi yok — H1 / H2 için 5da70a7 sonucu geçerli sayıldı (gerekçe bu satır).
+
+## Kalem 9 — kuralların dondurulması (H8'den önce)
+
+Dondurma commit'i: **bu commit** (üst: `0b70f48`; kural kodu `5d23182`'de). Bu commit'ten sonra SINAMA ölçümüne (H8) dek aşağıdaki dosyaların kural yolları değişmez; H8 bir kez ölçülür.
+
+| Dosya | sha256 (ilk 16) | Dondurulan kural |
+|---|---|---|
+| `karadul/pipeline/steps/_feedback_naming_candidates.py` | `f0450446734c1d78` | hüküm 1 (`PCSP_REJECTED`), hüküm 3 (`_objc_rejections`), A-28 anahtarı |
+| `scripts/measurement/ustveri_urun.py` | `270c64cfc4b0ca39` | `aday_listesi` (ürün süzgeçleriyle aynı; adsız Go girişi atlanır) |
+| `karadul/analyzers/ustveri/go_pclntab.py` | `8b1d38ff4dc145d6` | okuyucu (P-ÜV1 dondurmasıyla aynı) |
+| `karadul/analyzers/ustveri/objc.py` | `faece6a003852680` | okuyucu (P-ÜV2'de dondurulan) |
+
+H8 Ghidra'sızdır (aday listesi ↔ GT); terminal-notifier'ın ikinci ürün koşusu (A-28 anahtarı) H8'in süzgeç kurallarını değiştirmez.
