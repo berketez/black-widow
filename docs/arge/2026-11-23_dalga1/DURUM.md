@@ -160,3 +160,13 @@ Berke (19:27): "kaldığımız yerden devam edelim, max 4 ajan." Düzen sabahla 
 - **Yeni paket GS-1 (A-36):** Ghidra sonrası adımların ilerleme olayları + arayüz iptalinin SIGKILL'e yükselmesi + SIGTERM'e yanıtsızlığın nedeninin ölçümü. ÖL-4'ten sonra yazılıp gönderilecek.
 - **Yazılacak (önkoşulu bekleyen):** HZ-2 (OL2'den sonra; `bsim.py`), HZ-7a (OK1'den sonra; `c_namer.py`'nin başka işlevleri + `api_param_db.py`), açılış ölçümü (A-14; Go derleyicisi indirmesi A-23 izniyle ana oturumda), BA-2 (BA1'in envanterinden).
 
+## Ollama uçtan uca koşusu 2 (19:36 → 20:44): BİTTİ, çıktıda 10 626 üst veri adı
+
+Kök `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/ollama_ba_kapali/` (özet `ozet/OZET.md`), ürün ağacı `urun-152176b`; üst veri bayrakları açık, `enable_block_annotation: false`, `bsim.enabled: false` (geçici yol).
+
+- **Koşu bitti: çıkış 3 (kısmi), 4 069,9 sn (67,8 dk), yük altında (yük 4 → 30).** En yüksek bellek 7,13 GB. `out/` yazıldı (13 267 kaynak dosya).
+- **`out/naming_map.json`: 10 643 ad kodda** — `üst veriden` 10 626 (Go `pclntab` 10 475 + ObjC yöntem 151), `c_namer` 17. Gösteri koşusunda (19 Kasım) aynı ikilide 17 addı. Doğruluk bu koşuda ölçülmez (soyulmuş ikili; kanal kesinliği GT'li programlardan: PUV6a satırı).
+- Aşamalar (sn, yük altında): static 1 295 (BSim kapalı), deobfuscate 68, reconstruct 2 641 (`c_naming` 812, `xtride_typing` 423, `ngram_naming` 321, `deep_tracing` 287, `project_build` 276, `type_recovery` 170, `inline_detection` 149). Yeniden kurma koşunun %65'i: HZ-7a / b / d'nin hedefi.
+- Blok açıklamadan sonraki adımlar bu girdide takılmadan bitti. Blok açıklama açıkken uçtan uca koşu (BA1 main'de) OL2 main'e girince yapılacak (tek koşuda: öntanımlar + üst veri bayrakları; BSim'in boş depoda atlanması ve adım içi olaylar da orada ölçülür).
+- **Koşunun gösterdiği kusurlar:** (1) çıkış 3'ün tek nedeni eski Go çözümleyicisinin "evrensel ikilide … şişman dosyayı açmıyor" hatası (yeni okuyucu aynı dilimi okuyor) → PUV6c'ye kalem; (2) README "Status: SUCCESS" ↔ çıkış 3 ve "Language: C/C++" (D5 / G7; bilinen); (3) `out/src`'de 13 159 dosyanın 12 486'sı `FUN_<adres>.c`, 9 448'i tek dizinde: ad kodda ve başlıkta ama dosya adında ve dizin yapısında değil (eski davranış; Go adları paket yolunu taşıyor) → tasarım önerisi Berke'ye; (4) `ust_veri_dogrulama` hep `olculmedi` (PUV6c).
+
