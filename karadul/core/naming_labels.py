@@ -8,17 +8,23 @@ Etiketin anlamı:
   - ``kesin``: ad ikilinin kendi ad yuvasından okundu ve o kanalın tam ad kesinliği ön kayıtlı
     ölçümde hedefi (≥ %95) tuttu;
   - ``doğrulandı``: kanal ölçüldü ve yanlış oranı hedefin altında (bugün hiçbir kanal üretmiyor);
-  - ``doğrulanmadı``: kanal ölçülmedi ya da ölçüm hedefi göstermedi.
+  - ``doğrulanmadı``: kanal ölçülmedi ya da ölçüm hedefi göstermedi;
+  - ``üst veriden`` (P-ÜV6a, KARARLAR A-10 / A-27): ad ikilinin dil üst verisinden (Go ``pclntab``,
+    Objective-C yöntem listesi) okundu; derleyicinin yazdığı hâliyle kanal düzeyi kesinliği ölçüldü
+    (``MEASURED_METADATA_PRECISION``), ama ad metni çalışma için zorunlu olmadığından değiştirilebilir:
+    ``kesin`` DEĞİLDİR, doğrulanamaz.
 Analistin elle verdiği ad etiket taşımaz.
 """
 from __future__ import annotations
 
+import math
 from typing import Any, Mapping, Optional
 
 LABEL_CERTAIN = "kesin"
 LABEL_VERIFIED = "doğrulandı"
 LABEL_UNVERIFIED = "doğrulanmadı"
-NAME_LABELS = (LABEL_CERTAIN, LABEL_VERIFIED, LABEL_UNVERIFIED)
+LABEL_METADATA = "üst veriden"
+NAME_LABELS = (LABEL_CERTAIN, LABEL_VERIFIED, LABEL_UNVERIFIED, LABEL_METADATA)
 
 # c_namer'ın ``naming_map.json``'ın yanına yazdığı köken kaydı
 NAMING_PROVENANCE_FILE = "naming_provenance.json"
@@ -100,6 +106,8 @@ def provenance_channel(record: Optional[Mapping[str, Any]]) -> Optional[str]:
     kind = record.get("pre_name_kind")
     if kind:
         return f"on_ad:{kind}"
+    if record.get(METADATA_CHANNEL_FIELD):
+        return f"{CHANNEL_METADATA_PREFIX}:{record[METADATA_CHANNEL_FIELD]}"
     if strategy == STRATEGY_STRING_CONTEXT and record.get("sub_channel"):
         return f"{STRATEGY_STRING_CONTEXT}/{record['sub_channel']}"
     return str(strategy) if strategy else None
@@ -134,3 +142,58 @@ kanıt satırı yazar ya da bayrak arkasında kalır (A-14). Var olan ön ad kan
 ELF önyükü, ``main``) set dışı ölçümler gelene kadar ad yazmayı sürdürür; geriye dönük
 susturma yok.
 """
+
+
+# P-ÜV6a (KARARLAR A-10, A-13, A-27, A-28; 2026-11-23): üst veri ad kanalları.
+# Kaynak adları ``stats["naming_channels"]`` ve birleştiricinin köken kaydında aynı yazılır.
+SOURCE_GO_PCLNTAB = "go_pclntab"
+SOURCE_OBJC_METHOD = "objc_method"
+METADATA_SOURCES: tuple[str, ...] = (SOURCE_GO_PCLNTAB, SOURCE_OBJC_METHOD)
+SOURCE_METADATA = "ust_veri"     # ad haritasının ``sources`` listesindeki adı
+
+# Köken kaydı alanları (birleştiricinin ``name_merger`` kararları ve ad haritası kaydı).
+METADATA_CHANNEL_FIELD = "ust_veri_kanali"      # go_pclntab / objc_method
+ORIGINAL_NAME_FIELD = "ozgun_ad"                # derleyicinin yazdığı ad (C tanımlayıcısı değil)
+METADATA_CHECK_FIELD = "ust_veri_dogrulama"     # cift_kaynak / tek_kaynak / tutarsiz / olculmedi
+METADATA_EVIDENCE_FIELD = "ust_veri_kanit"      # ad yazılmayan üst veri kayıtları (kanıt satırı)
+CHANNEL_METADATA_PREFIX = "ust_veri"            # ``provenance_channel`` biçimi: ust_veri:<kaynak>
+# ``ust_veri_dogrulama`` değerleri (plan P-ÜV6 kalem 5). Tutarlılık denetimi (P-ÜV7) main'de
+# değil: bugün her kayıt ``olculmedi``; öbür değerler P-ÜV6b'de yazılır.
+METADATA_CHECK_UNMEASURED = "olculmedi"
+
+# Ölçülmüş kanal düzeyi kesinliği: (doğru, ad verilen, Wilson %95 alt sınırı). Değerler SINAMA
+# ikililerinin soyulmuş kopyasında kanal ↔ özgün ikilinin sembol tablosu ölçümünden (P-ÜV8 tanımı;
+# Ghidra'sız): Go docker-compose (``ustveri/P-UV1.md`` H2 sınama yarısı), ObjC iTerm2 arm64
+# (``ustveri/P-UV2.md`` H2). Alt sınır ``baglama.wilson`` ile hesaplanır ve 4 basamağa AŞAĞI
+# yuvarlanır (yukarı yuvarlama 1,0 yazardı: kesinlik görüntüsü); eşitliği
+# ``tests/test_puv6a_baglama.py`` kilitler. Bu kaynaklar ``UNMEASURED_SOURCES``'ta değildir.
+# A-14: öntanımda açılmak için en az 3 bağımsız program gerekir; bugün kanal başına 2 program
+# ölçüldü (Go: docker-cli, docker-compose; ObjC: terminal-notifier, iTerm2) → bayraklar kapalı.
+MEASURED_METADATA_SOURCE = (
+    "docs/arge/2026-11-19_mythos/ustveri/P-UV1.md (docker-compose), P-UV2.md (iTerm2)")
+MEASURED_METADATA_PRECISION: dict[str, tuple[int, int, float]] = {
+    SOURCE_GO_PCLNTAB: (90077, 90077, 0.9999),
+    SOURCE_OBJC_METHOD: (33611, 33611, 0.9998),
+}
+METADATA_MEASURED_PROGRAMS: dict[str, tuple[str, ...]] = {
+    SOURCE_GO_PCLNTAB: ("docker-cli", "docker-compose"),
+    SOURCE_OBJC_METHOD: ("terminal-notifier", "iTerm2"),
+}
+
+
+def floor_confidence(value: float, digits: int = 4) -> float:
+    """Güveni ``digits`` basamağa AŞAĞI yuvarla (alt sınır yukarı yuvarlanıp 1,0 görünmesin)."""
+    scale = 10 ** digits
+    return math.floor(value * scale) / scale
+
+
+def metadata_confidence(source: Optional[str]) -> Optional[float]:
+    """Üst veri kanalının ölçülmüş kesinliğinin Wilson alt sınırı; tabloda yoksa ``None``."""
+    row = MEASURED_METADATA_PRECISION.get(source) if source else None
+    return row[2] if row else None
+
+
+def metadata_writes_names(source: Optional[str]) -> bool:
+    """Kanal ad yazabilir mi (A-2 / A-13): ölçülmüş alt sınır ≥ ``AD_ESIGI``; değilse kanıt satırı."""
+    conf = metadata_confidence(source)
+    return conf is not None and conf >= AD_ESIGI
