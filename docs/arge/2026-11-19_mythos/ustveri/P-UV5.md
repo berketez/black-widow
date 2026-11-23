@@ -11,10 +11,10 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV5/` (ölçüm özetleri
 | 1 ön kayıt | bitti | `bdd058f` |
 | 2 kod + birim testleri + mutasyon | bitti: 32 test, 15 / 15 mutant öldü | `a731db6`, `caa14e3` |
 | 3 Ghidra'sız yeniden oynatma (Mac 8, ELF 5, hedef seti) | bitti: H1 8 / 8, H2 14 / 14, H3 5 / 5, H4 tuttu, H5 0 ad | `2303d7b` |
-| 4 ürün koşusu (kuyruk) | bayrak açık 8 / 8 + terminal-notifier bitti; H2 / H6 kolu sürüyor | `e212c1d`, `1884399` |
+| 4 ürün koşusu (kuyruk) | bitti: bayrak açık 8 + terminal-notifier; bayrak kapalı 8; bugünkü ürün tabanı 8 (25 koşu, 25 / 25 `tamam`) | `e212c1d`, `1884399`, `0361396`, `50fc40f`, bu commit |
 | 5 tam takım (yamasız) | bitti: 10 916 / 62 / 5 (1 beklenen, 4 ortam) | `f678871` |
 
-**Şu an bekleniyor (20:22):** H2 / H6 kolu: bayrak kapalı 7 ikili (tmux, gmktemp, idn2, gettext, envsubst, xz, gsort), sonra bugünkü ürün tabanı 7 ikili (`zincir2.sh`; ikili başına ayrı kuyruk çağrısı). Yuva 2'yi OL2'nin S8 zinciri tutuyor, yuva 1 ana oturumun Ollama koşusunda. TAHMİN: sıraya giriş 20:40–21:00, bitiş 21:05–21:25; sert sonda bitmeyen koşu "kalan" yazılır.
+Bekleme yok (bütün koşular 21:02'de bitti; arka plan süreci kalmadı).
 
 ## Kalem 2 — kod (`karadul/stages.py`)
 
@@ -98,15 +98,24 @@ Girdi `~/karadul_olcum/ustveri_set/terminal-notifier/bin/terminal-notifier` (PUV
 
 ### H2 ürün düzeyi ve `main`'den yayılan adlar (bayrak kapalı kol + bugünkü ürün tabanı)
 
-Kök `PUV5/urun/kapali` (dal `caa14e3`, ayar dosyası yok) ve `PUV5/urun/taban` (ağaç `~/karadul_olcum/urun-152176b`, ayar dosyası yok); ikili başına kapalı → taban çifti (`kos_h2.sh`). Bayt karşılaştırması `PUV5/harita_bayt.py` (`out/naming_map.json`, `reconstructed/src*/naming_map.json`).
+Kök `PUV5/urun/kapali` (dal `caa14e3`, ayar dosyası yok) ve `PUV5/urun/taban` (ağaç `~/karadul_olcum/urun-152176b`, ayar dosyası yok); ikili başına kapalı → taban çifti (`kos_h2.sh`, sonra değer sırasıyla `zincir3.sh`; 20:09–21:02). Bayt karşılaştırması `PUV5/harita_bayt.py` (`out/naming_map.json`, `reconstructed/src*/naming_map.json`).
 
 | İkili | kapalı ↔ taban (out / src / src_iter1) | açık ↔ kapalı c_namer haritası: değişen anahtar | `entry` dışında değişen | nüfusta doğru (açık / kapalı) |
 |---|---|---|---|---|
 | htop | **bayt aynı / aynı / aynı** | 1 (`entry`) | 0 | 0 / 0 (giriş thunk; nüfus dışı) |
-| tmux (kapalı 20:44–20:49; taban = S8 b6aceb9 ve A/A) | **bayt aynı / aynı / aynı** (S8 tabanına da A/A'ya da) | 1 (`entry`; 236 ↔ 235 anahtar, `src` ve `src_iter1`) | **0** (kapalıya, S8'e ve A/A'ya karşı) | 206 / 205 → **+1** |
-| gsort (kapalı 20:49–20:50, taban 20:50–20:51) | **bayt aynı / aynı / aynı** | 1 (`entry`) | **0** | 4 / 3 → **+1** |
+| tmux | **bayt aynı / aynı / aynı**; S8 tabanı b6aceb9'a ve A/A'ya da bayt aynı | 1 (`entry`; 236 ↔ 235 anahtar) | **0** (kapalıya, S8'e ve A/A'ya karşı) | 206 / 205 → **+1** |
+| gmktemp | **bayt aynı** (3 / 3 dosya) | 1 (`entry`) | **0** | 3 / 2 → **+1** |
+| idn2 | **bayt aynı** | 1 (`entry`) | **0** | 2 / 1 → **+1** |
+| gettext | **bayt aynı** | 1 (`entry`) | **0** | 3 / 2 → **+1** |
+| envsubst | **bayt aynı** | 1 (`entry`) | **0** | 3 / 2 → **+1** |
+| xz | **bayt aynı** | 1 (`entry`) | **0** | 1 / 0 → **+1** |
+| gsort | **bayt aynı** | 1 (`entry`) | **0** | 4 / 3 → **+1** |
 
-**Kuyruk notu (20:13):** zincirim kuyruğun ikinci yuvasını OL2'den önce kapıyordu (yeni çağrı beklemesiz, bekleyen öbür çağrı 5 sn uykulu); OL2 20:08'den beri bekliyordu. Kuyruğun paket bekletme dosyasıyla (`ghidra_kuyruk.bekle.PUV5`) kendi yeni çağrılarımı OL2 bir iş başlatana dek durdurdum (20:10–20:13). Sonra OL2'nin S8 zinciri yuvayı aynı yolla tutuyor; benim kalan 7 çiftim sırada.
+- **H2 ürün düzeyi: 8 / 8** ikilide bayrak kapalı dalın ad haritaları (`out/naming_map.json`, `src`, `src_iter1`) bugünkü ürünün (`152176b`) koşusuyla bayt bayt aynı; tmux S8 tabanı ve A/A'sıyla da. TUTTU.
+- **`main`'den yayılan adlar (P-ÜV9 kalem 7'nin ilk ölçümü): 0.** 8 / 8 ikilide bayrak açık ↔ kapalı c_namer haritasında değişen tek anahtar `entry`; başka hiçbir fonksiyonun adı değişmedi (yeni doğru 0, yeni yanlış 0). `usage` kanalından yeni ad 0 (yeniden oynatmayla aynı).
+- **H6 ürün düzeyi: TUTTU.** Nüfusta doğru ad 7 ikilide tam +1 (tmux, gmktemp, idn2, gettext, envsubst, xz, gsort), htop'ta 0 (giriş thunk, nüfus dışı). Toplam nüfus 3 947 (htop 597 dahil); nüfusta doğru 215 → 222.
+
+**Kuyruk notu (20:13):** zincirim kuyruğun ikinci yuvasını OL2'den önce kapıyordu (yeni çağrı beklemesiz, bekleyen öbür çağrı 5 sn uykulu); OL2 20:08'den beri bekliyordu. Kuyruğun paket bekletme dosyasıyla (`ghidra_kuyruk.bekle.PUV5`) kendi yeni çağrılarımı OL2 bir iş başlatana dek durdurdum (20:10–20:13). Sonra OL2'nin S8 zinciri yuvayı aynı yolla tuttu; ana oturumun Ollama koşusu 20:44'te bitince bekleyen çağrım yuva 1'i aldı (20:44–20:49), kalanlar yuva 2'de koştu (20:49–21:02). Aynı anda en çok bir koşum oldu.
 
 ## Kalem 5 — tam takım (yamasız; 19:59–20:16, 1 014 sn, yük altında; kod `caa14e3` = şimdiki kod, sonraki commit'ler yalnız belge / yama)
 
@@ -131,3 +140,20 @@ Kök `PUV5/urun/kapali` (dal `caa14e3`, ayar dosyası yok) ve `PUV5/urun/taban` 
 - **Kapsam sapması:** `_seed_recovery_pre_names`'te iki çağrıya ayar argümanı (yukarıda gerekçesi). Mutant `puv5_ayar_iletilmez` kilitliyor.
 - **`entry` sözcüğü:** anahtar Ghidra adı olduğu için birleştirici kodda `entry` sözcüğünün her geçtiği yeri `main` yapar. 9 Mac ikilisinin (htop, tmux, P-S3b 6, terminal-notifier) decompile çıktısında `entry` sözcüğü (`grep -w`) `entry.c`'deki tanım / başlık dışında yalnız `// Callers:` yorum satırlarında geçiyor (değişmesi doğru); dizgi değişmezinde, yerel ya da alan adında 0. Başka ikilide ölçülmedi.
 - **Evrensel ikili:** dilim seçimi `universal_slice.json` → `raw/<ad>_<mimari>`; birim testi var, gerçek evrensel ikilide yalnız Ollama'da (Go istisnasına takıldı) denendi.
+
+## Özet: hükümler (ön kayıt `bdd058f`)
+
+| | Hüküm | Sayı |
+|---|---|---|
+| H1 | **TUTTU** | bayrak açık ürün koşusu: Mach-O `main` **8 / 8** (önce 0 / 8), GT'ye göre 8 / 8 doğru, yanlış `main` **0**; kodda 8 / 8, künye `main_giris` 8 / 8. Şerh: `out/naming_map.json`'da 0 / 8 (biçimlendirici `entry` anahtarını almıyor; yama `PUV5__output_formatter.py.patch`, Ghidra'sız etkisi 9 / 9 yalnız `entry` → `main`). Kural düzeyinde de 8 / 8. Hedef seti: terminal-notifier doğru (ad bekleyen 40'ta 0 → 1). |
+| H2 | **TUTTU** | kural düzeyi 14 / 14 (eski = kapalı); ürün düzeyi 8 / 8 ad haritası bugünkü ürünle bayt aynı (+ tmux S8 ve A/A) |
+| H3 | **TUTTU (kural düzeyi)** | 5 ELF'te bayrak açık ↔ kapalı tohum sonucu aynı (ad, künye, `stats`, gnulib kararları); ELF ürün koşusu yapılmadı (Mach-O kuralı `load_commands.txt` yoksa koşmaz; mutant `puv5_elfte_macho_kurali_kosar` ve `puv5_bicim_denetimi_yok` öldü) |
+| H4 | **TUTTU** | gh girişinin `pclntab` adı `_rt0_arm64_darwin` (Ghidra'sız okuma); kural birim testinde yazmıyor; Ollama'da da Go saplaması → yazmıyor |
+| H5 | **TUTTU (boş kümede)** | `main` üstünden gelen `usage` adı 0 (yanlış 0); 8 / 8 ikilide `entry` dışında değişen ad 0 |
+| H6 | **TUTTU** | nüfusta doğru 7 ikilide +1, htop'ta 0 (thunk); toplam 215 → 222 / 3 947 |
+
+Test / mutant: 32 birim testi (24 fonksiyon), mutant **15 / 15** öldü. Tam takım (yamasız) 10 916 / 62 / 5 (1 beklenen `test_p15a`, 4 `node_modules` bağı → yeniden koşuda geçti). Yamalar: `PUV5__config.py.patch`, `PUV5__output_formatter.py.patch` (ikisi de `git apply --check` temiz, ağaca uygulanmadı).
+
+Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/PUV5/` (ölçüm özetleri `ozet/`; çalışma alanları `urun/`, `oynat/` ara ürün). Ürün ağacı `~/karadul_olcum/urun-caa14e3` silinmedi (ana oturum siler). Kuyruk bekletme dosyası kalmadı.
+
+## PAKET BİTTİ
