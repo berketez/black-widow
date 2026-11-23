@@ -1,0 +1,269 @@
+{
+  "_comment": "ÖL-2 (Ghidra köprüsünde adım bütçeleri ve BSim koşulları) mutasyon koruması: denetçi (bütçe sınırı, son an, olay aralığı ve sayacı, kısmi alanlar, kısmi olay sayaçları), döküm işlevleri (CFG, dizgi, xref ikinci bölüm, P-code komut adımı), köprü bağlantıları (adım hatası, denetçi, toplam, BSim bütçeleri, atlandi olayı), boş depo kararı (kendisi, bozuk / karantina / kayıtsız depo, ayar, ingest'ten önce, meşgul depo, atlanan sorgunun sayısı), ingest ve sorgu bütçeleri. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ol2.json",
+  "mutants": [
+    {
+      "id": "ol2_butce_esitte_dolar",
+      "desc": "Bütçe sınırına eşit anda da dolmuş sayılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_denetci_butce_dolunca_true_ve_sayaclari_saklar",
+      "find": "if self._son_an is not None and simdi > self._son_an:",
+      "replace": "if self._son_an is not None and simdi >= self._son_an:"
+    },
+    {
+      "id": "ol2_butce_hic_dolmaz",
+      "desc": "Son an kurulmaz: bütçe hiç dolmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_denetci_butce_dolunca_true_ve_sayaclari_saklar",
+      "find": "self._son_an = baslangic + self.butce_sn if self.butce_sn > 0 else None",
+      "replace": "self._son_an = None"
+    },
+    {
+      "id": "ol2_olay_araligi_iki_kat",
+      "desc": "Adım içi olay aralığın iki katında",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_denetci_suruyor_olayi_aralikta_gercek_sayacla",
+      "find": "if self.aralik_sn > 0 and simdi - self._son_olay >= self.aralik_sn:",
+      "replace": "if self.aralik_sn > 0 and simdi - self._son_olay >= self.aralik_sn * 2:"
+    },
+    {
+      "id": "ol2_olay_sayaci_sabit",
+      "desc": "Olayın islenen alanı gerçek sayaç değil",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_denetci_suruyor_olayi_aralikta_gercek_sayacla",
+      "find": "_ilerleme(self.adim, OLAY_SURUYOR, islenen=int(islenen), toplam=toplam,",
+      "replace": "_ilerleme(self.adim, OLAY_SURUYOR, islenen=0, toplam=toplam,"
+    },
+    {
+      "id": "ol2_son_olay_guncellenmez",
+      "desc": "Son olay anı güncellenmez (aralıktan sonra her denetimde olay)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_denetci_suruyor_olayi_aralikta_gercek_sayacla",
+      "find": "            self._son_olay = simdi\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "ol2_kismi_alan_dolmadan_yazilir",
+      "desc": "Bütçe dolmadan da kısmi alanlar çıktıya yazılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_denetcisiz_ve_butcesiz_cikti_bayt_bayt_ayni",
+      "find": "        if not self.doldu:\n            return {}\n        return {\"kismi\": True",
+      "replace": "        return {\"kismi\": True"
+    },
+    {
+      "id": "ol2_kismi_olay_sayacsiz",
+      "desc": "Bütçesi dolan adımın kısmi olayı sayaç taşımaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_adim_saati_denetcisi_baslangici_saatten_alir_ve_kismi_olaya_sayac",
+      "find": "alanlar = {**den.sayac(), **alanlar}",
+      "replace": "alanlar = dict(alanlar)"
+    },
+    {
+      "id": "ol2_en_kucuk_degil_en_buyuk",
+      "desc": "Ingest bütçesi iki bütçenin büyüğü",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_en_kucuk_butce",
+      "find": "return min(olan) if olan else 0.0",
+      "replace": "return max(olan) if olan else 0.00"
+    },
+    {
+      "id": "ol2_cfg_kesilmez",
+      "desc": "CFG döngüsü bütçe dolunca durmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_kismi_cikti_birim_sayilari_tutarli",
+      "find": "                break\n            func_count += 1\n\n            try:\n                body = func.getBody()",
+      "replace": "                pass\n            func_count += 1\n\n            try:\n                body = func.getBody()"
+    },
+    {
+      "id": "ol2_dizgi_kismi_alan_yok",
+      "desc": "Dizgi çıktısına kısmi alanlar eklenmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_butce_dolunca_birim_sinirinda_kismi_gecerli_json",
+      "find": "\"strings\": strings,\n        }\n        if denetci is not None:",
+      "replace": "\"strings\": strings,\n        }\n        if denetci is None:"
+    },
+    {
+      "id": "ol2_xref_sembol_bolumu_kosar",
+      "desc": "Bütçe fonksiyonlarda dolsa da genel sembol sayımı koşar",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_xref_butce_fonksiyonlarda_dolunca_sembol_sayimi_yapilmaz",
+      "find": "ikinci_bolum = not (denetci is not None and denetci.doldu)",
+      "replace": "ikinci_bolum = not (denetci is not None and denetci.doldu and False)"
+    },
+    {
+      "id": "ol2_pcode_adim_kayik",
+      "desc": "P-code komut döngüsünde adımlı denetim kayık",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_pcode_istatistik_kucuk_birim_adimli_denetim",
+      "find": "instruction_count % KUCUK_BIRIM_DENETIM_ADIMI == 0",
+      "replace": "instruction_count % KUCUK_BIRIM_DENETIM_ADIMI == 1 + 0"
+    },
+    {
+      "id": "ol2_adim_hatasi_yanlis_anahtar",
+      "desc": "Bütçe dolunca adım hatası adımın anahtarına yazılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_kopru_butce_dolunca_adim_hatasi_kismi_olay_ve_kismi_json",
+      "find": "                step_errors[step] = den.neden()\n                log_lines.append(\"WARN: %s: %s\" % (step, step_errors[step]))",
+      "replace": "                step_errors[step + \"_b\"] = den.neden()\n                log_lines.append(\"WARN: %s: %s\" % (step, step_errors[step + \"_b\"]))"
+    },
+    {
+      "id": "ol2_cagri_grafigi_denetimsiz",
+      "desc": "Çağrı grafiği adımına denetçi verilmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_kopru_her_dokum_adimi_bagli",
+      "find": "cg_data = self._extract_call_graph(program, denetci=den)",
+      "replace": "cg_data = self._extract_call_graph(program)"
+    },
+    {
+      "id": "ol2_toplam_fonksiyon_adimindan_degil",
+      "desc": "Fonksiyon döngülerinin toplamı functions adımından alınmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_kopru_butce_ayardan_toplam_fonksiyon_adimindan",
+      "find": "return int(toplam) if isinstance(toplam, int) else None",
+      "replace": "return None"
+    },
+    {
+      "id": "ol2_ingest_butcesi_ayari_okunmaz",
+      "desc": "bsim.ingest_butcesi_sn okunmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_kopru_bsim_ingest_ve_sorgu_denetcisi",
+      "find": "adim_butcesi, _ayar_sn(self.config, \"bsim\", \"ingest_butcesi_sn\")),",
+      "replace": "adim_butcesi, 0),"
+    },
+    {
+      "id": "ol2_sorgu_denetcisi_verilmez",
+      "desc": "BSim sorgusuna denetçi verilmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_kopru_bsim_ingest_ve_sorgu_denetcisi",
+      "find": "bsim_db.denetci = sorgu_den",
+      "replace": "bsim_db.denetci = None"
+    },
+    {
+      "id": "ol2_atlandi_olayi_yok",
+      "desc": "Boş depoda atlanan sorgu için olay üretilmez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_ol2_adim_butcesi.py::test_kopru_bsim_sorgu_atlandi_olayi_adim_hatasi_degil",
+      "find": "if (bsim_data.get(\"bsim_detail\") or {}).get(\"sorgu_atlandi\"):",
+      "replace": "if (bsim_data.get(\"bsim_detail\") or {}).get(\"sorgu_atlandi_\"):"
+    },
+    {
+      "id": "ol2_kendisi_baska_sayilir",
+      "desc": "Programın kendi kaydı da başka program sayılır",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_ayni_ikili_ikinci_kez_bos_sayilir",
+      "find": "baska = sum(1 for md5 in provenance if not dislama.classify(md5))",
+      "replace": "baska = len(provenance)"
+    },
+    {
+      "id": "ol2_bozuk_kayitta_atlar",
+      "desc": "Köken kaydı okunamadığında da depo boş sayılır",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_bozuk_koken_kaydi_atlanmaz_neden_yazilir",
+      "find": "        if store.load_error:\n",
+      "replace": "        if store.load_error and False:\n"
+    },
+    {
+      "id": "ol2_karantina_gormezden",
+      "desc": "Karantinadaki köken kaydı görmezden gelinir",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_karantinadaki_koken_kaydi_atlanmaz",
+      "find": "        if karantina:\n",
+      "replace": "        if karantina and False:\n"
+    },
+    {
+      "id": "ol2_kayitsiz_depo_dosyasi_gormezden",
+      "desc": "Köken kaydı yokken depo dosyası görmezden gelinir",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_koken_kaydi_yok_ama_depo_dosyasi_var_atlanmaz",
+      "find": "            if depo_dosyasi:\n",
+      "replace": "            if depo_dosyasi and False:\n"
+    },
+    {
+      "id": "ol2_atlama_ayari_okunmaz",
+      "desc": "Atlama ayarı okunmaz (hep açık)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_ayar_kapaliyken_bos_depoda_da_sorgu_kosar",
+      "find": "return bool(self._bsim_cfg_value(\"bos_depoda_sorgu_atla\", False))",
+      "replace": "return True"
+    },
+    {
+      "id": "ol2_bos_depoda_sorgu_kosar",
+      "desc": "Boş depoda da sorgu koşar",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_bos_depoda_sorgu_cagrilmaz_ayni_sema",
+      "find": "            if karar.get(\"bos\"):\n",
+      "replace": "            if karar.get(\"bos\") and False:\n"
+    },
+    {
+      "id": "ol2_karar_ingestten_sonra",
+      "desc": "Karar ingest'ten önce verilmez (sorgu anında)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_karar_ingestten_once_verilir",
+      "find": "                self._bos_depo = self._bos_depo_karari(program, db_name)\n            if self.mode",
+      "replace": "                pass\n            if self.mode"
+    },
+    {
+      "id": "ol2_mesgulde_atlar",
+      "desc": "Meşgul depoda da atlama yolu devreye girer",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_mesgul_depoda_atlama_yolu_devreye_girmez",
+      "find": "if self.status.get(\"status\") in (STATUS_SKIPPED_BUSY, STATUS_FAILED):",
+      "replace": "if self.status.get(\"status\") in (STATUS_FAILED,):"
+    },
+    {
+      "id": "ol2_atlanan_sorgu_sayisi_yalan",
+      "desc": "Atlanan sorgu, sorgulanmış fonksiyon sayısı yazar",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_bos_depoda_sorgu_cagrilmaz_ayni_sema",
+      "find": "        logger.info(\"BSim sorgusu atlandı: %s\", BOS_DEPO_NEDENI)\n        return self._result(db_name, 0, [], t0)",
+      "replace": "        logger.info(\"BSim sorgusu atlandı: %s\", BOS_DEPO_NEDENI)\n        return self._result(db_name, 5 + 0, [], t0)"
+    },
+    {
+      "id": "ol2_ingest_kesilmez",
+      "desc": "Ingest tarama döngüsü bütçe dolunca durmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_ingest_butcesi_dolunca_taranan_kisim_eklenir",
+      "find": "if denetci is not None and denetci.denetle(taranan, len(gercek)):",
+      "replace": "if denetci is not None and denetci.denetle(taranan, len(gercek)) and False:"
+    },
+    {
+      "id": "ol2_ingest_kismi_durum_yok",
+      "desc": "Ingest bütçesi dolunca durum kısmi olmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_veritabani_ingest_kismi_durumu_ve_sayilar",
+      "find": "            self.status[\"status\"] = STATUS_KISMI\n        self.status[\"neden\"] = \"ingest: \" + neden",
+      "replace": "            self.status[\"status\"] = STATUS_OK\n        self.status[\"neden\"] = \"ingest: \" + neden"
+    },
+    {
+      "id": "ol2_toplu_cagri_oncesi_denetim_yok",
+      "desc": "Toplu sorgu çağrısından önce bütçe denetlenmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_toplu_sorgu_cagri_oncesi_bütce_denetlenir",
+      "find": "if denetci is not None and (denetci.doldu or denetci.denetle(taranan, len(funcs))):",
+      "replace": "if denetci is not None and denetci.doldu:"
+    },
+    {
+      "id": "ol2_tekli_sorgu_kesilmez",
+      "desc": "Fonksiyon başına sorgu bütçe dolunca durmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_fonksiyon_basina_sorgu_parca_sinirinda_kesilir",
+      "find": "if denetci is not None and denetci.denetle(sorgulanan, len(funcs)):",
+      "replace": "if denetci is not None and denetci.denetle(sorgulanan, len(funcs)) and False:"
+    },
+    {
+      "id": "ol2_toplu_kismi_okunmaz",
+      "desc": "Toplu yolun kısmi sonucu okunmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_veritabani_toplu_kismi_tekli_yola_dusmez",
+      "find": "kismi = getattr(self._native, \"last_query_kismi\", None)",
+      "replace": "kismi = None"
+    },
+    {
+      "id": "ol2_denetci_toplu_yola_iletilmez",
+      "desc": "Denetçi toplu sorgu yoluna iletilmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_veritabani_toplu_kismi_tekli_yola_dusmez",
+      "find": "                        self._native.denetci = denetci\n",
+      "replace": "                        self._native.denetci = None\n"
+    }
+  ]
+}
