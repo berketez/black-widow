@@ -13,7 +13,7 @@ Paket: OL10 (KARARLAR A-18, A-24). Yalnız belge; kod, test, ayar yazılmadı; G
 7. Bilerek sonraya bırakılanlar: dilin kendi kitaplığına ait fonksiyonların kodu, seçilmeyen fonksiyonların ayrıntılı dökümü, benzerlik araması (BSim). Hiçbiri silinmez; "ertelendi" diye sayılır ve istenince yapılır. Böyle biten koşu "tam" değil "kısmi" görünür: yapılmayan iş başarı gibi gösterilmez.
 8. Planın eski hedefi ("100 MB'ta ilk rapor ≤ 60 dakika") bu hâliyle tutmaz: Ghidra'nın kendi çözümlemesi tek başına 38–72 dakika (TAHMİN) ve tembel kip onu kısaltmaz. Hedef üç parçaya bölündü (§6).
 9. Bu turda ölçülen yeni bulgu: pahalı "çapraz başvuru" adımının fonksiyon başına çıktısı, Katman 1'in iki dosyasından Ghidra'sız türetilebiliyor (Ollama: 13 559 / 13 559 fonksiyonda aynı). Bu hem süreyi düşürür hem kısmi analizde ad kurallarını bozulmaktan korur.
-10. İş 10 alt pakete bölündü. İlk üçü bugün yazılabilir ve en büyük bilinmeyenleri ürüne dokunmadan ölçer; ürün değişikliği, Ghidra köprüsü dosyasında sırada bekleyen altı paketten sonra girer.
+10. İş 10 alt pakete bölündü. İlk üçü bugün yazılabilir ve en büyük bilinmeyenleri ürüne dokunmadan ölçer; ürün değişikliği, Ghidra köprüsü dosyasında sırada olan sekiz paketten (biri bugün yazılıyor) sonra girer.
 
 ## Karar listesi (Berke / ana oturum)
 
@@ -809,7 +809,7 @@ Gece koşusu olmadan kesinleşmeyecek sayılar (belgede TAHMİN olarak duranlar)
 5. **Üst veri adına güven.** Seçilmeyen fonksiyonun adı yalnız üst veriden gelir; bozulmuş / sahte üst veri (P-ÜV7 tutarlılık denetimi main'de değil) yanlış adı gövdesiz, yani analistin gözle denetleyemeyeceği biçimde gösterir. Koruma: gövdesiz + `üst veriden` adlar arayüzde ayrı işaretlenir; `kisa` / `tasan` kayıtlar zaten ad olmuyor (PUV6a hüküm 1); P-ÜV7 gelince `tutarsiz` damgalı fonksiyon B3'e yükseltilir (gövdesi öncelikle decompile edilir). Bu son kural sürüm 2'dir, bu planda yazılmaz.
 6. **Disk.** Proje saklanır ([0,3; 0,9] GB T100, TAHMİN); T300'de [2,1; 3,5] GB (aynı oranlarla: dilimin 3,3 katı, kodun 15,7 katı). Çalışma alanı silinince proje de silinir; ayrı temizlik komutu yok. ÖL-6'nın disk ön denetimi tembel kipte proje + K1 JSON'ları + S'nin çıktısını hesaba katmalı (ÖL-6'ya not).
 7. **İki "kısmi".** Çıkış 3 hem hatayı hem ertelemeyi taşır (K-3). Ölçüm araçları `depth` alanına bakmadan çıkış koduyla karar verirse tembel koşuları "bozuk" sayabilir. `urun_kos.py` / `masum_kapi.py` gibi araçlara tembel kol eklenirken bu ayrım testle kilitlenmeli (OL10-J adım 3'ün önkoşulu).
-8. **`headless.py` zincirinin uzunluğu.** OL10-D altı paketin arkasında; zincir gecikirse ürün tarafı gecikir. Bu yüzden ölçmeden bilinemeyenler zincirden bağımsız üç pakete (A, B, C) alındı; zincir bittiğinde OL10-D'nin ön kayıt sayıları hazır olur.
+8. **`headless.py` zincirinin uzunluğu.** OL10-D sekiz paketin arkasında (P16e, ÖL-1, ÖL-2, HZ-2, ÖL-3, HZ-4a, HZ-3, ÖL-6; P16e bugün yazılıyor); zincir gecikirse ürün tarafı gecikir. Bu yüzden ölçmeden bilinemeyenler zincirden bağımsız üç pakete (A, B, C) alındı; zincir bittiğinde OL10-D'nin ön kayıt sayıları hazır olur.
 
 ### 8.4 Bu tasarımın bilerek yapmadıkları
 
