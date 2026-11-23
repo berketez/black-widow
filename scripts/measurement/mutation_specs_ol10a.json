@@ -1,0 +1,173 @@
+{
+  "_comment": "OL10A (ÖL-10 saf çekirdek: seçim kuralı, xref türetme) mutasyon koruması (OL10_TASARIM.md §7.1 listesi + 4 ek). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ol10a.json",
+  "mutants": [
+    {
+      "id": "ol10a_b2_b3_takas",
+      "desc": "B3 (bilinmiyor + kanıt) B2'den (kendi) önce eklenir",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_basamak_sirasi_kendi_once_sonra_kanitli_bilinmiyor",
+      "find": "    kanitli_ekle((a for a in fonks if sinif[a] in kendi_siniflari), BASAMAK_KENDI)\n    kanitli_ekle((a for a in fonks if sinif[a] == SECIM_BILINMIYOR and kanit[a] > 0),\n                 BASAMAK_BILINMIYOR_KANITLI)\n",
+      "replace": "    kanitli_ekle((a for a in fonks if sinif[a] == SECIM_BILINMIYOR and kanit[a] > 0),\n                 BASAMAK_BILINMIYOR_KANITLI)\n    # takas\n    kanitli_ekle((a for a in fonks if sinif[a] in kendi_siniflari), BASAMAK_KENDI)\n"
+    },
+    {
+      "id": "ol10a_standart_secilir",
+      "desc": "STANDART kanıtsız fonksiyon B4b'ye girer",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_standart_kendiliginden_secilmez_istekle_secilir",
+      "find": "sinif[a] == SECIM_BILINMIYOR and kanit[a] == 0),\n                 BASAMAK_BILINMIYOR_KALAN)",
+      "replace": "sinif[a] in (SECIM_BILINMIYOR, SECIM_STANDART) and kanit[a] == 0),\n                 BASAMAK_BILINMIYOR_KALAN)"
+    },
+    {
+      "id": "ol10a_giris_sinif_istisnasi_kalkar",
+      "desc": "STANDART / TASLAK E üyesi seçilmez",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_giris_uyesi_sinifina_bakilmadan_secilir",
+      "find": "{a: 0 for a in girdi.giris if a in fonks}",
+      "replace": "{a: 0 for a in girdi.giris if a in fonks and _gecilebilir(sinif[a])}"
+    },
+    {
+      "id": "ol10a_genisleme_standarttan_gecer",
+      "desc": "genişleme STANDART fonksiyona girer",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_genisleme_standart_ve_taslaga_girmez_onlardan_gecmez",
+      "find": "if c in fonks and c not in derinlik and _gecilebilir(sinif[c]):",
+      "replace": "if c in fonks and c not in derinlik and sinif[c] != SECIM_TASLAK:"
+    },
+    {
+      "id": "ol10a_derinlik_3",
+      "desc": "giriş derinliği 2 → 3",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_giris_derinligi_iki",
+      "find": "GIRIS_DERINLIGI = 2\n",
+      "replace": "GIRIS_DERINLIGI = 2 + 1\n"
+    },
+    {
+      "id": "ol10a_256_siniri_yok",
+      "desc": "B1'de 256 sınırı uygulanmaz",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_giris_ust_siniri_256_derinlik_sonra_adres",
+      "find": "for a in b1[:GIRIS_UST_SINIR]:",
+      "replace": "for a in b1:"
+    },
+    {
+      "id": "ol10a_kanit_liste_uzunlugu",
+      "desc": "aynı dizgiye iki başvuru iki kanıt sayılır (küme değil)",
+      "module": "karadul/core/tembel_girdi.py",
+      "test": "tests/test_ol10a_secim.py::test_kanit_kume_boyutudur_ve_ice_aktarim_sayilir",
+      "find": "dizgiler.setdefault(adres_int(ff), set()).add(sa)",
+      "replace": "dizgiler.setdefault(adres_int(ff), set()).add((sa, x.get(\"from_address\")))"
+    },
+    {
+      "id": "ol10a_ice_aktarim_kanita_girmez",
+      "desc": "çağrılan taslak sayısı kanıta katılmaz",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_kanit_kume_boyutudur_ve_ice_aktarim_sayilir",
+      "find": "+ len(set(girdi.cagrilan.get(a, ())) & taslak)",
+      "replace": "+ 0 * len(set(girdi.cagrilan.get(a, ())) & taslak)"
+    },
+    {
+      "id": "ol10a_adres_dizgi_sirasi",
+      "desc": "adres sırası onaltılık dizgiyle",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_adres_tam_sayiyla_karsilastirilir",
+      "find": "for a in sorted(a for a in uyeler if a not in gor):",
+      "replace": "for a in sorted((a for a in uyeler if a not in gor), key=hex):"
+    },
+    {
+      "id": "ol10a_b4a_cagrilan_kosulu_duser",
+      "desc": "B4a'nın 'seçilenin çağırdığı' koşulu düşer",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_b4a_secilenin_cagirdigi_b4b_kalan",
+      "find": "\n                  and a in cagrilan_secili), BASAMAK_BILINMIYOR_KOMSU)",
+      "replace": "), BASAMAK_BILINMIYOR_KOMSU)"
+    },
+    {
+      "id": "ol10a_kes_n_arti_1",
+      "desc": "kes N + 1 öğe alır",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_kes_ilk_n_ve_sifir_sinirsiz",
+      "find": "sira = sonuc.sira if n == 0 else sonuc.sira[:n]",
+      "replace": "sira = sonuc.sira if n == 0 else sonuc.sira[:n + 1]"
+    },
+    {
+      "id": "ol10a_istek_adres_sirasi",
+      "desc": "istek sırası adres sırasına döner",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_istek_sirasi_korunur_yinelenen_ve_bulunamayan",
+      "find": "for i, a in enumerate(istek):",
+      "replace": "for i, a in enumerate(sorted(istek)):"
+    },
+    {
+      "id": "ol10a_taslak_b4bde",
+      "desc": "kanıtsız taslak B6 yerine B4b'ye girer",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_taslak_yalniz_b6da",
+      "find": "sinif[a] == SECIM_BILINMIYOR and kanit[a] == 0),\n                 BASAMAK_BILINMIYOR_KALAN)",
+      "replace": "sinif[a] in (SECIM_BILINMIYOR, SECIM_TASLAK) and kanit[a] == 0),\n                 BASAMAK_BILINMIYOR_KALAN)"
+    },
+    {
+      "id": "ol10a_ana_modul_yok_b5te_kalir",
+      "desc": "ana modül bulunamayınca BAGIMLILIK B5'te kalır",
+      "module": "karadul/core/tembel_secim.py",
+      "test": "tests/test_ol10a_secim.py::test_ana_modul_bulunamazsa_bagimlilik_b2de",
+      "find": "ana_bilinmiyor = bool(girdi.ana_modul_bilinmiyor)",
+      "replace": "ana_bilinmiyor = False"
+    },
+    {
+      "id": "ol10a_xref_cagri_takasi",
+      "desc": "türetmede functions_called ↔ called_by takası",
+      "module": "karadul/core/tembel_xref.py",
+      "test": "tests/test_ol10a_xref.py::test_turetme_beklenen_belgeyle_esit",
+      "find": "\"functions_called\": _ad_adres(n.get(\"callees\")),",
+      "replace": "\"functions_called\": _ad_adres(n.get(\"callers\") or []),"
+    },
+    {
+      "id": "ol10a_xref_kapsam_yazilmaz",
+      "desc": "kapsam alanı yazılmaz",
+      "module": "karadul/core/tembel_xref.py",
+      "test": "tests/test_ol10a_xref.py::test_istatistik_globals_null_kapsam_kaynak",
+      "find": "        \"kapsam\": KAPSAM_TAM_NUFUS,\n",
+      "replace": ""
+    },
+    {
+      "id": "ol10a_xref_globals_sifir",
+      "desc": "total_globals_with_xrefs 0 yazılır",
+      "module": "karadul/core/tembel_xref.py",
+      "test": "tests/test_ol10a_xref.py::test_istatistik_globals_null_kapsam_kaynak",
+      "find": "\"total_globals_with_xrefs\": None,",
+      "replace": "\"total_globals_with_xrefs\": 0,"
+    },
+    {
+      "id": "ol10a_xref_dizgi_adresine_gore",
+      "desc": "strings_used dizgi adresine göre sıralanır (başvurana göre değil)",
+      "module": "karadul/core/tembel_xref.py",
+      "test": "tests/test_ol10a_xref.py::test_strings_used_baskuranin_adresine_gore_ve_tekil",
+      "find": "key=lambda t: (t[0], t[1])",
+      "replace": "key=lambda t: (t[1], t[0], 0)"
+    },
+    {
+      "id": "ol10a_xref_called_by_siralanmaz",
+      "desc": "called_by caller_sort_key ile sıralanmaz",
+      "module": "karadul/core/tembel_xref.py",
+      "test": "tests/test_ol10a_xref.py::test_called_by_adrese_gore_tam_sayiyla_functions_called_sirasi_korunur",
+      "find": "\"called_by\": sorted(_ad_adres(n.get(\"callers\")), key=caller_sort_key),",
+      "replace": "\"called_by\": _ad_adres(n.get(\"callers\")),"
+    },
+    {
+      "id": "ol10a_entry_adi",
+      "desc": "Ghidra'nın entry adı girişe girmez",
+      "module": "karadul/core/tembel_girdi.py",
+      "test": "tests/test_ol10a_secim.py::test_ghidra_entry_adi_girise_girer_gorunu_olmadan",
+      "find": "GHIDRA_GIRIS_ADI = \"entry\"",
+      "replace": "GHIDRA_GIRIS_ADI = \"_entry_\""
+    },
+    {
+      "id": "ol10a_giris_icerme",
+      "desc": "giriş adresi yalnız fonksiyon başında eşlenir (içeren fonksiyon aranmaz)",
+      "module": "karadul/core/tembel_girdi.py",
+      "test": "tests/test_ol10a_secim.py::test_girdiden_kur_go_objc_giris_ve_delta",
+      "find": "if adres == a or adres < a + max(int(boyut.get(a, 0)), 1):",
+      "replace": "if adres == a:"
+    }
+  ]
+}

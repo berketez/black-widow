@@ -27,7 +27,7 @@ FDOC = {"program": "p", "functions": [
 ]}
 SDOC = {"program": "p", "strings": [
     {"address": "00009000", "value": "b", "xrefs": [
-        {"from_address": "00001010", "from_func_addr": "00001000"},
+        {"from_address": "00001004", "from_func_addr": "00001000"},
         {"from_address": "_elfSectionHeaders::000000d0", "from_func_addr": None}]},
     {"address": "00008000", "value": "a", "xrefs": [
         {"from_address": "00001020", "from_func_addr": "00001000"},
@@ -51,8 +51,8 @@ BEKLENEN_XREF = {
                    "total_globals_with_xrefs": None},
     "function_xrefs": {
         "00001000": {"name": "FUN_00001000", "address": "00001000",
-                     "strings_used": [{"address": "00008000", "value": "a"},
-                                      {"address": "00009000", "value": "b"}],
+                     "strings_used": [{"address": "00009000", "value": "b"},
+                                      {"address": "00008000", "value": "a"}],
                      "functions_called": [{"name": "puts", "address": "00003000"},
                                           {"name": "FUN_00002000", "address": "00002000"}],
                      "called_by": []},
@@ -75,8 +75,9 @@ def test_turetme_beklenen_belgeyle_esit():
 
 def test_strings_used_baskuranin_adresine_gore_ve_tekil():
     su = tx.turet(FDOC, SDOC, CDOC)["function_xrefs"]["00001000"]["strings_used"]
-    # 00001008 (a) < 00001010 (b) < 00001020 (a, yinelenen): a önce, bir kez
-    assert [s["address"] for s in su] == ["00008000", "00009000"]
+    # 00001004 (b) < 00001008 (a) < 00001020 (a, yinelenen): başvuran adresine göre b önce
+    # (dizgi adresine göre olsaydı a önce gelirdi), a bir kez
+    assert [s["address"] for s in su] == ["00009000", "00008000"]
 
 
 def test_called_by_adrese_gore_tam_sayiyla_functions_called_sirasi_korunur():
