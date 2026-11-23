@@ -14,8 +14,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/`.
 | 4 Faz 1 listesi + kayıt; yamalar | bitti | `52e28c3` |
 | 5 birim testleri | 24 / 24 | `eec6bd9` |
 | 6 mutasyon | 20 / 20 öldü | `f2f97a6` |
-| 7 Ghidra'sız ölçüm (H4, H5, H6) | sürüyor | — |
-| 8 Ghidra'lı ölçüm (H3, H1, H2) | bekliyor | — |
+| 7 Ghidra'sız ölçüm (H4, H5, H6) | bitti: H4, H5, H6 TUTTU | `5da70a7` (araç), bu commit |
+| 8 Ghidra'lı ölçüm (H3, H1, H2) | kuyrukta (08:43 başladı) | — |
 | 9 dondurma + H8 | bekliyor | — |
 | 10 tam takım | bekliyor | — |
 
@@ -48,3 +48,30 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/`.
 - `tests/test_puv6a_baglama.py`: 24 test (gönderim kalem 5'in bütün maddeleri + üretici durumu, c_namer kararı, output_formatter, rapor).
 - `scripts/measurement/mutation_specs_puv6a.json`: **20 / 20 öldü** (hüküm 1, 2 ×3, 3 ×3, 4, 5, 7 ×2 + plan listesi). `git status` sonrası temiz.
 - İlgili test dosyaları (değişen modülleri içe aktaran 48 dosya + P13b, P17, P-ÜV1/2, bayrak, p15a): 1 207 geçti; kalan 3'ün 2'si yukarıdaki kilitli sözlük testleri (yama), 1'i (`test_olcum_araci_d0::test_siniflayici_denetle_durumlar`) `naming_labels.py` commit'lenmemişken HEAD ile çalışma dosyası farkından; commit'ten sonra geçti.
+
+## Kalem 7 — Ghidra'sız ölçüm (08:41–08:42; yük altında, `load averages` 11–17)
+
+Araç `scripts/measurement/ustveri_urun.py` (`oynat`, `aday-gt`); çıktılar `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/{oynat_ollama,aday_gt_docker-cli,aday_gt_terminal-notifier}.json` (yalnız sayı; ad listesi yok).
+
+### H4 / H5 — Ollama arm64, gösteri çalışma alanı üstünde yeniden oynatma → TUTTU / TUTTU
+
+Girdi: `~/karadul_olcum/runs/gosteri-2026-11-19/ollama/ws/workspaces/Ollama/20261119_081103` (`ghidra_functions.json` 13 559 fonksiyon, görüntü tabanı 0x100000000, delta 0) ve aynı çalışma alanının `raw/Ollama_arm64` dilimi; salt okundu. Ürün kodunun kendisi (`add_k4_channels`, iki bayrak açık) + birleştiricinin ad geçerliliği süzgeci (`validate_merged_names`).
+
+| Kanal | Üretici | Kayıt | `tuttu` | A-28 `secici_yerine` | `ghidra_adli` | `ghidra_fonksiyonu_yok` | `secici_tekil_degil` | `pcsp_elendi` | Aday | Süzgeçten geçen |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `go_pclntab` | `calisti` (10 601 giriş) | 10 600 | **10 475** | — | 97 | 28 | — | **0** | 10 475 | 10 475 |
+| `objc_method` | `calisti` | 151 | 2 | **143** | 0 | 0 | 6 | — | **145** | 145 |
+
+- **H4 TUTTU:** `tuttu` 10 475 ≥ 9 540. `pcsp_elendi` = 0 (ilk ölçüm; P-UV1'de Ollama arm64'te K4 ihlali 0 ile tutarlı). HEDEF G2 10 457'den 18 fazla: G2 thunk'ları (112) ayrı saymıştı; ürünün `_is_unnamed` kuralı `thunk_` adını adsız sayar.
+- **H5 TUTTU:** 151 yöntemin 145'ine tam ad adayı (143 A-28 + 2 adsız fonksiyon), hepsi ad geçerliliğinden geçti (≥ 140). 6 yöntem `secici_tekil_degil` (aynı seçici adını iki Ghidra fonksiyonu taşıyor; kod adı fonksiyonu ayırmıyor) → ad yok. Kanıt satırı (swift / paylaşımlı / yazılamaz) 0.
+- Okuma 0,37 sn (iki okuyucu; yük altında).
+- Not: ürün koşusunda c_namer bazı `FUN_` anahtarlarına önce ad verebilir; o anahtarlarda üst veri adı kanıt satırına iner (`c_namer_adlandirdi`). Bu sayı Ollama'nın uçtan uca koşusunda ölçülür (ana oturum).
+
+### H6 — docker-cli (keşif), Ghidra'sız aday listesi ↔ GT → TUTTU
+
+| Kanal | Kayıt | Elenen | Aday | Doğru | Yanlış | GT'siz | Yazım | Wilson alt |
+|---|---|---|---|---|---|---|---|---|
+| `go_pclntab` | 35 049 | adsız 1 | 35 048 | **35 048** | **0** | 0 | birebir 34 710 / `.abi0` 328 / orta nokta 10 | 0,99989 |
+
+- %100 ≥ %99,9 → TUTTU. İlk sürümde aday listesi adsız girişi (ad boş) sayıyordu (35 049, yanlış 1); ürün kanalı o girişi atlıyor, ölçüm aracı ürünle aynı kurala çekildi (sayı ölçüm aracının hatasıydı, kanalın değil).
+- Ek (keşif): terminal-notifier ObjC 32 / 32 doğru (birebir 31, kategori 1), elenen 0; Go `veri_yok`.
