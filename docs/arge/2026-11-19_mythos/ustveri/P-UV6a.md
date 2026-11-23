@@ -147,3 +147,32 @@ Kök `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/s8_kapali`; karşılaştırma
 ### H9 — süre (bayraklar kapalı) → TUTTU
 
 Koşucunun kaydı (`<adım>_duration_s`, 4 basamak), S8'in 5 ikilisinin 5'inde: `go_metadata_recovery_duration_s` 0,0 (4 ikili) / 0,0001 (1 ikili), `objc_metadata_recovery_duration_s` 0,0 (5 / 5); iki adım ve kanallar `kapali`. Eşik ≤ 0,1 sn / ikili. (Yük altında; boş makine ölçümü değil. Bayraklar açıkken terminal-notifier'da iki adım 0,029 + 0,029 sn.)
+
+## Ollama uçtan uca koşusu (bu paketin işi değil; ana oturum, dal main'e girince)
+
+Bayrak yaml'ı (gösteri koşusunun çözümleyici ayarı + dört bayrak; `config.py` yaması uygulanmamışsa iki ad bayrağı için "etkisiz" uyarısı basılır ama değer okunur):
+
+```yaml
+analysis:
+  ghidra_disabled_analyzers:
+    - "Objective-C Message Analyzer"
+    - "Objective-C Message"
+binary_reconstruction:
+  enable_go_metadata_recovery: true
+  enable_objc_metadata_recovery: true
+  enable_go_pclntab_naming: true
+  enable_objc_metadata_naming: true
+```
+
+Komut (ana ağaç kökünden; `D` yeni koşu kökü, yaml `$D/bayraklar.yaml`):
+
+```
+D=~/karadul_olcum/runs/<kök>/ollama; mkdir -p $D/cache
+PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 KARADUL_CACHE_DIR=$D/cache \
+GHIDRA_INSTALL_DIR=$HOME/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC \
+~/karadul_olcum/ghidra_kuyruk.sh ANA ollama:ustveri python -m karadul analyze \
+  ~/karadul_olcum/runs/gosteri-2026-11-19/ollama/girdi/Ollama --config $D/bayraklar.yaml \
+  --skip-dynamic --output-dir $D/ws --output $D/out > $D/kosu.log 2>&1
+```
+
+Sayılacaklar: `out/naming_map.json` `mappings`'te `label = üst veriden` kayıt sayısı (beklenen üst sınır: Go 10 475 + ObjC 151, Ghidra'sız oynatmadan; c_namer'ın önce adlandırdığı anahtarlar `c_namer_adlandirdi` sayacıyla düşer), rapor `naming_channels.go_pclntab` / `objc_method`, `name_merger_by_label`. Ollama'nın GT'si yok: doğruluk Ghidra'sız kanal ölçümüyle (H4 / H5) ve docker-cli / docker-compose GT'siyle (H6 / H8) desteklenir. Taban: 13 160 fonksiyonda 17 ad.
