@@ -371,6 +371,51 @@ class TestOkuyucu:
         assert r.karisik_tip_adi(a) == "Mod.Hedef"
         assert r.karisik_tip_adi(a2) == "Foundation.Date"
 
+    def test_gecersiz_kilma_hedefi_ve_async_govde(self) -> None:
+        k = Kurucu()
+        m = k.modul("M")
+        b0, g1 = k.kod(), k.kod()
+        afp = k.ekle("__data", bytes(8), 8)  # zaman uyumsuz işlev göstericisi: +0 → g1
+        k.rel(afp, g1)
+        yon = [(0x10, b0), (0x10 | 0x40, afp)]
+        taban = k.tip(swift.KIND_CLASS, "Taban", m, ks=swift.CLASS_HAS_VTABLE, artci=vt_bayt(yon))
+        vtable(yon, k, taban + 44)
+        x, y = k.kod(), k.kod()
+        afp2 = k.ekle("__data", bytes(8), 8)
+        k.rel(afp2, y)
+        alt = k.tip(swift.KIND_CLASS, "Alt", m, ks=swift.CLASS_HAS_OVERRIDE_TABLE,
+                    artci=struct.pack("<I", 2) + bytes(24))
+        for i, (hedef_sira, impl) in enumerate([(0, x), (1, afp2)]):
+            kayit = alt + 44 + 4 + 12 * i
+            k.rel(kayit, taban)
+            k.rel(kayit + 4, taban + 44 + 8 + 8 * hedef_sira)
+            k.rel(kayit + 8, impl)
+        k.kayit(taban)
+        k.kayit(alt)
+        s = swift.oku(k.goruntu())
+        vt = [y_ for y_ in s.yuvalar if y_["tur"] == swift.YUVA_VTABLE]
+        assert vt[1]["zaman_uyumsuz"] is True and vt[1]["kodda"] is False and vt[1]["govde"] == g1
+        assert "govde" not in vt[0]
+        gk = [y_ for y_ in s.yuvalar if y_["tur"] == swift.YUVA_GECERSIZ_KILMA]
+        assert [(g["ust_tip"], g["ust_sira"], g["adres"]) for g in gk] == [("M.Taban", 0, x), ("M.Taban", 1, afp2)]
+        assert gk[1]["govde"] == y and "govde" not in gk[0]
+        assert s.denetim["impl_kodda"] == 1 and s.denetim["ayrik_impl"] == 2  # H1 sayımı ham uygulamayla
+
+    def test_paylasimli_erisim_ad_yazilamaz(self) -> None:
+        k = Kurucu()
+        m = k.modul("M")
+        f = k.kod()
+        d1 = k.tip(swift.KIND_STRUCT, "A", m, erisim=f)
+        d2 = k.tip(swift.KIND_STRUCT, "B", m, erisim=f)
+        d3 = k.tip(swift.KIND_STRUCT, "C", m)
+        for d in (d1, d2, d3):
+            k.kayit(d)
+        s = swift.oku(k.goruntu())
+        assert [t.ad_yazilabilir for t in s.tipler] == [False, False, True]
+        assert [t.nitelikli_ad for t in s.tipler] == ["M.A", "M.B", "M.C"]
+        g = k.goruntu(fonksiyon_baslangiclari=[])
+        assert [t.ad_yazilabilir for t in swift.oku(g).tipler] == [False, False, False]
+
     def test_ayrac_yardimcilari(self) -> None:
         assert swift._karisik_ayrac(f"$s3Mod5Gizli{len(DISC)}{DISC}LLV", "Gizli") == DISC
         assert swift._karisik_ayrac("$s3Mod1f5YerelL_V", "Yerel") is None  # yerel tip: ayraç yok

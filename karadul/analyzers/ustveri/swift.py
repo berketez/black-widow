@@ -122,7 +122,10 @@ VTABLE_HEADER_SIZE = 8
 METHOD_DESCRIPTOR_SIZE = 8
 OVERRIDE_HEADER_SIZE = 4
 OVERRIDE_DESCRIPTOR_SIZE = 12
+OVERRIDE_CLASS_OFS = 0
+OVERRIDE_METHOD_OFS = 4
 OVERRIDE_IMPL_OFS = 8
+ASYNC_FP_FUNCTION = 0                # zaman uyumsuz işlev göstericisi: +0 int32 göreli işlev
 CONF_PROTOCOL = 0
 CONF_TYPEREF = 4
 CONF_WITNESS = 8
@@ -259,6 +262,10 @@ class SwiftTip:
     erisim: Optional[int]
     yontemler: list[tuple[str, bool, bool, bool, Optional[int]]] = field(default_factory=list)
     gecersiz_kilma: list[Optional[int]] = field(default_factory=list)
+    # kanıt: yöntem betimleyicisi adresleri (vtable sırasıyla) ve geçersiz kılma kaydının hedefi
+    # (üst sınıf betimleyicisi, geçersiz kılınan yöntem betimleyicisi)
+    yontem_adresleri: list[int] = field(default_factory=list)
+    gecersiz_kilma_hedef: list[tuple[Any, Any]] = field(default_factory=list)
     artci_cozuldu: Optional[bool] = None
     erisim_kodda: Optional[bool] = None
     erisim_baslangic: Optional[bool] = None
@@ -814,6 +821,7 @@ class SwiftOkuyucu:
                     return False
                 t.yontemler.append((YONTEM_TURU.get(mf & METHOD_KIND_MASK, "?"), bool(mf & METHOD_IS_INSTANCE),
                                     bool(mf & METHOD_IS_DYNAMIC), bool(mf & METHOD_IS_ASYNC), self.rel(pos + 4)))
+                t.yontem_adresleri.append(pos)
                 pos += METHOD_DESCRIPTOR_SIZE
         if kf & CLASS_HAS_OVERRIDE_TABLE:
             sayi = self.g.u32(pos)
@@ -826,6 +834,8 @@ class SwiftOkuyucu:
                 return False
             for _ in range(sayi):
                 t.gecersiz_kilma.append(self.rel(pos + OVERRIDE_IMPL_OFS))
+                t.gecersiz_kilma_hedef.append((self.rel_ind(pos + OVERRIDE_CLASS_OFS),
+                                               self.rel_ind(pos + OVERRIDE_METHOD_OFS)))
                 pos += OVERRIDE_DESCRIPTOR_SIZE
         return True
 
@@ -899,6 +909,13 @@ class SwiftOkuyucu:
                 j += 1
         return out, dogrulanan
 
+    def _async_govde(self, impl: int) -> Optional[int]:
+        """Zaman uyumsuz yöntemin uygulaması zaman uyumsuz işlev göstericisidir (+0 int32 göreli işlev);
+        gövde kodda değilse ``None`` (kanıt alanı; yerel örnekte ``async function pointer to …`` sembolüyle
+        doğrulandı)."""
+        govde = self.rel(impl + ASYNC_FP_FUNCTION)
+        return govde if self.kodda(govde) else None
+
     # ---- bütün -------------------------------------------------------------------------------
     def oku(self) -> SwiftSonuc:
         tipler = []
@@ -908,14 +925,33 @@ class SwiftOkuyucu:
                 tipler.append(t)
         uyumlar = self.uyumlar()
         yuvalar: list[dict[str, Any]] = []
+        # yöntem betimleyicisi → (tip, vtable sırası, yöntem türü): geçersiz kılma kaydının hedefi için
+        betimleyici: dict[int, tuple[SwiftTip, int, str]] = {}
+        for t in tipler:
+            for sira, (ba, y) in enumerate(zip(t.yontem_adresleri, t.yontemler)):
+                betimleyici[ba] = (t, sira, y[0])
         for t in tipler:
             for sira, (ytur, ornek, dinamik, eszamansiz, impl) in enumerate(t.yontemler):
-                yuvalar.append({"tur": YUVA_VTABLE, "tip": t.nitelikli_ad, "tip_adresi": t.adres,
-                                "yontem_turu": ytur, "sira": sira, "ornek": ornek, "dinamik": dinamik,
-                                "zaman_uyumsuz": eszamansiz, "adres": impl, "kodda": self.kodda(impl)})
+                kodda = self.kodda(impl)
+                yuva = {"tur": YUVA_VTABLE, "tip": t.nitelikli_ad, "tip_adresi": t.adres,
+                        "yontem_turu": ytur, "sira": sira, "ornek": ornek, "dinamik": dinamik,
+                        "zaman_uyumsuz": eszamansiz, "adres": impl, "kodda": kodda}
+                if eszamansiz and impl is not None and not kodda:
+                    yuva["govde"] = self._async_govde(impl)
+                yuvalar.append(yuva)
             for sira, impl in enumerate(t.gecersiz_kilma):
-                yuvalar.append({"tur": YUVA_GECERSIZ_KILMA, "tip": t.nitelikli_ad, "tip_adresi": t.adres,
-                                "sira": sira, "adres": impl, "kodda": self.kodda(impl)})
+                yuva = {"tur": YUVA_GECERSIZ_KILMA, "tip": t.nitelikli_ad, "tip_adresi": t.adres,
+                        "sira": sira, "adres": impl, "kodda": self.kodda(impl),
+                        "ust_tip": None, "ust_tip_adresi": None, "ust_sira": None, "yontem_turu": None}
+                if sira < len(t.gecersiz_kilma_hedef):
+                    hedef = self._yerel(t.gecersiz_kilma_hedef[sira][1])
+                    if hedef is not None and hedef in betimleyici:
+                        ust, ust_sira, ytur = betimleyici[hedef]
+                        yuva.update({"ust_tip": ust.nitelikli_ad, "ust_tip_adresi": ust.adres, "ust_sira": ust_sira,
+                                     "yontem_turu": ytur})
+                        if ust.yontemler[ust_sira][3] and impl is not None and not yuva["kodda"]:
+                            yuva["govde"] = self._async_govde(impl)
+                yuvalar.append(yuva)
         tanik, dogrulanan = self.tanik_yuvalari(uyumlar)
         yuvalar.extend(tanik)
         denetim = self.denetle(tipler, yuvalar, uyumlar, dogrulanan)
