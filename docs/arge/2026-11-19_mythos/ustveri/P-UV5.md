@@ -90,3 +90,17 @@ Hedef setinde ad bekleyen 40'lık terminal-notifier nüfusuna (HEDEF tanımı) e
 
 - **H1 ürün düzeyi: `main` 8 / 8 (önce 0 / 8), GT'ye göre 8 / 8 doğru, yanlış `main` 0** (her ikilide `main` alan tek anahtar `entry`). Kodda (`out/src`) 8 / 8; künye 8 / 8 `main_giris`, güven `on_ad:main_giris` satırından (0,966).
 - **Bulgu: `out/naming_map.json` `mappings`'te 0 / 8.** `output_formatter._build_naming_map` c_namer haritasından yalnız yer tutucu önekli anahtarları (`FUN_`, `DAT_`, `sub_`, `thunk_`) alıyor; `entry` öneki yok → ad kodda var, analistin ad haritasında yok (yanlış ad değil, görünmeyen ad). Yama: `docs/arge/2026-11-23_dalga1/yamalar/PUV5__output_formatter.py.patch` (`orig == "entry"` da kabul; `git apply --check` temiz; ağaca uygulanmadı). Yan etki sayımı: a62f15e'nin 119 çıktısında c_namer haritasında `entry` anahtarı **0** (ELF'te `entry` adlandırılmıyor) → bugünkü 119'da haritaya yeni satır girmez. Yamanın ürün koşusu: ölçülmedi.
+
+### Hedef seti: terminal-notifier, bayrak açık (20:08–20:09; 58,3 sn)
+
+Girdi `~/karadul_olcum/ustveri_set/terminal-notifier/bin/terminal-notifier` (PUV6a ile aynı soyulmuş kopya, sha256 `d352c10594f2…`), GT `ustveri_set/terminal-notifier/gt/`. `entry` → `main`, GT'ye göre doğru, nüfusta (ad bekleyen **40**; HEDEF tanımıyla aynı sayı); künye `main_giris`, kodda tanım 1, `out/naming_map.json`'da yok (yukarıdaki biçimlendirici bulgusu). **Ad bekleyen 40'ta doğru: 0 → 1** (bu koşuda yalnız `main` bayrağı açık; PUV6a'nın ObjC adıyla birlikte ölçülmedi).
+
+### H2 ürün düzeyi ve `main`'den yayılan adlar (bayrak kapalı kol + bugünkü ürün tabanı)
+
+Kök `PUV5/urun/kapali` (dal `caa14e3`, ayar dosyası yok) ve `PUV5/urun/taban` (ağaç `~/karadul_olcum/urun-152176b`, ayar dosyası yok); ikili başına kapalı → taban çifti (`kos_h2.sh`). Bayt karşılaştırması `PUV5/harita_bayt.py` (`out/naming_map.json`, `reconstructed/src*/naming_map.json`).
+
+| İkili | kapalı ↔ taban (out / src / src_iter1) | açık ↔ kapalı c_namer haritası: değişen anahtar | `entry` dışında değişen | nüfusta doğru (açık / kapalı) |
+|---|---|---|---|---|
+| htop | **bayt aynı / aynı / aynı** | 1 (`entry`) | 0 | 0 / 0 (giriş thunk; nüfus dışı) |
+
+**Kuyruk notu (20:13):** zincirim kuyruğun ikinci yuvasını OL2'den önce kapıyordu (yeni çağrı beklemesiz, bekleyen öbür çağrı 5 sn uykulu); OL2 20:08'den beri bekliyordu. Kuyruğun paket bekletme dosyasıyla (`ghidra_kuyruk.bekle.PUV5`) kendi yeni çağrılarımı OL2 bir iş başlatana dek durdurdum (20:10–20:13). Sonra OL2'nin S8 zinciri yuvayı aynı yolla tutuyor; benim kalan 7 çiftim sırada.
