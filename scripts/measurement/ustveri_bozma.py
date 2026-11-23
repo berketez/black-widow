@@ -59,6 +59,9 @@ DUSMAN_DENEY_TOHUMU = 20261119   # ön kayıt (araştırma DEFTER §7.3 ile ayn�
 N = 200
 # Araştırmanın "güçlü" tanımı (T3 dahil): yalnız örneklem ve başvuruyla karşılaştırma sütunu için.
 ARASTIRMA_GUCLU = frozenset({"T1", "T2", "T2p", "T3", "T5", "T6"})
+# Ürünün T2p'si önek kuralıyla (``tutarlilik.ad_paketle_baslar``); araştırmanın T2p'si
+# ``paket_adi`` eşitliği. Örneklem araştırmanınkiyle aynı kalsın diye araştırma T2p'si ayrı hesaplanır.
+ARASTIRMA_GUCLU_T2P_SIZ = ARASTIRMA_GUCLU - {"T2p"}
 K10_ESIGI = 0.99                 # kalem 6: bozulmamış ikilide uyum ≥ %99 ise K10 eklenir
 
 
@@ -124,6 +127,25 @@ def k4_arastirma(p: GoPclntab, fs: list) -> set[int]:
     return out
 
 
+def t2p_arastirma(g: Any, p: GoPclntab, fs: list, bi: dict) -> set[int]:
+    """Araştırmanın T2p'si: yöntem girdisinin adresindeki adın ``paket_adi``'si tipin paket yolu değil."""
+    es = {f.giris: f for f in fs}
+    tip = GoTipVerisi(g, p, bi.get("surum"))
+    if not tip.calisti:
+        return set()
+    out = set()
+    for t in tip.ulasilan_tipler(tip.itablar()):
+        u = tip.uncommon(t)
+        if not u or not u.paket:
+            continue
+        for y in u.yontemler:
+            for adr in (y.ifn, y.tfn):
+                f = es.get(adr) if adr is not None else None
+                if f is not None and y.ad is not None and TU.kacis_coz(paket_adi(f.ad)) != u.paket:
+                    out.add(adr)
+    return out
+
+
 def wilson(k: int, n: int, z: float = 1.959963984540054) -> tuple[float, float] | None:
     if n <= 0:
         return None
@@ -154,9 +176,17 @@ class Durum:
         self.k4_arastirma = k4_arastirma(self.p, self.fs)
         self.k4_urun = {f.giris for f in self.fs if f.pcsp_kapsama in TU.K4_UYUMSUZ}
         self.k10 = k10_isaretleri(self.g, self.p, self.fs)[0] if k10 else set()
+        self.t2p_arastirma = t2p_arastirma(self.g, self.p, self.fs, self.bi)
+
+    def isaret_arastirma(self, e: int) -> set[str]:
+        """Araştırmanın güçlü işaretleri (T3 dahil; T2p araştırmanın ``paket_adi`` eşitliğiyle)."""
+        s = set(self.isaret.get(e, frozenset()) & ARASTIRMA_GUCLU_T2P_SIZ)
+        if e in self.t2p_arastirma:
+            s.add("T2p")
+        return s
 
     def guclu_arastirma(self, e: int) -> bool:
-        return bool(self.isaret.get(e, frozenset()) & ARASTIRMA_GUCLU)
+        return bool(self.isaret_arastirma(e))
 
     def tutarsiz(self, e: int) -> bool:
         return self.s.damga(e) == TU.DAMGA_TUTARSIZ
@@ -188,7 +218,7 @@ def olc(taban: Durum, veri: bytearray, hedefler: set[int], kaynak: str, k10: boo
             "K4_yakaladi": len(yak_k4),
             "hicbiri_yakalamadi": len(hedefler - yak - yak_t4 - yak_k4),
             "yakalayan_denetim": dict(collections.Counter(
-                k for e in yak for k in (d.isaret[e] & ARASTIRMA_GUCLU) - taban.isaret.get(e, frozenset()))),
+                k for e in yak for k in d.isaret_arastirma(e) - taban.isaret_arastirma(e))),
             "bozulmayanda_yeni_guclu_isaret": sum(
                 1 for f in d.fs if f.giris not in hedefler and d.guclu_arastirma(f.giris)
                 and not taban.guclu_arastirma(f.giris)),

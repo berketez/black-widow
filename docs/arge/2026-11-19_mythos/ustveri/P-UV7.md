@@ -169,3 +169,44 @@ denetimsiz).
 - Hata: `find` metni satır sonu yorumu yüzünden eşleşmedi; yorumsuz alt dizgiyle düzeltildi.
 - Ayrıca test kurucusu kitaplığın biçim sabitlerini (`GT.UNCOMMON_OFSETI` …) kullanıyordu: sabiti
   değiştiren mutant kurucuyu da değiştirirdi. Kurucu modülden bağımsız sabit sayılarla yeniden yazıldı.
+
+## Ara düzeltme: T2p önek kuralı (kabul ölçümünün ilk koşusunda görüldü)
+
+- İlk taban koşusunda (10 dilim, sınama hariç) güçlü işaretlerin **tamamı T2p** idi: limactl 83,
+  docker-brew 27, docker-cli 24, ollama-cli 3 + 3, gh 1, arduino-cli 1 (en büyük oran limactl
+  %0,206). Hepsinin ortak yanı (gh, limactl, docker-cli'de tek tek bakıldı: 1 / 1, 83 / 83,
+  24 / 24): **başka paketten yükseltilmiş dışa kapalı yöntem**. Go bu yöntemin sembolünü yöntem
+  paketinin yoluyla niteler: `google.golang.org/grpc/internal/transport.(*parsedDataFrame).golang.org/x/net/http2.streamEnded`.
+  Araştırmanın (ve P-ÜV1'in) `paket_adi` kuralı (`runtime.funcpkgpath`: son `/`'tan sonraki ilk
+  nokta) son `/`'u yöntem adının içinde bulduğu için paketi
+  `…(*parsedDataFrame).golang.org/x/net/http2` diye çıkarıyordu → yanlış alarm.
+- Düzeltme: ürün T2p'si `ad_paketle_baslar(ad, paket)` = ad (kaçışlar çözülerek) `paket + "."` ile
+  başlıyor mu. Tahrifat duyarlılığı aynı (paketi değişen ad önekte de değişir). Araştırma tanımlı
+  sayaç `T2.paket_uyan_arastirma_tanimi` adıyla raporda kalıyor (H1 karşılaştırması onunla).
+- Bozma betiği örneklemi araştırmanınkiyle aynı tutmak için araştırma T2p'sini ayrıca hesaplıyor
+  (`t2p_arastirma`); bu yapılmadan koşulan ara denemede örneklem kaymıştı (A 68, D 80 bozulan) —
+  o koşu atıldı, düzeltilmiş betikle araştırma sütunu yine 10 / 10 aynı.
+- Test +1 (`test_yukseltilmis_disa_kapali_yontem_t2p_vermez`), mutant +1
+  (`puv7_t2p_arastirma_kurali`; kaçış mutantı yeni koda taşındı): **16 / 16 öldü**.
+- P-ÜV6b / P-ÜV1 notu: aynı yanılgı `go_pclntab.paket_adi`'de; bu fonksiyonların `paket` ve
+  `sinif` alanı yanlış (sayısı kabul bölümünde).
+
+### Bozma deneyi son hâli (K10 + düzeltilmiş T2p; `ozet/deney_k10_<ad>.json`)
+
+| İkili | Tür | Bozulan | Araştırma sütunu (= başvuru) | **Ürün `tutarsiz`** | Wilson %95 | Güçlü T | K4 | Bozulmayanda yeni | İkili kararı |
+|---|---|---|---|---|---|---|---|---|---|
+| gh | A | 200 | 66 | **66** | %26,9–%39,8 | 66 | 0 | 0 | uyari |
+| gh | B | 200 | 181 | **68** | %27,8–%40,8 | 68 | 0 | 0 | uyari |
+| gh | C | 200 | 73 | **73** | %30,1–%43,4 | 73 | 0 | 0 | uyari |
+| gh | D | 86 | 0 | **0** | %0–%4,3 | 0 | 0 | 0 | temiz |
+| gh | E | 200 | 65 (K4 160) | **181** | %85,6–%93,8 | 65 | 159 | 0 | uyari |
+| limactl | A | 200 | 84 | **84** | %35,4–%48,9 | 84 | 0 | 0 | uyari |
+| limactl | B | 200 | 192 | **92** | %39,2–%52,9 | 92 | 0 | 0 | uyari |
+| limactl | C | 200 | 82 | **82** | %34,4–%47,9 | 82 | 0 | 0 | uyari |
+| limactl | D | 451 | 0 | **0** | %0–%0,8 | 0 | 0 | 0 | temiz |
+| limactl | E | 200 | 67 (K4 166) | **185** | %88,0–%95,4 | 71 | 165 | 0 | uyari |
+
+- H2 → TUTTU (araştırma sütunu 10 / 10 koşuda alan alan aynı). H4 → TUTTU (D: 0 / 86, 0 / 451;
+  beklenen olumsuz). Bozulmayan fonksiyonlarda yeni `tutarsiz` 0 (10 koşu).
+- H5 → TUTMADI: E %90,5 / %92,5 (< %95).
+- D'de ikili kararı `temiz`: tutarlı sahtecilik hiçbir iz bırakmıyor.

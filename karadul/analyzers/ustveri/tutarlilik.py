@@ -18,8 +18,9 @@ Denetimler (``docs/arge/2026-11-19_mythos/ustveri/BULGULAR.md`` §6.2):
   biter (``runtime.unreachableMethod`` hedefi dışlanır: bağlayıcının budadığı yöntemin yeri).
 - T2 (güçlü) yöntem tablosu: somut tipin ``Tfn`` / ``Ifn`` adresindeki fonksiyonun adı yöntem
   adıyla biter (son bileşen: köşeli ayraç öbekleri atılır, ``-fm`` eki soyulur).
-- T2p (güçlü) paket yolu: aynı fonksiyonun ad paket öneki (``%2e`` kaçışları çözülerek) tipin
-  ``PkgPath``'iyle aynı.
+- T2p (güçlü) paket yolu: aynı fonksiyonun adı (``%2e`` kaçışları çözülerek) tipin
+  ``PkgPath``'i + ``.`` ile başlar (``ad_paketle_baslar``; araştırmanın ``paket_adi`` eşitliği
+  yükseltilmiş dışa kapalı yöntemlerde yanlış alarm veriyordu, sayacı ayrıca raporlanır).
 - T5 (güçlü) ``funcID`` çapası: özel ``funcID`` taşıyan fonksiyon beklenen ``runtime.`` adını
   taşır (sürüm tablosu eşleşmiyorsa yalnız ``runtime.`` öneki).
 - T6 (güçlü) biçim: ad geçerli UTF-8, denetim karakteri yok.
@@ -153,6 +154,17 @@ def dosya_paketi(dosya: str) -> str:
     """Kaynak dosya yolundan paket dizini (sürüm eki ``@v1.2.3`` atılır)."""
     d = dosya.rsplit("/", 1)[0] if "/" in dosya else ""
     return _SURUM_EKI_RE.sub("", d)
+
+
+def ad_paketle_baslar(ad: str, paket: str) -> bool:
+    """T2p: ad (kaçışları çözülerek) ``paket + "."`` ile başlıyor mu.
+
+    ``paket_adi`` (``runtime.funcpkgpath`` kuralı: son ``/``'tan sonraki ilk nokta) başka paketten
+    yükseltilmiş dışa kapalı yöntemlerde yanılır: o yöntemin sembolü yöntem paketinin yoluyla
+    nitelenir (``a/b.(*T).golang.org/x/net/http2.streamEnded``) ve son ``/`` yöntem adının
+    içindedir. Önek denetimi bu adlarda doğru paketi (alıcının paketi) görür.
+    """
+    return kacis_coz(ad).startswith(paket + ".")
 
 
 def bicim_bozuk(ad: str) -> bool:
@@ -391,7 +403,7 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> Tutarl
             else:
                 isaret[adr].add("T1")
     tipler = tip.ulasilan_tipler(itablar) if tip.calisti else set()
-    t2_bak = t2_uy = t2p_bak = t2p_uy = 0
+    t2_bak = t2_uy = t2p_bak = t2p_uy = t2p_ar_uy = 0
     yontemli_tip = 0
     for t in tipler:
         u = tip.uncommon(t)
@@ -412,7 +424,9 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> Tutarl
                     isaret[adr].add("T2")
                 if u.paket:
                     t2p_bak += 1
-                    if kacis_coz(paket_adi(f.ad)) == u.paket:
+                    # araştırma tanımı (yalnız sayaç; başvuruyla karşılaştırma için)
+                    t2p_ar_uy += kacis_coz(paket_adi(f.ad)) == u.paket
+                    if ad_paketle_baslar(f.ad, u.paket):
                         t2p_uy += 1
                     else:
                         isaret[adr].add("T2p")
@@ -420,6 +434,7 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> Tutarl
                   "kapsanan_fonksiyon": len(kapsam["T1"])}
     ozet["T2"] = {"ulasilan_tip": len(tipler), "yontemli_tip": yontemli_tip, "bakilan": t2_bak,
                   "uyan": t2_uy, "paket_bakilan": t2p_bak, "paket_uyan": t2p_uy,
+                  "paket_uyan_arastirma_tanimi": t2p_ar_uy,
                   "kapsanan_fonksiyon": len(kapsam["T2"])}
 
     # ---- T3: dosya ↔ paket (zayıf) ---------------------------------------

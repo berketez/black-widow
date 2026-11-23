@@ -146,6 +146,7 @@ def kur(
     kod_yamalari: dict[int, list[tuple[int, int]]] | None = None,
     bayraklar: dict[int, int] | None = None,
     mimari: str = "arm64",
+    pt_ek_yontem: tuple[str, int] | None = None,
 ) -> tuple[BellekGoruntu, dict]:
     adlar = adlar or {}
     bayraklar = bayraklar or {}
@@ -239,11 +240,13 @@ def kur(
     if struct_uncommon:
         uncommon(t_t, u_ofs[B_K_STRUCT], f"{ANA}/p", [("Ad", metin(F_PT_AD), metin(F_T_AD))])
     # *T: Ad + budanmış Gizli (−1)
+    pt_yontemleri = [("Ad", metin(F_PT_AD), metin(F_PT_AD)), ("Gizli", -1, -1)]
+    if pt_ek_yontem is not None:
+        pt_yontemleri.append((pt_ek_yontem[0], metin(pt_ek_yontem[1]), metin(pt_ek_yontem[1])))
     t_pt = tip(B_K_PTR, tb.ad("*p.T"), B_TF_UNCOMMON,
-               u_ofs[B_K_PTR] - B_TIP + yontem_yeri(2))
+               u_ofs[B_K_PTR] - B_TIP + yontem_yeri(len(pt_yontemleri)))
     tb.gosterici(t_pt + B_PTR_ELEM, t_t)
-    uncommon(t_pt, u_ofs[B_K_PTR], f"{ANA}/p",
-             [("Ad", metin(F_PT_AD), metin(F_PT_AD)), ("Gizli", -1, -1)])
+    uncommon(t_pt, u_ofs[B_K_PTR], f"{ANA}/p", pt_yontemleri)
     tb.yaz(t_t + 44, "<i", t_pt - TIPLER)          # T.PtrToThis → *T
     # *Liste[int]
     t_pl = tip(B_K_PTR, tb.ad("*p.Liste[int]"), B_TF_UNCOMMON,
@@ -499,6 +502,21 @@ def test_paketler_arasi_takas_t2p_ile_yakalanir() -> None:
     e = b["girisler"][F_EKLE]
     assert "T2p" in s.isaretler[e] and "T2" not in s.isaretler[e]
     assert s.damga(e) == T.DAMGA_TUTARSIZ
+
+
+def test_yukseltilmis_disa_kapali_yontem_t2p_vermez() -> None:
+    # Başka paketten yükseltilmiş dışa kapalı yöntem: sembol yöntem paketinin yoluyla nitelenir;
+    # son '/' yöntem adının içinde. Alıcının paketi yine adın önekidir → T2p yok.
+    ad = f"{ANA}/p.(*T).golang.org/x/net/http2.akisBitti"
+    g, b = kur(adlar={F_YARDIM: ad}, pt_ek_yontem=("akisBitti", F_YARDIM))
+    s = T.denetle(g)
+    e = b["girisler"][F_YARDIM]
+    assert e in s.kapsam["T2"] and not s.isaretler.get(e, frozenset()) & {"T2", "T2p"}
+    assert s.damga(e) == T.DAMGA_CIFT_KAYNAK
+    # araştırma tanımı bu yöntemin iki girdisinde (Ifn, Tfn) uyuşmazlık sayar
+    assert s.ozet["T2"]["paket_uyan_arastirma_tanimi"] == s.ozet["T2"]["paket_bakilan"] - 2
+    assert s.ozet["T2"]["paket_uyan"] == s.ozet["T2"]["paket_bakilan"]
+    assert G.paket_adi(ad) == f"{ANA}/p.(*T).golang.org/x/net/http2"   # P-ÜV1 kuralının yanılgısı
 
 
 def test_kacis_cozulmeden_paket_uyusmaz_degil() -> None:

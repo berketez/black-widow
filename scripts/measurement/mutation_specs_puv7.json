@@ -62,8 +62,16 @@
    "desc": "T2p'de ad içindeki %2e kaçışı çözülmez",
    "module": "karadul/analyzers/ustveri/tutarlilik.py",
    "test": "tests/test_puv7_tutarlilik.py::test_kacis_cozulmeden_paket_uyusmaz_degil",
-   "find": "                    if kacis_coz(paket_adi(f.ad)) == u.paket:\n",
-   "replace": "                    if paket_adi(f.ad) == u.paket:\n"
+   "find": "    return kacis_coz(ad).startswith(paket + \".\")\n",
+   "replace": "    return ad.startswith(paket + \".\")\n"
+  },
+  {
+   "id": "puv7_t2p_arastirma_kurali",
+   "desc": "T2p araştırmanın paket_adi eşitliğine döner (yükseltilmiş dışa kapalı yöntemde yanlış alarm)",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_yukseltilmis_disa_kapali_yontem_t2p_vermez",
+   "find": "                    if ad_paketle_baslar(f.ad, u.paket):\n",
+   "replace": "                    if kacis_coz(paket_adi(f.ad)) == u.paket:\n"
   },
   {
    "id": "puv7_k4_damgaya_girmez",
