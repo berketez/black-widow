@@ -1,0 +1,11 @@
+--- a/tests/test_urun_olc.py
++++ b/tests/test_urun_olc.py
+@@ -105,7 +105,7 @@
+     assert (uo.N_MIN, uo.EN_AZ_PROGRAM, uo.KESIN_ETIKET_ESIGI) == (ks1.N_MIN, ks1.EN_AZ_PROGRAM,
+                                                                    ks1.KESINLIK_ESIGI)
+     assert (uo.YANLIS_HEDEFI, uo.KAYIP_INCELEME_SINIRI) == (0.10, 0.15)
+-    assert uo.ETIKETLER == ("kesin", "doğrulandı", "doğrulanmadı", "etiketsiz")
++    assert uo.ETIKETLER == ("kesin", "doğrulandı", "doğrulanmadı", "üst veriden", "etiketsiz")  # P-ÜV6a
+     assert uo.ETIKET_KESIN == "kesin"
+     assert uo.BOYUT_SIRASI == ("kucuk", "orta", "buyuk")
+     assert uo.HARITA_REL == Path("reconstructed/src/naming_map.json")
