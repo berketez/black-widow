@@ -17,7 +17,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL2/` (özetler `ozet/`). 
 | 7 | sqlite3 (H2) | bitti: **TUTTU** (çıkış 3; sınırsız adımların en uzunu 2,069 sn) | bu commit |
 | 8 | S8 (H3, H5) | kuyrukta (20:08'den beri) | — |
 | 9 | T25 (H1, H4) | kuyruğa giriyor | — |
-| 10 | Tam takım (yamasız) | koşuyor (20:04'ten beri, arka planda) | — |
+| 10 | Tam takım (yamasız) | bitti: 11 029 geçti / 19 atlandı / 1 kaldı (beklenen) | bu commit |
 
 **20:09 — bekliyorum:** S8 (8 ikili, tek kök `…/OL2/s8`, sıra ORTAK_D0 §6) ikinci yuvada PUV5 ile sırayla; birinci yuvayı ana oturumun Ollama koşusu tutuyor (19:36'dan beri, TAHMİN 1,5–2 sa). T25 kuyruğa giriyor: yuva boşalınca (büyük olasılıkla ana oturumun koşusu bitince) başlar. TAHMİNİ bitiş: S8 20:45–21:15; T25 başlangıcı 21:05–21:35, süresi 45–60 dk (yük altında; BSim'e kadar ~28 dk + ingest ≤ 900 sn), bitiş 21:50–22:05 (sert son 22:05: yetişmezse "kalan"). Tam takım arka planda (TAHMİN 12–20 dk).
 
@@ -78,6 +78,10 @@ Yamalı öntanımda (`bos_depoda_sorgu_atla: True`) iki P16b testi boş depoda a
 - Olaylar: `ghidra.bsim.ingest durum=kismi islenen=253 toplam=429 gecen_sn=2.069 neden="bsim_ingest: adım bütçesi (2 sn) doldu"`, `ghidra.bsim.query durum=atlandi neden=…`.
 - Karşılaştırma için (salt okunur, aynı ikili, bütçesiz): P16e `s8_sonra_3` sqlite3'te ingest 11,788 sn, sorgu 11,775 sn.
 - **Hüküm H2: TUTTU** (her sınırsız adım ≤ 7 sn: en uzun 2,069 sn; bütçesi dolan adımın çıktısı geçerli JSON ve kısmi işaretli; çıkış 3). **Sınır:** sqlite3'te döküm adımları zaten 2 sn'nin altında; bu koşuda bütçesi gerçekten dolan tek adım BSim ingest. Döküm işlevlerinin kesilme yolu gerçek Ghidra'da bu koşuyla SINANMADI (birim testlerinde sınandı); ön kayıt dışı ek koşu aşağıda (koşulursa).
+
+## Kalem 10 — tam takım (yamasız)
+
+20:03:24–20:30:14 (1 564 sn; 1 dk yük 15,03 → 31,52: aynı anda S8, H2, ana oturumun Ollama koşusu, PUV5 ve başka ajanlar; **yük altında**), kod `17e5965` (= `d83f100` + test / tanım / belge), worktree'de altı çalışma verisi bağı + `scripts/node_modules` (commit'lenmedi): **11 029 geçti / 19 atlandı / 1 kaldı** (152 seçilmedi). Kalan tek test beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `AssertionError: kayıtta ama okunuyor: {'timeouts.ghidra_adim': ['karadul/ghidra/headless.py'], 'bsim.ingest_butcesi_sn': ['karadul/ghidra/headless.py']}` (yama INERT satırlarını siler). Üçüncü alan `bsim.bos_depoda_sorgu_atla` listede yok: `bsim.py` onu `self._bsim_cfg_value("bos_depoda_sorgu_atla", …)` ile okuyor, testin sıkı düzenli ifadesi (`getattr|hasattr|config_flag|_get`) bu yardımcıyı tanımıyor (P16b'nin `lock_timeout_s`, `batch_query` alanlarıyla aynı durum); yamalı kopyada `test_p15a_etkisiz` 11 / 11 geçti (`test_every_unread_field_is_registered` alan adını dizge olarak buluyor). Başka kırmızı yok. Uyarılar (3) bu paketten değil (`jpype.isThreadAttachedToJVM` ÖL-1'den; iki `ComputationRecoveryConfig` uyarısı). Günlük `…/OL2/tam_takim/pytest.log`, kopyası `ozet/tam_takim_pytest.log`.
 
 ## Kabul (d)
 
