@@ -174,6 +174,9 @@ def _cfg(tmp_path: Path, lock_timeout: float = 0.3) -> Config:
     cfg = Config()
     cfg.bsim.db_path = str(tmp_path / "bsim")
     cfg.bsim.lock_timeout_s = lock_timeout  # BSimConfig'de alan yok; getattr ile okunur
+    # ÖL-2: öntanımda boş depoda sorgu atlanır; bu dosya sorgunun kendisini (oturum kilidi,
+    # kendi kendini dışlama) sınadığı için atlama kapalı (bugünkü yol).
+    cfg.bsim.bos_depoda_sorgu_atla = False
     return cfg
 
 

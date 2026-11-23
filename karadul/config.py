@@ -350,7 +350,7 @@ class Timeouts:
     synchrony: int = 120
     # --- Bayrak ön paketi (KARARLAR A-19 a): okunmuyor; bağlayan paket INERT satırını siler ---
     # ÖL-2: Ghidra köprüsünün her çıkarım adımına süre bütçesi (sn; 0 = sınırsız).
-    ghidra_adim: int = 0  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)
+    ghidra_adim: int = 3600  # okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)
 
 
 @dataclass
@@ -808,9 +808,9 @@ class BSimConfig:
     batch_query: bool = True
     # --- Bayrak ön paketi (KARARLAR A-19 a): okunmuyor; bağlayan paket INERT satırını siler ---
     # ÖL-2: depoda bu programdan başka kayıt yoksa sorgu atlanır (kendi kendine eşleşirdi).
-    bos_depoda_sorgu_atla: bool = False  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)
+    bos_depoda_sorgu_atla: bool = True  # okuyan: ghidra/bsim.py BSimDatabase (ÖL-2)
     # ÖL-2: BSim ingest süre bütçesi (sn; 0 = sınırsız).
-    ingest_butcesi_sn: int = 0  # ETKİSİZ: ÖL-2 bağlayacak (INERT_SETTINGS)
+    ingest_butcesi_sn: int = 900  # okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)
     # HZ-2: ingest ve sorguda Ghidra'nın paralel taraması (kapalı = bugünkü tekli yol).
     paralel_tarama: bool = False  # ETKİSİZ: HZ-2 bağlayacak (INERT_SETTINGS)
 
@@ -1316,10 +1316,6 @@ INERT_SETTINGS: dict[str, str] = {
     # ÖK-2 (Dalga 2)
     "binary_reconstruction.oz_ad_uniqueness_gate": _pending_binding("ÖK-2"),
     # P-ÜV1 / P-ÜV2 / P-ÜV3 (Dalga 2; üretici adımı okuyan ilk kod; Faz 1 listesine P-ÜV6 ekler)
-    # ÖL-2 (Dalga 2)
-    "timeouts.ghidra_adim": _pending_binding("ÖL-2"),
-    "bsim.bos_depoda_sorgu_atla": _pending_binding("ÖL-2"),
-    "bsim.ingest_butcesi_sn": _pending_binding("ÖL-2"),
     # HZ-2 (Dalga 2)
     "bsim.paralel_tarama": _pending_binding("HZ-2"),
     # ÖL-3 (Dalga 2)
