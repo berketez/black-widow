@@ -19,6 +19,7 @@ derle() {
     -import-objc-header "$KAYNAK/ornek.h" \
     -Xlinker -undefined -Xlinker dynamic_lookup \
     "$KAYNAK/main.swift" "$KAYNAK/gizli.swift" "$KAYNAK/uzanti.swift" "$KAYNAK/ice_aktarim.swift" \
+    "$KAYNAK/cf_tipleri.swift" \
     -o "$CIKTI/$ad"
   cp "$CIKTI/$ad" "$CIKTI/$ad.strip"
   /usr/bin/strip "$CIKTI/$ad.strip"
