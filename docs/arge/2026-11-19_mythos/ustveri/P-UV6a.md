@@ -128,3 +128,22 @@ H8 Ghidra'sızdır (aday listesi ↔ GT); terminal-notifier'ın ikinci ürün ko
 
 - **H3 KISMEN:** "≥ 30 / 32 ürün çıktısında (`naming_map` ve `out/src`)" **TUTTU** (32 / 32); "yanlış 0" **TUTTU**; "ad bekleyen 40'ta doğru 0 → ≥ 30" **TUTMADI** (0 → 1). Neden (ön kayıtta ölçümden önce yazılmıştı): 32 IMP'in 31'i Ghidra'da seçiciyle adlı, HEDEF'in nüfus tanımı yalnız jenerik adlı fonksiyonları sayar; nüfusun kalan 39 fonksiyonu ObjC yöntemi değil (GT ad türü "diğer" 50: blok, C işlevi) — bu kanalların kapsamında değiller.
 - **H7 TUTTU** (bu koşuda): üst veri kaynaklı 32 adın 32'si `label = üst veriden`, `ozgun_ad` dolu, güven tablodan; `kesin` 0. Köken kaydında 32 karar, 32'si uygulanmış, düşen 0.
+
+### H1 — bayraklar kapalı, S8'in 5 ikilisi (`urun-5da70a7`, `urun_kos.py`; 08:43–09:06, yük 11–35)
+
+Kök `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6a/s8_kapali`; karşılaştırma `scripts/arge/hiz/s8_esitlik.py --once s8_taban_b6aceb9 --sonra s8_kapali --aa s8_taban_b6aceb9_AA` → `PUV6a/h1_esitlik.{md,json}`.
+
+| İkili | `naming_map` farklı / dosya (out, src, src_iter1) | `.c` farklı / dosya | JSON farklı / dosya |
+|---|---|---|---|
+| debian/coreutils/cat | 0 / 3 | 0 / 296 | 0 / 23 |
+| debian/tree/tree | 0 / 3 | 0 / 250 | 5 / 23 (yalnız `ghidra_bsim.json`) |
+| debian/sqlite3/sqlite3 | 0 / 3 | 0 / 1 144 | 5 / 23 (yalnız `ghidra_bsim.json`) |
+| debian/zstd/zstd | **2 / 3** (`out` aynı; `src`, `src_iter1` farklı) | **1 / 1 444** (`FUN_001063c0.c`) | 7 / 23 |
+| mac/tmux | 0 / 3 | 0 / 2 821 | 5 / 23 (yalnız `ghidra_bsim.json`) |
+
+- **H1 TUTMADI (katı okuma: 4 / 5).** zstd'deki fark: Ghidra'nın `FUN_001063c0` decompile çıktısı (5 468. satırda iki atamanın sırası; 10 satır `diff`) ve buna bağlı olarak c_namer'ın o fonksiyondaki yerel adları (`per_function`). Ghidra çıktısı bu paketin koduna ulaşmadan üretilir (static aşaması; değişiklik reconstruct aşamasında), yani fark ürün kodundan değil: **aynı fark P16e'nin `s8_sonra_1` koşusunda da (başka ağaç, bu değişiklik yok) birebir görüldü** (`FUN_001063c0.c` 10 satır, `naming_map` 2 / 3; P16e `H1_ham.md`), `s8_sonra_2` / `_3`'te görülmedi → yük altında Ghidra belirlenimsizliği. `out/naming_map.json` beş ikilide de bayt bayt aynı. Aynı ağaçla zstd tekrar koşusu kuyrukta (`s8_kapali_tekrar`).
+- `ghidra_bsim.json` farkı BSim veritabanının taban koşusundan beri büyümesinden (`known_executables`, `matches`); A/A ile ayrılan, ad haritasına girmez.
+
+### H9 — süre (bayraklar kapalı) → TUTTU
+
+Koşucunun kaydı (`<adım>_duration_s`, 4 basamak), S8'in 5 ikilisinin 5'inde: `go_metadata_recovery_duration_s` 0,0 (4 ikili) / 0,0001 (1 ikili), `objc_metadata_recovery_duration_s` 0,0 (5 / 5); iki adım ve kanallar `kapali`. Eşik ≤ 0,1 sn / ikili. (Yük altında; boş makine ölçümü değil. Bayraklar açıkken terminal-notifier'da iki adım 0,029 + 0,029 sn.)
