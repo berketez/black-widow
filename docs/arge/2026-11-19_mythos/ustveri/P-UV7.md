@@ -210,3 +210,14 @@ denetimsiz).
   beklenen olumsuz). Bozulmayan fonksiyonlarda yeni `tutarsiz` 0 (10 koşu).
 - H5 → TUTMADI: E %90,5 / %92,5 (< %95).
 - D'de ikili kararı `temiz`: tutarlı sahtecilik hiçbir iz bırakmıyor.
+
+## Ara düzeltme 2: derleyici önekli sarmalayıcıda T2p uygulanmaz
+
+- Önek kuralından sonra kalan tek güçlü işaret ollama-cli'de (arm64 / x86_64 birer): ad
+  `go:(**mSpanList).runtime.init`, tipi `*runtime.mSpanList` — derleyicinin ürettiği sarmalayıcı,
+  adı paket yolu taşımıyor. `DERLEYICI_ONEKLERI = ("type:", "go:")` (T3 / T4'ün zaten dışladığı
+  önekler) ile başlayan adlara T2p uygulanmıyor, `paket_derleyici_atlanan` sayacına yazılıyor;
+  T2 (son bileşen) yine bağlı (test: ad `go:(**p.T).ekx` olunca T2 yakalar).
+- Araştırma tanımlı T2p sayaçları (`paket_bakilan_arastirma_tanimi`, `paket_uyan_arastirma_tanimi`)
+  bu daldan bağımsız: gh 26 236 / 26 238 değişmedi.
+- Test +1 (46), mutant +1 (`puv7_derleyici_oneki_t2p`): 17 / 17 öldü.

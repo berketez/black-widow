@@ -66,6 +66,14 @@
    "replace": "    return ad.startswith(paket + \".\")\n"
   },
   {
+   "id": "puv7_derleyici_oneki_t2p",
+   "desc": "derleyici önekli (go: / type:) sarmalayıcıya T2p uygulanır (yanlış alarm)",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv7_tutarlilik.py::test_derleyici_onekli_sarmalayici_t2p_disi_t2_bagli",
+   "find": "                if f.ad.startswith(DERLEYICI_ONEKLERI):\n",
+   "replace": "                if False:\n"
+  },
+  {
    "id": "puv7_t2p_arastirma_kurali",
    "desc": "T2p araştırmanın paket_adi eşitliğine döner (yükseltilmiş dışa kapalı yöntemde yanlış alarm)",
    "module": "karadul/analyzers/ustveri/tutarlilik.py",

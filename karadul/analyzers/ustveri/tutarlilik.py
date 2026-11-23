@@ -99,6 +99,8 @@ K10_GERI_ARAMA = 8               # büyük çerçevede `sub xR, sp, #N` için ge
 YAPISAL_ISARETLER = frozenset({DENETIM_K4, DENETIM_K10})
 
 UNREACHABLE_METHOD = "runtime.unreachableMethod"
+# Derleyicinin ürettiği adların önekleri (paket yolu taşımaz): T2p ve T3 / T4 bunlara uygulanmaz.
+DERLEYICI_ONEKLERI = ("type:", "go:")
 
 # funcID sırası (Go 1.26 / 1.27 ``internal/abi/symtab.go``; ARGE başvurusu
 # ``scripts/arge/ustveri/go_pclntab.py`` ``FUNC_ID``). Sarmalayıcı kimliği bu tablonun son
@@ -403,7 +405,7 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> Tutarl
             else:
                 isaret[adr].add("T1")
     tipler = tip.ulasilan_tipler(itablar) if tip.calisti else set()
-    t2_bak = t2_uy = t2p_bak = t2p_uy = t2p_ar_uy = 0
+    t2_bak = t2_uy = t2p_bak = t2p_uy = t2p_ar_bak = t2p_ar_uy = t2p_derleyici = 0
     yontemli_tip = 0
     for t in tipler:
         u = tip.uncommon(t)
@@ -422,10 +424,15 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> Tutarl
                     t2_uy += 1
                 else:
                     isaret[adr].add("T2")
-                if u.paket:
+                if not u.paket:
+                    continue
+                # araştırma tanımı (yalnız sayaç; başvuruyla karşılaştırma için)
+                t2p_ar_bak += 1
+                t2p_ar_uy += kacis_coz(paket_adi(f.ad)) == u.paket
+                if f.ad.startswith(DERLEYICI_ONEKLERI):
+                    t2p_derleyici += 1      # derleyici sarmalayıcısı: paket öneki yok (T2 bağlar)
+                else:
                     t2p_bak += 1
-                    # araştırma tanımı (yalnız sayaç; başvuruyla karşılaştırma için)
-                    t2p_ar_uy += kacis_coz(paket_adi(f.ad)) == u.paket
                     if ad_paketle_baslar(f.ad, u.paket):
                         t2p_uy += 1
                     else:
@@ -434,7 +441,8 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> Tutarl
                   "kapsanan_fonksiyon": len(kapsam["T1"])}
     ozet["T2"] = {"ulasilan_tip": len(tipler), "yontemli_tip": yontemli_tip, "bakilan": t2_bak,
                   "uyan": t2_uy, "paket_bakilan": t2p_bak, "paket_uyan": t2p_uy,
-                  "paket_uyan_arastirma_tanimi": t2p_ar_uy,
+                  "paket_bakilan_arastirma_tanimi": t2p_ar_bak, "paket_uyan_arastirma_tanimi": t2p_ar_uy,
+                  "paket_derleyici_atlanan": t2p_derleyici,
                   "kapsanan_fonksiyon": len(kapsam["T2"])}
 
     # ---- T3: dosya ↔ paket (zayıf) ---------------------------------------
@@ -445,7 +453,7 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> Tutarl
             continue
         pkg = kacis_coz(paket_adi(f.ad))
         dosya = f.dosya if f.dosya is not None else _dosya(p, f)
-        if not dosya or not pkg or pkg.startswith(("type:", "go:")) or dosya.startswith("<"):
+        if not dosya or not pkg or pkg.startswith(DERLEYICI_ONEKLERI) or dosya.startswith("<"):
             continue
         dp = dosya_paketi(dosya)
         t3_bak += 1
@@ -465,13 +473,13 @@ def _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10) -> Tutarl
     t4_bak = t4_uy = 0
     for liste in cu.values():
         say = collections.Counter(pk for pk in (paket_adi(f.ad) for f in liste)
-                                  if pk and not pk.startswith(("type:", "go:")))
+                                  if pk and not pk.startswith(DERLEYICI_ONEKLERI))
         if not say:
             continue
         cogunluk = say.most_common(1)[0][0]
         for f in liste:
             pk = paket_adi(f.ad)
-            if not pk or pk.startswith(("type:", "go:")):
+            if not pk or pk.startswith(DERLEYICI_ONEKLERI):
                 continue
             t4_bak += 1
             kapsam["T4"].add(f.giris)

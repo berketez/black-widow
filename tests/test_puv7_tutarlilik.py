@@ -519,6 +519,17 @@ def test_yukseltilmis_disa_kapali_yontem_t2p_vermez() -> None:
     assert G.paket_adi(ad) == f"{ANA}/p.(*T).golang.org/x/net/http2"   # P-ÜV1 kuralının yanılgısı
 
 
+def test_derleyici_onekli_sarmalayici_t2p_disi_t2_bagli() -> None:
+    g, b = kur(adlar={F_YARDIM: "go:(**p.T).ek"}, pt_ek_yontem=("ek", F_YARDIM))
+    s = T.denetle(g)
+    e = b["girisler"][F_YARDIM]
+    assert not s.isaretler.get(e, frozenset()) & {"T2", "T2p"} and s.damga(e) == T.DAMGA_CIFT_KAYNAK
+    assert s.ozet["T2"]["paket_derleyici_atlanan"] == 2
+    assert s.ozet["T2"]["paket_bakilan_arastirma_tanimi"] == s.ozet["T2"]["paket_bakilan"] + 2
+    g, b = kur(adlar={F_YARDIM: "go:(**p.T).ekx"}, pt_ek_yontem=("ek", F_YARDIM))
+    assert "T2" in T.denetle(g).isaretler[b["girisler"][F_YARDIM]]     # son bileşen yine bağlı
+
+
 def test_kacis_cozulmeden_paket_uyusmaz_degil() -> None:
     g, b = kur()
     s = T.denetle(g)
