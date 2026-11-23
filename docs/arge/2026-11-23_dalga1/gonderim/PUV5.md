@@ -25,7 +25,7 @@ Mach-O çalıştırılabilirinde `LC_MAIN` girişi geliştiricinin `main`'idir (
 2. Kod + birim testleri (≥ 10; sahte `static` dizini ve sahte Ghidra fonksiyon listesiyle) + mutasyon (≥ 6).
 3. **Gerçek veriyle yeniden oynatma (Ghidra'sız, öncelikli):** var olan çalışma alanları üstünde kuralı uygula ve say — Mac: `~/karadul_olcum/runs/dalga0-2026-11-20/s8_taban_b6aceb9/mac/tmux`, `~/karadul_olcum/runs/urun-onarim-a62f15e/mac/{htop,tmux}`, P-S3b kabul seti çalışma alanları (`~/karadul_olcum/runs/onarim-2026-11-18/P-S3b/`; düzeni oradaki `kos_mac.sh`'tan); ELF: geliştirme setinin 5 ikilisi (`~/karadul_olcum/runs/urun-onarim-a62f15e/debian/…`). H1 / H3 / H6'nın yeniden oynatma hükmü. Ayrıca hedef setinden terminal-notifier ve (varsa çalışma alanı) Ollama dilimi: giriş adresi Ghidra'da hangi adı taşıyor, kural ne yazardı.
 4. **Ürün koşusu (kuyrukla):** kendi dalının ürün ağacıyla (ORTAK_D0 §3), bayrak açık, önce htop ve tmux; sonra kabul setinin kalanı; bayrak kapalı kol (H2) en son. Her biri `~/karadul_olcum/ghidra_kuyruk.sh PUV5 <ad> …`.
-5. Tam takım (yama geçici uygulanmış), geri al.
+5. Tam takım (yamasız; ORTAK_D1 §2 `config.py` satırı: yama uygulanmaz, `git apply --check` ile denetlenir).
 
 ## Sert son
 

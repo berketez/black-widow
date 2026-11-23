@@ -40,7 +40,7 @@ Plandaki ÖK-1 ön kaydı (H1–H6) K1 → K2 farkı olarak aynen. Ek:
 3. ÖK-1 kodu (plan adım 2–4) + testler (adım 5) + mutasyon (adım 6, ≥ 5) + yama.
 4. K2, K2k yeniden oynatma; `urun_olc karsilastir`; `scripts/arge/ozkod/oz_ad_harf.py` taban kolda.
 5. Hüküm 4 ve 5'in tabloları.
-6. İlgili takım (`c_namer`, ad birleştirici, alt kanal, P12a / P12b / P12c / P12d / P13a testleri), sonra tam takım (yama geçici uygulanmış), geri al.
+6. İlgili takım (`c_namer`, ad birleştirici, alt kanal, P12a / P12b / P12c / P12d / P13a testleri), sonra tam takım (yamasız; ORTAK_D1 §2 `config.py` satırı: yama uygulanmaz, `git apply --check` ile denetlenir).
 
 ## Sert son
 

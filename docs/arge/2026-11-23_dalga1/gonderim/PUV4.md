@@ -32,7 +32,7 @@ Plandaki H1–H6 aynen, şu eklerle:
 
 ## Sıra
 
-1. Ön kayıt → commit. 2. Yerel örnekler + GT betiği → commit. 3. Tarayıcı (typeinfo, vtable, zayıf bağ) + sentetik testler (≥ 14). 4. Devralınan yuva kuralı (kalem 4), ELF yolu (kalem 5). 5. Sağlamlık + bulanık girdi (kalem 6). 6. Üretici adım + yama. 7. Mutasyon (≥ 8). 8. Keşif ölçümü (H0, H1, H3, H4, H5). 9. Dondur (commit'i yaz) → H2'yi bir kez ölç. 10. Tam takım (yama geçici uygulanmış), geri al.
+1. Ön kayıt → commit. 2. Yerel örnekler + GT betiği → commit. 3. Tarayıcı (typeinfo, vtable, zayıf bağ) + sentetik testler (≥ 14). 4. Devralınan yuva kuralı (kalem 4), ELF yolu (kalem 5). 5. Sağlamlık + bulanık girdi (kalem 6). 6. Üretici adım + yama. 7. Mutasyon (≥ 8). 8. Keşif ölçümü (H0, H1, H3, H4, H5). 9. Dondur (commit'i yaz) → H2'yi bir kez ölç. 10. Tam takım (yamasız; ORTAK_D1 §2 `config.py` satırı: yama uygulanmaz, `git apply --check` ile denetlenir).
 
 ## Sert son
 
