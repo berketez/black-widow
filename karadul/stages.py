@@ -1786,7 +1786,8 @@ class ReconstructionStage(Stage):
         if not isinstance(extracted_names, dict):
             return {}
         if meta is None:
-            self._recover_main_from_entry(extracted_names, static_dir, stats)
+            self._recover_main_from_entry(extracted_names, static_dir, stats,
+                                          getattr(context, "config", None))
             self._recover_gnulib_from_fingerprints(extracted_names, static_dir, stats)
             self._recover_elf_boilerplate(extracted_names, static_dir, stats)
             return self._apply_manual_overrides(extracted_names, context, stats)
@@ -1799,7 +1800,8 @@ class ReconstructionStage(Stage):
             _bg.KIND_PHASE1,
         )
         before = dict(extracted_names)
-        self._recover_main_from_entry(extracted_names, static_dir, stats)
+        self._recover_main_from_entry(extracted_names, static_dir, stats,
+                                      getattr(context, "config", None))
         _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)
         _bg.apply_binding(extracted_names, kesin, meta, stats)
         before = dict(extracted_names)
@@ -1814,7 +1816,8 @@ class ReconstructionStage(Stage):
         return manual_map
 
     def _recover_main_from_entry(
-        self, extracted_names: dict, static_dir: "Path | None", stats: dict
+        self, extracted_names: dict, static_dir: "Path | None", stats: dict,
+        config: Any = None,
     ) -> None:
         """``main``'i entry/_start icindeki ``__libc_start_main`` cagrisindan kurtar.
 
@@ -1834,6 +1837,11 @@ class ReconstructionStage(Stage):
         yapilir; ``extracted_names`` local dict'i dogrudan mutasyona
         ugratilir. Ham FUN_ adresleri icin ``static_dir/ghidra_output/decompiled``
         (Ghidra ciktisinin isim-degismemis hali) kullanilir.
+
+        P-ÜV5 (2026-11-23): kalıp bulunamazsa ve bayrak
+        ``binary_reconstruction.enable_macho_entry_main`` gerçek ``True`` ise Mach-O kuralı
+        (``_recover_macho_entry_main``) denenir: ``LC_MAIN`` girişi geliştiricinin ``main``'idir.
+        ELF yolu değişmez; bayrak kapalıyken davranış eskisiyle bayt bayt aynıdır.
         """
         try:
             if not isinstance(extracted_names, dict) or static_dir is None:
@@ -1858,6 +1866,9 @@ class ReconstructionStage(Stage):
                     main_addr = m.group(1)
                     break
             if not main_addr:
+                if self._macho_entry_main_enabled(config):
+                    self._recover_macho_entry_main(
+                        extracted_names, static_dir, decompiled_dir, stats)
                 return
 
             prev = extracted_names.get(main_addr)
@@ -1873,6 +1884,233 @@ class ReconstructionStage(Stage):
             )
         except Exception as exc:  # pragma: no cover -- savunmaci
             logger.debug("main kurtarma (entry) hatasi: %s", exc)
+
+    # ------------------------------------------------------------------
+    # P-ÜV5 (2026-11-23): Mach-O ``LC_MAIN`` girişi = ``main``
+    # ------------------------------------------------------------------
+    # Mach-O çalıştırılabilirinde (``MH_EXECUTE``) yükleyici ``LC_MAIN``'in ``entryoff``'unu çağırır;
+    # bu adres geliştiricinin ``main``'idir (ölçüldü: GT'li 8 / 8, Homebrew 1 169 / 1 169;
+    # ``docs/arge/2026-11-19_mythos/ustveri/PLAN.md`` "P-ÜV5"). Ad yükleyici alanından gelir ve
+    # çalışma için zorunludur: künye ``main_giris`` (ELF yoluyla aynı), ``üst veriden`` değil.
+    # Ad yazılmayan durumlarda neden ``stats["macho_entry_main"]``'a yazılır (kanıt satırı).
+
+    MACHO_MAIN_STATS_KEY = "macho_entry_main"
+    _MH_EXECUTE = 2                       # mach-o/loader.h ``MH_EXECUTE``
+    _GO_DEVELOPER_MAIN = "main.main"      # Go'da geliştiricinin main'i; giriş ``_rt0_…`` / saplama
+
+    @staticmethod
+    def _macho_entry_main_enabled(config: Any) -> bool:
+        """Bayrak yalnız gerçek ``True`` ise açık (``"true"``, 1, sahte nesne açmaz)."""
+        recon = getattr(config, "binary_reconstruction", None)
+        return getattr(recon, "enable_macho_entry_main", False) is True
+
+    @staticmethod
+    def _parse_int(value: str) -> int | None:
+        try:
+            return int(value, 16) if value.lower().startswith("0x") else int(value, 10)
+        except ValueError:
+            return None
+
+    @classmethod
+    def _parse_macho_load_commands(cls, text: str) -> dict:
+        """``otool -l`` çıktısından (``static/load_commands.txt``) giriş bilgisi.
+
+        Dönen: ``entryoffs`` (her ``LC_MAIN`` bloğunun ``entryoff``'u), ``unixthread``
+        (``LC_UNIXTHREAD`` var mı), ``unixthread_pcs`` (o bloktaki ``pc`` / ``rip`` yazmacı; mutlak
+        adres, yalnız kanıt), ``text_vmaddr`` (``__TEXT`` bölütünün ``vmaddr``'ı; ikilinin bağlama
+        tabanı). Okunamayan alan ``None`` / boş kalır; tahmin yok.
+        """
+        entryoffs: list[int | None] = []
+        unixthread = False
+        unixthread_pcs: list[int | None] = []
+        text_vmaddr: int | None = None
+        cmd: str | None = None
+        segname: str | None = None
+        for line in text.splitlines():
+            parts = line.split()
+            if len(parts) < 2:
+                continue
+            key, val = parts[0], parts[1]
+            if key == "cmd":
+                cmd, segname = val, None
+                if val == "LC_UNIXTHREAD":
+                    unixthread = True
+            elif key == "segname" and cmd in ("LC_SEGMENT_64", "LC_SEGMENT"):
+                segname = val
+            elif key == "vmaddr" and segname == "__TEXT" and text_vmaddr is None:
+                text_vmaddr = cls._parse_int(val)
+            elif key == "entryoff" and cmd == "LC_MAIN":
+                entryoffs.append(cls._parse_int(val))
+            elif cmd == "LC_UNIXTHREAD":
+                for i, tok in enumerate(parts[:-1]):
+                    if tok in ("pc", "rip"):
+                        unixthread_pcs.append(cls._parse_int(parts[i + 1]))
+        return {"entryoffs": entryoffs, "unixthread": unixthread,
+                "unixthread_pcs": unixthread_pcs, "text_vmaddr": text_vmaddr}
+
+    @staticmethod
+    def _ghidra_image_base(static_dir: Path) -> int | None:
+        """Ghidra'nın görüntü tabanı (``program_info.image_base``, onaltılık); yoksa ``None``."""
+        for path in (static_dir / "ghidra_combined_results.json",
+                     static_dir / "ghidra_output" / "combined_results.json"):
+            try:
+                if not path.is_file():
+                    continue
+                data = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+                info = data.get("program_info") or (data.get("summary") or {}).get("program") or {}
+                raw = info.get("image_base")
+                if raw:
+                    return int(str(raw), 16)
+            except (OSError, ValueError, TypeError, AttributeError):
+                continue
+        return None
+
+    @staticmethod
+    def _open_macho_image(static_dir: Path) -> Any:
+        """Ürünün analiz ettiği ince dilimi P-ÜV0 görüntüsü olarak aç; olmazsa ``None``.
+
+        Sıra: ``static/universal_slice.json``'un seçtiği dilim (``raw/<ad>_<mimari>``), çalışma
+        alanındaki kopya (``raw/<ad>``), hedefin yolu (``raw/target_info.json``). Evrensel dosyada
+        ürünün seçtiği dilim (``goruntu.urun_dilimi``) açılır.
+        """
+        from karadul.analyzers.ustveri import goruntu
+
+        raw_dir = static_dir.parent / "raw"
+        candidates: list[Path] = []
+        try:
+            sl = json.loads((static_dir / "universal_slice.json").read_text(encoding="utf-8"))
+            if isinstance(sl, dict) and sl.get("path"):
+                candidates.append(raw_dir / Path(str(sl["path"])).name)
+        except (OSError, ValueError, TypeError):
+            pass
+        try:
+            ti = json.loads((raw_dir / "target_info.json").read_text(encoding="utf-8"))
+            if isinstance(ti, dict):
+                if ti.get("name"):
+                    candidates.append(raw_dir / Path(str(ti["name"])).name)
+                if ti.get("path"):
+                    candidates.append(Path(str(ti["path"])))
+        except (OSError, ValueError, TypeError):
+            pass
+        for cand in candidates:
+            if not cand.is_file():
+                continue
+            try:
+                veri = cand.read_bytes()
+                return goruntu.baytlardan(veri, goruntu.urun_dilimi(veri), kaynak=str(cand))
+            except Exception:  # noqa: BLE001 - görüntü kurulamazsa kural ad yazmaz
+                return None
+        return None
+
+    @classmethod
+    def _go_entry_block(cls, image: Any, entry_bin: int) -> tuple[str | None, str | None]:
+        """Go istisnası (gönderim hüküm 2): (engel nedeni ya da ``None``, girişin ``pclntab`` adı).
+
+        Okuyucu ürünün kendisi (``karadul/analyzers/ustveri/go_pclntab.py``). ``pclntab`` yoksa
+        (``veri_yok``) engel yok. Varsa yalnız girişin ``pclntab`` adı ``main.main`` ise ad yazılır:
+        iç bağlayıcılı Go'da giriş ``_rt0_…``, dış bağlayıcılıda Go'nun ``main`` saplaması
+        (geliştiricinin ``main``'i değil). Okuyucu başka durum verirse (``tutarsiz``,
+        ``desteklenmiyor``, ``hata``) Go olmadığı gösterilemez: ad yazılmaz.
+        """
+        from karadul.analyzers.ustveri import go_pclntab
+
+        sonuc = go_pclntab.oku(image)
+        if sonuc.durum == go_pclntab.DURUM_VERI_YOK:
+            return None, None
+        if sonuc.durum != go_pclntab.DURUM_CALISTI:
+            return f"go_okunamadi:{sonuc.durum}", None
+        for f in sonuc.fonksiyonlar:
+            if f.giris <= entry_bin < f.bitis:
+                if f.ad == cls._GO_DEVELOPER_MAIN:
+                    return None, f.ad
+                return "go_giris_main_main_degil", f.ad
+        return "go_giris_pclntab_disinda", None
+
+    def _recover_macho_entry_main(
+        self, extracted_names: dict, static_dir: Path, decompiled_dir: Path, stats: dict
+    ) -> None:
+        """Mach-O kuralı (P-ÜV5): ``LC_MAIN`` girişindeki jenerik adlı fonksiyona ``main``.
+
+        Koşullar (hepsi): ``static/load_commands.txt`` var (yalnız Mach-O'da yazılır); tek bir
+        ``LC_MAIN`` ``entryoff``'u; ikili Mach-O ``MH_EXECUTE``; Ghidra'nın giriş adresindeki
+        fonksiyonu jenerik adlı (``entry`` / ``FUN_…``; ``kesin.is_generic_name``) ve kodu
+        decompile çıktısında; Go istisnası engel değil. Giriş adresi: Ghidra adresi = ikili adresi
+        (``__TEXT`` ``vmaddr`` + ``entryoff``) + görüntü tabanı farkı (``GhidraFunctionIndex.delta``).
+        Thunk girişte adı thunk alır (hedefi değil). ``LC_UNIXTHREAD`` (eski düzen, giriş
+        ``start``) ad almaz. Anahtar Ghidra'nın adıdır (kodda geçen ad).
+        """
+        lc_path = static_dir / "load_commands.txt"
+        if not lc_path.is_file():
+            return  # Mach-O değil: ELF / PE yolunda kayıt da yazılmaz
+        from karadul.pipeline.steps._feedback_naming_candidates import load_ghidra_index
+        from karadul.reconstruction.tarif.kesin import is_generic_name
+
+        rec: dict[str, Any] = {"durum": "yazilmadi"}
+        stats[self.MACHO_MAIN_STATS_KEY] = rec
+        info = self._parse_macho_load_commands(lc_path.read_text(errors="replace"))
+        offs = info["entryoffs"]
+        if not offs:
+            # LC_UNIXTHREAD (eski düzen): giriş ``start``'tır (crt), ``main`` değil -> kanıt satırı
+            rec["neden"] = "lc_unixthread" if info["unixthread"] else "lc_main_yok"
+            pcs = [p for p in info["unixthread_pcs"] if p is not None]
+            if pcs:
+                rec["unixthread_pc"] = hex(pcs[0])
+            return
+        if len(set(offs)) != 1 or offs[0] is None:
+            rec["neden"] = "lc_main_belirsiz"
+            return
+        entryoff = int(offs[0])
+        text_vmaddr = info["text_vmaddr"]
+        image_base = self._ghidra_image_base(static_dir)
+        if text_vmaddr is None or image_base is None:
+            rec["neden"] = "taban_okunamadi"
+            return
+        image = self._open_macho_image(static_dir)
+        if image is None or getattr(image, "bicim", None) != "macho":
+            rec["neden"] = "ikili_okunamadi"
+            return
+        if getattr(image, "dosya_turu", None) != self._MH_EXECUTE:
+            rec["neden"] = "mh_execute_degil"
+            return
+        functions_json = static_dir / "ghidra_functions.json"
+        if not functions_json.is_file():
+            functions_json = static_dir / "ghidra_output" / "functions.json"
+        index = load_ghidra_index(functions_json)
+        if index is None:
+            rec["neden"] = "ghidra_fonksiyon_listesi_yok"
+            return
+        index.delta = image_base - text_vmaddr
+        entry_bin = text_vmaddr + entryoff
+        entry_ghidra = entry_bin + index.delta
+        rec["giris"] = hex(entry_ghidra)
+        name = index.by_addr.get(entry_ghidra)
+        if name is None:
+            rec["neden"] = "ghidra_fonksiyonu_yok"
+            return
+        rec["ghidra_adi"] = name
+        if not is_generic_name(name):
+            rec["neden"] = "ghidra_adli"
+            return
+        if not (decompiled_dir / f"{name}.c").is_file():
+            rec["neden"] = "kodda_yok"
+            return
+        block, go_name = self._go_entry_block(image, entry_bin)
+        if go_name is not None:
+            rec["go_adi"] = go_name
+        if block is not None:
+            rec["neden"] = block
+            return
+        rec.update(durum="yazildi", anahtar=name, kanit=(
+            f"LC_MAIN entryoff {entryoff} + Ghidra görüntü tabanı {image_base:#x} "
+            f"= {entry_ghidra:#x} ({name})"))
+        prev = extracted_names.get(name)
+        if prev == "main":
+            return
+        # LC_MAIN yükleyici kesinliğindedir (ELF yolundaki __libc_start_main gibi): önceki adı EZER.
+        extracted_names[name] = "main"
+        stats["main_recovered"] = name
+        logger.info("main kurtarildi: %s -> main (Mach-O LC_MAIN)%s",
+                    name, f" [onceki: {prev}]" if prev else "")
 
     def _recover_gnulib_from_fingerprints(
         self, extracted_names: dict, static_dir: "Path | None", stats: dict
