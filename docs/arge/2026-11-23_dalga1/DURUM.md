@@ -39,11 +39,14 @@ P-ÜV6 ikiye bölündü (ana oturum kararı): plan P-ÜV6'yı altı okuyucu main
 | PUV6a | a42e3d495be90379d | Opus | çalışıyor (08:11) | sert son 11:45; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV6a.md` |
 | P16e | a55c97e3a05c70d6f | Opus | çalışıyor (08:11) | sert son 10:45; ilerleme `docs/arge/2026-11-19_mythos/hiz/P16e.md` |
 | PUV3 | a14ae2562cbc29126 | Opus | çalışıyor (08:11) | sert son 11:30; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV3.md` |
-| OL10 | a8420740e5db17ed4 | Mythos | çalışıyor (08:11) | sert son 10:45; çıktı `docs/arge/2026-11-19_mythos/olcek/OL10_TASARIM.md` |
+| OL10 | a8420740e5db17ed4 | Mythos | **bitti 08:55; main'de** (`2cc31dc..15013bb`, 8 commit, yalnız belge) | `olcek/OL10_TASARIM.md` 896 satır: üç katman (K0 Ghidra'sız, K1 çözümleme, K2 seçilenlerin decompile'ı), seçim kuralı, ad kanalı sözleşmesi, 10 alt paket (OL10-A … J). Ollama'da kendiliğinden seçilebilen küme 4 619 / 13 160; gösterinin 17 adının 17'si ilk 4 028'de; xref dökümü K1'in iki dosyasından türetilebiliyor (13 559 / 13 559 aynı). **Bağımsız denetim (ana oturum):** tam yollu 39 atıfta dosya yok 0, satır aşımı 0; 8 işlev adı çapası 8 / 8 tuttu. Kararlar A-33 |
 | PUV5 | — | Opus | sırada (PUV6a main'e girince; `stages.py`) | metin hazır: `gonderim/PUV5.md` |
 | OL1 | — | Opus | sırada (P16e main'e girince; `headless.py`) | metin hazır: `gonderim/OL1.md` |
 | PUV4 | — | Opus | sırada (yer açılınca) | metin hazır: `gonderim/PUV4.md` |
-| PUV7 | — | Opus | sırada (yer açılınca) | metin hazır: `gonderim/PUV7.md` |
+| PUV7 | ade3c0e98c5bfe6e0 | Opus | çalışıyor (08:57) | sert son 11:30; ilerleme `docs/arge/2026-11-19_mythos/ustveri/P-UV7.md` |
+| PK1 | — | Opus | sırada (PUV6a main'e girince; ikinci dilim) | metin hazır: `gonderim/PK1.md` |
+| OK1 | — | Opus | sırada (PUV6a main'e girince; `alt_kanal.py`; ikinci dilim) | metin hazır: `gonderim/OK1.md` (P12d + ÖK-1) |
+| OL10A | — | Opus | sırada (yer açılınca; yalnız yeni dosya; ikinci dilim) | metin hazır: `gonderim/OL10A.md` |
 
 ## Açık kararlar ve bekleyenler
 
