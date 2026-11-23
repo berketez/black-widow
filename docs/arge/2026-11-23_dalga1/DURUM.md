@@ -107,7 +107,7 @@ Berke: "Karadul'un aktif kullanılmasına kaç iş var, ne kadar sürer; hedefe 
 - Y8: uygulama en son Temmuz'da derlendi (5 belgelenmiş paketleme tuzağı); o günden beri kod çok değişti. Öneri: sona bırakmak yerine 1. durakta bir kez derlenip kurulsun.
 - Beklenti sınırı: bitişte de ad kapsamı dile göre çok farklı olacak. Go %92–100, ObjC / Swift kısmi; soyulmuş saf C / C++'ta üst veri 0, öz kod kuralları kör nüfusta tutmadı (A-29); oradaki tek aday kimlik hattı (başvuru ikilisi varsa kapsam %80–88).
 
-**Kapanıştaki durum:** main `f23e285` + bu commit; çalışan ajan, koşu ve Ghidra süreci yok; push YOK (origin `9c9b2d4`). Duran ağaçlar (silme Berke'nin kalem kalem onayına bağlı): bugünkü 7 ajan worktree'si + P12d (`agent-a733cb2eb8bc2b9fd`, OK1 okuyacak) + `dogrulama-d1`, `dogrulama-d2`; `~/karadul_olcum/runs/dalga1-2026-11-23/` 8,4 GB (P16e `s8_sonra_3` S8 tabanı, `ANA/ollama_ustveri` BA-1 kanıtı). Disk: kullanılan 706,7 GB.
+**Kapanıştaki durum:** main `f23e285` + bu commit; çalışan ajan, koşu ve Ghidra süreci yok. **Push yapıldı (15:3x, Berke'nin onayıyla): `9c9b2d4..4fa5ff5`, 115 commit; öncesinde tarama temiz (gizli anahtar kalıbı 0, 1 MB üstü dosya 0, ikili dosya 0, 86 dosya).** Duran ağaçlar (silme Berke'nin kalem kalem onayına bağlı): bugünkü 7 ajan worktree'si + P12d (`agent-a733cb2eb8bc2b9fd`, OK1 okuyacak) + `dogrulama-d1`, `dogrulama-d2`; `~/karadul_olcum/runs/dalga1-2026-11-23/` 8,4 GB (P16e `s8_sonra_3` S8 tabanı, `ANA/ollama_ustveri` BA-1 kanıtı). Disk: kullanılan 706,7 GB.
 
 ## Berke (09:2x): "bu tüm ajanlar bitince bir duralım, mola vermek istiyorum"
 
