@@ -156,6 +156,40 @@ Rectangle arm64 `calisti`: 186 `swift_types` (180 `ad_yazilabilir`), 1 152 `swif
 
 ## Dondurma
 
-Okuyucu (`karadul/analyzers/ustveri/swift.py`) `1521528`'deki hâliyle donduruldu; bu commit dondurmayı ilan eder.
+Okuyucu (`karadul/analyzers/ustveri/swift.py`) `1521528`'deki hâliyle donduruldu; dondurmayı ilan eden commit `9d6ee9a`.
 H2 ve H3 bundan sonra `puv3_olc.py sinama --sinama-izni` ile **bir kez** ölçülür; sonuç ne olursa olsun okuyucu
 değişmez (ikinci tur ayrı pakettir).
+
+## SINAMA — iTerm2 arm64 (bir kez; 2026-11-23 08:43:51–08:43:53, ağaç `9d6ee9a`, temiz)
+
+Komut: `PYTHONDONTWRITEBYTECODE=1 python scripts/arge/ustveri/puv3_olc.py sinama $V/hedef/iTerm2.arm64 --sinama-izni
+--cikti …/PUV3/sinama_iTerm2.json`. Girdi araştırma kopyası (sha256 `9fc127ad…`, HEDEF'in özgün dilimiyle aynı).
+GT: aynı dilimin sembol tablosu; `Ma` sembolleri `xcrun swift-demangle` ile. Çıktıya ad yazılmadı (yalnız sayı).
+
+| Hüküm | Ölçülen | Eşik | Sonuç |
+|---|---|---|---|
+| H2 erişim fonksiyonu `Ma` eki | 3 659 / 3 659 | 3 659 / 3 659 | **tuttu** |
+| H2 tanık `TW` eki | 741 / 741 | 741 / 741 | **tuttu** |
+| H3 ad verilen tip | **2 627 / 3 659** (%71,8) | ≥ 3 477 | **tutmadı** |
+| H3 ad verilenlerde yanlış | **0 / 2 627** (%0; doğru Wilson %95 [0,9985; 1]) | ≤ %1 | tuttu |
+
+Alt küme dökümü (ön kayıt §2 sınıflaması):
+
+| Alt küme | Tip | Ad verilen | Doğru | Yanlış | Adsız bırakılan |
+|---|---|---|---|---|---|
+| adsız bağlam | 1 156 | 126 | 126 | 0 | 1 030 (ayraç bulunamadı) |
+| uzantı | 12 | 10 | 10 | 0 | 2 (kısıtlı uzantı) |
+| içe aktarım | 75 | 75 | 75 | 0 | 0 |
+| öbür | 2 416 | 2 416 | 2 416 | 0 | 0 |
+| **toplam** | **3 659** | **2 627** | **2 627** | **0** | **1 032** |
+
+- GT'si olmayan ad verilen tip 0 (her erişim adresinde `Ma` sembolü var).
+- **H3 hükmü (ön kayıt §3):** sayı şartı tutmadı; yanlış şartı tuttu. Hiçbir alt küme yanlış vermedi; kanal yalnız ad
+  verebildiği 2 627 tip için ad üretir (ad verilemeyenler zaten `nitelikli_ad = None`). Eksik 1 032 tipin 1 030'u
+  öntanımlı derlemede ayracı ikilide bulunmayan özel tipler (bkz. "Biçim" §1: yerel örnekte bilgi ikilide yok), 2'si
+  kısıtlı uzantı. Okuyucu bu sonuca göre yeniden ayarlanmadı.
+- Soyulmuş kopya (`ustveri_set/iTerm2/bin/iTerm2`, GT'siz karşılaştırma): okuyucu çıktısı özgün dilimle **aynı** (tip
+  3 659, yuva 13 807, nitelikli ad 2 627, `ad_yazilabilir` 2 627; `…/PUV3/soyulmus_iTerm2.json`).
+
+Ön kayıt hükümleri: **H0 tuttu, H1 tuttu, H2 tuttu, H3 tutmadı (sayı 2 627 < 3 477; yanlış 0 / 2 627 tuttu), H4 tuttu,
+H5 tuttu.**
