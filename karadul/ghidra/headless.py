@@ -143,6 +143,7 @@ class _AdimSaati:
         self._sureler: dict[str, float] = {}
         self._hatalar = hatalar
         self._onceki_hatalar: dict[str, frozenset[str]] = {}
+        self._denetciler: dict[str, _AdimDenetcisi] = {}
 
     def basla(self, adim: str) -> None:
         if adim not in GHIDRA_ADIMLARI:
@@ -151,13 +152,27 @@ class _AdimSaati:
         self._onceki_hatalar[adim] = frozenset(self._hatalar or ())
         _ilerleme(adim, OLAY_BASLADI)
 
+    def denetci(self, adim: str, butce_sn: float, aralik_sn: float,
+                toplam: int | None = None) -> _AdimDenetcisi:
+        """ÖL-2: başlamış adımın bütçe / adım içi olay denetçisi (başlangıcı bu saatten alır)."""
+        t0 = self._baslangic.get(adim)
+        if t0 is None:
+            raise ValueError("başlamamış adıma denetçi kurulamaz: %r" % (adim,))
+        den = _AdimDenetcisi(adim, butce_sn, aralik_sn, t0, toplam)
+        self._denetciler[adim] = den
+        return den
+
     def bitti(self, adim: str, **alanlar: Any) -> None:
         """Başlamış adımın süresini yaz; başlamamış ya da bitmiş adımda bir şey yapmaz."""
         t0 = self._baslangic.pop(adim, None)
+        den = self._denetciler.pop(adim, None)
         if t0 is not None:
             self._sureler[adim] = round(time.monotonic() - t0, 3)
             onceki = self._onceki_hatalar.pop(adim, frozenset())
             yeni = [k for k in (self._hatalar or {}) if k not in onceki]
+            if yeni and den is not None and den.doldu:
+                # ÖL-2: bütçesi dolan adımın kısmi olayı gerçek sayaçları taşır.
+                alanlar = {**den.sayac(), **alanlar}
             if yeni:
                 _ilerleme(adim, OLAY_KISMI, gecen_sn=self._sureler[adim],
                           neden="%s: %s" % (yeni[0], self._hatalar[yeni[0]]), **alanlar)
@@ -167,6 +182,89 @@ class _AdimSaati:
     def sozluk(self) -> dict[str, float]:
         """Biten adımlar, ``GHIDRA_ADIMLARI`` sırasında."""
         return {a: self._sureler[a] for a in GHIDRA_ADIMLARI if a in self._sureler}
+
+
+# ÖL-2: küçük birimli döngülerde (komut, sembol) saat her birimde değil bu kadar birimde bir
+# okunur; fonksiyon / veri / tip döngülerinde her birimde (birim başına birkaç Java çağrısı var,
+# saat okuması onların yanında ihmal edilir).
+KUCUK_BIRIM_DENETIM_ADIMI = 1024
+
+
+def _ayar_sn(config: Any, bolum: str, alan: str) -> float:
+    """ÖL-2: ``config.<bolum>.<alan>`` saniye değeri; yok / geçersiz / negatif → 0 (kapalı)."""
+    try:
+        deger = float(getattr(getattr(config, bolum, None), alan, 0) or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return deger if deger > 0 else 0.0
+
+
+def _en_kucuk_butce(*butceler: float) -> float:
+    """ÖL-2: sıfırdan büyük bütçelerin küçüğü; hepsi 0 ise 0 (bütçe yok)."""
+    olan = [b for b in butceler if b and b > 0]
+    return min(olan) if olan else 0.0
+
+
+class _AdimDenetcisi:
+    """ÖL-2: bir köprü adımının döngüsündeki tek denetim noktası (bütçe + adım içi olay).
+
+    Döngü her birimin başında ``denetle(islenen)`` çağırır (``islenen`` = biten birim sayısı,
+    gerçek döngü sayacı). Adımın başlangıcı (``_AdimSaati.basla`` anı) + ``butce_sn`` geçildiyse
+    ``True`` döner (döngüden çık) ve kesildiği andaki sayaçları saklar. Geçilmediyse ve adımın son
+    olayından beri ``aralik_sn`` geçtiyse aynı noktada ``durum=suruyor islenen=… toplam=…
+    gecen_sn=…`` olayı üretilir. Zamanlayıcıyla olay basılmaz: olay yalnız döngü buraya
+    geldiğinde. ``butce_sn = 0`` → bütçe yok; ``aralik_sn = 0`` → olay yok. ``toplam`` bilinmiyorsa
+    (``None``) olayda ve kısmi çıktıda yazılmaz.
+    """
+
+    def __init__(self, adim: str, butce_sn: float, aralik_sn: float, baslangic: float,
+                 toplam: int | None = None) -> None:
+        self.adim = adim
+        self.butce_sn = float(butce_sn) if butce_sn and butce_sn > 0 else 0.0
+        self.aralik_sn = float(aralik_sn) if aralik_sn and aralik_sn > 0 else 0.0
+        self.toplam = toplam
+        self._baslangic = baslangic
+        self._son_an = baslangic + self.butce_sn if self.butce_sn > 0 else None
+        self._son_olay = baslangic
+        self.doldu = False
+        self.islenen: int | None = None
+        self.olay = 0
+        self.ek_neden = ""
+
+    def denetle(self, islenen: int, toplam: int | None = None) -> bool:
+        if toplam is None:
+            toplam = self.toplam
+        simdi = time.monotonic()
+        if self._son_an is not None and simdi > self._son_an:
+            self.doldu = True
+            self.islenen = int(islenen)
+            self.toplam = toplam
+            return True
+        if self.aralik_sn > 0 and simdi - self._son_olay >= self.aralik_sn:
+            self._son_olay = simdi
+            self.olay += 1
+            _ilerleme(self.adim, OLAY_SURUYOR, islenen=int(islenen), toplam=toplam,
+                      gecen_sn=round(simdi - self._baslangic, 1))
+        return False
+
+    def neden(self) -> str:
+        metin = "adım bütçesi (%g sn) doldu" % self.butce_sn
+        return metin + ("; " + self.ek_neden if self.ek_neden else "")
+
+    def sayac(self) -> dict[str, int]:
+        """Kesildiği andaki sayaçlar (toplam bilinmiyorsa yalnız ``islenen``)."""
+        if not self.doldu:
+            return {}
+        out = {"islenen": int(self.islenen or 0)}
+        if self.toplam is not None:
+            out["toplam"] = int(self.toplam)
+        return out
+
+    def kismi_alanlari(self) -> dict[str, Any]:
+        """Kısmi çıktıya eklenecek alanlar; bütçe dolmadıysa boş (çıktı bayt bayt aynı kalır)."""
+        if not self.doldu:
+            return {}
+        return {"kismi": True, **self.sayac(), "neden": self.neden()}
 
 
 def _jvm_den_ayril() -> None:
@@ -555,6 +653,28 @@ class GhidraHeadless:
             log_lines.append("%s: %s: %s" % (level, step, msg))
             logger.warning("Ghidra adimi basarisiz (%s): %s", step, msg)
 
+        # ÖL-2: döküm adımlarının bütçesi (``timeouts.ghidra_adim``; 0 = yok) ve adım içi olay
+        # aralığı (``analysis.bekci_aralik_sn``; 0 = olay yok). Denetçi adımın başlangıcını
+        # ``saat``ten alır (tek zamanlayıcı); kısmi olay ``saat.bitti``'de gerçek sayaçlarla.
+        adim_butcesi = _ayar_sn(self.config, "timeouts", "ghidra_adim")
+        olay_araligi = _ayar_sn(self.config, "analysis", "bekci_aralik_sn")
+
+        def _denetci(adim: str, butce: float | None = None,
+                     toplam: int | None = None) -> _AdimDenetcisi:
+            return saat.denetci(adim, adim_butcesi if butce is None else butce, olay_araligi,
+                                toplam)
+
+        def _fonksiyon_toplami() -> int | None:
+            # ``fm.getFunctions(True)`` yinelemesinin uzunluğu = ``functions`` adımının ``total``ı.
+            toplam = (scripts_output.get("functions") or {}).get("total")
+            return int(toplam) if isinstance(toplam, int) else None
+
+        def _butce_doldu(step: str, den: _AdimDenetcisi) -> None:
+            if den.doldu:
+                step_errors[step] = den.neden()
+                log_lines.append("WARN: %s: %s" % (step, step_errors[step]))
+                logger.warning("Ghidra adımı bütçeyi aştı (%s): %s", step, step_errors[step])
+
         logger.info("Ghidra (PyGhidra) baslatiliyor: %s", binary_path.name)
 
         analysis_info: dict[str, Any] = {"status": "not_run", "timeout_s": int(timeout)}
@@ -655,10 +775,12 @@ class GhidraHeadless:
                 # 2. String extraction (basarisizlik analizi durdurmaz)
                 saat.basla(ADIM_STRINGS)
                 try:
-                    str_data = self._extract_strings(program)
+                    den = _denetci(ADIM_STRINGS)
+                    str_data = self._extract_strings(program, denetci=den)
                     scripts_output["strings"] = str_data
                     self._save_output(output_dir, "strings.json", str_data)
                     log_lines.append("String'ler: %d" % str_data["total"])
+                    _butce_doldu("strings", den)
                 except Exception as exc:
                     _step_failed("strings", exc)
                 saat.bitti(ADIM_STRINGS)
@@ -666,7 +788,8 @@ class GhidraHeadless:
                 # 3. Call graph
                 saat.basla(ADIM_CALL_GRAPH)
                 try:
-                    cg_data = self._extract_call_graph(program)
+                    den = _denetci(ADIM_CALL_GRAPH, toplam=_fonksiyon_toplami())
+                    cg_data = self._extract_call_graph(program, denetci=den)
                     scripts_output["call_graph"] = cg_data
                     self._save_output(output_dir, "call_graph.json", cg_data)
                     log_lines.append(
@@ -675,6 +798,7 @@ class GhidraHeadless:
                             cg_data["total_edges"],
                         )
                     )
+                    _butce_doldu("call_graph", den)
                 except Exception as exc:
                     _step_failed("call_graph", exc, "FAIL")
                 saat.bitti(ADIM_CALL_GRAPH)
@@ -725,7 +849,8 @@ class GhidraHeadless:
                 # 5. Type recovery (basarisizlik analizi durdurmaz)
                 saat.basla(ADIM_TYPES)
                 try:
-                    type_data = self._extract_types(program)
+                    den = _denetci(ADIM_TYPES)
+                    type_data = self._extract_types(program, denetci=den)
                     scripts_output["types"] = type_data
                     self._save_output(output_dir, "types.json", type_data)
                     log_lines.append(
@@ -735,6 +860,7 @@ class GhidraHeadless:
                             type_data["total_typedefs"],
                         )
                     )
+                    _butce_doldu("types", den)
                 except Exception as exc:
                     _step_failed("types", exc)
                 saat.bitti(ADIM_TYPES)
@@ -742,7 +868,8 @@ class GhidraHeadless:
                 # 6. Cross-reference analysis (basarisizlik analizi durdurmaz)
                 saat.basla(ADIM_XREF)
                 try:
-                    xref_data = self._extract_xrefs(program)
+                    den = _denetci(ADIM_XREF, toplam=_fonksiyon_toplami())
+                    xref_data = self._extract_xrefs(program, denetci=den)
                     scripts_output["xrefs"] = xref_data
                     self._save_output(output_dir, "xrefs.json", xref_data)
                     log_lines.append(
@@ -752,12 +879,14 @@ class GhidraHeadless:
                             xref_data["statistics"]["total_globals_with_xrefs"],
                         )
                     )
+                    _butce_doldu("xrefs", den)
                 except Exception as exc:
                     _step_failed("xrefs", exc)
                 saat.bitti(ADIM_XREF)
 
                 # 8. P-Code (v1.5: decompile icinde toplandiysa JSONL yaz)
                 saat.basla(ADIM_PCODE)
+                den = None
                 try:
                     _br_cfg2 = getattr(getattr(self, 'config', None), 'binary_reconstruction', None)
                     _pcode_enabled = getattr(_br_cfg2, 'enable_pcode_extraction', False) if _br_cfg2 else False
@@ -771,10 +900,12 @@ class GhidraHeadless:
                         _all_funcs_for_pcode = None
                     elif _pcode_enabled and _pcode_format == "legacy":
                         # Eski davranis: tam extraction
-                        pcode_data = self._extract_pcode(program)
+                        den = _denetci(ADIM_PCODE, toplam=_fonksiyon_toplami())
+                        pcode_data = self._extract_pcode(program, denetci=den)
                     else:
                         # stats_only
-                        pcode_data = self._extract_pcode_stats_only(program)
+                        den = _denetci(ADIM_PCODE)
+                        pcode_data = self._extract_pcode_stats_only(program, denetci=den)
 
                     scripts_output["pcode"] = pcode_data
                     self._save_output(output_dir, "pcode.json", pcode_data)
@@ -786,6 +917,8 @@ class GhidraHeadless:
                             " (stats-only)" if pcode_data.get("mode") == "stats_only" else "",
                         )
                     )
+                    if den is not None:
+                        _butce_doldu("pcode", den)
                 except Exception as exc:
                     _step_failed("pcode", exc)
                 saat.bitti(ADIM_PCODE)
@@ -793,7 +926,8 @@ class GhidraHeadless:
                 # 9. CFG extraction (basarisizlik analizi durdurmaz)
                 saat.basla(ADIM_CFG)
                 try:
-                    cfg_data = self._extract_cfg(program)
+                    den = _denetci(ADIM_CFG, toplam=_fonksiyon_toplami())
+                    cfg_data = self._extract_cfg(program, denetci=den)
                     scripts_output["cfg"] = cfg_data
                     self._save_output(output_dir, "cfg.json", cfg_data)
                     log_lines.append(
@@ -803,6 +937,7 @@ class GhidraHeadless:
                             cfg_data["total_edges"],
                         )
                     )
+                    _butce_doldu("cfg", den)
                 except Exception as exc:
                     _step_failed("cfg", exc)
                 saat.bitti(ADIM_CFG)
@@ -811,7 +946,8 @@ class GhidraHeadless:
                 if self.config.binary_reconstruction.enable_function_id:
                     saat.basla(ADIM_FUNCTION_ID)
                     try:
-                        fid_data = self._extract_function_id_matches(program)
+                        den = _denetci(ADIM_FUNCTION_ID, toplam=_fonksiyon_toplami())
+                        fid_data = self._extract_function_id_matches(program, denetci=den)
                         scripts_output["function_id"] = fid_data
                         self._save_output(
                             output_dir, "function_id.json", fid_data,
@@ -820,6 +956,7 @@ class GhidraHeadless:
                             "FunctionID: %d esleme"
                             % fid_data["total_matches"]
                         )
+                        _butce_doldu("function_id", den)
                     except Exception as exc:
                         _step_failed("function_id", exc)
                     saat.bitti(ADIM_FUNCTION_ID)
@@ -834,6 +971,13 @@ class GhidraHeadless:
                     try:
                         from karadul.ghidra.bsim import BSimDatabase
                         bsim_db = BSimDatabase(self.config)
+                        # ÖL-2: ingest bütçesi = ``bsim.ingest_butcesi_sn`` ile adım bütçesinin
+                        # küçüğü (0 = yok); denetçi BSim'in tarama döngüsünde (öznitelikle).
+                        ingest_den = _denetci(ADIM_BSIM_INGEST, butce=_en_kucuk_butce(
+                            adim_butcesi, _ayar_sn(self.config, "bsim", "ingest_butcesi_sn")),
+                            toplam=(scripts_output.get("functions") or {}).get(
+                                "program_function_count"))
+                        bsim_db.denetci = ingest_den
                         ingested = bsim_db.ingest_program(program, self.config.bsim.default_database)
                         # P16b (GHIDRA-01): kip ve durum günlükte ve bsim_matches.json'da;
                         # kilit / meşgul durumunda BSim atlanır, sessizce lite'a düşülmez.
@@ -841,9 +985,13 @@ class GhidraHeadless:
                             "BSim: %d fonksiyon hash'lendi (kip: %s, durum: %s)"
                             % (ingested, bsim_db.status.get("mode"), bsim_db.status.get("status"))
                         )
+                        _butce_doldu("bsim_ingest", ingest_den)
                         saat.bitti(ADIM_BSIM_INGEST)
                         if self.config.bsim.auto_query:
                             saat.basla(ADIM_BSIM_QUERY)
+                            # ÖL-2: sorgu da adım bütçesiyle sınırlı (parça sınırında denetim).
+                            sorgu_den = _denetci(ADIM_BSIM_QUERY)
+                            bsim_db.denetci = sorgu_den
                             bsim_result = bsim_db.query_all_functions(
                                 program, self.config.bsim.min_similarity,
                                 db_name=self.config.bsim.default_database,
@@ -858,6 +1006,11 @@ class GhidraHeadless:
                                 % (bsim_result.total_matches, bsim_data.get("bsim_mode"),
                                    bsim_data.get("bsim_status"))
                             )
+                            if (bsim_data.get("bsim_detail") or {}).get("sorgu_atlandi"):
+                                # ÖL-2: boş depoda sorgu koşmadı (bilinen sonuç; kısmi değil).
+                                _ilerleme(ADIM_BSIM_QUERY, OLAY_ATLANDI,
+                                          neden=bsim_data["bsim_detail"].get("neden"))
+                            _butce_doldu("bsim_query", sorgu_den)
                             # v1.11.0 Hafta 2: legacy yolda da shadow dump
                             # uretilsin ki use_step_registry=False olan
                             # kosumlarda bsim_shadow.json eksik kalmasin
@@ -1253,12 +1406,15 @@ class GhidraHeadless:
         }
 
     @staticmethod
-    def _extract_strings(program) -> dict[str, Any]:
+    def _extract_strings(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
         """Tanimli string'leri cikar.
 
         Ghidra 12.0'da DefinedDataIterator.definedStrings kaldirildi.
         Yerine Listing.getDefinedData ile tum data'lar taranarak
         string tipindekiler filtrelenir.
+
+        ÖL-2: ``denetci`` verilirse her tanımlı veri biriminde bütçe / olay denetimi; bütçe
+        dolunca döngü biter, çıktıya ``kismi / islenen / neden`` eklenir (birim = taranan veri).
         """
         listing = program.getListing()
         fm = program.getFunctionManager()
@@ -1267,7 +1423,11 @@ class GhidraHeadless:
         seen_addrs = set()
 
         data_iter = listing.getDefinedData(True)
+        taranan = 0
         while data_iter.hasNext():
+            if denetci is not None and denetci.denetle(taranan):
+                break
+            taranan += 1
             data = data_iter.next()
             dt_name = str(data.getDataType().getName()).lower()
 
@@ -1316,22 +1476,29 @@ class GhidraHeadless:
 
             strings.append(entry)
 
-        return {
+        out = {
             "total": len(strings),
             "program": str(program.getName()),
             "strings": strings,
         }
+        if denetci is not None:
+            out.update(denetci.kismi_alanlari())
+        return out
 
     @staticmethod
-    def _extract_call_graph(program) -> dict[str, Any]:
-        """Call graph cikar."""
+    def _extract_call_graph(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
+        """Call graph cikar (ÖL-2: ``denetci`` ile fonksiyon başına bütçe / olay denetimi)."""
         fm = program.getFunctionManager()
         ref_mgr = program.getReferenceManager()
 
         nodes = {}
         edges = []
 
+        islenen = 0
         for func in fm.getFunctions(True):
+            if denetci is not None and denetci.denetle(islenen):
+                break
+            islenen += 1
             func_name = func.getName()
             func_addr = str(func.getEntryPoint())
 
@@ -1406,13 +1573,16 @@ class GhidraHeadless:
                 seen_edges.add(key)
                 unique_edges.append(e)
 
-        return {
+        out = {
             "program": str(program.getName()),
             "total_functions": len(nodes),
             "total_edges": len(unique_edges),
             "nodes": nodes,
             "edges": unique_edges,
         }
+        if denetci is not None:
+            out.update(denetci.kismi_alanlari())
+        return out
 
     @staticmethod
     def _extract_disassembly(program, func) -> list[dict[str, Any]]:
@@ -2145,8 +2315,11 @@ class GhidraHeadless:
         return result_dict
 
     @staticmethod
-    def _extract_types(program) -> dict[str, Any]:
-        """DataTypeManager'dan struct/enum/typedef bilgilerini cikar."""
+    def _extract_types(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
+        """DataTypeManager'dan struct/enum/typedef bilgilerini cikar.
+
+        ÖL-2: ``denetci`` ile veri tipi başına bütçe / olay denetimi (toplam bilinmiyor).
+        """
         from ghidra.program.model.data import Structure, Union, Enum, TypeDef
 
         dtm = program.getDataTypeManager()
@@ -2154,7 +2327,11 @@ class GhidraHeadless:
         enums = []
         typedefs = []
 
+        taranan = 0
         for dt in dtm.getAllDataTypes():
+            if denetci is not None and denetci.denetle(taranan):
+                break
+            taranan += 1
             if isinstance(dt, (Structure, Union)):
                 entry = {
                     "name": dt.getName(),
@@ -2196,7 +2373,7 @@ class GhidraHeadless:
                     "size": dt.getLength(),
                 })
 
-        return {
+        out = {
             "total_structures": len(structures),
             "total_enums": len(enums),
             "total_typedefs": len(typedefs),
@@ -2206,10 +2383,18 @@ class GhidraHeadless:
             "enums": enums,
             "typedefs": typedefs,
         }
+        if denetci is not None:
+            out.update(denetci.kismi_alanlari())
+        return out
 
     @staticmethod
-    def _extract_xrefs(program) -> dict[str, Any]:
-        """Cross-reference haritasi cikar: fonksiyon -> string/global/fonksiyon."""
+    def _extract_xrefs(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
+        """Cross-reference haritasi cikar: fonksiyon -> string/global/fonksiyon.
+
+        ÖL-2: ``denetci`` ile fonksiyon başına (ikinci bölümde, genel sembol sayımında,
+        ``KUCUK_BIRIM_DENETIM_ADIMI`` sembolde bir) bütçe / olay denetimi. Sayaç birimi
+        fonksiyondur; bütçe genel sembol sayımında dolarsa neden bunu söyler.
+        """
         fm = program.getFunctionManager()
         ref_mgr = program.getReferenceManager()
         listing = program.getListing()
@@ -2217,7 +2402,11 @@ class GhidraHeadless:
         func_xrefs: dict = {}
         string_ref_counts: dict[str, int] = {}  # addr -> ref count
 
+        islenen = 0
         for func in fm.getFunctions(True):
+            if denetci is not None and denetci.denetle(islenen):
+                break
+            islenen += 1
             func_name = func.getName()
             func_addr = str(func.getEntryPoint())
 
@@ -2285,7 +2474,18 @@ class GhidraHeadless:
         from ghidra.program.model.symbol import SymbolType
         global_count = 0
         sym_iter = program.getSymbolTable().getAllSymbols(True)
-        while sym_iter.hasNext():
+        semboller = 0
+        # ÖL-2: bütçe fonksiyon bölümünde dolduysa genel sembol sayımı koşmaz (sayı 0 kalır;
+        # neden bunu söyler, ``kismi`` çıktıda).
+        ikinci_bolum = not (denetci is not None and denetci.doldu)
+        if not ikinci_bolum:
+            denetci.ek_neden = "genel sembol sayımı yapılmadı"
+        while ikinci_bolum and sym_iter.hasNext():
+            if (denetci is not None and semboller % KUCUK_BIRIM_DENETIM_ADIMI == 0
+                    and denetci.denetle(islenen)):
+                denetci.ek_neden = "genel sembol sayımı yarıda (%d sembol)" % semboller
+                break
+            semboller += 1
             sym = sym_iter.next()
             st = sym.getSymbolType()
             if st != SymbolType.FUNCTION and st != SymbolType.PARAMETER and st != SymbolType.LOCAL_VAR:
@@ -2297,7 +2497,7 @@ class GhidraHeadless:
                 if has_ref:
                     global_count += 1
 
-        return {
+        out = {
             "program": str(program.getName()),
             "statistics": {
                 "total_functions": len(func_xrefs),
@@ -2306,14 +2506,19 @@ class GhidraHeadless:
             },
             "function_xrefs": func_xrefs,
         }
+        if denetci is not None:
+            out.update(denetci.kismi_alanlari())
+        return out
 
     @staticmethod
-    def _extract_pcode(program) -> dict[str, Any]:
+    def _extract_pcode(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
         """P-Code intermediate representation cikar.
 
         Her fonksiyon icin Ghidra decompiler'i kullanarak
         P-Code op'larini ve high-level degiskenleri toplar.
         Dataflow analizi icin kritik veri kaynagi.
+
+        ÖL-2: ``denetci`` ile fonksiyon başına bütçe / olay denetimi.
         """
         from ghidra.app.decompiler import DecompInterface, DecompileOptions
         from ghidra.util.task import ConsoleTaskMonitor
@@ -2334,6 +2539,8 @@ class GhidraHeadless:
 
         for func in fm.getFunctions(True):
             if monitor.isCancelled():
+                break
+            if denetci is not None and denetci.denetle(func_count):
                 break
             func_count += 1
 
@@ -2418,21 +2625,27 @@ class GhidraHeadless:
 
         decomp.dispose()
 
-        return {
+        out = {
             "program": program.getName(),
             "total_functions": len(functions_data),
             "total_pcode_ops": total_ops,
             "mnemonic_distribution": mnemonic_dist,
             "functions": functions_data,
         }
+        if denetci is not None:
+            out.update(denetci.kismi_alanlari())
+        return out
 
     @staticmethod
-    def _extract_pcode_stats_only(program) -> dict[str, Any]:
+    def _extract_pcode_stats_only(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
         """P-Code istatistiklerini tam extraction yapmadan topla.
 
         DecompInterface acmaz, sadece FunctionManager'dan fonksiyon sayisini
         ve Listing'den instruction sayisini alir. 4.7GB pcode.json yerine
         ~200 byte uretir.
+
+        ÖL-2: ``denetci`` ile ``KUCUK_BIRIM_DENETIM_ADIMI`` komutta bir bütçe / olay denetimi
+        (sayaç birimi komut; toplam bilinmiyor).
         """
         fm = program.getFunctionManager()
         func_count = fm.getFunctionCount()
@@ -2442,10 +2655,13 @@ class GhidraHeadless:
         instruction_count = 0
         inst_iter = listing.getInstructions(True)
         while inst_iter.hasNext():
+            if (denetci is not None and instruction_count % KUCUK_BIRIM_DENETIM_ADIMI == 0
+                    and denetci.denetle(instruction_count)):
+                break
             inst_iter.next()
             instruction_count += 1
 
-        return {
+        out = {
             "program": str(program.getName()),
             "total_functions": func_count,
             "total_pcode_ops": instruction_count,  # proxy: 1 instruction ~= 2-5 pcode ops
@@ -2455,6 +2671,9 @@ class GhidraHeadless:
                 "mnemonic_distribution": {},
             },
         }
+        if denetci is not None:
+            out.update(denetci.kismi_alanlari())
+        return out
 
     @staticmethod
     def _write_pcode_jsonl(output_dir: Path, decompile_results: dict) -> dict:
@@ -2517,12 +2736,14 @@ class GhidraHeadless:
         }
 
     @staticmethod
-    def _extract_cfg(program) -> dict[str, Any]:
+    def _extract_cfg(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
         """Control flow graph (basic block + edge) cikar.
 
         Her fonksiyon icin basic block'lari ve aralarindaki
         akis kenarlarini toplar. Loop detection ve complexity
         analizi icin temel veri kaynagi.
+
+        ÖL-2: ``denetci`` ile fonksiyon başına bütçe / olay denetimi.
         """
         from ghidra.program.model.block import BasicBlockModel
         from ghidra.util.task import ConsoleTaskMonitor
@@ -2539,6 +2760,8 @@ class GhidraHeadless:
 
         for func in fm.getFunctions(True):
             if monitor.isCancelled():
+                break
+            if denetci is not None and denetci.denetle(func_count):
                 break
             func_count += 1
 
@@ -2650,13 +2873,16 @@ class GhidraHeadless:
             if func_count % BATCH_SIZE == 0:
                 logger.info("CFG: %d fonksiyon islendi", func_count)
 
-        return {
+        out = {
             "program": program.getName(),
             "total_functions": len(functions_data),
             "total_blocks": total_blocks,
             "total_edges": total_edges,
             "functions": functions_data,
         }
+        if denetci is not None:
+            out.update(denetci.kismi_alanlari())
+        return out
 
     @staticmethod
     def _get_program_info(program) -> dict[str, Any]:
@@ -2876,8 +3102,10 @@ class GhidraHeadless:
             return False
 
     @staticmethod
-    def _extract_function_id_matches(program) -> dict[str, Any]:
-        """Ghidra FunctionID eslesmelerini topla.
+    def _extract_function_id_matches(
+        program, denetci: _AdimDenetcisi | None = None,
+    ) -> dict[str, Any]:
+        """Ghidra FunctionID eslesmelerini topla (ÖL-2: ``denetci`` ile fonksiyon başına denetim).
 
         Ghidra'nin otomatik FunctionID analizinden sonra, FUN_ ile baslamayan
         ve source'u ANALYSIS olan fonksiyonlari toplar. Bu fonksiyonlar
@@ -2899,7 +3127,11 @@ class GhidraHeadless:
         fm = program.getFunctionManager()
         matches = []
 
+        islenen = 0
         for func in fm.getFunctions(True):
+            if denetci is not None and denetci.denetle(islenen):
+                break
+            islenen += 1
             name = func.getName()
 
             # FUN_ ile baslayan isimler Ghidra default -- FunctionID tarafindan
@@ -2937,10 +3169,13 @@ class GhidraHeadless:
 
             matches.append(entry)
 
-        return {
+        out: dict[str, Any] = {
             "total_matches": len(matches),
             "matches": matches,
         }
+        if denetci is not None:
+            out.update(denetci.kismi_alanlari())
+        return out
 
     @staticmethod
     def _save_output(output_dir: Path, filename: str, data: dict) -> None:

@@ -110,6 +110,11 @@ STATUS_FALLBACK_LITE = "fallback_lite"
 STATUS_SKIPPED_BUSY = "skipped_busy"
 STATUS_FAILED = "failed"
 STATUS_NOT_RUN = "not_run"
+# ÖL-2: depoda bu programdan (ve aynı kimlikli kopyalarından) başka program yokken sorgu
+# koşmaz (kendi kendine eşleşirdi ve dışlanırdı); ingest / sorgu bütçesi dolarsa kısmi.
+STATUS_ATLANDI = "atlandi"
+STATUS_KISMI = "kismi"
+BOS_DEPO_NEDENI = "depoda başka program yok; sorgu kendi kendine eşleşirdi ve dışlanırdı"
 
 # Aday kaynagi (bsim_matches.json "matched_source").
 SOURCE_RECORDED = "recorded"        # kaynak kaydi var (md5 + sha256 + build-id)
@@ -1029,6 +1034,11 @@ class _BSimNativeWrapper:
         self.db_path = db_path
         self._database = None
         self.last_ingest_already = False
+        # ÖL-2: köprünün adım denetçisi (``headless._AdimDenetcisi``; None = bütçe / olay yok);
+        # bütçe dolunca son çağrının sayaçları (``islenen``, ``toplam``), dolmadıysa None.
+        self.denetci: Any = None
+        self.last_ingest_kismi: Optional[dict[str, int]] = None
+        self.last_query_kismi: Optional[dict[str, int]] = None
 
     # -- yardimcilar --------------------------------------------------
 
@@ -1243,6 +1253,8 @@ class _BSimNativeWrapper:
             database = self.open_client(db_name)
         gen = None
         self.last_ingest_already = False
+        self.last_ingest_kismi = None
+        denetci = getattr(self, "denetci", None)
         try:
             # R2 (idempotent ingest): bu exe (md5) DB'de zaten varsa YENIDEN
             # ekleme -> "already ingested with a different name" fatal hatasini
@@ -1260,7 +1272,15 @@ class _BSimNativeWrapper:
             gen = self._gen_signatures(database, program)
 
             func_count = 0
-            for func in self._iter_real_functions(program):
+            # ÖL-2: tarama döngüsü aynı; yalnız fonksiyon başına bütçe / olay denetimi ve sayaç.
+            # Bütçe dolunca tarama durur, taranan kısım eklenir (sonraki koşuların sorgusu için).
+            gercek = self._iter_real_functions(program)
+            taranan = 0
+            for func in gercek:
+                if denetci is not None and denetci.denetle(taranan, len(gercek)):
+                    self.last_ingest_kismi = {"islenen": taranan, "toplam": len(gercek)}
+                    break
+                taranan += 1
                 try:
                     gen.scanFunction(func)
                     func_count += 1
@@ -1442,15 +1462,30 @@ class _BSimNativeWrapper:
 
         gen = self._gen_signatures(database, program)
         scan_failed = 0
+        self.last_query_kismi = None
+        denetci = getattr(self, "denetci", None)
         try:
             scanned: list[Any] = []
+            taranan = 0
             for func in funcs:
+                # ÖL-2: tarama fonksiyon başına ilerler: parça sınırında bütçe / olay denetimi.
+                if denetci is not None and denetci.denetle(taranan, len(funcs)):
+                    break
+                taranan += 1
                 try:
                     gen.scanFunction(func)
                     scanned.append(func)
                 except Exception:
                     scan_failed += 1
                     logger.debug("BSim sorgu fonksiyonu taranamadi", exc_info=True)
+            # ÖL-2: ``QueryNearest.execute`` tek Java çağrısıdır, içinden kesilemez (HZ-2'nin
+            # alanı). Bütçe taramada ya da çağrıdan hemen önce dolduysa çağrı yapılmaz.
+            if denetci is not None and (denetci.doldu or denetci.denetle(taranan, len(funcs))):
+                denetci.ek_neden = "toplu sorgu çağrılmadı (%d / %d fonksiyon tarandı)" % (
+                    taranan, len(funcs))
+                denetci.islenen = 0  # sorgusu biten fonksiyon yok
+                self.last_query_kismi = {"islenen": 0, "toplam": len(funcs)}
+                return [], scan_failed
             if not scanned:
                 return [], scan_failed
 
@@ -1597,6 +1632,12 @@ class BSimDatabase:
 
         self.config = config
         self._closed = False
+        # ÖL-2: köprünün o anki alt adımının denetçisi (``headless._AdimDenetcisi``; ingest'ten
+        # önce ingest'in, sorgudan önce sorgunun). None = bütçe yok, adım içi olay yok.
+        self.denetci: Any = None
+        # ÖL-2: "depoda başka program var mı" kararı (ingest'ten önce, köken kaydından).
+        self._bos_depo: Optional[dict[str, Any]] = None
+        self._lite_kismi: Optional[dict[str, int]] = None
         self._session_lock: Optional[_DirLock] = None
         self._session_deadline = 0.0
         self._client: Any = None
@@ -1723,6 +1764,78 @@ class BSimDatabase:
         except Exception as exc:  # noqa: BLE001
             logger.warning("BSim kaynak kaydi yazilamadi: %s", exc)
 
+    def _bos_depoda_atla(self) -> bool:
+        return bool(self._bsim_cfg_value("bos_depoda_sorgu_atla", False))
+
+    def bos_depo_durumu(self, program: Any, db_name: str) -> dict[str, Any]:
+        """ÖL-2: depoda bu programdan başka program var mı (köken kaydından; Ghidra yok).
+
+        Programın kendisi ve aynı kimlikli kopyaları (``_Exclusion.classify`` ile aynı ölçüt:
+        md5, sha256, derleme kimliği) dışarıda tutulur: aynı ikili ikinci kez koşulduğunda depo
+        "boş" sayılır. Karar verilemiyorsa (köken kaydı bozuk / okunamıyor, karantinada yedeği
+        var, ya da kayıt yokken depo dosyası var) ``bos`` False'tur ve ``neden`` bunu söyler:
+        sorgu bugünkü gibi koşar.
+
+        Returns:
+            ``{"bos": bool, "kayit": n, "baska": m}`` ya da ``{"bos": False, "neden": "…"}``.
+        """
+        identity = self._identity_for(program)
+        store = _ProvenanceStore(self.db_path, db_name)
+        provenance = store.load()
+        if store.load_error:
+            return {"bos": False,
+                    "neden": f"köken kaydı okunamadı ({store.load_error}); sorgu atlanmadı"}
+        karantina = sorted(self.db_path.glob(f"{store.path.name}{_QUARANTINE_INFIX}*"))
+        if karantina:
+            return {"bos": False,
+                    "neden": f"köken kaydının karantinada {len(karantina)} yedeği var; "
+                             "sorgu atlanmadı"}
+        if not store.path.exists():
+            depo_dosyasi = (self.db_path / f"{db_name}.mv.db").exists() or (
+                self.db_path / _LITE_INDEX_NAME).exists()
+            if depo_dosyasi:
+                return {"bos": False,
+                        "neden": "köken kaydı yok ama depo dosyası var; sorgu atlanmadı"}
+        dislama = _Exclusion(identity, provenance)
+        baska = sum(1 for md5 in provenance if not dislama.classify(md5))
+        return {"bos": baska == 0, "kayit": len(provenance), "baska": baska}
+
+    def _bos_depo_karari(self, program: Any, db_name: str) -> dict[str, Any]:
+        """``bos_depo_durumu``; düşerse sorgu atlanmaz ve neden yazılır."""
+        try:
+            return self.bos_depo_durumu(program, db_name)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("BSim boş depo denetimi düştü: %s", exc)
+            return {"bos": False,
+                    "neden": f"boş depo denetimi düştü ({type(exc).__name__}: {exc}); "
+                             "sorgu atlanmadı"}
+
+    def _sorgu_karari(self, program: Any, db_name: str) -> dict[str, Any]:
+        """ÖL-2: sorgu atlanacak mı. Ayar kapalıysa ya da depo kilidi / liste düştüyse {}
+        (bugünkü yol). Ingest bu oturumda koştuysa onun ingest'ten ÖNCE verdiği karar."""
+        if not self._bos_depoda_atla():
+            return {}
+        if self.status.get("status") in (STATUS_SKIPPED_BUSY, STATUS_FAILED):
+            return {}
+        if self._bos_depo is None:
+            self._bos_depo = self._bos_depo_karari(program, db_name)
+        return self._bos_depo
+
+    def _ingest_kismi(self, kismi: Optional[dict[str, int]]) -> None:
+        """ÖL-2: ingest bütçesi dolduysa durum ``kismi``; sayılar ve neden yazılır."""
+        if not kismi:
+            return
+        den = self.denetci
+        neden = den.neden() if den is not None and hasattr(den, "neden") else "ingest bütçesi doldu"
+        if self.status.get("status") == STATUS_OK:
+            self.status["status"] = STATUS_KISMI
+        self.status["neden"] = "ingest: " + neden
+        self.status["ingest_islenen"] = int(kismi.get("islenen", 0))
+        if kismi.get("toplam") is not None:  # toplam bilinmiyorsa (lite) yazılmaz
+            self.status["ingest_toplam"] = int(kismi["toplam"])
+        logger.warning("BSim ingest bütçesi doldu: %s / %s fonksiyon tarandı (%s)",
+                       kismi.get("islenen"), kismi.get("toplam"), neden)
+
     # -- public -------------------------------------------------------
 
     def create_database(self, name: str) -> Path:
@@ -1775,9 +1888,14 @@ class BSimDatabase:
         t0 = time.monotonic()
         keep_session = bool(self._bsim_cfg_value("auto_query", True))
         try:
+            # ÖL-2: "depoda başka program var mı" ingest'ten ÖNCE ve kilit altında (eşzamanlı bir
+            # koşunun kaydı yarıda okunmasın) cevaplanır; sorgu bu kararı kullanır.
+            if self._bos_depoda_atla():
+                self._bos_depo = self._bos_depo_karari(program, db_name)
             if self.mode == "native" and self._native is not None:
                 try:
                     client = self._ensure_client(db_name)
+                    self._native.denetci = self.denetci
                     count = self._native.ingest_program(program, db_name, database=client)
                     self.status.update({
                         "mode": "native",
@@ -1785,6 +1903,7 @@ class BSimDatabase:
                         "ingested_functions": count,
                         "already_ingested": self._native.last_ingest_already,
                     })
+                    self._ingest_kismi(getattr(self._native, "last_ingest_kismi", None))
                     self._record_provenance(db_name, "native")
                     return count
                 except Exception as exc:
@@ -1811,6 +1930,7 @@ class BSimDatabase:
             if self.status.get("status") != STATUS_FALLBACK_LITE:
                 self.status.update({"mode": "lite", "status": STATUS_OK})
             self.status["ingested_functions"] = count
+            self._ingest_kismi(self._lite_kismi)
             self._record_provenance(db_name, "lite")
             return count
         finally:
@@ -1824,6 +1944,8 @@ class BSimDatabase:
             self._lite = _BSimLiteIndex(self.db_path)
         identity = self._identity
         func_count = 0
+        self._lite_kismi = None
+        denetci = getattr(self, "denetci", None)
         try:
             program_name = program.getName()
             func_manager = program.getFunctionManager()
@@ -1839,6 +1961,10 @@ class BSimDatabase:
                 logger.debug("Decompiler acilamadi: %s", exc)
 
             while func_iter.hasNext():
+                # ÖL-2: fonksiyon başına bütçe / olay denetimi (toplam bilinmiyor).
+                if denetci is not None and denetci.denetle(func_count):
+                    self._lite_kismi = {"islenen": func_count}
+                    break
                 func = func_iter.next()
                 if func.isThunk() or func.isExternal():
                     continue
@@ -1992,17 +2118,21 @@ class BSimDatabase:
                 slots = exclusion.extra_slots()
                 signif = self._significance()
                 batch_done = False
+                denetci = getattr(self, "denetci", None)
+                kismi: Optional[dict[str, int]] = None
                 if self._batch_query_enabled() and len(funcs) > 1:
                     # P16c: tek GenSignatures + tek QueryNearest. Düşerse eski tekli
                     # yola geçilir; dışlama sayaçları baştan sayılsın diye sıfırlanır.
                     counts_before = dict(exclusion.counts)
                     unrecorded_before = exclusion.unrecorded_candidates
                     try:
+                        self._native.denetci = denetci
                         batch_matches, scan_failed = self._native.query_functions(
                             client, program, funcs, min_similarity, max_results,
                             signif, exclusion, slots,
                         )
                         all_matches.extend(batch_matches)
+                        kismi = getattr(self._native, "last_query_kismi", None)
                         if scan_failed:
                             self.status["query_scan_failed"] = scan_failed
                         self.status["query_mode"] = "batch"
@@ -2017,7 +2147,13 @@ class BSimDatabase:
                         )
                 if not batch_done:
                     self.status["query_mode"] = "per_function"
+                    sorgulanan = 0
                     for func in funcs:
+                        # ÖL-2: fonksiyon başına yol: parça sınırında bütçe / olay denetimi.
+                        if denetci is not None and denetci.denetle(sorgulanan, len(funcs)):
+                            kismi = {"islenen": sorgulanan, "toplam": len(funcs)}
+                            break
+                        sorgulanan += 1
                         try:
                             all_matches.extend(self._native.query_function(
                                 client, program, func, min_similarity, max_results,
@@ -2028,6 +2164,9 @@ class BSimDatabase:
                             logger.debug("BSim tek fonksiyon sorgusu basarisiz", exc_info=True)
                 if self.status.get("status") == STATUS_NOT_RUN:
                     self.status["status"] = STATUS_OK
+                if kismi:
+                    self._sorgu_kismi(kismi)
+                    return self._result(db_name, kismi["islenen"], all_matches, t0, exclusion)
                 return self._result(db_name, len(funcs), all_matches, t0, exclusion)
 
             # Lite mod
@@ -2036,7 +2175,13 @@ class BSimDatabase:
             lookup = self._lite.build_lookup(db_name)
             program_name = _call_str(lambda: program.getName())
             decomp_iface = None
-            for func in funcs:
+            denetci = getattr(self, "denetci", None)
+            lite_kismi: Optional[dict[str, int]] = None
+            for sira, func in enumerate(funcs):
+                # ÖL-2: fonksiyon başına bütçe / olay denetimi.
+                if denetci is not None and denetci.denetle(sira, len(funcs)):
+                    lite_kismi = {"islenen": sira, "toplam": len(funcs)}
+                    break
                 try:
                     func_addr = str(func.getEntryPoint())
                     hashes = self._lite_hashes.get(func_addr)
@@ -2071,10 +2216,42 @@ class BSimDatabase:
                     logger.debug("Decompiler dispose basarisiz", exc_info=True)
             if self.status.get("status") == STATUS_NOT_RUN:
                 self.status["status"] = STATUS_OK
+            if lite_kismi:
+                self._sorgu_kismi(lite_kismi)
+                return self._result(db_name, lite_kismi["islenen"], all_matches, t0, exclusion)
             return self._result(db_name, len(funcs), all_matches, t0, exclusion)
         finally:
             if started_here or self.status.get("status") == STATUS_SKIPPED_BUSY:
                 self._end_session()
+
+    def _neden_ekle(self, neden: str) -> None:
+        onceki = self.status.get("neden")
+        self.status["neden"] = "%s; %s" % (onceki, neden) if onceki else neden
+
+    def _sorgu_kismi(self, kismi: dict[str, int]) -> None:
+        """ÖL-2: sorgu bütçesi dolduysa durum ``kismi``; eldeki eşleşmeler yazılır."""
+        den = self.denetci
+        neden = den.neden() if den is not None and hasattr(den, "neden") else "sorgu bütçesi doldu"
+        if self.status.get("status") == STATUS_OK:
+            self.status["status"] = STATUS_KISMI
+        self._neden_ekle("sorgu: " + neden)
+        self.status["sorgu_islenen"] = int(kismi.get("islenen", 0))
+        self.status["sorgu_toplam"] = int(kismi.get("toplam", 0))
+        logger.warning("BSim sorgu bütçesi doldu: %s / %s fonksiyon sorgulandı (%s)",
+                       kismi.get("islenen"), kismi.get("toplam"), neden)
+
+    def _atlanan_sorgu(self, db_name: str, t0: float) -> BSimResult:
+        """ÖL-2: boş depoda sorgu yerine aynı şemada sonuç (0 eşleşme, 0 sorgu, ``atlandi``)."""
+        try:
+            self.status["known_executables"] = len(_ProvenanceStore(self.db_path, db_name).load())
+        except Exception:  # noqa: BLE001
+            logger.debug("BSim kaynak kaydi okunamadi", exc_info=True)
+        if self.status.get("status") in (STATUS_OK, STATUS_NOT_RUN):
+            self.status["status"] = STATUS_ATLANDI
+        self.status["sorgu_atlandi"] = True
+        self._neden_ekle(BOS_DEPO_NEDENI)
+        logger.info("BSim sorgusu atlandı: %s", BOS_DEPO_NEDENI)
+        return self._result(db_name, 0, [], t0)
 
     @staticmethod
     def _open_decompiler(program: Any) -> Any:
@@ -2147,7 +2324,15 @@ class BSimDatabase:
             self.status["reason"] = f"fonksiyon listesi alinamadi: {exc}"
 
         try:
-            result = self._query_functions(program, funcs, min_similarity, max_results, db_name)
+            karar = self._sorgu_karari(program, db_name)
+            if karar.get("bos"):
+                result = self._atlanan_sorgu(db_name, time.monotonic())
+            else:
+                if karar.get("neden"):
+                    # Karar verilemedi: sorgu bugünkü gibi koşar, neden durumda görünür.
+                    self.status["bos_depo_denetimi"] = karar["neden"]
+                result = self._query_functions(
+                    program, funcs, min_similarity, max_results, db_name)
         finally:
             # Oturum (ingest'ten beri tutulan kilit) burada biter; H2 havuzu kapanır.
             self._end_session()
