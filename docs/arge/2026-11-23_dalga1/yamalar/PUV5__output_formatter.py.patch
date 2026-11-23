@@ -1,0 +1,14 @@
+diff --git a/karadul/core/output_formatter.py b/karadul/core/output_formatter.py
+--- a/karadul/core/output_formatter.py
++++ b/karadul/core/output_formatter.py
+@@ -780,7 +780,9 @@
+                     continue
+                 if not new_name or new_name == orig:
+                     continue
+-                if not orig.startswith(placeholder_prefixes):
++                # P-ÜV5: Mach-O'da LC_MAIN girişinin anahtarı Ghidra'nın ``entry`` adıdır
++                # (yer tutucu; ``kesin.GENERIC_NAME_RE``); ``main`` adı haritada görünsün.
++                if not (orig.startswith(placeholder_prefixes) or orig == "entry"):
+                     continue
+                 # Güven, etiket ve kanal köken kaydından taşınır. Kayıt yoksa ya da kayıttaki ad
+                 # bu haritadaki adla aynı değilse güven bilinmiyordur: ``None`` yazılır, sabit bir
