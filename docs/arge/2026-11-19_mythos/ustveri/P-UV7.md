@@ -16,8 +16,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (özet `ozet/`).
 | 6 | Kalem 6 (K10) ölçümü ve kararı | ölçüldü (≥ %99) → eklendi; H5 TUTMADI | 896753a |
 | 7 | Mutasyon (≥ 8) | 17 / 17 öldü | a048bfe, 4607a31, 9be3eab |
 | 8 | Kabul ölçümü (H1, H2, H4, H6, H7; ek ikililer) | ölçüldü (10 dilim) | 4ac01c3 |
-| 9 | Dondurma → H3-sınama (docker-compose) | dondurma e9ae89d; H3-sınama TUTTU | e9ae89d + (sınama commit-i) |
-| 10 | Tam takım | bekliyor | — |
+| 9 | Dondurma → H3-sınama (docker-compose) | dondurma e9ae89d; H3-sınama TUTTU | e9ae89d, 2359068 |
+| 10 | Tam takım | 10 802 geçti / 13 atlandı / 0 kaldı | (son commit) |
 
 ## Kalem 2–4: kitaplık (`go_tip.py`, `tutarlilik.py`)
 
@@ -367,3 +367,29 @@ commit'lenmez — üçü `dizin/` kalıbına uymadığı için `git status`'ta `
   ↔ komut akışı ölçülmedi).
 - Go 1.18–1.19 ve > 1.27: tip verisi `desteklenmiyor` (T1 / T2 yok; damga en çok `tek_kaynak`).
 - `enable_go_metadata_integrity` bayrağı okunmadı (INERT; bağlama P-ÜV6b).
+
+## Kalem 10: tam takım (09:34–09:47, yük altında)
+
+Worktree kökünden, `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (HEAD
+`0be6d19`): **10 802 geçti / 13 atlandı / 0 kaldı** (152 seçim dışı, 777 sn). Main tabanı 10 756 +
+bu paketin 46 testi = 10 802. Günlük `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/tam_takim.log`.
+Yama gerekmedi (var olan dosyaya dokunulmadı; `enable_go_metadata_integrity` okunmadı, INERT
+kaydı yeşil).
+
+## Özet: hipotezler
+
+| | Hüküm | Sayı |
+|---|---|---|
+| H1 | TUTTU | gh / limactl bozulmamış sayılar başvuruyla alan alan aynı |
+| H2 | TUTTU | A–E araştırma sütunu 10 / 10 koşuda başvuruyla aynı |
+| H3 | TUTTU | keşif: 1.26 `itablink` (5 dilim) + 1.24 (docker-cli) T1 / T2 %100; sınama: docker-compose 1.23.8 T1 12 969 / 12 969, T2 140 217 / 140 217 |
+| H4 | TUTTU (beklenen olumsuz) | D 0 / 86, 0 / 451 |
+| H5 | TUTMADI | K10 ≥ %99 (eklendi) ama E 181 / 200, 185 / 200 (< %95) |
+| H6 | TUTTU | T3 yanlış alarmı %0,486 … %16,34 (33,6 kat) |
+| H7 | koşul sağlandı | 11 dilimde güçlü oran en çok 0 (T2p düzeltmesi öncesi limactl %0,206 → 4,9 kat; dürüst not yukarıda) |
+
+Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (144 KB; ölçüm özeti `ozet/`:
+`taban_*.json`, `sinama_docker-compose.json`, `deney_k10_*.json` (son), `deney_*.json` (ilk, K10'suz
+ve T2p düzeltmesi öncesi), `k10_*.json`, `kabul_10_dilim.json`, `hipotezler.json`).
+
+## PAKET BİTTİ
