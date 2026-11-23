@@ -1,0 +1,21 @@
+--- a/karadul/config.py
++++ b/karadul/config.py
+@@ -686,7 +686,7 @@
+     typeforge_timeout: float = 600.0         # Subprocess timeout (saniye)
+     typeforge_min_confidence: float = 0.85   # Merge icin minimum guven esigi
+     # v1.10.0 M3 T9: C++ RTTI/vtable reconstruction (Itanium ABI, single inheritance)
+-    enable_rtti_recovery: bool = False       # ETKİSİZ: analiz akışına bağlı değil (yalnız `karadul rtti`; P13b ad kanalını hazırladı, üretici adımı stages.py Faz 1'de yok)
++    enable_rtti_recovery: bool = False       # okuyan: pipeline/steps/rtti_recovery.py (P-ÜV4; Faz 1 listesine P-ÜV6b ekler)
+     rtti_abi: str = "itanium"                # `karadul rtti` öntanımı: "itanium" | "msvc" (analiz akışında okunmuyor)
+     rtti_max_vtable_entries: int = 64        # Vtable basina max okunacak method slot
+     # P13b / K-4: hata ayıklama bilgisi, ayrıştırılmış simge ve harici araç ad kanalları
+@@ -1254,9 +1254,6 @@
+     "binary_reconstruction.max_functions_to_process": (
+         "boru hattı fonksiyon sayısını sınırlamıyor; değer yalnız gösteriliyor (ARAYUZ-04)"
+     ),
+-    "binary_reconstruction.enable_rtti_recovery": (
+-        "RTTI kurtarma analiz akışına bağlı değil; yalnız ayrı `karadul rtti` komutu var"
+-    ),
+     "deep_trace.max_trace_depth": "derin izleme deep_trace bölümünü okumuyor",
+     "deep_trace.max_trace_targets": "derin izleme deep_trace bölümünü okumuyor",
+     "deep_trace.skip_runtime_functions": "derin izleme deep_trace bölümünü okumuyor",
