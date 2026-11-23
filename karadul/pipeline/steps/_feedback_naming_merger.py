@@ -112,6 +112,7 @@ def metadata_decision(meta: dict[str, Any], final_name: Any) -> dict[str, Any]:
         return {"ust_veri_adayi": fields}
     out = {
         "label": LABEL_METADATA,
+        "adres": meta.get("adres"),
         METADATA_CHANNEL_FIELD: source,
         ORIGINAL_NAME_FIELD: meta.get("ozgun_ad"),
         METADATA_CHECK_FIELD: METADATA_CHECK_UNMEASURED,

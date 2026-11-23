@@ -60,9 +60,11 @@ def test_ustveri_adlari_adres_cozumu() -> None:
            "confidence": 0.9998}
     harita = {"mappings": {"FUN_00000010": rec, "printVersion": rec, "init": rec,
                            "applicationDidFinishLaunching_": rec,
+                           "A::sel_": {**rec, "address": "0x70"},
                            "FUN_00000060": {**rec, "label": nl.LABEL_UNVERIFIED}}}
     out = {r["anahtar"]: r for r in uu.ustveri_adlari(harita, gfonk)}
-    assert set(out) == {"FUN_00000010", "printVersion", "init", "applicationDidFinishLaunching_"}
+    assert set(out) == {"FUN_00000010", "printVersion", "init", "applicationDidFinishLaunching_", "A::sel_"}
+    assert out["A::sel_"]["adres"] == 0x70 and out["A::sel_"]["a28"]
     assert out["FUN_00000010"]["adres"] == 0x10 and not out["FUN_00000010"]["a28"]
     assert out["printVersion"]["adres"] == 0x20 and out["printVersion"]["a28"]
     assert out["applicationDidFinishLaunching_"]["adres"] == 0x50

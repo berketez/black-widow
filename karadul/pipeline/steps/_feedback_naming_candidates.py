@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -210,8 +210,6 @@ class GhidraFunctionIndex:
     by_addr: dict[int, str]
     names: frozenset[str]
     delta: int = 0
-    # Ghidra adının C kodundaki yazımı (``code_name``) → kaç fonksiyon o yazımı taşıyor (A-28 tekliği)
-    code_name_counts: dict[str, int] = field(default_factory=dict)
 
     def key_for(self, addr: int) -> tuple[str | None, str]:
         """İkili adresinin Ghidra anahtarı. Dönen: (anahtar ya da None, sonuç)."""
@@ -222,14 +220,17 @@ class GhidraFunctionIndex:
             return None, "ghidra_adli"
         return name, "tuttu"
 
-    def key_for_selector(self, addr: int, selector: str | None) -> tuple[str | None, str]:
+    def key_for_selector(self, addr: int, selector: str | None,
+                         class_name: str | None) -> tuple[str | None, str]:
         """ObjC yöntemi için anahtar (KARARLAR A-28; yalnız ``objc_method`` kaynağı kullanır).
 
         Ghidra o adreste adsızsa ``key_for`` ile aynı (``tuttu``). Ghidra adı üst verideki seçiciyle
-        BİREBİR aynıysa anahtar o adın C kodundaki yazımıdır (``secici_yerine``): tam ad seçicinin
-        yerine yazılır. Aynı yazımı birden çok fonksiyon taşıyorsa (``init`` gibi; Ghidra sınıf ad
-        alanını ad listesine yazmaz) koddaki ad hangi fonksiyonun olduğunu ayırmaz → aday yok
-        (``secici_tekil_degil``). Ghidra'nın adı seçiciden farklı ve jenerik değilse dokunulmaz.
+        BİREBİR aynıysa (``secici_yerine``) tam ad seçicinin yerine yazılır; anahtar yöntemin C
+        kodundaki tanım adıdır: ``Sınıf::seçici`` (Ghidra yöntemi sınıf ad alanına koyar, ``:`` →
+        ``_``; terminal-notifier ve Ollama'da ölçüldü). Yalın seçici adı anahtar OLAMAZ: Ghidra
+        ``__objc_stubs`` saplamalarını da seçiciyle adlandırır (``objc_stub::printVersion``;
+        terminal-notifier'da 32 yöntemin 27'sinde), yalın ad saplamayı ve çağrılarını da değiştirirdi.
+        Ghidra'nın adı seçiciden farklı ve jenerik değilse dokunulmaz (``ghidra_adli``).
         """
         name = self.by_addr.get(int(addr) + self.delta)
         if name is None:
@@ -238,11 +239,9 @@ class GhidraFunctionIndex:
             return name, "tuttu"
         if not selector or name != selector:
             return None, "ghidra_adli"
-        key = code_name(name)
+        key = qualified_code_name(class_name, name)
         if key is None:
             return None, "gecersiz_ad"
-        if self.code_name_counts.get(key, 1) > 1:
-            return None, "secici_tekil_degil"
         return key, "secici_yerine"
 
     def key_for_name(self, symbol: str) -> tuple[str | None, str]:
@@ -269,16 +268,12 @@ def load_ghidra_index(
     funcs = data.get("functions", []) if isinstance(data, dict) else data
     by_addr: dict[int, str] = {}
     names: set[str] = set()
-    code_counts: dict[str, int] = {}
     for f in funcs if isinstance(funcs, list) else []:
         if not isinstance(f, dict) or not isinstance(f.get("name"), str):
             continue
         if f.get("is_external"):
             continue
         names.add(f["name"])
-        cn = code_name(f["name"])
-        if cn is not None:
-            code_counts[cn] = code_counts.get(cn, 0) + 1
         try:
             by_addr.setdefault(int(str(f.get("address", "")), 16), f["name"])
         except ValueError:
@@ -287,14 +282,14 @@ def load_ghidra_index(
     link_base = _binary_link_base(binary_path) if binary_path is not None else None
     if ghidra_image_base is not None and link_base is not None:
         delta = int(ghidra_image_base) - int(link_base)
-    return GhidraFunctionIndex(by_addr=by_addr, names=frozenset(names), delta=delta,
-                               code_name_counts=code_counts)
+    return GhidraFunctionIndex(by_addr=by_addr, names=frozenset(names), delta=delta)
 
 
 # Ghidra'nın C çıktısında tanımlayıcı olmayan karakterler ``_`` yazılır (ObjC seçicisi
-# ``applicationDidFinishLaunching:`` kodda ``applicationDidFinishLaunching_``; terminal-notifier'da
-# ölçüldü, P-UV6a.md).
+# ``applicationDidFinishLaunching:`` kodda ``AppDelegate::applicationDidFinishLaunching_``;
+# terminal-notifier'da ölçüldü, P-UV6a.md).
 _CODE_NAME_RE = re.compile(r"[^A-Za-z0-9_]")
+_IDENTIFIER_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 def code_name(ghidra_name: str) -> str | None:
@@ -305,6 +300,14 @@ def code_name(ghidra_name: str) -> str | None:
     if s[0].isdigit():
         return None
     return s
+
+
+def qualified_code_name(class_name: str | None, ghidra_name: str) -> str | None:
+    """ObjC yönteminin C kodundaki tanım adı ``Sınıf::seçici_``; sınıf adı tanımlayıcı değilse ``None``."""
+    name = code_name(ghidra_name)
+    if name is None or not isinstance(class_name, str) or not _IDENTIFIER_RE.fullmatch(class_name):
+        return None
+    return f"{class_name}::{name}"
 
 
 def _binary_link_base(binary_path: Path | None) -> int | None:
@@ -832,7 +835,10 @@ def _producer_status(status: Any) -> tuple[str | None, str]:
 
 def _metadata_gate(source: str, items: list[dict[str, Any]], status: Any,
                    producer_flag: str, stats: dict[str, Any]) -> bool:
-    """Kanal koşabilir mi; koşamıyorsa durumunu yazar. Üretici yoksa ``desteklenmiyor``."""
+    """Kanal koşabilir mi; koşamıyorsa durumunu yazar. Üretici yoksa ``desteklenmiyor``.
+
+    Sayaçlar her yinelemede sıfırdan (Faz 2 iki tur koşar; birikirse kayıt sayısı iki kat görünür)."""
+    stats.setdefault("naming_channels", {})[source] = {}
     durum, neden = _producer_status(status)
     if durum is None:
         _set_status(stats, source, CH_UNSUPPORTED,
@@ -987,7 +993,7 @@ def _add_objc_methods(
             ch["kanit_satiri"] = ch.get("kanit_satiri", 0) + 1
             evidence.append(_evidence_row(source, imp, full, reasons))
             continue
-        key, outcome = index.key_for_selector(imp, m.get("secici"))
+        key, outcome = index.key_for_selector(imp, m.get("secici"), m.get("sinif"))
         ch[outcome] = ch.get(outcome, 0) + 1
         if key is None:
             continue

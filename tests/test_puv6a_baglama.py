@@ -35,12 +35,7 @@ RAN_STATUS = {"durum": "calisti", "neden": ""}
 def _index(*addrs: int, named: dict[int, str] | None = None) -> FC.GhidraFunctionIndex:
     by_addr = {a: f"FUN_{a:08x}" for a in addrs}
     by_addr.update(named or {})
-    counts: dict[str, int] = {}
-    for n in by_addr.values():
-        cn = FC.code_name(n)
-        counts[cn] = counts.get(cn, 0) + 1
-    return FC.GhidraFunctionIndex(by_addr=by_addr, names=frozenset(by_addr.values()),
-                                  code_name_counts=counts)
+    return FC.GhidraFunctionIndex(by_addr=by_addr, names=frozenset(by_addr.values()))
 
 
 def _flags(**on: bool) -> dict[str, bool]:
@@ -118,7 +113,7 @@ def test_go_pcsp_mismatch_becomes_evidence_row(pcsp: str) -> None:
 def test_objc_a28_selector_named_function_gets_full_name() -> None:
     sel = "applicationDidFinishLaunching:"
     r = _run(_index(named={0x3000: sel}), objc=[_objc(0x3000, "AppDelegate", sel)])
-    key = "applicationDidFinishLaunching_"            # Ghidra'nın C çıktısındaki yazım
+    key = "AppDelegate::applicationDidFinishLaunching_"   # Ghidra'nın C çıktısındaki tanım adı
     (c,) = r.cands[key]
     assert c.name == "AppDelegate_applicationDidFinishLaunching"
     assert r.recs[key]["ozgun_ad"] == "-[AppDelegate applicationDidFinishLaunching:]"
@@ -136,11 +131,26 @@ def test_objc_ghidra_name_differs_from_selector_is_untouched() -> None:
     assert r.cands == {} and r.ch[OBJC]["ghidra_adli"] == 1
 
 
-def test_objc_selector_name_shared_by_two_functions_is_not_used() -> None:
-    """``init`` iki sınıfta: Ghidra'nın ad listesi ad alanını yazmaz, koddaki ``init`` ayırmaz."""
+def test_objc_same_selector_in_two_classes_gets_class_qualified_keys() -> None:
+    """``init`` iki sınıfta (ve ``objc_stub::init`` saplamasında): yalın ``init`` anahtar olsaydı
+    saplama ve çağrıları da değişirdi; anahtar sınıf ad alanıyla nitelenir."""
     r = _run(_index(named={0x4000: "init", 0x4100: "init"}),
              objc=[_objc(0x4000, "A", "init"), _objc(0x4100, "B", "init")])
-    assert r.cands == {} and r.ch[OBJC]["secici_tekil_degil"] == 2
+    assert sorted(r.cands) == ["A::init", "B::init"]
+    assert [c.name for c in r.cands["A::init"]] == ["A_init"]
+    assert "init" not in r.cands
+
+
+def test_objc_instance_and_class_method_same_key_become_evidence() -> None:
+    r = _run(_index(named={0x4200: "yeni", 0x4300: "yeni"}),
+             objc=[_objc(0x4200, "A", "yeni"), _objc(0x4300, "A", "yeni", tur="+", tam_ad="+[A yeni]")])
+    assert r.cands == {} and r.ch[OBJC]["cift_kayit"] == 1
+    assert sorted(e["ozgun_ad"] for e in r.ev) == ["+[A yeni]", "-[A yeni]"]
+
+
+def test_objc_invalid_class_name_gives_no_qualified_key() -> None:
+    r = _run(_index(named={0x4400: "x"}), objc=[_objc(0x4400, "A.B", "x")])
+    assert r.cands == {} and r.ch[OBJC]["gecersiz_ad"] == 1
 
 
 @pytest.mark.parametrize("alan,deger,neden", [

@@ -1037,6 +1037,7 @@ class OutputFormatter:
                     "evidence": provenance_evidence(dec),
                     ORIGINAL_NAME_FIELD: dec.get(ORIGINAL_NAME_FIELD),
                     METADATA_CHECK_FIELD: dec.get(METADATA_CHECK_FIELD),
+                    "address": dec.get("adres"),
                 }
         return out
 

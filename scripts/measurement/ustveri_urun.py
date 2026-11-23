@@ -252,8 +252,8 @@ def kod_kimlikleri(src: Path) -> set[str]:
 def ustveri_adlari(harita: dict[str, Any], gfonk: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """``out/naming_map.json`` ``mappings``'teki ``label = üst veriden`` kayıtları + anahtarın adresi.
 
-    Anahtar ``FUN_<adres>`` ise adres ondan; değilse (A-28: Ghidra'nın seçici adının C yazımı) Ghidra
-    fonksiyon listesinde o yazımı taşıyan TEK fonksiyonun adresi (birden çoksa adres yok)."""
+    Anahtar ``FUN_<adres>`` ise adres ondan; değilse kaydın ``address`` alanı (A-28: ``Sınıf::seçici_``);
+    o da yoksa Ghidra fonksiyon listesinde anahtarın yazımını taşıyan TEK fonksiyonun adresi."""
     from karadul.pipeline.steps._feedback_naming_candidates import code_name
     yazim: dict[str, list[int]] = {}
     for g in gfonk:
@@ -267,6 +267,8 @@ def ustveri_adlari(harita: dict[str, Any], gfonk: list[dict[str, Any]]) -> list[
         m = re.fullmatch(r"FUN_([0-9a-fA-F]+)", k)
         if m:
             adres: Optional[int] = int(m.group(1), 16)
+        elif isinstance(r.get("address"), str):
+            adres = int(r["address"], 16)               # A-28 kaydı adresini taşır
         else:
             adlar = yazim.get(k) or []
             adres = adlar[0] if len(adlar) == 1 else None

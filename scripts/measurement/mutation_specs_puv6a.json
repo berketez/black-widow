@@ -34,12 +34,12 @@
    "replace": "        return None, \"secici_yerine\""
   },
   {
-   "id": "puv6a_a28_teklik_denetimi_yok",
-   "desc": "aynı seçici adını taşıyan iki fonksiyonda da tam ad yazılır",
+   "id": "puv6a_a28_yalin_secici_anahtar",
+   "desc": "A-28 anahtarı sınıf ad alanı olmadan yalın seçici (objc_stub saplaması da değişirdi)",
    "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
    "test": "tests/test_puv6a_baglama.py",
-   "find": "if self.code_name_counts.get(key, 1) > 1:",
-   "replace": "if self.code_name_counts.get(key, 1) > 99:"
+   "find": "    return f\"{class_name}::{name}\"",
+   "replace": "    return name"
   },
   {
    "id": "puv6a_pcsp_suzgeci_yok",
