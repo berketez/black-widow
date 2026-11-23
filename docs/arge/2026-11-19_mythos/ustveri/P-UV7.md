@@ -12,7 +12,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (özet `ozet/`).
 | 2 | Tip verisi okuyucu (`go_tip.py`) + sentetik testler | yazıldı | (kitaplık commit'i) |
 | 3 | Denetimler T1, T2, T2p, T5, T6 (güçlü); T3, T4 (zayıf) | yazıldı | (kitaplık commit'i) |
 | 4 | Damga + ikili özeti | yazıldı | (kitaplık commit'i) |
-| 5 | Bozma deneyi betiği (A–E) | bekliyor | — |
+| 5 | Bozma deneyi betiği (A–E) | yazıldı; H2 TUTTU | (betik commit'i) |
 | 6 | Kalem 6 (K10) ölçümü ve kararı | bekliyor | — |
 | 7 | Mutasyon (≥ 8) | bekliyor | — |
 | 8 | Kabul ölçümü (H1, H2, H4, H6, H7; ek ikililer) | bekliyor | — |
@@ -51,3 +51,48 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/` (özet `ozet/`).
   betikleriyle "tutarsızlık" bildirdi; değerler aynı (araştırmada sayısal anahtar, üründe
   adlandırılmış sabit; `FUNC_ID` tabloları programla karşılaştırıldı: eşit). Ürün `go_pclntab.py`
   `FUNC_ID` tablosunu tanımlamıyor → üründeki tek tanım `tutarlilik.py`'de (P-ÜV6b notu).
+
+## Kalem 5: bozma deneyi betiği (`scripts/measurement/ustveri_bozma.py`)
+
+- Alt komutlar: `taban <ikili> [--dilim]` (bozulmamış ikilide denetim özeti), `deney <ince ikili>
+  [--k10]` (A–E), `k10 <ince ikili>` (kalem 6 ölçüsü, `capstone`). İkili çalıştırılmaz; bozuk
+  kopyalar yalnız bellekte (`goruntu.baytlardan`); özgün dosyaya yazılmaz, diske kopya yazılmaz.
+- Betik depo kökünü `sys.path`'in önüne koyar: `python scripts/…` ile koşulunca editable kurulumun
+  gösterdiği ana ağaç değil, worktree'nin `karadul`'u yüklenir (ilk koşuda `ImportError` ile
+  görüldü, düzeltildi).
+- Örneklem araştırmanınkiyle aynı (aday dışlaması T3 dahil "araştırma güçlü" tanımıyla). Rapor iki
+  sütun: `arastirma` (başvuruyla karşılaştırma) ve `urun` (ürün damgası `tutarsiz`; K4 ürünün
+  `pcsp_kapsama` sonucu).
+
+### H2 — aynı tohumla A–E başvuruyla aynı → TUTTU
+
+Komut: `python scripts/measurement/ustveri_bozma.py deney $V/hedef/<ad> --cikti
+~/karadul_olcum/runs/dalga1-2026-11-23/PUV7/ozet/deney_<ad>.json` (yük altında, ~6–7 sn / ikili).
+`arastirma` sütununun bütün alanları (`guclu_denetim_yakaladi`, ikinci kaynaklıda / kaynaksızda,
+yalnız T4, K4, hiçbiri, `yakalayan_denetim`, bozulmayanda yeni işaret) + bozulan ve ikinci kaynaklı
+bozulan sayıları `$V/dusman/<ad>.deney.json` ile 10 / 10 koşuda aynı. Taban güçlü işaretli
+(araştırma tanımı) gh 154 / 154, limactl 2 448 / 2 448.
+
+| İkili | Tür | Bozulan | Araştırma sütunu (= başvuru) | Ürün damgası `tutarsiz` | Ürün: güçlü T | Ürün: K4 `pcsp_kapsama` | Bozulmayanda yeni `tutarsiz` | İkili kararı |
+|---|---|---|---|---|---|---|---|---|
+| gh | A | 200 | 66 | 66 | 66 | 0 | 0 | uyari |
+| gh | B | 200 | 181 | 68 | 68 | 0 | 0 | uyari |
+| gh | C | 200 | 73 | 73 | 73 | 0 | 0 | uyari |
+| gh | D | 86 | 0 | 0 | 0 | 0 | 0 | uyari |
+| gh | E | 200 | 65 (+ K4 160) | 181 | 65 | 159 | 0 | uyari |
+| limactl | A | 200 | 84 | 84 | 84 | 0 | 0 | uyari |
+| limactl | B | 200 | 192 | 92 | 92 | 0 | 0 | uyari |
+| limactl | C | 200 | 82 | 82 | 82 | 0 | 0 | uyari |
+| limactl | D | 451 | 0 | 0 | 0 | 0 | 0 | uyari |
+| limactl | E | 200 | 67 (+ K4 166) | 177 | 71 | 165 | 0 | uyari |
+
+Okuma:
+- B'de araştırma sütunu 181 / 192, ürün 68 / 92: farkı T3 yapıyor (araştırmada güçlü sayılıyordu;
+  ürün planı gereği zayıf). Ürünün B yakalaması yalnız ikinci kaynaklı fonksiyonlarda.
+- E'de ürün 181 / 177: K4 `pcsp_kapsama` (fonksiyon başına, P-ÜV1) + T. Araştırmanın K4'ü 160 /
+  166 (birleştirici dili ayrımı yok); ürününki 159 / 165.
+- **İkili kararı hiçbir bozmada `ust_veri_supheli`'ye çıkmadı:** 200 fonksiyonun bozulması
+  40 000'lik ikilide en çok %0,45 güçlü işaret veriyor (< %1). Eşik yalnız toplu bozmayı / bozuk
+  üst veriyi yakalar; tek tek ad tahrifatını fonksiyon başına damga yakalıyor (H7'ye bakınız).
+- limactl E'de güçlü T ürün 71, araştırma 67: araştırmanın güçlü tanımı T3'ü de içerdiği için
+  tabanda T3 işaretli fonksiyonlar "yeni" sayılmıyordu; ürün sütunu T3'süz tabana göre sayar.
