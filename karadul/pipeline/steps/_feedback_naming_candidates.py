@@ -1092,34 +1092,63 @@ def _add_bindiff(
     bindiff_confidence_map: dict[str, tuple[str, float, str]],
     candidates: dict[str, list[Any]],
 ) -> None:
+    """BinDiff adları. PK-1: güven eşleyicinin puanı değil, yöntemin ölçülmüş kesinliğinin Wilson
+    alt sınırı (``yontem_kapisi.olculmus_alt``); kapıdan geçmeyen yöntem aday olmaz (kapı
+    ``_feedback_naming_bindiff``'te; burada ikinci kez denetlenir). Kaynak adı ``bindiff_<yöntem>``."""
     if not bindiff_confidence_map:
         return
-    for old_name, (new_name, conf, method) in bindiff_confidence_map.items():
+    from karadul.reconstruction.kimlik import yontem_kapisi as _kapi
+
+    added = 0
+    for old_name, (new_name, _conf, method) in bindiff_confidence_map.items():
         if not old_name or len(old_name) < 2 or not new_name:
             continue
+        measured = _kapi.olculmus_alt(method)
+        if measured is None or not _kapi.ad_verebilir(method):
+            continue
         candidates.setdefault(old_name, []).append(
-            NamingCandidate(new_name, conf, f"bindiff_{method}"),
+            NamingCandidate(new_name, measured, f"bindiff_{method}"),
         )
+        added += 1
     logger.debug(
-        "BinDiff: %d candidate (per-match confidence) Name Merger'a eklendi",
-        len(bindiff_confidence_map),
+        "BinDiff: %d candidate (yöntemin ölçülmüş güveni) Name Merger'a eklendi", added,
     )
 
 
 def _add_refdiff(
     refdiff_naming: dict[str, str], candidates: dict[str, list[Any]],
+    refdiff_methods: dict[str, str] | None = None,
 ) -> None:
+    """ReferenceDiffer adları. PK-1: sabit 0,95 yerine yöntemin ölçülmüş Wilson alt sınırı.
+
+    ``refdiff_naming`` yalnız yöntem kapısından geçmiş adları taşır (``_feedback_naming_refdiff``).
+    Yöntem bilgisi (``refdiff_methods``: hedef → yöntem) verilmişse adın kendi yönteminin değeri;
+    verilmemişse (bugünkü çağrı; değer ``refdiff_naming``'le taşınmıyor) ReferenceDiffer'ın kapıdan
+    geçen yöntemlerinin en düşüğü (hiçbir ölçülmüş değerden yüksek değil). Kapıdan geçmeyen ya da
+    ölçülmemiş yöntem aday olmaz.
+    """
     if not refdiff_naming:
         return
+    from karadul.reconstruction.kimlik import yontem_kapisi as _kapi
+
+    fallback = _kapi.en_dusuk_alt(_kapi.REFDIFF_YONTEMLERI)
+    added = 0
     for old_name, new_name in refdiff_naming.items():
         if not old_name or len(old_name) < 2 or not new_name:
             continue
+        if refdiff_methods is not None and old_name in refdiff_methods:
+            method = refdiff_methods[old_name]
+            conf = _kapi.olculmus_alt(method) if _kapi.ad_verebilir(method) else None
+        else:
+            conf = fallback
+        if conf is None:
+            continue
         candidates.setdefault(old_name, []).append(
-            NamingCandidate(new_name, 0.95, "reference_differ"),
+            NamingCandidate(new_name, conf, "reference_differ"),
         )
+        added += 1
     logger.debug(
-        "ReferenceDiffer: %d candidate Name Merger'a eklendi",
-        len(refdiff_naming),
+        "ReferenceDiffer: %d candidate Name Merger'a eklendi", added,
     )
 
 
