@@ -1,8 +1,8 @@
 """HZ-4a: döküm adımlarında tek başvuru geçişi — eski ve yeni yol aynı çıktıyı verir.
 
 Çağrı grafiği ve xref dökümü ``_BasvuruTablosu`` üstünden (yalnız başvurusu olan adresler,
-fonksiyon başına tek geçiş, iki adım ortak kayıt), CFG fonksiyon başına taze blok modeliyle
-kurulur. Sözleşme: çıktı eski döngülerle bayt bayt aynı (``json.dumps`` metni), ÖL-2'nin bütçe /
+fonksiyon başına tek geçiş, iki adım ortak kayıt) kurulur; CFG dökümü bu pakette değişmedi
+(ölçümde Python tarafında kazanç yolu çıkmadı). Sözleşme: çıktı eski döngülerle bayt bayt aynı (``json.dumps`` metni), ÖL-2'nin bütçe /
 ``suruyor`` / kısmi çıktı davranışı aynı, Java çağrısı sayısı düşer.
 
 Ghidra yok: program, başvuru yöneticisi, liste, simge tablosu ve blok modeli sahte. Sahte
@@ -486,7 +486,7 @@ def _yeni(**kw):
     assert t is not None
     return (GhidraHeadless._extract_call_graph(p, tablo=t),
             GhidraHeadless._extract_xrefs(p, tablo=t, tek_gecis=True),
-            GhidraHeadless._extract_cfg(p, tek_gecis=True), p, t)
+            GhidraHeadless._extract_cfg(p), p, t)
 
 
 # ---------------------------------------------------------------------------
@@ -718,18 +718,15 @@ def test_simge_sayimi_hasreferencesto_ile_ayni_sayi(ghidra_sahte) -> None:
 
 
 # ---------------------------------------------------------------------------
-# CFG: fonksiyon başına taze blok modeli
+# CFG: bu pakette değişmedi (program boyunca tek blok modeli); köprü ek argüman vermez
 # ---------------------------------------------------------------------------
 
-def test_cfg_tek_geciste_blok_modeli_fonksiyon_basina_kurulur(ghidra_sahte) -> None:
+def test_cfg_dokumu_degismedi_tek_blok_modeli(ghidra_sahte) -> None:
     p = _senaryo()
     GhidraHeadless._extract_cfg(p)
     assert _BlokModeli.kurulan == 1 and _BlokModeli.en_buyuk_birikim == 7
-    _BlokModeli.kurulan = _BlokModeli.en_buyuk_birikim = 0
-    GhidraHeadless._extract_cfg(_senaryo(), tek_gecis=True)
-    assert _BlokModeli.kurulan == 1 + 5            # baştaki + fonksiyon başına bir model
-    # birikim bir fonksiyonla sınırlı: ana'nın 3 bloğu + çağrı hedefi bloğu
-    assert _BlokModeli.en_buyuk_birikim == 4
+    with pytest.raises(TypeError):
+        GhidraHeadless._extract_cfg(_senaryo(), tek_gecis=True)
 
 
 # ---------------------------------------------------------------------------
@@ -765,7 +762,7 @@ def _kos(ad: str, p: _Program, d, yeni: bool):
     if ad == "xref":
         return GhidraHeadless._extract_xrefs(
             p, denetci=d, **({"tablo": t, "tek_gecis": True} if yeni else {}))
-    return GhidraHeadless._extract_cfg(p, denetci=d, **({"tek_gecis": True} if yeni else {}))
+    return GhidraHeadless._extract_cfg(p, denetci=d)
 
 
 @pytest.mark.parametrize("ad", ["call_graph", "xref", "cfg"])
@@ -929,7 +926,7 @@ def test_kopru_bayrak_acikken_ortak_tablo_ve_ayni_cikti(kopru_hz4, tmp_path, ghi
     assert isinstance(tablo, _BasvuruTablosu)
     assert gorulen["_extract_xrefs"]["tablo"] is tablo        # iki adım AYNI tablo
     assert gorulen["_extract_xrefs"]["tek_gecis"] is True
-    assert gorulen["_extract_cfg"]["tek_gecis"] is True
+    assert set(gorulen["_extract_cfg"]) == {"denetci"}        # CFG'ye ek argüman verilmez
     assert program.sayac["getReferenceSourceIterator"] == 5   # iki adımda tek geçiş
     cg0, xr0, cf0, _ = _eski()
     assert kaydedilen["call_graph.json"] == _metin(cg0)

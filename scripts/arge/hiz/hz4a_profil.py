@@ -642,7 +642,7 @@ def _butce_denemesi(GH: Any, H: Any, program: Any, sure: dict[str, Any],
     out["xref"]["statistics"] = v["statistics"]
 
     d = denetci("ghidra.cfg", sure["cfg"]["sn"])
-    v = GH._extract_cfg(program, denetci=d, tek_gecis=True)
+    v = GH._extract_cfg(program, denetci=d)
     n = len(v["functions"])
     out["cfg"] = ozet(v, d, v["functions"] == tam["cfg"]["functions"][:n])
     out["cfg"]["dokulen_fonksiyon"] = n
@@ -660,7 +660,7 @@ def _kiyas(GH: Any, program: Any, yaz: Path | None) -> dict[str, Any]:
         xr, sure["xref"] = _olc(etiket + " xref", GH._extract_xrefs, program, tablo=tablo,
                                 tek_gecis=tek)
         tablo = None
-        cf, sure["cfg"] = _olc(etiket + " cfg", GH._extract_cfg, program, tek_gecis=tek)
+        cf, sure["cfg"] = _olc(etiket + " cfg", GH._extract_cfg, program)
         sure["toplam_sn"] = round(sum(sure[a]["sn"] for a in ("call_graph", "xref", "cfg")), 3)
         metin = {"call_graph": _metin(cg), "xrefs": _metin(xr), "cfg": _metin(cf)}
         return metin, sure

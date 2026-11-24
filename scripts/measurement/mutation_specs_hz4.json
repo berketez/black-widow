@@ -1,5 +1,5 @@
 {
-  "_comment": "HZ-4a (döküm adımlarında tek başvuru geçişi) mutasyon koruması: başvuru tablosu (kaynak sırası denetimi, bayatlama, kayıt saklama, çağıran sırası, tekilleştirmeler, dizgi süzgeci, çözümleme önbellekleri, PK-8 iç tablosu, çıktı kopyaları, API denetimi), genel simge sayımı (tür süzgeci, başvuru hükmü, yol seçimi), CFG'de fonksiyon başına taze blok modeli, köprü bağlantıları (bayrak, ortak tablo, CFG argümanı, API yokken eski yol), bütçe sayacı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_hz4.json",
+  "_comment": "HZ-4a (döküm adımlarında tek başvuru geçişi) mutasyon koruması: başvuru tablosu (kaynak sırası denetimi, bayatlama, kayıt saklama, çağıran sırası, tekilleştirmeler, dizgi süzgeci, çözümleme önbellekleri, PK-8 iç tablosu, çıktı kopyaları, API denetimi), genel simge sayımı (tür süzgeci, başvuru hükmü, yol seçimi), köprü bağlantıları (bayrak, ortak tablo, API yokken eski yol), bütçe sayacı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_hz4.json",
   "mutants": [
     {
       "id": "hz4_kaynak_sirasi_denetimsiz",
@@ -178,14 +178,6 @@
       "replace": "if tablo is not None and ikinci_bolum:"
     },
     {
-      "id": "hz4_cfg_taze_model_kurulmaz",
-      "desc": "CFG tek geçişte de program boyunca tek blok modeli kullanır (önbellek birikir)",
-      "module": "karadul/ghidra/headless.py",
-      "test": "tests/test_hz4_dokum.py::test_cfg_tek_geciste_blok_modeli_fonksiyon_basina_kurulur",
-      "find": "                if tek_gecis:  # HZ-4a: fonksiyon başına taze model (blok önbelleği birikmez)",
-      "replace": "                if False:  # HZ-4a: fonksiyon başına taze model (blok önbelleği birikmez)"
-    },
-    {
       "id": "hz4_kopru_bayrak_okunmaz",
       "desc": "Köprü analysis.dokum_tek_gecis ayarını okumaz (hep eski döngüler)",
       "module": "karadul/ghidra/headless.py",
@@ -208,14 +200,6 @@
       "test": "tests/test_hz4_dokum.py::test_kopru_bayrak_acikken_ortak_tablo_ve_ayni_cikti",
       "find": "**({\"tablo\": basvuru_tablosu, \"tek_gecis\": True} if tek_gecis else {}))",
       "replace": "**({\"tablo\": _BasvuruTablosu.kur(program), \"tek_gecis\": True} if tek_gecis else {}))"
-    },
-    {
-      "id": "hz4_kopru_cfg_tek_gecis_verilmez",
-      "desc": "Köprü CFG adımına tek_gecis vermez",
-      "module": "karadul/ghidra/headless.py",
-      "test": "tests/test_hz4_dokum.py::test_kopru_bayrak_acikken_ortak_tablo_ve_ayni_cikti",
-      "find": "program, denetci=den, **({\"tek_gecis\": True} if tek_gecis else {}))",
-      "replace": "program, denetci=den)"
     },
     {
       "id": "hz4_kopru_api_yokken_arguman_verir",

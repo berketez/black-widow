@@ -1007,9 +1007,10 @@ class GhidraHeadless:
                 saat.bitti(ADIM_STRINGS)
 
                 # HZ-4a: ``analysis.dokum_tek_gecis`` açıkken çağrı grafiği ve xref dökümü ortak
-                # başvuru tablosundan kurulur, CFG blok başına komut yineleyicisi kurmaz.
-                # Kapalıyken (ya da programın başvuru yöneticisinde gereken API yoksa) bugünkü
-                # döngüler koşar ve işlevlere ek argüman verilmez. Çıktı iki yolda aynıdır.
+                # başvuru tablosundan kurulur (CFG dökümü değişmedi: ölçümde Python tarafında kazanç
+                # yolu çıkmadı). Kapalıyken (ya da programın başvuru yöneticisinde gereken API
+                # yoksa) bugünkü döngüler koşar ve işlevlere ek argüman verilmez. Çıktı iki yolda
+                # aynıdır.
                 basvuru_tablosu = None
                 if bool(getattr(getattr(self.config, "analysis", None),
                                 "dokum_tek_gecis", False)):
@@ -1167,8 +1168,7 @@ class GhidraHeadless:
                 saat.basla(ADIM_CFG)
                 try:
                     den = _denetci(ADIM_CFG, toplam=_fonksiyon_toplami())
-                    cfg_data = self._extract_cfg(
-                        program, denetci=den, **({"tek_gecis": True} if tek_gecis else {}))
+                    cfg_data = self._extract_cfg(program, denetci=den)
                     scripts_output["cfg"] = cfg_data
                     self._save_output(output_dir, "cfg.json", cfg_data)
                     log_lines.append(
@@ -3013,8 +3013,7 @@ class GhidraHeadless:
         }
 
     @staticmethod
-    def _extract_cfg(program, denetci: _AdimDenetcisi | None = None,
-                     tek_gecis: bool = False) -> dict[str, Any]:
+    def _extract_cfg(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
         """Control flow graph (basic block + edge) cikar.
 
         Her fonksiyon icin basic block'lari ve aralarindaki
@@ -3045,8 +3044,6 @@ class GhidraHeadless:
 
             try:
                 body = func.getBody()
-                if tek_gecis:  # HZ-4a: fonksiyon başına taze model (blok önbelleği birikmez)
-                    block_model = BasicBlockModel(program)
                 blocks_iter = block_model.getCodeBlocksContaining(body, monitor)
 
                 blocks_data = []
