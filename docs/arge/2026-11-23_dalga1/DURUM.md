@@ -236,3 +236,15 @@ Berke (13:0x): "ertesi gün oldu, kaldığımız yerden devam edelim." Düzen ay
 - **Berke (13:4x): projenin ana amacı "geri kurma" (A-41):** ikiliden yeniden derlenebilen ve özgün programla aynı davranan kod; eksikleri KaradulLM doldurur, hesap denetler. Tasarım turu GK-0, metni `gonderim/GK0.md` (Mythos ajanı; belge + bugünkü çıktının derlenebilirlik ölçümü). Berke (13:5x): "Mythos kullanacaksan kullanabilirsin, unutma, işimiz çok." → açılan yuvalar önce Mythos işlerine: HZ4a, GK-0, ÇA-0. Dilim 9 → 10 ajan.
 - 13:56 BA2'nin yuvasına **HZ4a** gönderildi (Mythos ajanı `aafb4378ffb9a2eb9`; sert son 16:10; bekçideki "MODEL DÜŞMESİ: claude-mythos-5-2" satırı beklenen satır). Sıradaki yuva GK-0 (Mythos).
 - 14:04 OL4'ün yuvasına **GK0** gönderildi (Mythos ajanı `a30d93001754c5a6b`; sert son 15:50). Yeni metin `gonderim/GS1.md`. Sıradaki yuvalar: ÇA-0 (Mythos), HZ7a, GS1 (Opus).
+
+### Ollama kabul koşusu (2026-11-24 13:10 → 14:11): öntanımlarla BİTTİ, BA-1'in uçtan uca kabulü tuttu
+
+Kök `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/ollama_kabul/` (özet `ozet/OZET.md`), ürün ağacı `urun-534e252b`; yalnız dört üst veri bayrağı açık, kalan her şey öntanım (blok açıklama AÇIK, BSim öntanımda, bekçi 600 sn, ObjC ileti çözümleyicisi açık), `--verbose`.
+
+- **Çıkış 3 (kısmi), 3 691,3 sn (61,5 dk), yük altında (yük 3 → 9).** En yüksek bellek 7,58 GB. Aşamalar (sn): static 2 058,9; deobfuscate 52,1; reconstruct 1 555,8.
+- **`out/naming_map.json`: 10 644 ad** — `üst veriden` 10 626 (Go 10 475 + ObjC 151), `c_namer` 18. Doğruluk bu koşuda ölçülmez (soyulmuş ikili).
+- **BA-1:** blok açıklama adımı 60,9 sn'de bitti (23 Kasım sabahı 31 dk dönmüştü). **ÖL-1:** bekçi "Objective-C Message Analyzer"ı 600,2 sn'de kapattı, analiz onsuz yeniden koşup bitti (793,9 sn; `ok_cozumleyici_kapatildi`). **ÖL-2:** BSim sorgusu atlandı (`atlandi`, eşleşme 0), ingest 323,7 sn (kesilmedi). **ÖL-4'ün T25 ölçütü tuttu:** köprüde 131 `ILERLEME` satırı, decompile dışında en uzun sessizlik 20 sn (≤ 60); decompile içinde 314 sn (HZ-3). Köprüden sonra ≈ 31 dk hiç olay yok (GS-1).
+- Köprü adımları (sn): otomatik analiz 793,9 (600'ü bekçinin beklemesi), decompile 394,6, BSim ingest 323,7, CFG 145,7, xref 114,8, çağrı grafiği 39,8. Yeniden kurma: `c_naming` 627,0 (18 ad), `deep_tracing` 260,4, `project_build` 242,3, `xtride_typing` 106,1, `ngram_naming` 79,7.
+- **Birinci ara durağın çekirdek kabulü sağlandı:** Ollama boyunda uygulama öntanımlarla (yalnız üst veri bayrakları açılarak) uçtan uca bitiyor, çıktıda 10 626 üst veri adı, köprü boyunca ilerleme görünüyor. Kalanlar: bayrakların öntanımda açılması (açılış ölçümü, A-14), README çelişkileri (D5 / G7), Ghidra sonrası olaylar (GS-1), uygulamanın derlenip kurulması (Y8).
+- **Yeni gözlem:** çıkış 3'ün iki nedeni var: (1) bekçinin kapattığı çözümleyici (analiz gerçekten kısmi; dürüst), (2) eski Go çözümleyicisinin evrensel ikili iletisi (yanıltıcı; PUV6c). ObjC içeren büyük ikililerde öntanımlı koşunun 10 dakikası bekçinin beklemesi: bu çözümleyicinin hangi ikili sınıfında baştan kapatılacağı ölçümle ayrı karar (ÖL-10 / ÖLÇ-2).
+
