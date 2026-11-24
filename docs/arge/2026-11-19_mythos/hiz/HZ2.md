@@ -101,6 +101,21 @@ Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.
 
 - **BSim dosyaları** (`bsim_matches.json`, `bsim_shadow.json`, `static/ghidra_bsim.json`): `scan_mode` dışında **8 / 8 eşit** (eşleşme listesi, sayaçlar, `query_mode: batch`, dışlama sayaçları dahil). `scan_mode` 8 / 8 `parallel`; `scan_fallback_error` / `scan_sayac` hiçbirinde yok.
 - **zstd farkı:** `FUN_001063c0.c`'de iki geçici değişkenin yer değiştirmesi (`iVar11 = (int)local_180; iVar12 = local_180._4_4_;` ↔ tersi, ve çağrıdaki sıra) — ön kayıtta yazılı bilinen kendiliğinden fark (P16e: 6 koşunun 1'i). Decompile adımı BSim'den önce koşar ve bu paket ona dokunmaz; kural gereği zstd paralel açık bir kez daha koşuluyor (aşağıda).
+- **zstd tekrarı** (paralel açık; S8'in zstd öncesi deposunun kopyası `…/HZ2/s8_zstd_tekrar/cache`, ikinci ürün ağacı `urun-068be1fd-b` aynı commit + aynı `karadul.yaml`; kuyruk `HZ2 S8tekrar:debian/zstd/zstd`, 14:3x–14:36:33): taban ile `scan_mode` dışında **tam eşit** (JSON 0 / 23, `.c` 0 / 1 444, ad haritası 0 / 3, `pcode.jsonl` eşit). İki sonuç: 1. koşu `FUN_001063c0` takası (bilinen), 2. koşu eşit → fark kendiliğinden (`ozet/zstd_tekrar.json`).
+- **H1 hükmü:** BSim dosyaları `scan_mode` dışında **8 / 8 bayt eşit**; `decompiled/*.c`, öbür `ghidra_output/*.json`, `out/naming_map.json`: ilk koşuda **7 / 8** (zstd: ön kayıtta yazılı bilinen `FUN_001063c0` takası; `out/naming_map.json` orada da eşit), zstd tekrarıyla **8 / 8** → **TUTTU** (ön kayıttaki tekrar kuralıyla; iki sonuç da yazıldı).
+
+## Kalem 9c — H2 (bayrak kapalı: cat, zstd)
+
+- Ürün ağacı kökünde `karadul.yaml` = `ayar/s8_kapali.yaml` (`bsim.paralel_tarama: false`). cat taze depoyla (tabanda da ilk ikili), zstd S8'in zstd öncesi deposunun kopyasıyla (`…/HZ2/s8_kapali/cache_zstd`; taban zstd'si 6 programlık depoda koştu). Kuyruk yuva 2, 14:31:25–14:38:21, yük 10,7–20,8 (**yük altında**).
+- cat: **ham eşit** (JSON 0 / 23 — BSim dosyaları dahil, `scan_mode` yok; `.c` 0 / 296; ad haritası 0 / 3; `pcode.jsonl` eşit); ingest 1,536 sn (taban 1,458). zstd: **ham eşit** (JSON 0 / 23, `.c` 0 / 1 444, ad haritası 0 / 3, `pcode.jsonl` eşit).
+- **H2: TUTTU (2 / 2).**
+
+## Kalem 10 — T25 (H3, H5)
+
+- **14:38 — bekliyorum:** T25 14:38:21'de yuva 2'de başladı (`HZ2 T25:ollama`; 1 dk yük 20,76; aynı anda yuva 1'de HZ4a'nın `T25:kapali` koşusu: **yük altında**). `python -m karadul analyze …/gosteri-2026-11-19/ollama/girdi/Ollama --stage static --config ayar/t25_ollama.yaml --verbose` (OL2 T25'in `analysis` bölümü + ÖL-2 değerleri + `bsim.paralel_tarama: true`), taze `KARADUL_CACHE_DIR`, ürün ağacı `urun-068be1fd`, süre sınırı 2 019 sn (15:12). TAHMİN: BSim ingest ≈ 14:55'te başlar (OL2'de köprü başından 16,5 dk), köprü 15:00–15:10 biter; 15:12'de bitmemişse koşu kesilir ve `ILERLEME` satırlarından ölçülebilen kadarı yazılır.
+
+## Süre notu (S8)
+
 - Süreler "yük altında"; taban (ANA, 13:10–13:35) ile sonra aynı anda koşmadı → oran hükmü yok (yalnız yön): küçük ikililerde (≤ ~600 fonksiyon) ingest paralel yolda daha YAVAŞ (işçi açılışı), büyüklerde hızlı (zstd 3,7×, mac/tmux 2,9×); sorgu ingest yöneticisini kullandığı için ikinci tarama yok (sorgu 10–60× kısa).
 
 ## Kalem 11 — tam takım (yamasız)
