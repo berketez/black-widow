@@ -10,7 +10,45 @@ Bu belge ürün kodu içermez. Ölçülmeyen her sayı "ölçülmedi" ya da "TAH
 
 ## 1. Bugünkü durumun ölçümü [YAZILMADI]
 
-## 2. Boşluk sınıflaması [YAZILMADI]
+## 2. Boşluk sınıflaması
+
+"Boşluk" = bir işlevin B*k*'den B*k+1*'e çıkmasını engelleyen şey. Büyüklükler §1'in ölçümünden; "pay" sütunları **önsöz kipindeki** hata sayısı payıdır (başlık devre dışıyken `.c` dosyalarının kendi hataları; S8 = 8 ikili havuzu, 87 805 hata; Ollama 470 819 hata; kaynak `GK0/ozet/havuz_onsoz.json`). Ürün kipinde bunların hepsinin önünde A sınıfı durur.
+
+### 2.1 Sınıflar
+
+| Kod | Boşluk | S8 payı (hata; görüldüğü dosya) | Ollama payı | Belirlenimci onarılır mı | Model gerekir mi | Kurtarılamaz mı | Paket |
+|---|---|---|---|---|---|---|---|
+| **A** | Tip başlığı (`types.h`) derlenmiyor: Ghidra temel tip adları tanımsız, enum sabit çakışması ve geçersiz adlar, yapı üyesi ayrıştırma hataları, hedefin sistem tipleri, ana makine SDK'sıyla çakışma | ürün kipinde her dosyanın ilk hatası (§1.2) | aynı | **evet, tamamı** (hepsi üretici hatası; bilgi eksik değil) | hayır | hayır | GK-B |
+| **B** | Çağrılan işlevin bildirimi yok: adlı işlev (içe aktarım, kurtarılmış ad) %24,9; `FUN_<adres>` %23,9 | %48,8; adlı %60,3, `FUN_` %63,3 dosyada | %14,2 + %2,3 | **evet**: program işlevinin imzası tanımından, içe aktarımınki Ghidra'nın imzasından. İmza kaynağı yoksa (Ghidra `undefined` döndürmüşse) bildirim yazılabilir ama doğruluğu bilinmez | yalnız imzası bilinmeyen içe aktarımda (tip önerisi) | hayır | GK-C |
+| **C** | Veri simgesinin bildirimi yok: `DAT_` / `PTR_` %15,4; adlı veri (içe aktarılan değişken, kurtarılmış genel değişken) %18,2 | %33,6 | %16,2 + %3,1 | **kısmen**: adres ve ad belli; tip Ghidra'nın o adresteki veri tipiyse yazılır, `undefinedN` ise yalnız genişlik bilinir | tip önerisi (yapı mı, dizi mi) | tipin **adı** ve alan adları kurtarılamaz; yerleşim (genişlik, ofset) kullanımından çıkar | GK-C, GK-J |
+| **D** | Ghidra'nın sahte değişkenleri: çözülememiş yazmaç girişi (`in_`, `unaff_`, `extraout_`, `register0x…`), yığın artığı | %0,1 + %1,5 | **%42,7** (dosyaların %69,6'sında; %48'inde ilk hata) | C'de: çoğu yanlış kurtarılmış parametre sayısı / çağrı düzeni → imza onarımı (belirlenimci aday; ölçülmedi). Go'da: dilin çağrı düzeni ve yığın büyütme önsözü → dile özgü uyarlayıcı | imza önerisi | hayır (bilgi ikilide var; decompiler çözememiş) | GK-G, GK-L |
+| **E** | P-code işleçleri (`CONCATxy`, `SUBxy`, `ZEXT`, `SEXT`, `CARRY`, `SBORROW` …) | %2,0 | %1,4 (dosyaların %18,5'i) | **evet, tamamı** (anlamı tanımlı; başlık) | hayır | hayır | GK-G |
+| **F** | Parça erişimi ve tip uyuşmazlığı: dizi / tamsayı üstünde alan erişimi (Ghidra'nın `._ofset_boyut_` parça gösterimi), atanamayan dizi, işaretçi ↔ tamsayı, argüman sayısı | %4,5 + %4,3 + %0,7 | %10,6 + %4,7 + %1,1 | parça erişimi **evet** (kaydırma + maske ifadesine mekanik çeviri); kalan tip uyuşmazlıkları tip kurtarmanın kalitesine bağlı (kısmen) | **evet**: tip seçimi (hangi yapı, hangi imza) modelin en doğal görevi; B3 denetler | hayır | GK-G, GK-J |
+| **G** | C sözdizimi olarak geçersiz çıktı: `expected …`; dizi döndüren işlev bildirimi | %1,3 (dosyaların %4,8'i) | %2,5 hata ama dosyaların **%70,0**'ı; dizi döndüren işlev 2 794 dosya | Go kaynaklı olanlar (yığın büyütme döngüsü, çok değerli dönüş) dile özgü kuralla; C'dekiler tek tek sınıflanmadı | belki | hayır | GK-L |
+| **H** | Tanımsız tip adı (gövdede) | %1,5 | %0,1 | A onarılınca büyük kısmı kalkar (önsöz kipi kurtarılmış tipleri vermiyor); kalan = hedefin sistem tipleri | hayır | hayır | GK-B |
+| **I** | Aynı birimde yeniden tanım | %0,8 (dosyaların %0,3'ü) | ≈ 0 | evet (birleştirme hatası) | hayır | hayır | GK-B / ÇA |
+| **J** | Bağlama: çift tanım, çözülmeyen simge, çağıran ↔ tanım imza farkı | **ölçülmedi** (B1 = 0 iken ölçülemez) | ölçülmedi | büyük ölçüde evet | imza seçimi | hayır | GK-H |
+| **K** | Derleniyor ama eşdeğer değil: decompiler hatası (yanlış genişlik, kaybolan yan etki, yanlış dal), tip hatasının davranışa yansıması | **ölçülmedi**; ön yoklama §1.5 | ölçülmedi | kısmen (bilinen decompiler kalıpları) | **evet**: karşı örnekle onarım (§5.1 `onar_esdegerlik`) | hayır (özgün baytlar hep elde) | GK-E, GK-J |
+| **L** | Gövde yok: decompile edilmemiş (tembel kip), decompile başarısız | bu turda sayılmadı | sayılmadı | tembel kipte "istenince decompile" (ÖL-10) | başarısız decompile'da model komut listesinden gövde önerebilir; B3 denetler | hayır | ÖL-10, GK-J |
+| **M** | İkilide olmayan bilgi: özgün adlar, yorumlar, makrolar, tip adları, dosya düzeni, satır içine alınmış işlevlerin sınırı | — | — | hayır | **uydurabilir** (A-41 buna izin veriyor: "kendi isimlendirmeleri ile") ama doğrulanamaz; etiket `model önerisi` | **evet** | — |
+
+Okuma: (1) S8'de (C) başlık onarıldıktan sonra kalan hataların %82,4'ü iki bildirim sınıfıdır (B + C) ve ikisi de belirlenimci kapatılır; model gerekmez. (2) Ollama'da (çoğu Go) tablo başka: en büyük sınıf D'dir ve dile özgüdür. (3) Modelin gerçekten gerektiği yer F ve K'dir; ikisinin de büyüklüğü, önündeki belirlenimci sınıflar kapanmadan ölçülemez. Bu yüzden sıra: GK-B → GK-C → GK-G, sonra model.
+
+### 2.2 "Derlenir kılmak" ile "kurtarmak" arasındaki fark
+
+§1'in G sütunu (hataya yükseltilmiş uyarılar sayılmazsa geçenler) bir uyarıdır: önsöz kipinde S8'de K ile 877 dosya geçerken G ile 3 900 dosya "geçiyor" (§1.3). Aradaki fark, bildirimi olmayan işlevi `int f()` sayan derleyici kolaylığıdır; o kod bağlanınca ya da çalışınca yanlıştır (dönüş genişliği, argüman aktarımı). Bu hatta B1 **K ile** tanımlıdır; G yalnız "bildirim gelince kaç dosya daha geçmeye aday" tahmini olarak kullanılır (GK-C ön kaydı H2).
+
+### 2.3 Dil başına: "eski hâline dönmek" ne demek
+
+| Dil | Ölçülen (bu tur) | "Eski hâline dönmek" (öneri; K-7) | Dile özgü boşluklar |
+|---|---|---|---|
+| **C** | S8'in 8 ikilisi: ürün kipinde 0 dosya; önsöz kipinde K %4,6–%15,1 | Aynı dilde: C. Hedefin çağrı düzeniyle derlenir; B0–B4'ün hepsi anlamlı | A–F; satır içine alma (işlev kümesi ikilininki) |
+| **C++** | **ölçülmedi** (S8'de C++ ikilisi yok; 119'da var, bu turda koşulmadı) | C olarak: sınıflar yapı, yöntemler `this` parametreli işlev, sanal çağrı işlev işaretçisi. Aynı dilde (sınıf bildirimiyle) çıktı bu planda yok | C'de yazılamayan adlar (P18: nitelikli adlar yorumla yazılıyor), sanal tablolar, **istisna yolları** (C çıktısında yok: B3 yalnız istisnasız yollar), şablon örneklemeleri |
+| **Go** | Ollama dilimi (ad haritasında 10 475 Go adı): ürün kipinde 0; önsöz kipinde K %6,5; **ayrıştırma hatasız dosya yalnız %27,6** (S8'de %89,2–%97,4) | C olarak. Go kaynağı hedef değil: goroutine, arayüz, çöp toplayıcı yazma engeli, yığın büyütme çalışma zamanı çağrısı olarak görünür; C'ye çevrilen şey o çağrılardır | Yazmaç tabanlı çağrı düzeni (D sınıfı: %42,7), yığın büyütme önsözü (G), çok değerli dönüş (dizi döndüren işlev: 2 794 dosya), çalışma zamanı işlevleri (decompile edilmezse bildirim yeter: A-33 K-5) |
+| **ObjC** | Ayrı ölçüm yok (Ollama'da 151 yöntem; `objc` ad ailesi 339 hata; terminal-notifier bu turda ölçülmedi) | C + çalışma zamanı çağrıları (ileti gönderimi işlev çağrısı olarak). Sınıf iskeleti üst veriden biliniyor: `.m` biçiminde çıktı ayrı ve sonraki bir karar | Seçici ve sınıf simgeleri, blok yapıları, ARC çağrıları |
+| **Swift** | **ölçülmedi** | C olarak; Go ile aynı gerekçe (tanık tabloları, genel tipler, ARC) | Çağrı düzeni (hata ve bağlam yazmaçları), ayıklanmış adların C'de yazılamaması |
+
+Bu tablonun sonucu: "eski hâline dönmek" her dilde **C sözdiziminde, hedefin çağrı düzenine uyarlanmış, denetleyiciden geçmiş kod** demektir. Aynı dilde kaynak yalnız C'de hedeftir.
 
 ## 3. Denetleyicinin tasarımı
 
