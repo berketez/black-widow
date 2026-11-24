@@ -72,6 +72,25 @@ Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.
 - **H4: TUTTU** (≤ 2 + 10 sn; `kismi`; JSON geçerli; 6 ≤ 429).
 - **Not (hüküm değil, olumsuz bulgu):** 2 sn'lik bütçede paralel yol yalnız **6** fonksiyon taradı; ÖL-2'nin tekli yolu aynı ikilide aynı bütçeyle 253 taramıştı (dün akşam, farklı yük). Neden fizibilitede görüldü: işçi başına ayrı decompiler süreci açılıyor, ilk ~0,4–2 sn sayaç 0. Kısa bütçede (birkaç sn) paralel yol daha AZ iş yapar; büyük ikilide açılış payı küçük.
 
+## Sonraki paketlere not
+
+### ÖL-9 (kısmi ingest'in tamamlanması; önbellek)
+
+- **Ölçüldü:** aynı md5 için ikinci `InsertRequest` reddedilir (`Skipping -insert- : <ad> is already ingested`; `AbstractSQLFunctionDatabase.testExecutableDuplication`: yalnız `ExecutableRecord.isLibrary()` olan yürütülebilire kısmi ekleme var). `QueryDelete` (`ExeSpecifier.exemd5 = md5`) + taze yöneticiyle tam `InsertRequest` kabul edilir (sqlite3: 3 → 668 fonksiyon tanımı). NOT: reddedilen ekleme denemesi yöneticinin yürütülebilir kaydına satır kimliği / "zaten saklı" işareti yazar; silmeden sonra AYNI yönetici yeniden kullanılmamalı (fizibilitede taze tarama kullanıldı).
+- **Öneri (uygulanmadı):** `_exe_already_ingested` doğru VE köken kaydında `kismi` varsa (bu paketin işareti) depo kilidi altında `QueryDelete(md5)` → tam ingest (bütçeyle; yine kesilirse işaret kalır) → tam bittiyse işaret kalkar (`_ProvenanceStore.record(..., tam=True)` hazır). Silme ile yeniden ekleme arasında süreç ölürse md5 depoda hiç kalmaz (kısmidan kötü değil; sonraki koşu baştan ekler). Silme bu depodaki başka kayıtlara dokunmaz (md5 ile).
+- Bugün görünen: `bsim_detail.onceki_ingest_kismi: "t / N"` + WARN; köken kaydında `executables.<md5>.kismi`.
+
+### ÖL-3 + HZ-4a (Java tarafı paralellik / döküm)
+
+- Ghidra'nın `ConcurrentQ` yolu izleyici ister: ilerleme sayacı için tek uygun sınıf paket-içi `BasicTaskMonitor` (yansımayla; `TaskMonitorAdapter` saklamaz, `GTaskMonitor.addCancelledListener` `UnsupportedOperationException`). İptalden sonra sayaç atılan işleri de sayar (fizibilite: 2 imzalı iş, sayaç 429): kesilme anındaki "işlenen" sayısı sayaçtan değil çıktıdan sayılmalı.
+- İşçi açılış maliyeti gerçek: decompiler işçisi başına süreç; sqlite3'te ilk ~0,4 sn sayaç 0; 2 sn bütçede paralel yol 6 fonksiyon (tekli 253); S8 cat'te (107 fonksiyon) ingest 1,458 → 3,41 sn (yük altında). Küçük iş kümesinde paralel yol kayıp; eşik (fonksiyon sayısı) A-9 gereği donanımdan türetilmeli — HZ-9 ölçümüyle.
+- Java yineleyicisi: 13 bin fonksiyonluk `ArrayList` Python'dan tek tek `add` ile kuruluyor (JPype çağrısı başına); ölçülmedi, T25'te ingest süresinin içinde.
+
+### Ana oturum (yamayı uygularken)
+
+- Yama `bsim.paralel_tarama` öntanımını True yapar: sonraki bütün koşularda `bsim_matches.json` / `bsim_shadow.json` / `static/ghidra_bsim.json`'da `bsim_detail.scan_mode` alanı çıkar → S8 tabanı yenilenmeli ya da kıyas bu alanı düşmeli (`s8_esitlik.HARIC_ALANLAR` ön kayıtla sabit; HZ-1 kuralı gereği koşudan sonra genişletilmedi, bu pakette ayrı süzgeç `betik/analiz.py`).
+- Başka test dosyası yaması gerekmiyor (yamalı kopyada 9 dosya 335 / 335).
+
 ## Ölçüm
 
 **13:35 — bekliyorum:** ölçüm sürücüsü (`…/HZ2/betik/kos_hepsi.zsh`, arka planda) kuyrukta: fizibilite → H4 (sqlite3) → S8 (8 ikili, paralel açık, tek kök `…/HZ2/s8`) → H2 (cat taze depo, zstd S8'in zstd öncesi deposunun kopyasıyla; kapalı) → T25. Yuva 2'yi ana oturumun Ollama kabul koşusu tutuyor (13:10'dan beri), yuva 1'de OL4 ve PUV6b ile sıra. 1 dk yük 26–56 (**yük altında**). TAHMİNİ bitiş: fizibilite + H4 13:45–13:55; S8 14:25–14:45 (taban S8 yük altında ≈ 30 dk); H2 14:35–14:55; T25 ancak 14:52'den önce başlarsa (süre sınırı 15:12'de biter), değilse "kalan".
