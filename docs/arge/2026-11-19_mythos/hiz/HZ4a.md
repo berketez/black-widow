@@ -148,3 +148,29 @@ Sahte program: 5 fonksiyon (biri boş gövdeli, biri iki aralıklı gövdeli), d
 - Profil: CFG'de tabanın üstündeki maliyet Java tarafında (`getDestinationBlock`, `getMnemonicString`, `getDestinations`); Python tarafında çıktıyı değiştirmeden ölçülebilir kazanç yolu bulunamadı. CFG için kalan yol Java yardımcısı ya da adımın sırası / süreç durumu (aşağıdaki GC ölçümü).
 
 **14:37 — bekliyorum (T25, kıyas, S8):** T25 kapalı kol 14:36:35'te yuva 1'de başladı (1 dk yük 23,13; ürün ağacı `~/karadul_olcum/urun-f144b9c9`, `--stage static`, GC günlüğü açık); TAHMİNİ bitiş 15:03–15:10. Açık kol aynı sürücüyle hemen ardından: TAHMİNİ 15:05–15:40. İkinci hat (yuva 2, HZ2 ile sırayla): aynı süreçte kıyas (Ollama, TAHMİN 6–8 dk) → H5 (sqlite3) → kıyas (sqlite3) → S8 (8 ikili, TAHMİN 15–25 dk); TAHMİNİ bitiş 15:15–15:35. Tam takım (yamasız, worktree) ve yamalı kopyada tam takım 14:35'ten beri arka planda (TAHMİN 12–20 dk). 16:10'da bitmeyen "kalan" yazılır.
+
+## Ayrı bulgu — T25'te xref / CFG süresinin kök nedeni: JPype'ın tetiklediği tam Python çöp toplaması
+
+(Ön kayıt dışı; H3'ün eşiği ve hükmü bundan etkilenmez. Karar ana oturumda.)
+
+**Gözlem.** T25 kapalı kolunda (ürün ağacı `urun-f144b9c9`, bayrak kapalı = bugünkü döngüler; 14:36:35'te başladı) çağrı grafiği (decompile'dan önce) 28,5 sn, xref (decompile'dan sonra) 130,9 sn. Aynı ikilide taze süreçte (profil) xref'in tamamı vekille bile 67 sn, CFG 30 sn.
+
+**Ölçüm.** Koşan ürün sürecinden `/usr/bin/sample` ile yığın örneği (yalnız okur; xref adımında 4 sn, CFG adımında 3 sn; dosyalar `…/HZ4a/ozet/ornek_kapali_{xref,cfg}.txt`):
+
+| Adım | Ana iş parçacığı | "Python Reference Queue" iş parçacığı |
+|---|---|---|
+| xref | 2 838 / 2 844 örnek `take_gil`'de bekliyor (Java çağrısından dönüp GIL'i alamıyor) | 2 844 / 2 844 örnek `Java_org_jpype_ref_JPypeReferenceNative_wake → JPGarbageCollection::triggered() → PyGC_Collect → gc_collect_main` |
+| CFG | 2 221 / 2 228 örnek `take_gil`'de | aynı zincir |
+
+Yani JPype her Java çöp toplamasından sonra **tam** bir Python toplaması (`PyGC_Collect`) koşuyor; toplama GIL'i tutuyor ve decompile adımından kalan Python yığınının tamamını geziyor (bir toplama 4 sn'lik örneğin tamamını kaplıyor). Döküm döngüsü Java nesnesi ayırdıkça Java genç toplaması, o da Python toplamasını tetikliyor.
+
+**JVM tarafı masum.** `-Xlog:gc` günlüğü (kapalı kol): xref penceresinde yığın 880 MB (canlı ~265 MB), genç toplama ~7 sn'de bir, duraklama 1–3 ms; decompile penceresinde (696 sn) toplam GC duraklaması 2,5 sn. xref'in 131 sn'si ≈ 20 Java toplaması × ~6,5 sn Python toplaması.
+
+**Sonuçlar.**
+
+1. Adım süresi = (adımdaki Java toplaması sayısı) × (Python yığınının büyüklüğü). Bu, BULGULAR'daki "doğrusal üstü büyüme"yi (büyük ikilide hem daha çok Java ayırma hem daha büyük Python yığını) ve "Python Reference Queue iş parçacığının işlemcisi"ni açıklıyor; yalın JPype mikro deneyinde görülmemesinin nedeni orada Java toplamasının tetiklenmemesi.
+2. HZ-4a'nın çağrı sayısı indirimi çağrı grafiği + xref'te işe yarar (daha az Java çağrısı → daha az Java ayırma → daha az tetiklenen toplama; ayrıca xref'in işi decompile ÖNCESİNE, çağrı grafiği adımına kayıyor). CFG'de Java ayırma hızı değişmediği için kazanç beklenmez.
+3. Çıktıyı değiştirmeyen aday çareler (bu pakette YOK): (a) decompile'dan sonra / xref'ten önce `gc.collect(); gc.freeze()`, CFG ya da BSim'den sonra `gc.unfreeze()` — sonraki toplamalar yalnız yeni nesneleri gezer; (b) Python yığınını küçültmek (decompile sonuçlarını bellekte tutmamak: ÖL-3'ün akış biçimli yazımı aynı yöne bakar); (c) Java genç kuşağını büyütmek (daha seyrek Java toplaması; HZ-5).
+4. Aynı mekanizma decompile'dan sonraki öbür köprü adımlarını (P-code, FunctionID, BSim ingest / sorgu) ve decompile'ın kendisini de etkiliyor olabilir: ölçülmedi.
+
+**Ek koşu (ön kayıt dışı; hüküm yok):** çareyi (a) ölçmek için ürün kodunu değiştirmeyen bir sarmalayıcı (`…/HZ4a/betik/dondur_kos.py`: `_extract_xrefs` çağrılmadan önce `gc.collect(); gc.freeze()`), bayrak KAPALI, BSim kapalı, aynı ürün ağacı; T25 açık kolundan sonra koşacak.
