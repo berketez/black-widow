@@ -96,3 +96,55 @@ Her 8. fonksiyonda (1 664 fonksiyon, 31 914 blok, 175 617 komut, 43 652 kenar), 
 - B ↔ C komut sayısı her fonksiyonda eşit; gövde dışına taşan blok 0, çok aralıklı blok 0, blok sırası bozukluğu 0.
 - **C, B'den yalnız %3 hızlı** (komutu bloğa dağıtmak için komut başına adres gerekir: +2 çağrı; blok başına yalnız 1 çağrı düşer). Planın adım 4'ü bu ölçümle **uygulanmadı** (kazanç gürültü düzeyinde, eşitlik riski var).
 - Blok modeli: program boyunca tek model 1,315 sn ↔ fonksiyon başına taze model 1,272 sn (kurucu toplamı 0,004 sn); çıktı 1 664 / 1 664 fonksiyonda eşit. Örneklem ortak modelde 8 kat daha az blok biriktirir; tam ölçek kıyas koşusunda (yeni yol = taze model) ölçülüyor. Kazanç çıkmazsa CFG'deki değişiklik geri alınır.
+
+## Kalem 4 — kod (`0f2fefc0`), testler (`fb1f2142`), mutasyon (`d8d0d2b7`), yama (`f144b9c9`)
+
+### `karadul/ghidra/headless.py`
+
+- **`_BasvuruTablosu`** (modül düzeyi, `caller_sort_key`'in altında) + `_BasvuruKaydi`: fonksiyon başına tek başvuru geçişi. `kayit(func, func_addr)` kaydı ilk isteyen adımda hesaplar (`_hesapla`), ikinci adım hazır bulur. Giden başvurular: `ref_mgr.getReferenceSourceIterator(gövde, True)` ile yalnız başvurusu olan adresler, her adreste `getReferencesFrom` bir kez; çağrı başvuruları `cagrilanlar`'a (hedef → fonksiyon çözümlemesi `_cagri_hedefi`, program boyunca hedef adresi başına bir kez), veri başvuruları `dizgiler`'e (`_dizgi_degeri`, veri adresi başına bir kez). Gelen başvurular: `getReferencesTo(giriş)` bir kez; çağrılar `cagiranlar`'a (tekil + `caller_sort_key`, P16e), öbürleri `giris_cagri_disi`'na (PK-8).
+- **Sıra güvencesi:** `_kaynak_adresleri` ardışık kaynak adreslerini `Address.compareTo` ile denetler; artan değilse (ya da adres yinelenirse) o fonksiyon eski yürüyüşle (gövdenin bütün adresleri) hesaplanır ve `eski_yuruyus` sayacı artar. Profilde Ollama diliminde bozukluk 0.
+- **Bayatlama:** `tazele()` her iki adımın başında `Program.getModificationNumber()`'ı tablo kurulurkenki değerle karşılaştırır; değiştiyse kayıtlar ve iki çözümleme önbelleği atılır (`bosaltma` sayacı). Çağrı grafiği decompile'dan önce, xref sonra koştuğu için gerekli.
+- **`_extract_call_graph(program, denetci=None, tablo=None)`** ve **`_extract_xrefs(program, denetci=None, tablo=None, tek_gecis=False)`**: `tablo` verilirse fonksiyon döngüsünün başındaki (denetçi denetimi, `islenen`, ad, adres aynen) tek dal kaydı tablodan kurar ve `continue` eder; eski gövde satırı satırına duruyor (girinti değişmedi: eski mutasyon tanımlarının metinleri yerinde). Kenar tekilleştirmesi ve çıktı sözlükleri eski kodla ortak.
+- **Genel simge sayımı** (`tek_gecis` ya da `tablo`): tür süzgeci `SymbolType.getID()` ile (üç `equals` çağrısı yerine bir çağrı), başvuru hükmü `ref_mgr.hasReferencesTo(adres)` ile (yineleyici kurmadan). Denetim eskisi gibi 1 024 simgede bir.
+- **`_extract_cfg(program, denetci=None, tek_gecis=False)`**: `tek_gecis` iken her fonksiyonda taze `BasicBlockModel` (tek satır). Planın "fonksiyon başına tek komut yineleyicisi" adımı ölçülüp uygulanmadı (yukarıda).
+- **`_analyze_pyghidra`**: `analysis.dokum_tek_gecis` açıksa `_BasvuruTablosu.kur(program)`; `None` dönerse (başvuru yöneticisinde gereken dört yöntemden biri yoksa) uyarı günlüğü ve eski döngüler. İşlevlere ek argüman YALNIZ tek geçiş etkinken verilir: bayrak kapalıyken çağrı imzası bugünküyle aynı (`denetci=`), HZ-1 / ÖL-2'nin sahte köprüleri (yalnız `getName`'i olan sahte program; `f(program, denetci=None)` sahteleri) yama uygulandıktan sonra da çalışır. Tablo xref adımından sonra bırakılır. `ghidra_log`'a satır eklenmedi (`static/ghidra_log.txt` aynı kalsın); kip `logger.info("Döküm kipi: …")` ile günlükte.
+
+### Testler — `tests/test_hz4_dokum.py` (30 test; Ghidra yok)
+
+Sahte program: 5 fonksiyon (biri boş gövdeli, biri iki aralıklı gövdeli), dış fonksiyon, fonksiyonun içine çağrı, özyineleme, fonksiyonsuz hedef, aynı callee'ye iki çağrı yeri, tekrar eden / tırnaklı / tırnaksız / `None` değerli dizgi, dizgi olmayan veri, dizgiye veri olmayan başvuru, başvurusuz adresler, aralıkların arasındaki yabancı adres; 9 simge; 7 blok. Sınananlar: üç dökümün eski ↔ yeni `json.dumps` eşitliği; elle beklenen içerik; çıktıların tablo kaydıyla ortak nesne olmaması; çağrı sayıları (eski 2 × 224 `getReferencesFrom` → yeni 20; iki adımda 5 yineleyici); çözümleme önbellekleri; xref'in tabloyu tek başına doldurması; bozuk / yinelenen sırada eski yürüyüş; `getReferencesTo` ters sırada aynı çıktı; bayatlama (iki yönde); API yokken `kur` → `None`; PK-8 iç tablosu ve JSON'a sızmaması; simge sayımı; CFG'de model sayısı ve birikim; ÖL-2: bütçe dolunca kısmi çıktı iki yolda aynı (üç adım), dolmayınca alan yok, çağrı grafiği kesilince xref'in tamamlaması, simge sayımında kesilme nedeni, `suruyor` olayı gerçek sayaçla (üç adım); köprü: bayrak kapalı → ek argüman yok, açık → iki adım aynı tablo + kaydedilen üç JSON eskiyle aynı, açık ama API yok → eski döngüler + uyarı.
+
+### Mutasyon
+
+- `scripts/measurement/mutation_specs_hz4.json`: **30 / 30 öldü** (ilk koşuda 2 mutant yaşadı: veri olmayan başvurunun dizgi sayılması ve xref çıktısının tablo nesnesini paylaşması; iki test güçlendirildi, yeniden 30 / 30). Günlük `…/HZ4a/mutasyon_hz4_2.log`.
+- `headless.py`'ye bakan eski sekiz tanım değişiklikten sonra yeniden koşuldu: hz1 13 / 13, ol1 29 / 29, p13a 22 / 22, p16a 33 / 33, p16c 16 / 16, p16d 11 / 11, p16e 13 / 13, ol2 33 / 33 = **170 / 170 öldü** (`…/HZ4a/mutasyon_eski_1/OZET.txt`).
+- **Taşınan tanım (1):** `mutation_specs_ol2.json` `ol2_cagri_grafigi_denetimsiz` — çağrı iki satıra bölündüğü için `find` / `replace` metni yeni satırlara taşındı (anlam aynı: denetçi verilmez); taşındıktan sonra öldü. `mutation_specs_p16e.json`'a dokunmak gerekmedi (iki `seen_callers` tanımı `occurrence` ile eski gövdeye bakıyor; yeni kod başka ad kullanıyor, eşleşme sayısı değişmedi).
+
+### Yama — `docs/arge/2026-11-23_dalga1/yamalar/HZ4a__config.py.patch`
+
+`analysis.dokum_tek_gecis` alanı vardı (öntanım kapalı, ETKİSİZ). Yama: öntanım `True`, satır sonu yorumu `# okuyan: ghidra/headless.py _analyze_pyghidra (HZ-4a)`, `INERT_SETTINGS`'teki iki satır silinir. Ağaca uygulanmadı; `git apply --check` uygun. Yamasız ağaçta beklenen tek kırmızı: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `AssertionError: kayıtta ama okunuyor: {'analysis.dokum_tek_gecis': ['karadul/ghidra/headless.py']}`. Yamanın etkisi ayrı bir kopyada (`…/HZ4a/yamali_kopya`: `git archive HEAD` + `patch -p1`) tam takımla sınanıyor.
+
+## Sonraki paketlere notlar
+
+### PK-8 (`address_taken_by`)
+
+- Veri hazır: `_BasvuruKaydi.giris_cagri_disi` — fonksiyonun giriş adresine gelen ve `isCall()` olmayan başvuruların Java `Reference` nesneleri, `getReferencesTo` yineleme sırasıyla (sıra Ghidra'ya bağlı: P16e'deki gibi yazmadan önce sıralanmalı). Ek Java geçişi yok: nesneler çağıran listesi kurulurken zaten elde ediliyor.
+- Kullanım: `_BasvuruTablosu.xref_kaydi` içinde `k.giris_cagri_disi` üstünden (`ref.getFromAddress()`, `ref.getReferenceType()`; veri başvurusu süzgeci `isData()`), kaynağı içeren fonksiyon için `self.fm.getFunctionContaining(...)`. Alan eski döngüde de üretilecekse (bayrak kapalı kol) eski gövdedeki `for ref in ref_mgr.getReferencesTo(...)` döngüsüne `else` dalı eklenir; iki kolun eşitlik testi `tests/test_hz4_dokum.py::test_uc_dokum_eski_ve_yeni_yolda_bayt_bayt_ayni` kalıbıyla yazılır.
+- Ömür: tablo `_analyze_pyghidra`'da xref adımından hemen sonra bırakılıyor; PK-8 alanı xref adımının içinde üretilmeli.
+
+### ÖL-3 (akış biçimli yazım; A-38 dizgi başvuru sırası)
+
+- A-38: dizgi başvurularının sırası tabloda **`_BasvuruKaydi.dizgiler`** listesinin sırasıdır: kaynak adresi artan, aynı adreste `getReferencesFrom` dizisinin sırası (bugünkü `strings_used` sırasıyla aynı; eşitlik testleri bunu kilitliyor). Komut içi sıra numarası ayrıca saklanmıyor: gerekiyorsa `_hesapla`'daki `for ref in ref_mgr.getReferencesFrom(addr)` döngüsüne `enumerate` eklenir ve `dizgiler` üçlüye (adres, değer, komut içi sıra) genişletilir; kaynak komutun adresi aynı döngüde `addr`'dir. `_extract_strings`'e ve şemaya dokunulmadı.
+- Tablo bellekte fonksiyon başına üç küçük liste tutar (çıktıdaki listelerin kaynağı); çıktı sözlükleri ayrı kopyadır. Akış biçimli yazımda `cagri_dugumu` / `xref_kaydi` fonksiyon başına tek sözlük döndürdüğü için doğrudan yazıcıya verilebilir; kenar listesi `edges` hâlâ adımın sonunda tekilleştiriliyor (tablo yolunda fonksiyon içi tekillik zaten sağlanmış; program düzeyindeki tekilleştirme eski kodla ortak bırakıldı).
+- Denetim noktaları değişmedi: fonksiyon sınırında `denetci.denetle(islenen)`, simge sayımında 1 024'te bir; kısmi alanlar çıktının sonunda.
+- Çağrı grafiği adımı artık xref'in de işini yapıyor (kayıt orada hesaplanıyor): `adim_sureleri`'nde yük çağrı grafiğine kayar, xref kısalır. Çağrı grafiği bütçeyle kesilirse xref kalan fonksiyonları kendi bütçesiyle hesaplar.
+
+### HZ-3 (decompile hattı; `_extract_func_xrefs`)
+
+- `_extract_func_xrefs` (decompile içi, fonksiyon başına üçüncü başvuru yürüyüşü; `call_site` da üretir) bu pakette DEĞİŞMEDİ. Tablo çağrı grafiği adımında (decompile'dan önce) dolduğu için HZ-3 aynı kaydı kullanabilir; eksik olan `call_site` (ilk çağrı yeri adresi): `_hesapla`'da çağrı başvurusunun `addr`'i elde, `cagrilanlar` kaydına üçüncü öğe olarak eklenebilir. Decompile işçileri ayrı iş parçacıklarında koşuyorsa tablo yalnız okunmalı (kayıtlar çağrı grafiği adımında önceden hesaplanmış olur; çağrı grafiği kesildiyse eksik kayıt `kayit()` ile hesaplanır — o yol iş parçacığı güvenli değil).
+
+### HZ-4b
+
+- Koşul sayısı (T25'te üç adımın köprü içindeki payı) aşağıda, T25 açık koşusundan.
+- Profil: CFG'de tabanın üstündeki maliyet Java tarafında (`getDestinationBlock`, `getMnemonicString`, `getDestinations`); Python tarafında çıktıyı değiştirmeden ölçülebilir kazanç yolu bulunamadı. CFG için kalan yol Java yardımcısı ya da adımın sırası / süreç durumu (aşağıdaki GC ölçümü).
+
+**14:37 — bekliyorum (T25, kıyas, S8):** T25 kapalı kol 14:36:35'te yuva 1'de başladı (1 dk yük 23,13; ürün ağacı `~/karadul_olcum/urun-f144b9c9`, `--stage static`, GC günlüğü açık); TAHMİNİ bitiş 15:03–15:10. Açık kol aynı sürücüyle hemen ardından: TAHMİNİ 15:05–15:40. İkinci hat (yuva 2, HZ2 ile sırayla): aynı süreçte kıyas (Ollama, TAHMİN 6–8 dk) → H5 (sqlite3) → kıyas (sqlite3) → S8 (8 ikili, TAHMİN 15–25 dk); TAHMİNİ bitiş 15:15–15:35. Tam takım (yamasız, worktree) ve yamalı kopyada tam takım 14:35'ten beri arka planda (TAHMİN 12–20 dk). 16:10'da bitmeyen "kalan" yazılır.
