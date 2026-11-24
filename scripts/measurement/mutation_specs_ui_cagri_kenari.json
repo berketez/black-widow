@@ -6,8 +6,8 @@
       "desc": "Çağrı grafiği hiç kullanılmaz; eski metin yöntemi (metinde geçen her FUN_ çağrı)",
       "module": "ui/server.py",
       "test": "tests/test_ui_cagri_kenari.py::test_adres_basvurusu_cagri_sayilmaz",
-      "find": "    graph = _call_graph_edges(Path(dec), ws, addr_set)",
-      "replace": "    graph = None and _call_graph_edges(Path(dec), ws, addr_set)"
+      "find": "    graph = _call_graph_edges(Path(dec), ws, addr_set, extra_hex)",
+      "replace": "    graph = None and _call_graph_edges(Path(dec), ws, addr_set, extra_hex)"
     },
     {
       "id": "a_adres_basvurusu_cagriya_eklenir",

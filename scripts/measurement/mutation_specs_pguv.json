@@ -190,8 +190,8 @@
       "desc": "hedef olarak çalışma alanının kendisi kabul ediliyor",
       "module": "karadul/cli.py",
       "test": "tests/test_pguv_run.py::TestRunTargetResolution::test_workspace_root_itself_rejected",
-      "find": "    if target_dir == ws_path:\n        err_console.print(\n            f\"[bold red]HATA:[/bold red] Gecersiz hedef adi",
-      "replace": "    if False:\n        err_console.print(\n            f\"[bold red]HATA:[/bold red] Gecersiz hedef adi"
+      "find": "    if target_dir == ws_path:\n        err_console.print(\n            f\"[bold red]HATA:[/bold red] Geçersiz hedef adı",
+      "replace": "    if False:\n        err_console.print(\n            f\"[bold red]HATA:[/bold red] Geçersiz hedef adı"
     },
     {
       "id": "g13_calisma_alani_denetimi_yok",

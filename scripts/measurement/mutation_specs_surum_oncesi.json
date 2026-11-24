@@ -54,8 +54,8 @@
    "desc": "bayrak verilse de network.enabled açılmaz",
    "module": "karadul/cli.py",
    "test": "tests/test_surum_oncesi_hatalar.py::TestAgBayraklari::test_ag_anahtari",
-   "find": "        cfg.network.enabled = True\n",
-   "replace": "        cfg.network.enabled = bool(0)\n"
+   "find": "        cfg.network.enable(explicit_keys={",
+   "replace": "        cfg.network.enabled and cfg.network.enable(explicit_keys={"
   },
   {
    "id": "so2_source_match_acilmaz",

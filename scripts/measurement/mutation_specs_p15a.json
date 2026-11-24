@@ -302,8 +302,8 @@
       "desc": "olmayan hedefte varlık denetlenmiyor (önce onay)",
       "module": "karadul/cli.py",
       "test": "tests/test_p15a_cli_kucuk.py::test_clean_missing_target_fails_before_asking",
-      "find": "    if not workspace_path.exists():\n        err_console.print(f\"[bold red]HATA:[/bold red] Workspace bulunamadi",
-      "replace": "    if False and not workspace_path.exists():\n        err_console.print(f\"[bold red]HATA:[/bold red] Workspace bulunamadi"
+      "find": "    if not workspace_path.exists():\n        err_console.print(f\"[bold red]HATA:[/bold red] Workspace bulunamadı",
+      "replace": "    if False and not workspace_path.exists():\n        err_console.print(f\"[bold red]HATA:[/bold red] Workspace bulunamadı"
     },
     {
       "id": "k_clean_onaysiz_siler",
