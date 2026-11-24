@@ -9,16 +9,16 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/HZ2/` (özetler `ozet/`). 
 | # | Kalem | Durum | Commit |
 |---|---|---|---|
 | 1 | Ghidra API doğrulaması (`javap` + yerel kaynak zip'leri) | bitti (aşağıda) | `285ee3af` |
-| 2 | Kod (`bsim.py`) | bitti | `285ee3af`, `af7dae70` |
-| 3 | Testler (`tests/test_hz2_bsim_hizli.py`, 26) | bitti: 26 / 26; ilgili eski testler 151 / 151 | `af7dae70` |
-| 4 | Mutasyon: `mutation_specs_hz2.json` 20 / 20; taşınan ÖL-2 tanımı; eski tanımlar ol2 33 / 33, p16b 24 / 24, p16c (aşağıda) | bitti | bu commit |
-| 5 | `config.py` yaması (`yamalar/HZ2__config.py.patch`; `git apply --check` temiz; uygulanmadı) | bitti | `3a81c102` |
+| 2 | Kod (`bsim.py`) | bitti; S8 1. turda yakalanan dispose hatası onarıldı (kalem 9a) | `285ee3af`, `af7dae70`, `068be1fd` |
+| 3 | Testler (`tests/test_hz2_bsim_hizli.py`) | bitti: 31 / 31; ilgili eski testler (ol2, p16b, p16c, bsim) 119 / 119 | `af7dae70`, `068be1fd` |
+| 4 | Mutasyon: hz2 23 / 23; taşınan ÖL-2 tanımı öldü; eski tanımlar ol2 33 / 33, p16b 24 / 24, p16c 16 / 16 | bitti (2. tur onarım sonrası) | `db04064a`, `068be1fd`, `710d745e` |
+| 5 | `config.py` yaması (`yamalar/HZ2__config.py.patch`; `git apply --check` temiz; uygulanmadı) | bitti; yamalı kopyada 9 dosya 335 / 335 | `3a81c102` |
 | 6 | Ön kayıt (`on_kayit_hz2.md`) | bitti | `3a81c102` |
-| 7 | Fizibilite (kısmi ingest'i tamamlama) | kuyrukta | |
-| 8 | H4 (sqlite3, bütçe 2 sn) | kuyrukta | |
-| 9 | H1 / H2 (S8) | kuyrukta | |
-| 10 | H3 / H5 (T25) | kuyrukta (15:12'ye 20 dk'dan az kalırsa girilmez) | |
-| 11 | Tam takım (yamasız) | bekliyor | |
+| 7 | Fizibilite (kısmi ingest'i tamamlama) | bitti: ikinci `InsertRequest` reddedilir; sil + yeniden ekle çalışır (ÖL-9'a not) | `76e810df` |
+| 8 | H4 (sqlite3, bütçe 2 sn) | bitti: **TUTTU** (2,064 sn, `kismi`, 6 / 429) | `5d880bab` |
+| 9 | H1 / H2 (S8) | bitti: **H1 TUTTU** (BSim 8 / 8; `.c` zstd tekrarıyla 8 / 8), **H2 TUTTU** (2 / 2) | `6b3fc56f`, `801b7274` |
+| 10 | H3 / H5 (T25) | koşuyor (14:38:21'den beri) | |
+| 11 | Tam takım (yamasız) | bitti: 11 197 geçti / 23 atlandı / 1 kaldı (beklenen p15a) | `c829a25a` |
 
 ## Kalem 1 — Ghidra 12.1.2 API (yerel kurulum `~/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC`; `javap` + `BSim-src.zip`, `Generic-src.zip`, `Decompiler-src.zip`, `Docking-src.zip`, `Project-src.zip`; ağa çıkılmadı)
 
