@@ -15,9 +15,9 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/` (özetler `ozet/`). 
 | 5 | Testler (`tests/test_ol4_ilerleme.py`, 52) | bitti: 52 / 52 | `75ecbc61` |
 | 6 | Mutasyon (`mutation_specs_ol4.json` 22 / 22) + sekiz eski tanım (259 mutant: 256 öldü, 0 yaşadı; 4 bayat find düzeltildi, 3 bayat başka dosyada) | bitti | `75ecbc61`, `c1fe7145` |
 | 7 | Gerçek koşu (debian `cat`, üç kip; kuyrukla) | bitti: öntanım 46 satır / 17 adım, `--quiet` 0, `--verbose` yineleme 0 | bu commit |
-| 8 | Tam takım | koşuyor (13:49'da başladı) | |
+| 8 | Tam takım | bitti: **11 220 geçti / 23 atlandı / 0 kaldı** | bu commit |
 
-**13:50 — bekliyorum (tam takım):** worktree kökünden, geçici çalışma verisi bağları kurulu (commit'lenmedi). 13:49:3x'te başladı; TAHMİNİ bitiş 14:00–14:15 (yük 20–40). 14:30'da bitmemişse "kalan" yazılır.
+**13:50 — bekliyorum (tam takım; geçti):** 13:49:33–14:01:42'de koştu, aşağıda.
 
 **13:33 — bekliyorum (geçti):** `cat` üç kip kuyrukta (`OL4 cat:ontanim` 13:30:13'te sıraya girdi; yuva 1'i ana oturumun S8 tabanı (mac/tmux, 13:27'de başladı), yuva 2'yi `ANA ollama:kabul` tutuyor). TAHMİNİ: yuva 1 13:35–13:45'te boşalır, üç kip yük altında 3 × 2–5 dk → bitiş 13:45–14:05. Eski sekiz mutasyon tanımı arka planda sırayla (TAHMİNİ bitiş 13:45–13:55); tam takım ondan sonra (TAHMİN 10–25 dk).
 
@@ -127,7 +127,32 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/` (özetler `ozet/`). 
 
 ### Riskler
 
-- **İlk yoklama** 10 MB günlükte 281–291 ms (tam okumanın 207,5 ms'sinin 1,35–1,40 katı; satır satır tarama); sonra yalnız yeni baytlar. Onlarca MB'lık günlükte sunucu yeniden başlatılıp iş yeniden bağlanırsa ilk yoklama bir kez o kadar sürer (iş kaydı bellekte; sunucu yeniden başlayınca iş zaten "job yok").
+- **İlk yoklama** 10 MB günlükte 281–291 ms (tam okumanın 207,5 ms'sinin 1,35–1,40 katı; satır satır tarama); sonra yalnız yeni baytlar. Durum iş kaydında (sunucu belleğinde) ve bütün istemciler için ortak; olağan kullanımda ilk yoklama iş başlarken (günlük küçükken) olur, büyük günlüğün tek seferlik okunması yalnız günlük kısalır / değişirse tekrarlanır.
 - **Aynı boyda yeniden yazılan günlük** (aynı inode, aynı uzunluk) fark edilmez; tam okuma ederdi. Analiz günlüğü yalnız ekleniyor; olmayan bir durum.
 - **Kodlama:** artımlı yol UTF-8 sabit; tam okuma yerel ayarın kodlamasını kullanıyordu (macOS'ta UTF-8). UTF-8 dışı yerel ayarda `tail` farklı çözülebilir.
 - **TTY yorumu** (kalem 2): stdout dosyada, stderr terminaldeyse satır terminale yazılır (hükmün "TTY'de satır basılmaz"ının dışında; çubuk çizilmediği için olay başka türlü görünmezdi).
+
+## Kalem 8 — tam takım
+
+13:49:33–14:01:42 (727,96 sn; 1 dk yük 13,34 → 8,64: aynı anda ana oturumun Ollama kabul koşusu ve başka ajanlar; **yük altında**), worktree kökünden, kod `a2a31f62` (= `75ecbc61`'in kodu; sonrası yalnız belge ve tanım dosyaları), worktree'de geçici çalışma verisi bağları (`vendor`, `scripts/node_modules`, `sigs`, `signatures.lmdb`, `signatures_homebrew{,_bytes,_bytes_v2}.json`, `sigs_macos_system.json`; commit'lenmedi, bitince kaldırıldı): **11 220 geçti / 23 atlandı / 0 kaldı** (152 seçilmedi). Taban `b536414d` 11 168 / 23 / 0 → fark +52 = bu paketin testleri. Uyarılar (3) bu paketten değil (`jpype.isThreadAttachedToJVM` ÖL-1'den; iki `ComputationRecoveryConfig`). Bu pakette `config.py` yaması yok: `test_p15a_etkisiz` yeşil. Günlük `…/OL4/tam_takim/pytest.log`, özet `ozet/tam_takim_ozet.txt`.
+
+## Kabul
+
+| Ölçüt | Sonuç |
+|---|---|
+| 10 MB sahte günlükte `_job_progress`'in ikinci ve sonraki çağrıları < 50 ms | **5,5–7,7 ms** (test; yük altında); ilk çağrı 281–291 ms; önce (tam okuma, her çağrıda) 207,5 ms |
+| Parçalı ↔ tek seferde okuma eşdeğerliği (hüküm 3) | 8 tohum × 26+ rastgele parça (+ `\r\n` arası, UTF-8 ortası) → `stages`, `substages`, `tail`, `ilerleme` tam okumayla aynı (test) |
+| CLI üç kip — birim testte | öntanım satır (6 / 6 stderr, stdout 0), `--quiet` 0, `--json` 0, `--verbose` tam bir kez, çubuk kipi satır 0 (test) |
+| CLI üç kip — gerçek `cat` koşusunda | öntanım **46** satır (17 / 17 adım `basladi` → `bitti`), `--quiet` **0**, `--verbose` yineleme **0** |
+| Var olan CLI / arayüz testleri yeşil | 102 + 118 ilgili; tam takım 0 kaldı |
+| T25 en uzun boşluk ≤ 60 sn | **ölçülmedi; ana oturumun koşusuna bırakıldı** |
+
+## Koşu kökü
+
+`~/karadul_olcum/runs/dalga1-2026-11-23/OL4/` — 72 MB (14:02, `du -sh`). Özet `ozet/`: `cat_olc.json`, `cat_ontanim_stderr.txt`, `cat_verbose_ilerleme.txt`, `cat_quiet_stderr.txt`, `kuyruk_OL4.txt`, `tam_takim_ozet.txt`, `mutasyon/*.log`. Betikler `betik/` (`spec_uret.py`, `eski_mutasyon.zsh`, `bayat_denetle.py`, `bayat_yeniden.zsh`, `cat_kos.zsh`, `tek.zsh`, `cat_olc.py`, `csp_karma.py`, `yama_denetle.py`, `hiz_dene.py`, `profil.py`, `tam_takim.zsh`), yama kopyaları `yama/` (`a/`, `b/`, `betik.js`, `blok.js`), 10 MB deneme günlüğü `tmp/a.log`, koşu çalışma alanları `cat/<kip>/{ws,out,cache}` (silinmedi; ana oturum siler). Ürün ağacı `~/karadul_olcum/urun-75ecbc61` (detached worktree, altı bağ) silinmedi.
+
+## Commit'ler (dal `worktree-agent-ac680b7e0267161e7`, push yok)
+
+`126bf16e` ilerleme dosyası · `959632ad` ayrıştırıcı · `def88cbc` sunucu artımlı okuma · `db9a6e01` CLI kipleri · `107d9f31` boş yoklamada dosya açılmaz · `75ecbc61` testler + mutasyon tanımı · `7c13409e` `index.html` yaması · `de391b55` ilerleme · `5770f978` `cat` üç kip · `a2a31f62` notlar · `c1fe7145` bayat dört eski tanım · `729a1ca2` ilerleme · bu commit kapanış.
+
+## PAKET BİTTİ
