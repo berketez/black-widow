@@ -13,9 +13,10 @@ Girdi (koşu kökü başına):
 - ``ws/workspaces/*/*/static/go_functions.json`` (varsa): ``buildinfo`` (ana modül) ve bilgi
   amaçlı kaynak dosya sayımı.
 
-Kullanım (worktree kökünden)::
+Kullanım (worktree kökünden; ``PYTHONPATH=.`` şart: betik yoluyla çalıştırılınca ``karadul`` yoksa
+düzenlenebilir kurulumdan, yani ana ağaçtan yüklenir)::
 
-    PYTHONDONTWRITEBYTECODE=1 python scripts/arge/cikti/kuru_agac.py \
+    PYTHONPATH=. PYTHONDONTWRITEBYTECODE=1 python scripts/arge/cikti/kuru_agac.py \
         --kosu ollama=<kök> --kosu tmux=<kök> --cikti <dizin>
 
 Çıktı: ``<dizin>/kuru_agac.json`` (koşu başına sayım) ve ``<dizin>/kuru_agac.md`` (tablo). Ad
@@ -38,11 +39,15 @@ from karadul.analyzers.ustveri.go_pclntab import (
     SINIF_CALISMA_ZAMANI, SINIF_DERLEYICI, SINIF_KENDI, SINIF_STANDART, SINIF_UCUNCU_TARAF,
     ana_modul_bul, paket_adi, paket_sinifi,
 )
+from karadul.core import naming_labels
 from karadul.core.naming_labels import (
     AD_ESIGI, LABEL_CERTAIN, LABEL_METADATA, LABEL_VERIFIED, SOURCE_GO_PCLNTAB,
-    SOURCE_OBJC_METHOD, SOURCE_SWIFT_TYPE,
+    SOURCE_OBJC_METHOD,
 )
 from karadul.pipeline.steps._feedback_naming_candidates import c_identifier
+
+# Swift kanalının sabiti P-ÜV6b ile geldi (main ``daf9a0f5``'ten sonra); ondan önceki ağaçta yok.
+SOURCE_SWIFT_TYPE = getattr(naming_labels, "SOURCE_SWIFT_TYPE", "swift_type_accessor")
 
 # --- Kuralın sabitleri (tasarım belgesi §3, §5) -------------------------------------------------
 UYGUN_ETIKETLER = (LABEL_CERTAIN, LABEL_VERIFIED, LABEL_METADATA)   # §4: dosya adına girebilen
@@ -330,9 +335,11 @@ def kosu_say(kosu: Path, go_sinif_dizini: bool, ornek: int) -> dict[str, Any]:
         "yol_kaynagi": dict(Counter(f.kaynak for f in fonksiyonlar)),
         "go_sinif_fonksiyon": dict(Counter(f.sinif for f in fonksiyonlar if f.sinif)),
         "cakisma": cakisma,
-        "donusum": dict(Counter(d for f in fonksiyonlar for d in set(f.donusum))),
+        "donusum": dict(sorted(Counter(d for f in fonksiyonlar for d in set(f.donusum)).items())),
         "ozgun_adi_tasinabilir_olmayan": sum(1 for o in ozgunler if not TASINABILIR_AD_RE.match(o)),
-        "ozgun_ad_karakterleri": {repr(c): n for c, n in karakter.most_common(12)},
+        # Eşit sayılar karakter sırasıyla: çıktı karma tohumundan bağımsız olsun.
+        "ozgun_ad_karakterleri": {repr(c): n for c, n in sorted(
+            karakter.items(), key=lambda x: (-x[1], x[0]))[:12]},
         "en_uzun_ozgun_ad": max((len(o) for o in ozgunler), default=0),
     }
     # Değişmez: addan türemiş her dosya tek fonksiyon taşır (çakışma çözümünden sonra).
