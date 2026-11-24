@@ -102,9 +102,108 @@ Denetleyici, parçanın kimden geldiğine bakmaz: motorun çıkardığı gövde 
 
 Bu tablo hüküm 2'nin ("denetimden geçmeyen öneri çıktıya girmez") mekanik karşılığıdır.
 
-## 4. Belirlenimci katman [YAZILMADI]
+## 4. Belirlenimci katman
 
-## 5. KaradulLM katmanı [YAZILMADI]
+Hüküm 3: motor LLM'siz kalır, tek başına koşar ve tek başına ölçülür. Bu katmanın her adımı ya ikiliden okunan bir olguya ya da derleyicinin cevabına dayanır; hiçbir adım "derlensin diye" bilgi uydurmaz. Sıra, §1'de ölçülen hata paylarının sırasıdır.
+
+| Adım | Kapattığı boşluk (§2 sınıfı) | Üstüne kurulduğu var olan kod | Paket |
+|---|---|---|---|
+| **D1** Tip başlığının derlenir üretilmesi | `types.h`'nin kendi hataları: Ghidra temel tip adları, enum sabit çakışması ve geçersiz adlar, üye bildirimleri, sistem tipleri, SDK çakışması | `c_project_builder.py` `_build_types_h`, `GHIDRA_TYPEDEF_LINES`; `c_type_recoverer.py` `CTypeRecoverer`; çıktıya kopyalayan `output_formatter.py` (`_copy_project_tree`; `_build_types_h` çağrısı) | GK-B |
+| **D2** Bildirim üretimi (birim önsözü) | Eksik işlev bildirimi, eksik veri simgesi bildirimi | `c_project_builder.py` `definition_signatures`, `_build_subsystem_header` (P18: bildirim tanımdan kopyalanıyor), `_load_thunk_addresses`; `static/ghidra_functions.json` | GK-C |
+| **D3** Ghidra artıklarının çevrilmesi | P-code işleç çağrıları (`CONCATxy`, `SUBxy`, `ZEXT`, `SEXT`, `CARRY`, `SBORROW` …): anlamı tanımlı, başlık olarak yazılabilir. Sahte değişkenler (`in_`, `unaff_`, `extraout_`), kurtarılamayan atlama tablosu, etiket adları: **anlamı eksik**; bildirimle derlenir kılınabilir ama eşdeğerliği yalnız B3 söyler | `c_flow_simplifier.py` (var olan akış sadeleştirme); `karadul/lm/tools/read.py` `ghidra_warnings` (Ghidra uyarı satırlarını zaten sayıyor) | GK-G |
+| **D4** Tip birleştirme | Aynı simgenin birimler arasında farklı tiple görünmesi; çağıran ↔ tanım imza farkı; yapı alanı çakışmaları | `pipeline/steps/struct_recovery.py`, `type_recovery_consumer.py`, `reconstruction/type_inferrer.py`, `computation/struct_recovery/solver.py` (kısıt çözücüyle yapı yerleşimi) | GK-H (ölçer), sonra GK-G / ayrı kalem (onarır) |
+| **D5** Bağlama denetimi | Çift tanım, çözülmeyen simge, içe aktarım tablosuyla mutabakat | `_load_thunk_addresses` (içe aktarım taslakları `src/import_thunks/`'ta ayrı; P18 kalem 4) | GK-H |
+| **D6** Derleyici profili | Özgün derleyici / bayrak tahmini (K1 kapsamı için) | Üründe genel bir derleyici tespiti **yok** (bakıldı: yalnız `analyzers/delphi_binary.py` ve `reconstruction/reference_populator.py`'de dar kullanımlar). İlk sürüm: sabit profil kümesi (§3.2); geçen profilin sayımı ikili başına tek profile yakınsıyorsa sonraki işlevlerde o profil önce denenir (ölçülen sıklıkla, uydurma etiketle değil) | GK-D |
+| **D7** Dil çalışma zamanı bildirimleri | ObjC ileti gönderimi, Go / Swift çalışma zamanı çağrıları, C++ adlarının C'de yazılamaması | Üst veri okuyucuları (`karadul/analyzers/ustveri/`; main'de), `analyzers/cpp_rtti.py`, ayıklayıcılar | GK-L |
+
+İlkeler:
+
+1. **Bildirim bir iddiadır.** Üretilen her bildirimin kaynağı kayda geçer (tanımdan kopya / Ghidra imzası / üst veri / bilinmiyor → yer tutucu). Kaynağı "bilinmiyor" olan bildirimle derlenen birim B1'i "yapay bildirimle" etiketiyle alır.
+2. **Motor kendi çıktısını da denetler.** B3 yalnız model dolgusu için değil, Ghidra'nın gövdesi için de koşar: decompiler hataları (yanlış tip genişliği, kaybolan yan etki) "derleniyor" görünür ama B3'te düşer. Bu, bugün hiç ölçülmeyen bir sayıdır: "Ghidra + Karadul gövdelerinin yüzde kaçı özgün işlevle eşdeğer" (ölçülmedi; GK-E'den sonra).
+3. **Ad hattına dokunulmaz.** Belirlenimci katman adları değiştirmez; S8 ad haritası her pakette bayt eşit kalır (kabul ölçütü).
+4. **Çıktı iki biçimde kalır:** okunan çıktı (bugünkü `out/src`; ÇA ile yeniden düzenlenecek) ve derleme birimi (önsöz + gövde). İkincisi birincisinden belirlenimci türetilir; analistin okuduğu dosyaya derleme iskelesi gömülmez (K-8 ile birlikte GK-M'de kesinleşir).
+
+## 5. KaradulLM katmanı
+
+Bu tur model koşturmadı. Aşağıdaki sayılardan yalnız "ölçüldü" denenler ölçümdür (kaynak: `2026-11-11_karadullm/zemin/zemin_olcumu.md`); kalanı tasarımdır.
+
+### 5.1 Modelin görevi
+
+Model, belirlenimci katmandan **sonra** kalan boşluklarda öneri yazar. §2'nin sınıflamasına göre:
+
+| Görev | Girdi durumu | Modelden istenen | Kapı (§3.6) |
+|---|---|---|---|
+| `onar_derleme` | İşlev B0'da ya da B1'de değil; belirlenimci katman hatayı kapatamadı | Aynı işlevin derlenen C'si (yalnız gövde + yerel bildirimler) | B1 + B3 |
+| `onar_esdegerlik` | İşlev B1'de ama B3'te `geçmedi` (karşı örnek var) | Karşı örneği gideren gövde | B3 |
+| `tip_oner` | Tipi bilinmeyen veri simgesi / `undefinedN` parametre | Tip bildirimi | B1 korunur + (varsa) B3 korunur |
+| `adlandir` | Adsız işlev / değişken (var olan görev) | Ad | Nesne kodu bayt eşit kalır; ad `model önerisi` |
+| `acikla` | Var olan görev (özet) | Metin | Kod değil; özet bekçisi |
+
+Modelden **istenmeyen:** yeni işlev uydurmak (ikilide adresi olmayan kod), önişlemci yönergesi, derleme bayrağı, "eşdeğer" hükmü (hükmü yalnız denetleyici verir).
+
+### 5.2 Girdi bağlamı
+
+Var olan araçlar yeter; yeni okuma aracı gerekmez: `get_decompiled` (işlev metni), `get_function_facts` (boyut, parametre sayısı, çağrı düzeni), `get_xrefs` / `get_call_graph` (çağıranlar, çağrılanlar), `get_types` (kurtarılan tipler), `get_evidence` ve `get_name_provenance` (kanıt satırları, ad kökeni), `search_code`. Eklenen tek girdi türü denetleyicinin çıktısıdır: derleyici hata iletileri (ilk k tanesi; dosya yolu arındırılmış) ve B3'ün `geçmedi` hükmünde **tek** karşı örnek (girdi yazmaçları + beklenen ↔ gözlenen). Girdi vektör kümesi ve tohumu modele gösterilmez (§9.2 risk 3).
+
+Bağlam bütçesi var olan tasarımın sınırıdır (16K yerel bağlam; `2026-11-18_karadullm_v2/TASARIM.md` §3.7): işlev metni + önsözün yalnız o işlevin kullandığı satırları + hata iletileri. Bağlama sığmayan işlev (TAHMİN: birkaç yüz satırın üstü; ölçülmedi) model görevine alınmaz, "bağlama sığmadı" diye sayılır.
+
+### 5.3 Döngü
+
+```
+aday (motor ya da önceki deneme)
+  → derle (B1)  ── hata → iletiler modele → yeni aday        (en çok D deneme)
+  → denetle (B3) ── geçmedi → tek karşı örnek modele → yeni aday
+                 ── hükümsüz → dur; kanıt satırı
+                 ── geçti → kabul vektör kümesiyle yeniden denetle → geçti ise çıktıya (etiketli)
+```
+
+- Deneme sınırı D ve işlev başına süre bütçesi ön kayıtta yazılır (öneri: D = 3; süre bütçesi ölçümden sonra). Sınır dolunca son aday çıktıya **girmez**; en iyi derleyici / denetleyici cevabıyla kanıt satırı olur.
+- Kabul için ikinci, modele hiç gösterilmemiş vektör kümesi kullanılır.
+- Döngüyü ajan değil denetleyici sürücüsü yürütür (belirlenimci program); model yalnız metin üretir. Derleme ve Ghidra çağrısı modelin araç kaydında yoktur.
+- Sıra: işlevler çağrı grafında yapraklardan köke (var olan `karadul/lm/order.py` katman sıralayıcısı); bir işlevin önerisi kabul edilirse çağıranların önsözü yenilenir.
+
+### 5.4 Yerel model, bellek, süre
+
+| Ölçü | Değer | Durum |
+|---|---|---|
+| Eldeki model | Qwen3.8-27B Q4_K_M (LM Studio dizininde; `llama-server` ile) | ölçüldü: K-1 … K-5 kapıları geçti |
+| Bellek tepesi | 17,63 GiB (sınır 20) | ölçüldü (zemin ölçümünün bellek denemeleri); 16K bağlamın tepesi **ölçülmedi** (v2 tasarımı §12) |
+| Hız | önek 106,8 jeton / sn, üretim 10,1 jeton / sn | ölçüldü, **yük altında** (boş makine hızı ölçülmedi) |
+| Bu modelin C gövdesi onarma başarısı | — | **ölçülmedi** (model ad önerme ve özet için seçildi; `2026-10-19_g6_pilot/model_secimi.md`) |
+| İşlev başına süre | TAHMİN 1–4 dk (100–300 satırlık gövde ≈ 1 500–4 000 üretim jetonu ÷ 10 jeton / sn, × ≤ 3 deneme; derleme ve denetim hariç) | TAHMİN |
+| Büyük ikili | 13 159 işlevin tamamı için model görevi gerçekçi değil: TAHMİN 200–900 saat. Model katmanı **seçilen kümede** koşar (analistin istediği işlevler / B1'e en yakın işlevler; ÖL-10'un seçim kuralıyla aynı mantık) | TAHMİN |
+| Donanım | Ayarlar tek işlemciye göre yazılmaz (A-9): model boyutu çalışma anında ölçülen boş bellekten seçilir (`karadul/lm/memory_guard.py` var); bellek yetmezse model katmanı "atlandı: bellek" der | tasarım |
+
+### 5.5 Etiket ve köken kaydı şeması
+
+İşlev başına bir kayıt; çıktıda `geri_kurma.json` (GK-I). Alan adları öneridir; şemayı GK-I dondurur.
+
+```json
+{
+  "adres": "00104080",
+  "birim": "src/…/FUN_00104080.c",
+  "basamak": "B3",
+  "kanit": {"tur": "oykunme", "vektor": 64, "tohum_ozeti": "sha256:…",
+            "profil": "clang-O2", "yanlis_kabul_ust_siniri": "‹GK-E ölçümü›",
+            "olcum_kunyesi": "‹ön kayıt commit'i›"},
+  "govde_kaynagi": "motor | model_onerisi",
+  "bildirimler": {"tanimdan": 4, "ghidra_imzasi": 2, "ust_veri": 0, "yapay": 0},
+  "model": null,
+  "denemeler": [],
+  "kanit_satirlari": []
+}
+```
+
+- `govde_kaynagi = model_onerisi` ise `model` alanı dolar: model dosyasının sha256'sı, istem sürümü, deneme sayısı, her denemenin derleyici / denetleyici cevabı (var olan koşu künyesi alanları: v2 tasarımı §8.3).
+- `basamak` yalnız denetleyicinin verdiği en yüksek basamaktır; `kanit.tur` ∈ {`bayt_es`, `komut_es`, `smt`, `oykunme`, `yok`}. `yapay` bildirim sayısı > 0 ise B1 "yapay bildirimle" diye gösterilir.
+- Reddedilen öneriler `kanit_satirlari`'na düşer (ne önerildi, hangi kapıda kaldı); çıktı koduna girmez.
+- Gösterimde (rapor, arayüz, MCP) "kurtarıldı" sözcüğü yoktur; sütunlar: derlenir (B1), bağlanır (B2), denetlendi (B3: kanıt türü), bayt eşit (B4), gövde kaynağı. Veri yoksa "ölçülmedi" (sahte veri yasağı; v2 tasarımı §4.7'deki mekanik sınamanın aynısı bu sütunlara uygulanır).
+
+### 5.6 Analistin onayı ve bekçi
+
+- **A-33 K-6 ile ilişki:** orada hüküm "KaradulLM decompile'ı kendisi başlatmaz, öneri açar; onay analistte". Aynı çizgi: model derleme ya da denetim **başlatmaz**; onarım görevini analist (ya da analistin açtığı toplu görev) başlatır. Kabul yolu K-8'de: denetimden geçen öneri ayrı katmana etiketiyle yazılır; motorun gövdesinin yerine geçmesi analistin onayıyladır (var olan kabul yolu: `karadul/core/overrides.py`).
+- **Bekçi (`karadul/lm/guard.py`):** bugün ad önerisi (`check_proposal`), özet (`check_summary`) ve genel cevap (`check_answer`) kurallarını taşıyor; düşmanca metin taraması (`hostile_texts`, `injection_hits`) ikilideki dizgilerden gelen yönlendirmeyi yakalıyor. Gövde önerisi için eklenecek kurallar (GK-J; yeni işlev `check_patch` önerisi — bugün **yok**): (1) metinde önişlemci yönergesi, satır içi derleme (`asm`), derleyici özniteliğiyle bölüm / takma ad tanımı → ret; (2) önsözde olmayan dış simgeye başvuru → ret (model yeni bağımlılık uyduramaz); (3) işlev adı ve imzası hedefle aynı değilse → ret; (4) gövde, kanıt zarflarındaki düşmanca metni yorum ya da dizgi olarak taşıyorsa → işaret; (5) boyut sınırı. Bekçi **ön** kapıdır: geçmek çıktıya girmek değildir; çıktıya giriş yalnız §3.6 tablosuyla olur.
+- **Sahte veri bekçisi:** model çıktısı hiçbir sayaçta "motorun kurtardığı" sütununa yazılamaz; `geri_kurma.json` doğrulayıcısı `govde_kaynagi = model_onerisi` olan kaydın `model` alanı boşsa ya da `kanit.tur = yok` iken `basamak ≥ B3` ise dosyayı reddeder (GK-I testi + mutant).
 
 ## 6. Ölçüm düzeni ve ön kayıt [YAZILMADI]
 
