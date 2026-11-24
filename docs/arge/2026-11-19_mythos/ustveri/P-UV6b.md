@@ -12,8 +12,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6b/` (özetler `ozet/`,
 | 1 ön kayıt | bitti | `46a722c` |
 | 2 kod + testler + mutasyon → dondurma | bitti: 25 test, puv6b 18 / 18 mutant öldü | `28427fb`, `d71b939`, `2ff758c`, dondurma `d94ee20` |
 | 3 Ghidra'sız yeniden oynatma (H3, H4, kanal sayıları) | bitti: H3 TUTTU (2 627 / 2 627); H4 TUTMADI (sayı 7 053 aralık dışı; ad 0 tuttu) | `010971e` (Swift satırı), `3872242` |
-| 4 ürün koşuları (H1, H2, H6) | bitti: 19 koşu, 19 / 19 çıkış 0; H1, H2, H6 TUTTU | `6055442`, `99ff7e3`, bu commit |
-| 5 eski mutasyon tanımları + tam takım (yamasız) | bitti: 172 öldü / 0 hayatta / 3 hata (bayrak; config.py, bu paketin değil); tam takım 11 193 / 23 / 0 | `6055442` |
+| 4 ürün koşuları (H1, H2, H6) | bitti: 14 koşu, 14 / 14 çıkış 0; H1, H2, H6 TUTTU | `6055442`, `99ff7e3`, bu commit |
+| 5 eski mutasyon tanımları + tam takım (yamasız) | bitti: eski tanımlarda 169 öldü / 0 hayatta / 3 hata (bayrak; config.py, bu paketin değil); tam takım 11 193 / 23 / 0 | `6055442` |
 
 ## Tasarım (koddan)
 
