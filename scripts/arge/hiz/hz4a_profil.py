@@ -604,6 +604,51 @@ def _profil(GH: Any, program: Any, out: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _butce_denemesi(GH: Any, H: Any, program: Any, sure: dict[str, Any],
+                    tam_metin: dict[str, str]) -> dict[str, Any]:
+    """Yeni yolda gerçek programla bütçe kesilmesi (H5'in aynı süreçteki kolu).
+
+    Her adım, tam koşu süresinin ~%40'ı kadar bütçeyle (ürünün denetçisi, ``_AdimDenetcisi``)
+    yeniden koşar: çıktı geçerli JSON mu, ``kismi`` / ``islenen`` / ``toplam`` / ``neden`` var mı,
+    ``islenen`` ≤ ``toplam`` mı, işlenen fonksiyonların kayıtları tam çıktıdakilerle aynı mı.
+    """
+    tam = {ad: json.loads(m) for ad, m in tam_metin.items()}
+    toplam = int(tam["call_graph"]["total_functions"])
+    out: dict[str, Any] = {}
+
+    def denetci(adim: str, tam_sn: float) -> Any:
+        return H._AdimDenetcisi(adim, max(0.02, 0.4 * tam_sn), 0, time.monotonic(), toplam=toplam)
+
+    def ozet(veri: dict[str, Any], d: Any, islenen_kayit: bool) -> dict[str, Any]:
+        json.loads(json.dumps(veri, default=str))
+        return {"kesildi": bool(d.doldu), "kismi": veri.get("kismi"),
+                "islenen": veri.get("islenen"), "toplam": veri.get("toplam"),
+                "neden": veri.get("neden"), "butce_sn": round(d.butce_sn, 3),
+                "islenen_toplamdan_kucuk_esit": (veri.get("islenen") is None
+                                                 or veri["islenen"] <= veri["toplam"]),
+                "islenen_kayitlar_tamla_ayni": islenen_kayit}
+
+    d = denetci("ghidra.call_graph", sure["call_graph"]["sn"])
+    t = H._BasvuruTablosu(program)
+    v = GH._extract_call_graph(program, denetci=d, tablo=t)
+    ayni = all(tam["call_graph"]["nodes"].get(a) == n for a, n in v["nodes"].items())
+    out["call_graph"] = ozet(v, d, ayni and len(v["nodes"]) == (v.get("islenen") or toplam))
+
+    d = denetci("ghidra.xref", sure["xref"]["sn"])
+    v = GH._extract_xrefs(program, denetci=d, tablo=H._BasvuruTablosu(program), tek_gecis=True)
+    ayni = all(tam["xrefs"]["function_xrefs"].get(a) == n
+               for a, n in v["function_xrefs"].items())
+    out["xref"] = ozet(v, d, ayni and (len(v["function_xrefs"]) == (v.get("islenen") or toplam)))
+    out["xref"]["statistics"] = v["statistics"]
+
+    d = denetci("ghidra.cfg", sure["cfg"]["sn"])
+    v = GH._extract_cfg(program, denetci=d, tek_gecis=True)
+    n = len(v["functions"])
+    out["cfg"] = ozet(v, d, v["functions"] == tam["cfg"]["functions"][:n])
+    out["cfg"]["dokulen_fonksiyon"] = n
+    return out
+
+
 def _kiyas(GH: Any, program: Any, yaz: Path | None) -> dict[str, Any]:
     from karadul.ghidra import headless as H
 
@@ -629,6 +674,7 @@ def _kiyas(GH: Any, program: Any, yaz: Path | None) -> dict[str, Any]:
     out["bayt"] = {ad: len(e[ad].encode("utf-8")) for ad in e}
     out["oran_yeni1_eski"] = round(out["yeni_1"]["toplam_sn"] / out["eski"]["toplam_sn"], 4)
     out["oran_yeni2_eski"] = round(out["yeni_2"]["toplam_sn"] / out["eski"]["toplam_sn"], 4)
+    out["butce_denemesi"] = _butce_denemesi(GH, H, program, out["yeni_2"], e)
     if yaz is not None:
         yaz.mkdir(parents=True, exist_ok=True)
         for ad in e:
