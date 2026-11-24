@@ -26,8 +26,9 @@ B17 sprint, 2026-05-14.
 
 from __future__ import annotations
 
+import contextlib
 import logging
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, Optional
 
 if TYPE_CHECKING:
     from karadul.config import Config
@@ -279,10 +280,146 @@ def make_progress_callbacks(
     return on_stage_start, on_stage_complete, on_progress
 
 
+# ---------------------------------------------------------------------------
+# ÖL-4: ``karadul.ilerleme`` olaylarının ``analyze``'da gösterimi.
+#
+# Olayı ÖL-1 üretir (``karadul/ghidra/headless.py``); burada yalnız gösterilir. Ayrıştırıcı tek:
+# ``karadul.core.ilerleme.ilerleme_ayristir`` (arayüz sunucusu da onu kullanır). Kipler:
+#   yok   -> işleyici kurulmaz: ``--quiet`` / ``--json`` (olay basılmaz) ve ``--verbose`` (kök
+#            işleyici satırı zaten yazıyor; ayrı işleyici satırı iki kez bastırırdı).
+#   cubuk -> stderr terminal ve çubuk terminalde çiziliyor: satır basılmaz, çubuğun açıklaması
+#            son olayın ``adim`` + ``islenen/toplam`` + ``gecen_sn``'si.
+#   satir -> öbür durumlar (stderr dosya / boru, ya da çubuk çizilmiyor): her olay stderr'e tek
+#            satır, sözleşme biçiminde; çubuk varsa açıklaması da güncellenir. stdout'a hiç yazılmaz.
+# Olay yoksa gösterilecek bir şey yoktur: zamanlayıcıyla satır / açıklama üretilmez.
+# ---------------------------------------------------------------------------
+ILERLEME_KIP_YOK = "yok"
+ILERLEME_KIP_CUBUK = "cubuk"
+ILERLEME_KIP_SATIR = "satir"
+
+
+def akim_tty(akim: Any) -> bool:
+    """Akım bir terminal mi (kapalı / sahte akımda ``False``)."""
+    try:
+        return bool(akim.isatty())
+    except (AttributeError, ValueError, OSError):
+        return False
+
+
+def ilerleme_kipi(*, quiet: bool, verbose: bool, stderr_tty: bool, cubuk_cizilir: bool) -> str:
+    """``analyze``'ın ilerleme gösterim kipi (yukarıdaki tablo)."""
+    if quiet or verbose:
+        return ILERLEME_KIP_YOK
+    if stderr_tty and cubuk_cizilir:
+        return ILERLEME_KIP_CUBUK
+    return ILERLEME_KIP_SATIR
+
+
+def ilerleme_aciklamasi(
+    olay: dict[str, Any], stage_labels: Optional[dict[str, str]] = None,
+) -> str:
+    """Çubuk açıklaması: aşama etiketi + ``adim`` [+ ``islenen[/toplam]``] [+ ``gecen_sn``].
+
+    Yalnız olayda geçen alanlar yazılır (alan uydurulmaz); değerler Rich biçimlemesinden kaçırılır.
+    """
+    from rich.markup import escape
+
+    labels = stage_labels or {}
+    asama = str(olay.get("asama", ""))
+    parcalar = [escape(str(olay["adim"]))]
+    if olay.get("islenen") is not None:
+        parcalar.append(
+            f"{olay['islenen']}/{olay['toplam']}" if olay.get("toplam") is not None
+            else str(olay["islenen"]))
+    if olay.get("gecen_sn") is not None:
+        parcalar.append(f"{olay['gecen_sn']:.1f} sn")
+    etiket = labels.get(asama, asama.replace("_", " ").title())
+    return f"[cyan]{escape(etiket)}[/cyan] [dim]{' '.join(parcalar)}[/dim]"
+
+
+class IlerlemeGosterici(logging.Handler):
+    """``karadul.ilerleme`` kayıtlarını satır olarak yazar ve / ya da çubuk açıklamasına koyar."""
+
+    def __init__(
+        self,
+        *,
+        akim: Any = None,
+        progress: "Optional[Progress]" = None,
+        task_id: "Optional[TaskID]" = None,
+        stage_labels: Optional[dict[str, str]] = None,
+    ) -> None:
+        super().__init__(level=logging.INFO)
+        self._akim = akim
+        self._progress = progress
+        self._task_id = task_id
+        self._labels = stage_labels
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            mesaj = record.getMessage()
+            if self._akim is not None:
+                self._akim.write(mesaj + "\n")
+                self._akim.flush()
+            if self._progress is not None:
+                from karadul.core.ilerleme import ilerleme_ayristir
+
+                olay = ilerleme_ayristir(mesaj)
+                if olay is not None:
+                    self._progress.update(
+                        self._task_id, description=ilerleme_aciklamasi(olay, self._labels))
+        except Exception:  # günlük işleyicisi analizi düşürmez (logging sözleşmesi)
+            self.handleError(record)
+
+
+@contextlib.contextmanager
+def ilerleme_gosterimi(
+    kip: str,
+    *,
+    akim: Any,
+    progress: "Optional[Progress]" = None,
+    task_id: "Optional[TaskID]" = None,
+    stage_labels: Optional[dict[str, str]] = None,
+) -> Iterator[Optional[IlerlemeGosterici]]:
+    """Kipe göre ``karadul.ilerleme`` işleyicisini kur; çıkışta günlükçüyü eski hâline getir.
+
+    ``akim`` çağıran tarafça çubuk açılmadan ÖNCE alınmış ``sys.stderr`` olmalı: Rich ``Live``
+    terminalde ``sys.stderr``'i konsola (stdout) yönlendirir. Günlükçü düzeyi INFO'ya çekilir ve
+    yayılım kapatılır: kökte (önceki bir koşudan kalan) işleyici varsa satır iki kez çıkmaz.
+    """
+    if kip == ILERLEME_KIP_YOK:
+        yield None
+        return
+    from karadul.core.ilerleme import ILERLEME_GUNLUKCU
+
+    gunlukcu = logging.getLogger(ILERLEME_GUNLUKCU)
+    isleyici = IlerlemeGosterici(
+        akim=akim if kip == ILERLEME_KIP_SATIR else None,
+        progress=progress, task_id=task_id, stage_labels=stage_labels,
+    )
+    eski_duzey, eski_yayilim = gunlukcu.level, gunlukcu.propagate
+    gunlukcu.addHandler(isleyici)
+    gunlukcu.setLevel(logging.INFO)
+    gunlukcu.propagate = False
+    try:
+        yield isleyici
+    finally:
+        gunlukcu.removeHandler(isleyici)
+        gunlukcu.setLevel(eski_duzey)
+        gunlukcu.propagate = eski_yayilim
+
+
 __all__ = [
     "DEFAULT_STAGE_ORDER",
     "format_size",
     "filter_stages",
     "build_pipeline",
     "make_progress_callbacks",
+    "ILERLEME_KIP_YOK",
+    "ILERLEME_KIP_CUBUK",
+    "ILERLEME_KIP_SATIR",
+    "akim_tty",
+    "ilerleme_kipi",
+    "ilerleme_aciklamasi",
+    "IlerlemeGosterici",
+    "ilerleme_gosterimi",
 ]

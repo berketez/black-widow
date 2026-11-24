@@ -40,9 +40,12 @@ from rich.text import Text
 from karadul import __codename__, __version__
 from karadul.cli_common import (
     DEFAULT_STAGE_ORDER,
+    akim_tty,
     build_pipeline,
     filter_stages,
     format_size,
+    ilerleme_gosterimi,
+    ilerleme_kipi,
     make_progress_callbacks,
 )
 from karadul.config import INERT_SETTINGS, Config
@@ -974,6 +977,13 @@ def analyze(
             on_stage_start=_noop, on_stage_complete=_noop, on_progress=_noop,
         )
     else:
+        # ÖL-4: karadul.ilerleme olayları --verbose olmadan da görünür (cli_common kip tablosu).
+        # Akım çubuktan ÖNCE alınır: Rich Live terminalde sys.stderr'i konsola yönlendirir.
+        ilerleme_akimi = sys.stderr
+        kip = ilerleme_kipi(
+            quiet=quiet, verbose=verbose, stderr_tty=akim_tty(ilerleme_akimi),
+            cubuk_cizilir=console.is_terminal and not console.is_dumb_terminal,
+        )
         console.print(Rule("Pipeline", style="cyan"))
         console.print()
         with Progress(
@@ -991,12 +1001,14 @@ def analyze(
             _on_start, _on_complete, _on_progress = make_progress_callbacks(
                 progress, task_id, STAGE_LABELS,
             )
-            result = pipeline.run(
-                target_path, stages=None,
-                on_stage_start=_on_start,
-                on_stage_complete=_log_stage_complete(_on_complete),
-                on_progress=_on_progress,
-            )
+            with ilerleme_gosterimi(kip, akim=ilerleme_akimi, progress=progress,
+                                    task_id=task_id, stage_labels=STAGE_LABELS):
+                result = pipeline.run(
+                    target_path, stages=None,
+                    on_stage_start=_on_start,
+                    on_stage_complete=_log_stage_complete(_on_complete),
+                    on_progress=_on_progress,
+                )
 
     # MEK-01: durum ve çıkış kodu; aşama hataları stderr'e (her kipte).
     outcome = _analysis_outcome(result)
