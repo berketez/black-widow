@@ -11,9 +11,9 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6b/` (özetler `ozet/`,
 |---|---|---|
 | 1 ön kayıt | bitti | `46a722c` |
 | 2 kod + testler + mutasyon → dondurma | bitti: 25 test, puv6b 18 / 18 mutant öldü | `28427fb`, `d71b939`, `2ff758c`, dondurma `d94ee20` |
-| 3 Ghidra'sız yeniden oynatma (H3, H4, kanal sayıları) | bitti: H3 TUTTU (2 627 / 2 627); H4 TUTMADI (sayı 7 053 aralık dışı; ad 0 tuttu) | `010971e` (Swift satırı), bu commit |
-| 4 ürün koşuları (H1, H2, H6) | sürüyor (kuyrukta; ağaç `~/karadul_olcum/urun-010971e0`) | — |
-| 5 eski mutasyon tanımları + tam takım (yamasız) | sırada | — |
+| 3 Ghidra'sız yeniden oynatma (H3, H4, kanal sayıları) | bitti: H3 TUTTU (2 627 / 2 627); H4 TUTMADI (sayı 7 053 aralık dışı; ad 0 tuttu) | `010971e` (Swift satırı), `3872242` |
+| 4 ürün koşuları (H1, H2, H6) | bitti: 19 koşu, 19 / 19 çıkış 0; H1, H2, H6 TUTTU | `6055442`, `99ff7e3`, bu commit |
+| 5 eski mutasyon tanımları + tam takım (yamasız) | bitti: 172 öldü / 0 hayatta / 3 hata (bayrak; config.py, bu paketin değil); tam takım 11 193 / 23 / 0 | `6055442` |
 
 ## Tasarım (koddan)
 
@@ -201,11 +201,65 @@ ANA Ollama koşusunda, öbürü HZ2 / OL4 / BA2 ile paylaşılıyordu; sert sona
 - İki yeni adımın süresi (koşucunun `<adım>_duration_s` kaydı, 4 basamak) 5 / 5 ikilide 0,0 sn ≤ 0,1 sn; iki kanal
   `kapali`. Ayrıntı `PUV6b/ozet/h1_esitlik.json`.
 
-### H2 — sürüyor
+### H2 — bayraklar açık ↔ kapalı, aynı ağaç (`urun-010971e0`), 5 ikili + debian `pzstd` (14:04–14:25, yük altında) → TUTTU
 
-Bekliyorum: açık kol 6 ikili (14:04'te başladı) ve pzstd kapalı kolu. TAHMİN bitiş 14:25–14:45.
+Açık kol `ustveri_urun.py kos --config bayraklar_acik.yaml` (kök `PUV6b/s8_acik`), kapalı kol `urun_kos.py` (kök
+`PUV6b/s8_kapali`; pzstd kapalı kolu en sonda). Karşılaştırma `PUV6b/betik/h1_h2.py` → `PUV6b/ozet/h2_esitlik.json`.
 
-Bekliyorum: S8 kapalı kol (cat, tree, sqlite3 bitti 13:55; zstd, mac/tmux kuyrukta), ardından açık kol 6 ikili ve pzstd
-kapalı kolu. TAHMİN bitiş 14:30–14:55. İlk üç ikilinin ara karşılaştırması (`PUV6b/ozet/h1_ara.json`): `naming_map`
-(out / src / src_iter1) 3 / 3 bayt aynı, `decompiled/*.c` 0 fark, `out/src`'de tek fark `compile_commands.json`
-(mutlak çalışma alanı yolu), iki yeni adımın süresi 0,0 sn.
+| İkili | `naming_map` (out / src / src_iter1) açık = kapalı | `.c` fark | `out/src` fark | Swift | RTTI (kanıt satırı) | RTTI kaynaklı ad | adım süresi Swift / RTTI (sn, açık) |
+|---|---|---|---|---|---|---|---|
+| debian/coreutils/cat | bayt aynı / aynı / aynı | 0 / 296 | 1 / 138 | `veri_yok` (ELF) | `veri_yok` | 0 | 0,026 / 0,025 |
+| debian/tree/tree | aynı / aynı / aynı | 0 / 250 | 1 / 145 | `veri_yok` | `veri_yok` | 0 | 0,028 / 0,020 |
+| debian/sqlite3/sqlite3 | aynı / aynı / aynı | 0 / 1 144 | 1 / 458 | `veri_yok` | `veri_yok` | 0 | 0,065 / 0,066 |
+| debian/zstd/zstd | aynı / aynı / aynı | 0 / 1 444 | 1 / 1 119 | `veri_yok` | `veri_yok` | 0 | 0,199 / 0,155 |
+| mac/tmux | aynı / aynı / aynı | 0 / 2 821 | 1 / 2 633 | `veri_yok` (Swift bölümü yok) | `veri_yok` | 0 | 0,163 / 0,162 |
+| debian/zstd/pzstd | aynı / aynı / aynı | 0 / 1 156 | 1 / 901 | `veri_yok` | `calisti`: **13** (`tek_sinif` 13) | **0** | 0,049 / 0,136 |
+
+- Değişen ad 0 (6 / 6); `out/src`'deki tek fark yine `compile_commands.json` (mutlak yol). pzstd'de RTTI kanıt satırı 13
+  ≥ 1, köken kaydının `ust_veri_kanit` listesinde; RTTI kaynaklı karar / ad 0. **H2 TUTTU.**
+- Açık koldaki adım süreleri bayraklar açıkken ölçüldü (yük altında 0,02–0,20 sn); H1'in ≤ 0,1 sn ölçütü kapalı kol
+  içindir (0,0 sn).
+
+## Özet: hükümler (ön kayıt `46a722c`, dondurma `d94ee20`)
+
+| | Hüküm | Sayı |
+|---|---|---|
+| H1 | TUTTU | bayraklar kapalı: 5 / 5 ikilide `naming_map` (3 dosya) ve `decompiled/*.c` tabanla bayt aynı; `out/src`'de yalnız `compile_commands.json` yolu; iki adım 0,0 sn |
+| H2 | TUTTU | açık ↔ kapalı değişen ad 0 (6 / 6); pzstd RTTI kanıt satırı 13, RTTI ad 0 |
+| H3 | TUTTU | iTerm2 Swift aday 2 627, doğru 2 627, yanlış 0 (%0), Wilson alt 0,99854 ≥ 0,90909 |
+| H4 | TUTMADI (sayı) | llama-server kanıt satırı 7 053 ∉ 6 990 ± 42 (ön kayıttaki 6 990 P-UV4'ün doğru sayısıydı; satır = 7 011 bağlı + 42 belirsiz); RTTI kaynaklı ad 0 tuttu; belirsizde sınıf adı 0 |
+| H5 | TUTTU | üst veri adlarında `kesin` 0 (terminal-notifier, Rectangle); Swift 180 / 180 `üst veriden`, `ozgun_ad` dolu, güven tablodan |
+| H6 | TUTTU | terminal-notifier ObjC 32 / 32 (doğru 32); Rectangle Swift adı 180 (ilk ölçüm; doğruluk ölçülmedi) |
+
+**Güven tablosunun yeni satırları** (`naming_labels.MEASURED_METADATA_PRECISION`): ObjC `(33611, 33885, 0.9909)` (eskiden
+`(33611, 33611, 0.9998)`), Swift `(2627, 2627, 0.9985)`; Go değişmedi. Program sayısı (A-14): Go 2, ObjC 2, Swift 1 →
+bayraklar öntanımda kapalı.
+
+## PUV6c ve açılış ölçümü için notlar
+
+- **Swift yuvalarının çoğu adressiz:** Rectangle'da 1 152 yuvanın 926'sının `adres` alanı boş (uygulama adresi
+  çözülmemiş / dış); kanal bunları yalnız sayıyor (`yuva_adressiz`), kanıt satırına yazmıyor. Tip + sıra bilgisiyle
+  adressiz kanıt satırı yazmak ayrı karar (okuyucu dokunulmaz listedeydi).
+- **Kanıt satırı yalnız birleştirici bir karar yazdığında görünür:** `run_name_merger` aday ve c_namer kararı yoksa
+  köken kaydını yazmadan döner (`if not candidates_by_symbol and not decided_map: return`); RTTI'nin aday üretmediği bir
+  ikilide c_namer da hiç ad vermezse RTTI kanıtı kaybolur. Ölçülen 9 koşunun hepsinde c_namer kararı vardı; birleştirici
+  akışı bu paketin kapsamında değildi (yalnız girdi eklendi).
+- **Ollama:** Swift `veri_yok`; RTTI 68 kanıt satırı (`tek_sinif` 65, `en_taban_sinif` 3), ad 0. Açılış ölçümünde
+  (A-14) Swift için GT'li ikinci ve üçüncü program gerekir (bugün yalnız iTerm2).
+- **ObjC güveni düştü:** köken kaydındaki ObjC güveni 0,9998 → 0,9909 (ürün düzeyi); ad eşiğinin üstünde, davranış
+  değişmez, yalnız yazılan güven değeri.
+- **bayrak mutasyon tanımı:** `m01`, `m04`, `m10` `config.py`'nin artık var olmayan INERT satırlarını arıyor (ÖK-1 / ÖL-2
+  yamaları) → MUTBAKIM.
+- PUV6c'nin işleri (Go tutarlılık damgası, `main` künyesi, `go_pclntab` notları, `output_formatter` `entry` yaması) bu
+  pakette yapılmadı; `_feedback_naming_candidates.py`'de PUV6a / PK1 işlevlerine dokunulmadı (yalnız PUV6a'nın
+  `_metadata_gate` / `_producer_status` yardımcıları genişletildi: demet durum, ölçülmemiş / evidence-only nedenleri).
+
+## Koşu kökü ve ağaçlar
+
+- Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6b/` (2,2 GB; `ozet/` 196 KB + betik kopyaları). Çalışma alanları
+  (`acik/`, `s8_kapali/`, `s8_acik/`) ara üründür.
+- Ürün ağaçları (silinmedi; ana oturum siler): `~/karadul_olcum/urun-d94ee206` (dondurma; H3 / H4), `~/karadul_olcum/urun-010971e0`
+  (dondurma + Swift satırı; ürün koşuları ve yeniden oynatma).
+- Arka plan süreci kalmadı; worktree'deki geçici veri bağları kaldırıldı.
+
+## PAKET BİTTİ
