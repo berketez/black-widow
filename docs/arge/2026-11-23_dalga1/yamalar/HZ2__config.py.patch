@@ -1,0 +1,21 @@
+diff --git a/karadul/config.py b/karadul/config.py
+--- a/karadul/config.py
++++ b/karadul/config.py
+@@ -812,7 +812,7 @@
+     # ÖL-2: BSim ingest süre bütçesi (sn; 0 = sınırsız).
+     ingest_butcesi_sn: int = 900  # okuyan: ghidra/headless.py _analyze_pyghidra (ÖL-2)
+     # HZ-2: ingest ve sorguda Ghidra'nın paralel taraması (kapalı = bugünkü tekli yol).
+-    paralel_tarama: bool = False  # ETKİSİZ: HZ-2 bağlayacak (INERT_SETTINGS)
++    paralel_tarama: bool = True  # okuyan: ghidra/bsim.py BSimDatabase (HZ-2)
+ 
+ 
+ @dataclass
+@@ -1316,8 +1316,6 @@
+     # ÖK-2 (Dalga 2)
+     "binary_reconstruction.oz_ad_uniqueness_gate": _pending_binding("ÖK-2"),
+     # P-ÜV1 / P-ÜV2 / P-ÜV3 (Dalga 2; üretici adımı okuyan ilk kod; Faz 1 listesine P-ÜV6 ekler)
+-    # HZ-2 (Dalga 2)
+-    "bsim.paralel_tarama": _pending_binding("HZ-2"),
+     # ÖL-3 (Dalga 2)
+     "analysis.akis_yazimi": _pending_binding("ÖL-3"),
+     # HZ-4a (Dalga 2)
