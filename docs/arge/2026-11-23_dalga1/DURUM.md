@@ -220,11 +220,14 @@ Berke (13:0x): "ertesi gün oldu, kaldığımız yerden devam edelim." Düzen ay
 
 | Paket | Ajan | Model | Durum | Not |
 |---|---|---|---|---|
-| OL4 | — | Opus | gönderiliyor | `gonderim/OL4.md` |
-| PUV6b | — | Opus | gönderiliyor | `gonderim/PUV6b.md` |
-| BA2 | — | Opus | gönderiliyor | `gonderim/BA2.md` |
-| HZ2 | — | Opus | gönderiliyor | `gonderim/HZ2.md` |
+| OL4 | ac680b7e0267161e7 | Opus | çalışıyor (13:12; sert son 14:40) | `gonderim/OL4.md` |
+| PUV6b | a75f6e8b16a6611fa | Opus | çalışıyor (13:12; sert son 15:05) | `gonderim/PUV6b.md` |
+| BA2 | ae5cddf8fcd57b762 | Opus | çalışıyor (13:12; sert son 14:55) | `gonderim/BA2.md` |
+| HZ2 | a551a0529f5c15b60 | Opus | çalışıyor (13:12; sert son 15:20) | `gonderim/HZ2.md` |
 | GS1 | — | Opus | sırada (OL4'ten sonra; metni yazılacak) | A-36 |
 | PUV6c | — | Opus | sırada (PUV6b'den sonra; metni yazılacak) | |
 | HZ7a | — | Opus | sırada (BA2'den sonra; metni yazılacak) | |
+
+- 13:12 dört ajan gönderildi (hepsi Opus); bekçi kuruldu. Ollama kabul koşusu için ayrı takılma bekçisi (20 dk dosya değişmezse).
+- **Berke (13:1x): "zor işleri Mythos'a verebilirsin; yazmalar zaten işçiler Opus; mimari kararlar, mühendislik kararları zaten Mythos için."** → "en çok 1 Mythos, yalnız tasarım belgesi" sınırı kalktı: ağır mühendislik paketleri (kod dahil) Mythos ajanına verilebilir; plan / ölçümü belli yazma işleri Opus'ta kalır. Aynı anda en çok 4 ajan kuralı aynen. Mythos ajanı adayları (zincir sırasıyla): ÖL-3 + HZ-4a (Java tarafına taşıma + akış biçimli yazım), HZ-3 (decompile kuyruğu), OL10-D (K1 kipi), ÖK-2'nin yeniden tasarımı, PK-4. Bekçide "model düşmesi" satırı Mythos ajanı için beklenen satırdır.
 
