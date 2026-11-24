@@ -203,7 +203,12 @@ def yol_turet(f: Fonksiyon, kayit: dict[str, Any] | None, ana_modul: str | None,
     onek: str | None = None
     if kanal == SOURCE_GO_PCLNTAB and ozgun:
         paket = paket_adi(ozgun)
-        f.sinif = GO_SINIF_DIZINI.get(paket_sinifi(paket, ana_modul), GO_BILINMIYOR)
+        okuyucu_sinifi = paket_sinifi(paket, ana_modul)
+        if okuyucu_sinifi == SINIF_DERLEYICI:
+            # ``type:.eq.net/http.T``: ``paket_adi`` ``type:.eq.net/http`` verir; derleyicinin ürettiği
+            # adlar tek ad alanında toplanır (``type:`` → ``type_``), tipin paketine yerleştirilmez.
+            paket = paket.split(":", 1)[0] + ":"
+        f.sinif = GO_SINIF_DIZINI.get(okuyucu_sinifi, GO_BILINMIYOR)
         dizin = ["src", DIL_GO] + ([f.sinif] if go_sinif_dizini else [])
         dizin += [parca(p, f.donusum) for p in paket.split("/")] if paket else []
         onek, f.kaynak = paket, "go_paket"
