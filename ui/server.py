@@ -2582,9 +2582,11 @@ def _gunluk_ilerlet(j: dict, bitti: bool) -> _GunlukDurumu:
             if not isinstance(d, _GunlukDurumu) or d.kimlik != kimlik or st.st_size < d.ofset:
                 d = _GunlukDurumu()
                 d.kimlik = kimlik
-            with open(j["log"], "rb") as f:
-                f.seek(d.ofset)
-                yeni = f.read()
+            yeni = b""
+            if st.st_size > d.ofset:  # yeni bayt yoksa dosya açılmaz
+                with open(j["log"], "rb") as f:
+                    f.seek(d.ofset)
+                    yeni = f.read()
         except OSError:  # tam okumadaki gibi: okunamayan günlük boş sayılır
             d, yeni = _GunlukDurumu(), b""
         d.ofset += len(yeni)
