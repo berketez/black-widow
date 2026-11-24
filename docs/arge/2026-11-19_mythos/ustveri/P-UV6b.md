@@ -10,9 +10,9 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6b/` (özetler `ozet/`,
 | Kalem | Durum | Commit |
 |---|---|---|
 | 1 ön kayıt | bitti | `46a722c` |
-| 2 kod + testler + mutasyon → dondurma | bitti: 25 test, puv6b 18 / 18 mutant öldü | `28427fb`, `d71b939`, `2ff758c`, dondurma (bu commit) |
-| 3 Ghidra'sız yeniden oynatma (H3, H4, kanal sayıları) | sırada | — |
-| 4 ürün koşuları (H1, H2, H6) | sırada | — |
+| 2 kod + testler + mutasyon → dondurma | bitti: 25 test, puv6b 18 / 18 mutant öldü | `28427fb`, `d71b939`, `2ff758c`, dondurma `d94ee20` |
+| 3 Ghidra'sız yeniden oynatma (H3, H4, kanal sayıları) | bitti: H3 TUTTU (2 627 / 2 627); H4 TUTMADI (sayı 7 053 aralık dışı; ad 0 tuttu) | `010971e` (Swift satırı), bu commit |
+| 4 ürün koşuları (H1, H2, H6) | sürüyor (kuyrukta; ağaç `~/karadul_olcum/urun-010971e0`) | — |
 | 5 eski mutasyon tanımları + tam takım (yamasız) | sırada | — |
 
 ## Tasarım (koddan)
@@ -86,3 +86,45 @@ kural yolları değişmez; H3 ve H4 birer kez ölçülür. H3'ten sonra `naming_
 
 Betiğin kuru denemesi keşif ikililerinde (terminal-notifier Swift `veri_yok`; docker-cli RTTI `veri_yok`) kod yollarını
 geçti; sınama ikilileri açılmadı.
+
+## Kalem 3 — SINAMA ölçümleri (dondurma `d94ee20`'dan sonra, birer kez; ağaç `~/karadul_olcum/urun-d94ee206`)
+
+Betik `PUV6b/betik/olc_h3_h4.py` (sha256 ilk 16 `058247799da82190`, dondurma tablosundakiyle aynı; koşudan hemen önce
+denetlendi). Çıktılar `PUV6b/ozet/h3_iTerm2_swift.json`, `PUV6b/ozet/h4_llama-server_rtti.json` (yalnız sayı).
+Yük altında (load 26–28).
+
+### H3 — Swift, iTerm2 arm64 (soyulmuş, sha256 ilk 12 `4c3e96a2593d`; 13:34:56–13:34:57) → TUTTU
+
+| Üretici | Tip | Yuva | Elenen (`ad_yazilamaz`) | Aday | Doğru | Yanlış | GT'siz | Yazım | Kesinlik (Wilson %95) |
+|---|---|---|---|---|---|---|---|---|---|
+| `calisti` | 3 659 | 13 807 | 1 032 | **2 627** | **2 627** | **0** | 0 | `demangle` 2 627 | %100 (alt 0,99854) |
+
+- Yanlış oranı %0 ≤ %1, alt sınır 0,99854 ≥ `AD_ESIGI` (0,90909) → **TUTTU**. Aday sayısı (ilk ölçüm) 2 627 =
+  okuyucunun ad verdiği tip sayısı (P-UV3). Elenen 1 032 tip kanıt satırı olur (ad uydurulmaz).
+- Tabloya `(2627, 2627, 0.9985)` girdi (`010971e`; `baglama.wilson` alt sınırı 0,998540 → aşağı 4 basamak). A-14:
+  Swift'te GT'li program 1 (iTerm2) → bayrak öntanımda kapalı kalır.
+
+### H4 — RTTI, llama-server arm64 (soyulmuş, sha256 ilk 12 `6ae2d57c0dae`; 13:35:03) → TUTMADI (sayı) / ad 0 TUTTU
+
+| Üretici | typeinfo | vtable | Ayrık işlev | Bağlı (`tek_sinif` 6 931 + `en_taban_sinif` 80) | `belirsiz` | Kanıt satırı | Belirsizde sınıf adı | RTTI kaynaklı aday |
+|---|---|---|---|---|---|---|---|---|
+| `calisti` | 1 994 | 1 317 | 7 053 | 7 011 | 42 | **7 053** | 0 | **0** |
+
+- Ön kayıt "kanıt satırı 6 990 ± 42" → aralık [6 948, 7 032]; ölçülen **7 053** aralık dışında (21 fazla): **TUTMADI**
+  (eşik değiştirilmedi). Neden (ölçümden sonra okundu): 6 990 sayısı P-UV4.md satır 158'de "ürün bağı (belirsiz
+  hariç)" satırının GT'ye göre DOĞRU sayısıdır (6 990 / 7 011); kanıt satırı ise her ayrık işlev için bir satırdır
+  (7 011 bağlı + 42 belirsiz = 7 053 = P-UV4 satır 145'teki okuyucu sayısı). Kanal hiçbir işlevi düşürmüyor; ön kayıttaki
+  sayı yanlış nicelikten alınmıştı. Bağlı satır sayısı 7 011 aralığın içinde.
+- **RTTI kaynaklı ad 0** (tuttu); belirsiz 42 satırın hiçbirinde sınıf adı yok (`siniflar` listesi yazıldı).
+
+### Ghidra'sız yeniden oynatma — var olan çalışma alanları (ağaç `urun-010971e0`; `PUV6b/betik/oynat_puv6b.py`)
+
+| Çalışma alanı | Swift | RTTI | RTTI kaynaklı aday |
+|---|---|---|---|
+| Ollama (`ANA/ollama_ustveri/ws`, `Ollama_arm64`, 13 559 Ghidra fonksiyonu) | `veri_yok` (Swift bölümü yok) | `calisti`: 68 işlev → 68 kanıt satırı (`tek_sinif` 65, `en_taban_sinif` 3) | 0 |
+| terminal-notifier (`PUV6a/urun/acik2`) | `veri_yok` | `veri_yok` (Itanium typeinfo yok) | 0 |
+
+Çıktılar `PUV6b/ozet/oynat_{ollama,terminal-notifier}.json`.
+
+Bekleme: ürün koşuları kuyrukta (13:36'da başladı; ANA Ollama kabul koşusu bir yuvayı tutuyor, öbüründe OL4 / HZ2 / BA2
+sırada). TAHMİN bitiş 14:30–15:00; 15:05'e yetişmeyen koşu "kalan" yazılır.
