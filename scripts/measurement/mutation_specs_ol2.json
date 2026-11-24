@@ -221,9 +221,9 @@
       "id": "ol2_ingest_kesilmez",
       "desc": "Ingest tarama döngüsü bütçe dolunca durmaz",
       "module": "karadul/ghidra/bsim.py",
-      "test": "tests/test_ol2_bsim_kosul.py::test_ingest_butcesi_dolunca_taranan_kisim_eklenir",
-      "find": "if denetci is not None and denetci.denetle(taranan, len(gercek)):",
-      "replace": "if denetci is not None and denetci.denetle(taranan, len(gercek)) and False:"
+      "test": "tests/test_hz2_bsim_hizli.py::test_ingest_butcesi_izleyicide_kismi_ve_taranan_kisim_eklenir",
+      "find": "iptal = self._paralel_tara(gen, funcs, denetci, kalan)",
+      "replace": "iptal = self._paralel_tara(gen, funcs, denetci, None)"
     },
     {
       "id": "ol2_ingest_kismi_durum_yok",

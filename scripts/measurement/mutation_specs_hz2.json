@@ -1,0 +1,165 @@
+{
+  "_comment": "HZ-2 (BSim paralel tarama) mutasyon koruması: bayrak, paralel ingest, sorguda ingest yöneticisi, bütçenin izleyiciye taşınması (iptalde imzalı fonksiyon sayısı), yedek yol ve durum alanı, okuyucu iş parçacığının gerçek sayacı, kısmi ingest köken işareti; ÖL-2'nin tekli yol satırı (bayrak kapalı / yedek yol) ve ortak QueryNearest öncesi denetim paralel yol testiyle. Üretici: ~/karadul_olcum/runs/dalga1-2026-11-23/HZ2/betik/spec_uret.py",
+  "mutants": [
+    {
+      "id": "hz2_paralel_bayrak_okunmaz",
+      "desc": "bsim.paralel_tarama ayarı okunmaz (hep tekli yol)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_veritabani_paralel_cikti_tekli_ile_ayni_yalniz_scan_mode",
+      "find": "return bool(getattr(getattr(self.config, \"bsim\", None), \"paralel_tarama\", False))",
+      "replace": "return False"
+    },
+    {
+      "id": "hz2_ingest_tekli_yolda_kalir",
+      "desc": "ingest paralel taramaya geçmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_paralel_ingest_tekli_yolla_ayni_kume_sira_ve_ekleme",
+      "find": "            if paralel:\n                # HZ-2: Ghidra'nın paralel taraması",
+      "replace": "            if False:\n                # HZ-2: Ghidra'nın paralel taraması"
+    },
+    {
+      "id": "hz2_sorgu_yoneticiyi_kullanmaz",
+      "desc": "sorgu ingest'in yöneticisini kullanmaz (ikinci tarama)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_sorgu_ingest_yoneticisini_kullanir_yeni_tarama_yok",
+      "find": "manager = self.hazir_yonetici(program, funcs) if paralel else None",
+      "replace": "manager = None"
+    },
+    {
+      "id": "hz2_kismi_yonetici_sorguya",
+      "desc": "kısmi ingest'in yöneticisi sorguya verilir",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_ingest_butcesi_izleyicide_kismi_ve_taranan_kisim_eklenir",
+      "find": "if paralel and self.last_ingest_kismi is None:",
+      "replace": "if paralel:"
+    },
+    {
+      "id": "hz2_iptalde_islenen_toplam",
+      "desc": "iptalde islenen toplam yazılır (uydurma sayaç)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_ingest_butcesi_izleyicide_kismi_ve_taranan_kisim_eklenir",
+      "find": "taranan = _imzali_fonksiyon_sayisi(gen.getDescriptionManager())",
+      "replace": "taranan = len(funcs)"
+    },
+    {
+      "id": "hz2_imzasiz_sayilir",
+      "desc": "imzası olmayan fonksiyon da taranmış sayılır",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_ingest_islenen_imzasi_olan_fonksiyon_sayisi",
+      "find": "return sum(1 for fdesc in manager.listAllFunctions() if fdesc.getSignatureRecord() is not None)",
+      "replace": "return sum(1 for fdesc in manager.listAllFunctions())"
+    },
+    {
+      "id": "hz2_butce_taramadan_once_denetlenmez",
+      "desc": "bütçe taramadan önce dolmuşsa yine taranır",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_ingest_butcesi_taramadan_once_dolmussa_tarama_yok",
+      "find": "if kalan is not None and kalan <= 0:",
+      "replace": "if kalan is not None and kalan < -1e9:"
+    },
+    {
+      "id": "hz2_yedek_yol_yok",
+      "desc": "paralel tarama düşünce tekli yola geçilmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_paralel_tarama_dusunce_tekli_yol_ayni_ekleme",
+      "find": "            return None, self._gen_signatures(database, program)",
+      "replace": "            raise"
+    },
+    {
+      "id": "hz2_yedek_yol_sessiz",
+      "desc": "düşüş durum alanına yazılmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_veritabani_yedek_yolda_durum_alani_ve_ayni_eslesme",
+      "find": "            self.last_scan_mode = SCAN_SERIAL_FALLBACK\n",
+      "replace": "            pass\n"
+    },
+    {
+      "id": "hz2_yedek_yol_kalici_degil",
+      "desc": "sorgu yöneticiyi kullanınca düşüş izi silinir",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_veritabani_yedek_yolda_durum_alani_ve_ayni_eslesme",
+      "find": "if self.status.get(\"scan_mode\") != SCAN_SERIAL_FALLBACK:",
+      "replace": "if True:"
+    },
+    {
+      "id": "hz2_okuyucu_sahte_sayac",
+      "desc": "NO_PROGRESS_VALUE (-1) sayaç diye okunur",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_okuyucu_sayac_okunamazsa_olay_yok",
+      "find": "if n < 0:  # TaskMonitor.NO_PROGRESS_VALUE: sayaç yok",
+      "replace": "if n < -1:  # TaskMonitor.NO_PROGRESS_VALUE: sayaç yok"
+    },
+    {
+      "id": "hz2_okuyucu_sayacsiz_baslar",
+      "desc": "sayaç okunamazken okuyucu başlar",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_okuyucu_sayac_okunamazsa_olay_yok",
+      "find": "if self.denetci is None or not self.sayac_okunur or self._aralik <= 0:",
+      "replace": "if self.denetci is None or self._aralik <= 0:"
+    },
+    {
+      "id": "hz2_okuyucu_butcede_iptal_etmez",
+      "desc": "okuyucu bütçe dolunca izleyiciyi iptal etmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_okuyucu_butce_dolunca_izleyiciyi_iptal_eder",
+      "find": "            self.monitor.cancel()\n            return True",
+      "replace": "            return True"
+    },
+    {
+      "id": "hz2_okuyucu_olay_yok",
+      "desc": "okuyucu sayacı denetçiye vermez (olay yok)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_okuyucu_gercek_sayacla_suruyor_olayi",
+      "find": "if self.denetci.denetle(min(n, self.toplam), self.toplam):",
+      "replace": "if False:"
+    },
+    {
+      "id": "hz2_kismi_koken_isaretlenmez",
+      "desc": "kısmi ingest köken kaydına işlenmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_koken_kaydi_kismi_isareti",
+      "find": "rec[\"kismi\"] = {k: int(v) for k, v in kismi.items() if v is not None}",
+      "replace": "pass"
+    },
+    {
+      "id": "hz2_tam_ingest_isareti_silmez",
+      "desc": "tam ingest kısmi işaretini silmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_koken_kaydi_kismi_isareti",
+      "find": "rec.pop(\"kismi\", None)",
+      "replace": "pass"
+    },
+    {
+      "id": "hz2_onceki_kismi_gorunmez",
+      "desc": "önceki kısmi ingest durumda görünmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_kismi_ingest_sonraki_kosuda_durumda_gorunur",
+      "find": "self.status[\"onceki_ingest_kismi\"] = metin",
+      "replace": "pass"
+    },
+    {
+      "id": "hz2_sayac_durumu_yazilmaz",
+      "desc": "sayaç okunamadığı durumda yazılmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_veritabani_sayac_okunamazsa_durumda_yazilir",
+      "find": "self.status[\"scan_sayac\"] = \"okunamadı: \" + sayac",
+      "replace": "pass"
+    },
+    {
+      "id": "hz2_tekli_ingest_kesilmez",
+      "desc": "tekli ingest döngüsü bütçe dolunca durmaz (ÖL-2'nin eski satırı; bayrak kapalı / yedek yol)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_ol2_bsim_kosul.py::test_ingest_butcesi_dolunca_taranan_kisim_eklenir",
+      "find": "if denetci is not None and denetci.denetle(taranan, len(gercek)):",
+      "replace": "if denetci is not None and denetci.denetle(taranan, len(gercek)) and False:"
+    },
+    {
+      "id": "hz2_yonetici_yolunda_cagri_oncesi_denetim_yok",
+      "desc": "ingest yöneticisiyle sorguda QueryNearest öncesi bütçe denetlenmez",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_sorgu_yoneticiyle_de_cagri_oncesi_butce_denetlenir",
+      "find": "if denetci is not None and (denetci.doldu or denetci.denetle(taranan, len(funcs))):",
+      "replace": "if denetci is not None and denetci.doldu:"
+    }
+  ]
+}
