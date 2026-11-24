@@ -13,11 +13,13 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/` (özetler `ozet/`). 
 | 3 | Sunucu: `_job_progress` artımlı okuma + `ilerleme` alanı | bitti | `def88cbc`, `107d9f31` |
 | 4 | `index.html` incelemesi + yama (uygulanmadı) | bitti | `7c13409e` |
 | 5 | Testler (`tests/test_ol4_ilerleme.py`, 52) | bitti: 52 / 52 | `75ecbc61` |
-| 6 | Mutasyon (`mutation_specs_ol4.json` 22 / 22) + sekiz eski tanım | OL4 bitti; eski tanımlar koşuyor | `75ecbc61` |
+| 6 | Mutasyon (`mutation_specs_ol4.json` 22 / 22) + sekiz eski tanım (259 mutant: 256 öldü, 0 yaşadı; 4 bayat find düzeltildi, 3 bayat başka dosyada) | bitti | `75ecbc61`, `c1fe7145` |
 | 7 | Gerçek koşu (debian `cat`, üç kip; kuyrukla) | bitti: öntanım 46 satır / 17 adım, `--quiet` 0, `--verbose` yineleme 0 | bu commit |
-| 8 | Tam takım | bekliyor (eski mutasyonlar bitince) | |
+| 8 | Tam takım | koşuyor (13:49'da başladı) | |
 
-**13:33 — bekliyorum:** `cat` üç kip kuyrukta (`OL4 cat:ontanim` 13:30:13'te sıraya girdi; yuva 1'i ana oturumun S8 tabanı (mac/tmux, 13:27'de başladı), yuva 2'yi `ANA ollama:kabul` tutuyor). TAHMİNİ: yuva 1 13:35–13:45'te boşalır, üç kip yük altında 3 × 2–5 dk → bitiş 13:45–14:05. Eski sekiz mutasyon tanımı arka planda sırayla (TAHMİNİ bitiş 13:45–13:55); tam takım ondan sonra (TAHMİN 10–25 dk).
+**13:50 — bekliyorum (tam takım):** worktree kökünden, geçici çalışma verisi bağları kurulu (commit'lenmedi). 13:49:3x'te başladı; TAHMİNİ bitiş 14:00–14:15 (yük 20–40). 14:30'da bitmemişse "kalan" yazılır.
+
+**13:33 — bekliyorum (geçti):** `cat` üç kip kuyrukta (`OL4 cat:ontanim` 13:30:13'te sıraya girdi; yuva 1'i ana oturumun S8 tabanı (mac/tmux, 13:27'de başladı), yuva 2'yi `ANA ollama:kabul` tutuyor). TAHMİNİ: yuva 1 13:35–13:45'te boşalır, üç kip yük altında 3 × 2–5 dk → bitiş 13:45–14:05. Eski sekiz mutasyon tanımı arka planda sırayla (TAHMİNİ bitiş 13:45–13:55); tam takım ondan sonra (TAHMİN 10–25 dk).
 
 ## Kalem 1 — ayrıştırıcı (`959632ad`)
 
@@ -69,7 +71,22 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/` (özetler `ozet/`). 
 ## Kalem 6 — mutasyon
 
 - `scripts/measurement/mutation_specs_ol4.json`: **22 mutant, 22 öldü**, hata 0 (üretici `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/betik/spec_uret.py`: her `find` tekil, `replace` farklı uzunlukta). Ayrıştırıcı 4 (shlex yok, durum denetimi yok, önek sınırı yok, sayaç metin), CLI 10 (verbose'da işleyici, kip ve / veya, çubuk kipinde satır, yayılım açık, işleyici kalır, düzey INFO değil, açıklamada toplam yok, akım stdout, verbose iletilmez, akım çubuk içinde alınır), sunucu 8 (baştan okuma, yarım satır hemen, `\r` bekletilmez, kısalma denetimi yok, ilk olay alınır, bitişte yarım satır kalır, `ilerleme` hep null, son 6 satır bölmesi). Günlük `…/OL4/mutasyon/ol4.log`.
-- Eski tanımlar (`cli.py` / `cli_common.py` / `ui/server.py`'de `find` tutan sekiz tanım: adim3_ui, p15a, p15b, p17, pguv, ui_cagri_kenari, ui_lm_api, surum_oncesi): koşuyor.
+- **Eski tanımlar** (`cli.py` / `cli_common.py` / `ui/server.py`'de `find` tutan sekiz tanım; `grep -l` ile; `cli_common.py`'ye bakan tanım yok), OL4 değişikliğinden sonra tam olarak yeniden koşuldu (13:29–13:48, sırayla, betik `betik/eski_mutasyon.zsh`, günlükler `…/OL4/mutasyon/<ad>.log`):
+
+| Tanım | Mutant | Öldü | Yaşadı | Hata (find eşleşmedi) | Düzeltme |
+|---|---|---|---|---|---|
+| adim3_ui | 30 | 30 | 0 | 0 | — |
+| p15a | 45 | 44 | 0 | 1 (`k_clean_varlik_sonra`, `cli.py`) | find düzeltildi → yeniden koşu 1 / 1 öldü |
+| p15b | 25 | 25 | 0 | 0 | — |
+| p17 | 54 | 54 | 0 | 0 | — |
+| pguv | 34 | 30 | 0 | 4 | `g13_kok_kabul` (`cli.py`) düzeltildi → 1 / 1 öldü; **`g07_bool_donusum_yok`, `g07_yalniz_security_bolumu` (`karadul/config.py`) ve `m03_kaynak_esleme_ana_anahtarsiz` (`karadul/reconstruction/naming/pipeline.py`) düzeltilmedi**: dosyalar bu paketin değil, OL4 dokunmadı |
+| ui_cagri_kenari | 13 | 12 | 0 | 1 (`a_grafik_hic_kullanilmaz`, `ui/server.py`) | find düzeltildi → 1 / 1 öldü |
+| ui_lm_api | 30 | 30 | 0 | 0 | — |
+| surum_oncesi | 28 | 27 | 0 | 1 (`so2_ag_anahtari_acilmaz`, `cli.py`) | find düzeltildi → 1 / 1 öldü |
+| **toplam** | **259** | **252 + 4** | **0** | 7 → 3 kalan (başka dosyalarda) | `c1fe7145` |
+
+- Bayatlamanın nedeni OL4 DEĞİL; hepsi daha önceki commit'ler: `7f158c45` (MEK-09 (d), CLI metinlerinin Türkçe karakterleri: `bulunamadi` → `bulunamadı`, `Gecersiz hedef adi` → `Geçersiz hedef adı`), `d6224bdc` (ağ ana anahtarı `cfg.network.enable(…)` oldu), `2be7e900` (ARAYUZ-11: `_call_graph_edges`'e `extra_hex`). Düzeltme yalnız `find` / `replace` metni (aynı mutasyon, aynı test); find HEAD'de tekil, replace farklı uzunlukta (`betik/bayat_denetle.py`); yeniden koşu `betik/bayat_yeniden.zsh` → 4 / 4 öldü. Kalan üç bayat tanım (config.py ×2, naming/pipeline.py ×1) ana oturuma bildirildi.
+- Koşu sonunda `git diff` yalnız düzeltilen tanım dosyaları (kod dosyaları temiz).
 
 ## Kalem 7 — gerçek koşu: debian `cat`, üç kip (kabul: CLI'ın üç kipi gerçek koşuda)
 
