@@ -115,6 +115,9 @@ STATUS_NOT_RUN = "not_run"
 STATUS_ATLANDI = "atlandi"
 STATUS_KISMI = "kismi"
 BOS_DEPO_NEDENI = "depoda başka program yok; sorgu kendi kendine eşleşirdi ve dışlanırdı"
+# HZ-2: tarama yolu (``bsim_detail.scan_mode``; yalnız ``bsim.paralel_tarama`` açıkken yazılır).
+SCAN_PARALLEL = "parallel"
+SCAN_SERIAL_FALLBACK = "serial_fallback"
 
 # Aday kaynagi (bsim_matches.json "matched_source").
 SOURCE_RECORDED = "recorded"        # kaynak kaydi var (md5 + sha256 + build-id)
@@ -606,7 +609,11 @@ class _ProvenanceStore:
         exes = (data or {}).get("executables")
         return dict(exes) if isinstance(exes, dict) else {}
 
-    def record(self, identity: ExeIdentity, mode: str) -> None:
+    def record(self, identity: ExeIdentity, mode: str,
+               kismi: Optional[dict[str, int]] = None, tam: bool = False) -> None:
+        """Kaydı yaz. HZ-2: ingest bütçeyle kesildiyse ``kismi`` (``{islenen, toplam}``)
+        kayda işlenir; aynı md5 sonra TAM ingest edilirse (``tam``) işaret kalkar. Depoda zaten
+        olan md5 (ingest atlandı) işarete dokunmaz: eksik fonksiyonlar hâlâ eksiktir."""
         if not identity.md5:
             return
         data, err = _read_json_dict(self.path)
@@ -623,6 +630,10 @@ class _ProvenanceStore:
             "mode": mode,
             "last_seen": now,
         })
+        if kismi:
+            rec["kismi"] = {k: int(v) for k, v in kismi.items() if v is not None}
+        elif tam:
+            rec.pop("kismi", None)
         data["executables"][identity.md5] = rec
         _atomic_write_json(self.path, data)
 
@@ -1013,6 +1024,150 @@ _BSIM_CONFIG_TEMPLATE = "medium_nosize"
 _DEFAULT_SIGNIFICANCE_THRESHOLD = 0.0
 
 
+# ---------------------------------------------------------------------------
+# HZ-2: paralel tarama (GenSignatures.scanFunctions) yardımcıları
+# ---------------------------------------------------------------------------
+# Ghidra 12.1.2 (javap + BSim-src.zip / Generic-src.zip, yerel kurulum; HZ2.md kalem 1):
+#   GenSignatures.scanFunctions(java.util.Iterator<Function>, int, TaskMonitor)
+#       throws DecompileException
+#   -> ParallelDecompileTask(program, monitor, SignatureTask).decompile(iter, n)
+#   -> DecompilerConcurrentQ (AutoAnalysisManager'ın ortak çözümleme havuzu); her iş bittiğinde
+#      izleyiciye ``setProgress(tamamlanan_ya_da_iptal_edilen)``; izleyici iptal edilince
+#      (``addCancelledListener``) bekleyen işler kuyruktan atılır, koşanlar kesilir; iptal
+#      edilen iş yöneticiye yazılmaz (``SignatureTask.decompile`` iptali iki kez denetler).
+#   -> imzalar ``writeToManager`` (synchronized) ile TEK DescriptionManager'a yazılır
+#      (TreeSet: içerik ve sıra tarama sırasından bağımsız).
+#   TimeoutTaskMonitor.timeoutIn(long, TimeUnit, TaskMonitor): süre dolunca temsilcinin
+#   ``cancel()``'ı; ``getProgress()`` temsilciye gider. TaskMonitorAdapter ilerlemeyi
+#   SAKLAMAZ; ilerlemeyi saklayan ve iptal dinleyicisi kabul eden tek sınıf paket-içi
+#   ``ghidra.util.task.BasicTaskMonitor`` (Docking.jar; GTaskMonitor ``addCancelledListener``'da
+#   UnsupportedOperationException atar, ConcurrentQ onu kullanamaz).
+
+
+def _kalan_butce_sn(denetci: Any) -> Optional[float]:
+    """Adım denetçisinin bütçesinden kalan süre (sn); bütçe yoksa None (ÖL-2 sözleşmesi)."""
+    if denetci is None:
+        return None
+    son_an = getattr(denetci, "_son_an", None)
+    if son_an is None:
+        return None
+    return float(son_an) - time.monotonic()
+
+
+def _butce_doldu(denetci: Any, islenen: int, toplam: Optional[int]) -> None:
+    """Denetçiye kesildiği andaki GERÇEK sayaçları yaz (``_AdimDenetcisi.denetle`` gibi)."""
+    if denetci is None:
+        return
+    denetci.doldu = True
+    denetci.islenen = int(islenen)
+    denetci.toplam = toplam
+
+
+def _java_iterator(funcs: list[Any]) -> Any:
+    """``funcs`` ile aynı küme ve sırada ``java.util.Iterator`` (JVM yoksa Python yineleyicisi)."""
+    try:
+        import jpype
+
+        if jpype.isJVMStarted():
+            liste = jpype.JClass("java.util.ArrayList")(len(funcs))
+            for func in funcs:
+                liste.add(func)
+            return liste.iterator()
+    except ImportError:
+        pass
+    return iter(funcs)
+
+
+def _jvm_ayril() -> None:
+    """Okuyucu iş parçacığı JVM'e bağlandıysa ayır (JPype kendiliğinden ayırmaz)."""
+    try:
+        import jpype
+
+        if jpype.isJVMStarted() and jpype.isThreadAttachedToJVM():
+            jpype.JClass("java.lang.Thread").detach()
+    except Exception:  # noqa: BLE001
+        logger.debug("BSim okuyucu iş parçacığı JVM'den ayrılamadı", exc_info=True)
+
+
+def _imzali_fonksiyon_sayisi(manager: Any) -> int:
+    """Yöneticide imzası (``SignatureRecord``) olan fonksiyon sayısı: depoya giren gerçek iş."""
+    n = 0
+    it = manager.listAllFunctions()
+    while it.hasNext():
+        if it.next().getSignatureRecord() is not None:
+            n += 1
+    return n
+
+
+class _TaramaIzleyicisi:
+    """HZ-2: paralel taramada izleyicinin GERÇEK ilerleme sayacını aralıkla okuyan iş parçacığı.
+
+    Tarama Java iş parçacıklarında koşar; Python döngüsü yoktur. Okuyucu her
+    ``denetci.aralik_sn``'de izleyicinin ``getProgress()``'ini (ConcurrentQ'nun tamamlanan iş
+    sayısı) okur ve ÖL-2'nin denetim noktasına verir (``denetci.denetle``): olay oradan
+    ``durum=suruyor islenen=… toplam=…`` diye çıkar; bütçe dolduysa izleyici iptal edilir
+    (zaman aşımı izleyicisi de aynı anda keser). Sayaç okunamıyorsa (sayaçlı izleyici
+    kurulamadı, okuma düştü ya da negatif) olay ÜRETİLMEZ, sayılır.
+    """
+
+    def __init__(self, monitor: Any, denetci: Any, toplam: int, sayac_okunur: bool) -> None:
+        self.monitor = monitor
+        self.denetci = denetci
+        self.toplam = int(toplam)
+        self.sayac_okunur = bool(sayac_okunur)
+        self.okuma = 0
+        self.okunamayan = 0
+        self.son_hata = ""
+        self._aralik = 0.0
+        if denetci is not None:
+            try:
+                self._aralik = max(0.0, float(getattr(denetci, "aralik_sn", 0) or 0))
+            except (TypeError, ValueError):
+                self._aralik = 0.0
+        self._dur = threading.Event()
+        self._is: Optional[threading.Thread] = None
+
+    def oku(self) -> bool:
+        """Tek okuma; bütçe dolduysa ``True`` (okuyucu durur)."""
+        try:
+            n = int(self.monitor.getProgress())
+        except Exception as exc:  # noqa: BLE001
+            self.okunamayan += 1
+            self.son_hata = "%s: %s" % (type(exc).__name__, exc)
+            return False
+        if n < 0:  # TaskMonitor.NO_PROGRESS_VALUE: sayaç yok
+            self.okunamayan += 1
+            self.son_hata = "izleyici sayaç vermiyor (%d)" % n
+            return False
+        self.okuma += 1
+        if self.denetci.denetle(min(n, self.toplam), self.toplam):
+            self.monitor.cancel()
+            return True
+        return False
+
+    def _dongu(self) -> None:
+        try:
+            while not self._dur.wait(self._aralik):
+                if self.oku():
+                    break
+        finally:
+            _jvm_ayril()
+
+    def baslat(self) -> bool:
+        """Okuyucuyu başlat; sayaç yok, denetçi yok ya da olay aralığı 0 ise başlamaz."""
+        if self.denetci is None or not self.sayac_okunur or self._aralik <= 0:
+            return False
+        self._is = threading.Thread(target=self._dongu, name="karadul-bsim-tarama-okuyucu",
+                                    daemon=True)
+        self._is.start()
+        return True
+
+    def durdur(self) -> None:
+        self._dur.set()
+        if self._is is not None:
+            self._is.join(self._aralik + 1.0)
+
+
 class _BSimNativeWrapper:
     """Ghidra BSim API'si uzerinde wrapper.
 
@@ -1039,6 +1194,121 @@ class _BSimNativeWrapper:
         self.denetci: Any = None
         self.last_ingest_kismi: Optional[dict[str, int]] = None
         self.last_query_kismi: Optional[dict[str, int]] = None
+        # HZ-2: ``BSimDatabase`` ``bsim.paralel_tarama``'yı öznitelikle verir (False = bugünkü
+        # tekli yol). Son taramanın yolu (``parallel`` / ``serial_fallback``; tekli yolda None),
+        # düşüşün nedeni ve sayaç okunamadıysa nedeni.
+        self.paralel_tarama = False
+        self.last_scan_mode: Optional[str] = None
+        self.last_scan_hatasi = ""
+        self.last_scan_sayac = ""
+        # HZ-2: bu oturumda TAM ingest edilen programın yöneticisi (sorgu yeniden taramasın):
+        # (program, fonksiyon sayısı, DescriptionManager).
+        self._ingest_yoneticisi: Optional[tuple[Any, int, Any]] = None
+
+    # -- HZ-2: paralel tarama -------------------------------------------
+
+    def _izleyici_olustur(self, kalan_sn: Optional[float]) -> tuple[Any, str]:
+        """Sayaçlı, iptal edilebilir izleyici (+ bütçe varsa ``TimeoutTaskMonitor``).
+
+        Returns:
+            (izleyici, sayaç okunamıyorsa nedeni; okunuyorsa "").
+        """
+        import math
+
+        import jpype
+        from java.util.concurrent import TimeUnit
+        from ghidra.util.task import TaskMonitor, TaskMonitorAdapter, TimeoutTaskMonitor
+
+        neden = ""
+        try:
+            yukleyici = TaskMonitorAdapter.class_.getClassLoader()
+            sinif = jpype.JClass("java.lang.Class").forName(
+                "ghidra.util.task.BasicTaskMonitor", True, yukleyici)
+            kurucu = sinif.getDeclaredConstructor()
+            kurucu.setAccessible(True)
+            temsilci = jpype.JObject(kurucu.newInstance(), TaskMonitor)
+        except Exception as exc:  # noqa: BLE001
+            temsilci = TaskMonitorAdapter(True)
+            neden = "sayaçlı izleyici kurulamadı (%s: %s)" % (type(exc).__name__, exc)
+        if kalan_sn is None:
+            return temsilci, neden
+        ms = max(1, int(math.ceil(kalan_sn * 1000.0)))
+        return TimeoutTaskMonitor.timeoutIn(ms, TimeUnit.MILLISECONDS, temsilci), neden
+
+    def _paralel_tara(self, gen: Any, funcs: list[Any], denetci: Any,
+                      kalan_sn: Optional[float]) -> bool:
+        """``gen.scanFunctions`` ile paralel tarama; bütçe izleyicide. İptal edildiyse ``True``.
+
+        İptal dışındaki istisna yukarı atılır (çağıran tekli yola düşer).
+        """
+        monitor, neden = self._izleyici_olustur(kalan_sn)
+        self.last_scan_sayac = neden
+        if neden:
+            logger.warning("BSim paralel tarama: ilerleme sayacı okunamadı (%s); "
+                           "adım içi olay üretilmeyecek", neden)
+        okuyucu = _TaramaIzleyicisi(monitor, denetci, len(funcs), not neden)
+        okuyucu.baslat()
+        hata: Optional[BaseException] = None
+        try:
+            gen.scanFunctions(_java_iterator(funcs), len(funcs), monitor)
+        except Exception as exc:  # noqa: BLE001
+            hata = exc
+        finally:
+            okuyucu.durdur()
+        iptal = bool(monitor.isCancelled())
+        if not iptal and hasattr(monitor, "didTimeout"):
+            # Bitmiş taramanın zaman aşımı sayacını bırak (sonradan boşa tetiklenmesin).
+            try:
+                monitor.cancel()
+            except Exception:  # noqa: BLE001
+                logger.debug("BSim izleyici zamanlayıcısı bırakılamadı", exc_info=True)
+        if okuyucu.okunamayan and not self.last_scan_sayac:
+            self.last_scan_sayac = "sayaç %d okumada okunamadı (%s)" % (
+                okuyucu.okunamayan, okuyucu.son_hata)
+        if hata is not None and not iptal:
+            raise hata
+        return iptal
+
+    def _tara(self, gen: Any, database: Any, program: Any, funcs: list[Any],
+              denetci: Any) -> tuple[Optional[int], Any]:
+        """HZ-2: ``funcs``'u paralel tara. Döner: (taranan, gen).
+
+        ``taranan`` None → paralel tarama istisna attı; yeni bir ``gen`` ile TEKLİ yol
+        koşulmalı (``last_scan_mode = serial_fallback``, düşüş günlükte ve durumda). Bütçe
+        taramadan önce ya da tarama içinde dolarsa ``taranan`` imzası yöneticiye giren
+        fonksiyon sayısıdır (gerçek; denetçiye de o yazılır).
+        """
+        self.last_scan_mode = SCAN_PARALLEL
+        kalan = _kalan_butce_sn(denetci)
+        if kalan is not None and kalan <= 0:
+            _butce_doldu(denetci, 0, len(funcs))
+            return 0, gen
+        try:
+            iptal = self._paralel_tara(gen, funcs, denetci, kalan)
+        except Exception as exc:  # noqa: BLE001
+            self.last_scan_mode = SCAN_SERIAL_FALLBACK
+            self.last_scan_hatasi = "%s: %s" % (type(exc).__name__, exc)
+            logger.warning("BSim paralel tarama basarisiz, tekli taramaya dusuluyor: %s", exc)
+            try:
+                gen.dispose()
+            except Exception:  # noqa: BLE001
+                logger.debug("GenSignatures dispose basarisiz", exc_info=True)
+            return None, self._gen_signatures(database, program)
+        if iptal:
+            taranan = _imzali_fonksiyon_sayisi(gen.getDescriptionManager())
+            _butce_doldu(denetci, taranan, len(funcs))
+            return taranan, gen
+        return len(funcs), gen
+
+    def hazir_yonetici(self, program: Any, funcs: list[Any]) -> Any:
+        """Bu oturumda aynı program TAM ingest edildiyse onun yöneticisi (yoksa None)."""
+        kayit = getattr(self, "_ingest_yoneticisi", None)
+        if kayit is None:
+            return None
+        prog, toplam, manager = kayit
+        if prog is not program or toplam != len(funcs):
+            return None
+        return manager
 
     # -- yardimcilar --------------------------------------------------
 
@@ -1254,7 +1524,10 @@ class _BSimNativeWrapper:
         gen = None
         self.last_ingest_already = False
         self.last_ingest_kismi = None
+        self._ingest_yoneticisi = None
+        self.last_scan_mode, self.last_scan_hatasi, self.last_scan_sayac = None, "", ""
         denetci = getattr(self, "denetci", None)
+        paralel = bool(getattr(self, "paralel_tarama", False))
         try:
             # R2 (idempotent ingest): bu exe (md5) DB'de zaten varsa YENIDEN
             # ekleme -> "already ingested with a different name" fatal hatasini
@@ -1276,7 +1549,16 @@ class _BSimNativeWrapper:
             # Bütçe dolunca tarama durur, taranan kısım eklenir (sonraki koşuların sorgusu için).
             gercek = self._iter_real_functions(program)
             taranan = 0
-            for func in gercek:
+            paralel_taranan: Optional[int] = None
+            if paralel:
+                # HZ-2: Ghidra'nın paralel taraması; bütçe izleyicide (kalan süreyle zaman aşımı).
+                paralel_taranan, gen = self._tara(gen, database, program, gercek, denetci)
+                if paralel_taranan is not None:
+                    func_count = paralel_taranan
+                    if denetci is not None and denetci.doldu:
+                        self.last_ingest_kismi = {"islenen": paralel_taranan,
+                                                  "toplam": len(gercek)}
+            for func in (gercek if paralel_taranan is None else ()):
                 if denetci is not None and denetci.denetle(taranan, len(gercek)):
                     self.last_ingest_kismi = {"islenen": taranan, "toplam": len(gercek)}
                     break
@@ -1320,6 +1602,9 @@ class _BSimNativeWrapper:
                 raise RuntimeError(
                     f"BSim InsertRequest basarisiz ({db_name}): {self._last_error(database)}"
                 )
+            if paralel and self.last_ingest_kismi is None:
+                # HZ-2: sorgu aynı imzaları yeniden üretmesin (yönetici dispose'dan etkilenmez).
+                self._ingest_yoneticisi = (program, len(gercek), manager)
             return func_count
         finally:
             if gen is not None:
@@ -1460,14 +1745,28 @@ class _BSimNativeWrapper:
         """
         from ghidra.features.bsim.query.protocol import QueryNearest
 
-        gen = self._gen_signatures(database, program)
         scan_failed = 0
         self.last_query_kismi = None
         denetci = getattr(self, "denetci", None)
+        paralel = bool(getattr(self, "paralel_tarama", False))
+        self.last_scan_mode, self.last_scan_hatasi, self.last_scan_sayac = None, "", ""
+        # HZ-2: aynı oturumda tam ingest edildiyse onun yöneticisi (yeni GenSignatures yok).
+        manager = self.hazir_yonetici(program, funcs) if paralel else None
+        self._ingest_yoneticisi = None  # bir kez kullanılır; bellek tutulmaz
+        gen = None if manager is not None else self._gen_signatures(database, program)
         try:
             scanned: list[Any] = []
             taranan = 0
-            for func in funcs:
+            paralel_taranan: Optional[int] = None
+            if manager is not None:
+                paralel_taranan = len(funcs)
+                self.last_scan_mode = SCAN_PARALLEL
+            elif paralel:
+                paralel_taranan, gen = self._tara(gen, database, program, funcs, denetci)
+            if paralel_taranan is not None:
+                taranan = paralel_taranan
+                scanned = list(funcs)
+            for func in (funcs if paralel_taranan is None else ()):
                 # ÖL-2: tarama fonksiyon başına ilerler: parça sınırında bütçe / olay denetimi.
                 if denetci is not None and denetci.denetle(taranan, len(funcs)):
                     break
@@ -1490,7 +1789,7 @@ class _BSimNativeWrapper:
                 return [], scan_failed
 
             query = QueryNearest()
-            query.manage = gen.getDescriptionManager()
+            query.manage = manager if manager is not None else gen.getDescriptionManager()
             query.thresh = float(min_similarity)
             query.signifthresh = float(significance_threshold)
             query.max = int(max_results + max(0, extra_slots))
@@ -1520,10 +1819,11 @@ class _BSimNativeWrapper:
                 ))
             return matches, scan_failed
         finally:
-            try:
-                gen.dispose()
-            except Exception:  # noqa: BLE001
-                logger.debug("GenSignatures dispose basarisiz", exc_info=True)
+            if gen is not None:
+                try:
+                    gen.dispose()
+                except Exception:  # noqa: BLE001
+                    logger.debug("GenSignatures dispose basarisiz", exc_info=True)
 
     def query_similar(
         self,
@@ -1559,6 +1859,7 @@ class _BSimNativeWrapper:
 
     def close(self) -> None:
         """Acik veritabani baglantisini kapat."""
+        self._ingest_yoneticisi = None
         if self._database is not None:
             try:
                 self._database.close()
@@ -1756,13 +2057,57 @@ class BSimDatabase:
             self.status["own_identity"] = self._identity.to_dict()
         return self._identity
 
-    def _record_provenance(self, db_name: str, mode: str) -> None:
+    def _record_provenance(self, db_name: str, mode: str,
+                           kismi: Optional[dict[str, int]] = None, tam: bool = False) -> None:
         if self._identity is None or not self._identity.md5:
             return
         try:
-            _ProvenanceStore(self.db_path, db_name).record(self._identity, mode)
+            _ProvenanceStore(self.db_path, db_name).record(self._identity, mode, kismi, tam)
         except Exception as exc:  # noqa: BLE001
             logger.warning("BSim kaynak kaydi yazilamadi: %s", exc)
+
+    def _paralel_tarama(self) -> bool:
+        """HZ-2: ``bsim.paralel_tarama`` (kapalı = bugünkü tekli yol)."""
+        return bool(getattr(getattr(self.config, "bsim", None), "paralel_tarama", False))
+
+    def _tarama_durumu(self) -> None:
+        """HZ-2: son taramanın yolu ``status["scan_mode"]``'a (yalnız ayar açıkken).
+
+        Bir adımda tekli yola düşüldüyse ``serial_fallback`` kalıcıdır (sorgu ingest'in
+        yöneticisini kullansa bile) ve neden ``scan_fallback_error``'da. Sayaç okunamadıysa
+        ``scan_sayac`` (adım içi olay o yüzden yok)."""
+        if not self._paralel_tarama():
+            return
+        native = getattr(self, "_native", None)
+        mod = getattr(native, "last_scan_mode", None)
+        if not mod:
+            return
+        if self.status.get("scan_mode") != SCAN_SERIAL_FALLBACK:
+            self.status["scan_mode"] = mod
+        hata = getattr(native, "last_scan_hatasi", "")
+        if mod == SCAN_SERIAL_FALLBACK and hata:
+            self.status["scan_fallback_error"] = hata
+        sayac = getattr(native, "last_scan_sayac", "")
+        if sayac:
+            self.status["scan_sayac"] = "okunamadı: " + sayac
+
+    def _onceki_kismi(self, db_name: str) -> None:
+        """HZ-2: bu md5 depoda zaten varsa ve önceki ingest kısmıysa durumda görünsün."""
+        if self._identity is None or not self._identity.md5:
+            return
+        try:
+            rec = _ProvenanceStore(self.db_path, db_name).load().get(self._identity.md5) or {}
+        except Exception:  # noqa: BLE001
+            logger.debug("BSim kaynak kaydi okunamadi", exc_info=True)
+            return
+        kismi = rec.get("kismi") if isinstance(rec, dict) else None
+        if not isinstance(kismi, dict):
+            return
+        metin = "%s / %s" % (kismi.get("islenen", "?"), kismi.get("toplam", "?"))
+        self.status["onceki_ingest_kismi"] = metin
+        logger.warning(
+            "BSim: bu ikilinin önceki ingest'i kısmiydi (%s fonksiyon); bu koşuda yeniden "
+            "eklenmedi, depodaki eksik fonksiyonlar eksik kalıyor", metin)
 
     def _bos_depoda_atla(self) -> bool:
         return bool(self._bsim_cfg_value("bos_depoda_sorgu_atla", False))
@@ -1896,6 +2241,7 @@ class BSimDatabase:
                 try:
                     client = self._ensure_client(db_name)
                     self._native.denetci = self.denetci
+                    self._native.paralel_tarama = self._paralel_tarama()
                     count = self._native.ingest_program(program, db_name, database=client)
                     self.status.update({
                         "mode": "native",
@@ -1903,8 +2249,13 @@ class BSimDatabase:
                         "ingested_functions": count,
                         "already_ingested": self._native.last_ingest_already,
                     })
-                    self._ingest_kismi(getattr(self._native, "last_ingest_kismi", None))
-                    self._record_provenance(db_name, "native")
+                    kismi = getattr(self._native, "last_ingest_kismi", None)
+                    self._ingest_kismi(kismi)
+                    self._tarama_durumu()
+                    if self._native.last_ingest_already:
+                        self._onceki_kismi(db_name)
+                    self._record_provenance(db_name, "native", kismi,
+                                            tam=not kismi and not self._native.last_ingest_already)
                     return count
                 except Exception as exc:
                     self._close_client()
@@ -1931,7 +2282,7 @@ class BSimDatabase:
                 self.status.update({"mode": "lite", "status": STATUS_OK})
             self.status["ingested_functions"] = count
             self._ingest_kismi(self._lite_kismi)
-            self._record_provenance(db_name, "lite")
+            self._record_provenance(db_name, "lite", self._lite_kismi, tam=not self._lite_kismi)
             return count
         finally:
             self.status["ingest_s"] = round(time.monotonic() - t0, 3)
@@ -2127,10 +2478,12 @@ class BSimDatabase:
                     unrecorded_before = exclusion.unrecorded_candidates
                     try:
                         self._native.denetci = denetci
+                        self._native.paralel_tarama = self._paralel_tarama()
                         batch_matches, scan_failed = self._native.query_functions(
                             client, program, funcs, min_similarity, max_results,
                             signif, exclusion, slots,
                         )
+                        self._tarama_durumu()
                         all_matches.extend(batch_matches)
                         kismi = getattr(self._native, "last_query_kismi", None)
                         if scan_failed:
