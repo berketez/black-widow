@@ -14,7 +14,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/` (özetler `ozet/`). 
 | 4 | `index.html` incelemesi + yama (uygulanmadı) | bitti | `7c13409e` |
 | 5 | Testler (`tests/test_ol4_ilerleme.py`, 52) | bitti: 52 / 52 | `75ecbc61` |
 | 6 | Mutasyon (`mutation_specs_ol4.json` 22 / 22) + sekiz eski tanım | OL4 bitti; eski tanımlar koşuyor | `75ecbc61` |
-| 7 | Gerçek koşu (debian `cat`, üç kip; kuyrukla) | kuyrukta (13:30'dan beri bekliyor) | |
+| 7 | Gerçek koşu (debian `cat`, üç kip; kuyrukla) | bitti: öntanım 46 satır / 17 adım, `--quiet` 0, `--verbose` yineleme 0 | bu commit |
 | 8 | Tam takım | bekliyor (eski mutasyonlar bitince) | |
 
 **13:33 — bekliyorum:** `cat` üç kip kuyrukta (`OL4 cat:ontanim` 13:30:13'te sıraya girdi; yuva 1'i ana oturumun S8 tabanı (mac/tmux, 13:27'de başladı), yuva 2'yi `ANA ollama:kabul` tutuyor). TAHMİNİ: yuva 1 13:35–13:45'te boşalır, üç kip yük altında 3 × 2–5 dk → bitiş 13:45–14:05. Eski sekiz mutasyon tanımı arka planda sırayla (TAHMİNİ bitiş 13:45–13:55); tam takım ondan sonra (TAHMİN 10–25 dk).
@@ -70,3 +70,20 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/` (özetler `ozet/`). 
 
 - `scripts/measurement/mutation_specs_ol4.json`: **22 mutant, 22 öldü**, hata 0 (üretici `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/betik/spec_uret.py`: her `find` tekil, `replace` farklı uzunlukta). Ayrıştırıcı 4 (shlex yok, durum denetimi yok, önek sınırı yok, sayaç metin), CLI 10 (verbose'da işleyici, kip ve / veya, çubuk kipinde satır, yayılım açık, işleyici kalır, düzey INFO değil, açıklamada toplam yok, akım stdout, verbose iletilmez, akım çubuk içinde alınır), sunucu 8 (baştan okuma, yarım satır hemen, `\r` bekletilmez, kısalma denetimi yok, ilk olay alınır, bitişte yarım satır kalır, `ilerleme` hep null, son 6 satır bölmesi). Günlük `…/OL4/mutasyon/ol4.log`.
 - Eski tanımlar (`cli.py` / `cli_common.py` / `ui/server.py`'de `find` tutan sekiz tanım: adim3_ui, p15a, p15b, p17, pguv, ui_cagri_kenari, ui_lm_api, surum_oncesi): koşuyor.
+
+## Kalem 7 — gerçek koşu: debian `cat`, üç kip (kabul: CLI'ın üç kipi gerçek koşuda)
+
+- Ürün ağacı `~/karadul_olcum/urun-75ecbc61` (`git worktree add --detach` + altı bağ; kökte `karadul.yaml` yok → öntanımlar). Girdi: S8 tabanının `raw/` kopyası (`~/karadul_olcum/runs/urun-onarim-a62f15e/debian/coreutils/cat/ws/workspaces/cat/20261119_054950/raw/cat`). Komut (ağacın kökünden): `python -m karadul [--quiet] analyze <cat> --skip-dynamic --output-dir <kök>/ws --output <kök>/out [--verbose]`, stdout ve stderr AYRI dosyalara (ikisi de TTY değil → öntanım kipi `satir`), koşuya özel `KARADUL_CACHE_DIR`, `PYTHONHASHSEED=0`, dış `timeout 1200`. Sürücü `betik/cat_kos.zsh` + `betik/tek.zsh` (her kip ayrı kuyruk çağrısı), ölçüm `betik/cat_olc.py` → `ozet/cat_olc.json`.
+- Kuyruk: `OL4 cat:ontanim` 13:30:13'te sıraya girdi, 13:34:59–13:35:59 (60 sn); `cat:quiet` 13:35:59–13:36:41 (42 sn); `cat:verbose` 13:36:41–13:37:22 (41 sn); yuva 1, 1 dk yük 25,1–26,8 (**yük altında**; süreler hüküm değil). Üçü de çıkış 0.
+
+| Kip | stderr `ILERLEME` satırı | stdout `ILERLEME` satırı | Ayrışmayan | Biçim | Adım (`basladi` → kapanış) |
+|---|---|---|---|---|---|
+| öntanım | **46** | 0 | 0 | 46 / 46 yalın sözleşme satırı (`ILERLEME asama=static adim=… durum=…`) | **17 / 17** adımda `basladi` ve `bitti` (başlayıp kapanmayan 0); ayrıca `ghidra.gdt` `atlandi` (üretici bu adımı başlatmadan atlıyor: "ayar boş"), `ghidra.bsim.query` `basladi` → `atlandi` → `bitti` (taze depo, OL2); `suruyor` 10 |
+| `--quiet` | **0** (stderr 0 bayt) | 0 | — | — | — |
+| `--verbose` | 46 | 0 | 0 | 46 / 46 kök işleyicinin biçiminde (`SS:DD:ss INFO    [karadul.ilerleme] ILERLEME …`), yalın satır **0**, art arda aynı yük **0** → **yineleme 0** | öntanımla aynı 17 adım, aynı durum sayıları |
+
+- 17 adım: `jvm_baslatma`, `ice_aktarma`, `otomatik_analiz`, `pdb`, `functions`, `strings`, `call_graph`, `decompile`, `types`, `xref`, `pcode`, `cfg`, `function_id`, `bsim.ingest`, `bsim.query`, `combined`, `kapatma` (hepsi `ghidra.` önekli).
+- stdout öntanım ↔ `--verbose`: tek fark çıktı dizininin yolu (`Output: …/ontanim/out` ↔ `…/verbose/out`); olay stdout'a düşmedi.
+- TTY kipi (çubuk açıklaması) gerçek koşuda sınanmadı: bu koşuda terminal yok (arka plan). Birim ve uçtan uca testlerde sınandı (`test_e2e_cubuk_kipi_stderr_terminal_satir_yok`, `test_cubuk_kipi_satir_basmaz`).
+- **T25 (en uzun boşluk ≤ 60 sn): ölçülmedi; ana oturumun koşusuna bırakıldı** (OL2 ve bu paket main'e girince Ollama koşusunda).
+- Özetler: `ozet/cat_olc.json`, `ozet/cat_ontanim_stderr.txt` (46 satır), `ozet/cat_verbose_ilerleme.txt`, `ozet/cat_quiet_stderr.txt` (boş), `ozet/kuyruk_OL4.txt`.
