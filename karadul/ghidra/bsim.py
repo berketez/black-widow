@@ -1091,12 +1091,8 @@ def _jvm_ayril() -> None:
 
 def _imzali_fonksiyon_sayisi(manager: Any) -> int:
     """Yöneticide imzası (``SignatureRecord``) olan fonksiyon sayısı: depoya giren gerçek iş."""
-    n = 0
-    it = manager.listAllFunctions()
-    while it.hasNext():
-        if it.next().getSignatureRecord() is not None:
-            n += 1
-    return n
+    # JPype Java yineleyicisi Python'da yinelenebilir (ingest'in sortCallgraph döngüsü gibi).
+    return sum(1 for fdesc in manager.listAllFunctions() if fdesc.getSignatureRecord() is not None)
 
 
 class _TaramaIzleyicisi:
