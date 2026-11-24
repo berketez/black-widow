@@ -64,6 +64,14 @@ Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.
 
 **Hüküm (hüküm 5):** "kalanı ekleme" (aynı yürütülebilir için ikinci `InsertRequest`) Ghidra 12.1.2'de **mümkün değil** (ölçüldü ve kaynakta: kütüphane olmayan md5 ikinci kez eklenmez). Bu yüzden tamamlama bu pakette UYGULANMADI; uygulanan: köken kaydında `kismi` işareti + sonraki koşuda `onceki_ingest_kismi` durumu ve WARN. Çalışan aday yol (C): aynı md5'i `QueryDelete` ile silip tam ingest — ÖL-9'a not (aşağıda).
 
+## Kalem 8 — H4 (sqlite3, `bsim.ingest_butcesi_sn: 2`)
+
+- Koşu: kuyruk `HZ2 H4:debian/sqlite3`, yuva 1, 13:38:15–13:39:01; 1 dk yük 20,75 → 18,34 (**yük altında**). `python -m karadul analyze <S8 sqlite3 ham kopyası> --stage static --config ayar/h4_sqlite3.yaml` (`bsim.paralel_tarama: true`, `bsim.ingest_butcesi_sn: 2`; öbürleri öntanım), taze `KARADUL_CACHE_DIR`, ürün ağacı `urun-af7dae70`. Özet `ozet/hz2_ozet.json` → `H4`.
+- **Çıkış 3** (`step_errors.bsim_ingest` "adım bütçesi (2 sn) doldu"). `ghidra.bsim.ingest` **2,064 sn**; `bsim_matches.json` geçerli JSON; `bsim_status: kismi`, `ingest_islenen 6`, `ingest_toplam 429`, `ingested_functions 6`, `scan_mode: parallel`, `scan_sayac` yok (sayaç okundu); sorgu atlandı (taze depo).
+- Olaylar: `ghidra.bsim.ingest durum=kismi islenen=6 toplam=429 gecen_sn=2.064 neden="bsim_ingest: adım bütçesi (2 sn) doldu"` → `ghidra.bsim.query durum=atlandi`.
+- **H4: TUTTU** (≤ 2 + 10 sn; `kismi`; JSON geçerli; 6 ≤ 429).
+- **Not (hüküm değil, olumsuz bulgu):** 2 sn'lik bütçede paralel yol yalnız **6** fonksiyon taradı; ÖL-2'nin tekli yolu aynı ikilide aynı bütçeyle 253 taramıştı (dün akşam, farklı yük). Neden fizibilitede görüldü: işçi başına ayrı decompiler süreci açılıyor, ilk ~0,4–2 sn sayaç 0. Kısa bütçede (birkaç sn) paralel yol daha AZ iş yapar; büyük ikilide açılış payı küçük.
+
 ## Ölçüm
 
 **13:35 — bekliyorum:** ölçüm sürücüsü (`…/HZ2/betik/kos_hepsi.zsh`, arka planda) kuyrukta: fizibilite → H4 (sqlite3) → S8 (8 ikili, paralel açık, tek kök `…/HZ2/s8`) → H2 (cat taze depo, zstd S8'in zstd öncesi deposunun kopyasıyla; kapalı) → T25. Yuva 2'yi ana oturumun Ollama kabul koşusu tutuyor (13:10'dan beri), yuva 1'de OL4 ve PUV6b ile sıra. 1 dk yük 26–56 (**yük altında**). TAHMİNİ bitiş: fizibilite + H4 13:45–13:55; S8 14:25–14:45 (taban S8 yük altında ≈ 30 dk); H2 14:35–14:55; T25 ancak 14:52'den önce başlarsa (süre sınırı 15:12'de biter), değilse "kalan".
