@@ -205,9 +205,67 @@ aday (motor ya da önceki deneme)
 - **Bekçi (`karadul/lm/guard.py`):** bugün ad önerisi (`check_proposal`), özet (`check_summary`) ve genel cevap (`check_answer`) kurallarını taşıyor; düşmanca metin taraması (`hostile_texts`, `injection_hits`) ikilideki dizgilerden gelen yönlendirmeyi yakalıyor. Gövde önerisi için eklenecek kurallar (GK-J; yeni işlev `check_patch` önerisi — bugün **yok**): (1) metinde önişlemci yönergesi, satır içi derleme (`asm`), derleyici özniteliğiyle bölüm / takma ad tanımı → ret; (2) önsözde olmayan dış simgeye başvuru → ret (model yeni bağımlılık uyduramaz); (3) işlev adı ve imzası hedefle aynı değilse → ret; (4) gövde, kanıt zarflarındaki düşmanca metni yorum ya da dizgi olarak taşıyorsa → işaret; (5) boyut sınırı. Bekçi **ön** kapıdır: geçmek çıktıya girmek değildir; çıktıya giriş yalnız §3.6 tablosuyla olur.
 - **Sahte veri bekçisi:** model çıktısı hiçbir sayaçta "motorun kurtardığı" sütununa yazılamaz; `geri_kurma.json` doğrulayıcısı `govde_kaynagi = model_onerisi` olan kaydın `model` alanı boşsa ya da `kanit.tur = yok` iken `basamak ≥ B3` ise dosyayı reddeder (GK-I testi + mutant).
 
-## 6. Ölçüm düzeni ve ön kayıt [YAZILMADI]
+## 6. Ölçüm düzeni ve ön kayıt
 
-## 7. Önceki çalışmalarla ilişki [YAZILMADI]
+### 6.1 Setler (hepsi var olan setler; yeni set açılmaz, kilitli setlere dokunulmaz)
+
+| Rol | Set | Bu hatta kullanımı |
+|---|---|---|
+| **Denetleyici geliştirme** | Kaynağı elde olan, bizim derlediğimiz ikililer (A-23; `~/karadul_olcum/kimlik_v1/`): tree, libzstd | K1–K3'ün tanımı, mutasyon işleçleri, K2'nin gözlenebilirleri burada geliştirilir |
+| **Denetleyici sınama** | Aynı kökün kalanı: sqlite3, redis (`deps/lua` dışarıda; A-23) | Dondurmadan sonra bir kez; yanlış kabul / ret oranları buradan |
+| **Ürün geliştirme (B0–B2)** | S8'in 8 ikilisi (taban `ANA/s8_taban_534e252b`) + geliştirme setinin 119 ikilisi (yeniden oynatmayla) | Belirlenimci katmanın her paketi; "geriye gitme yok": geçen birim kümesi tabanın üst kümesi |
+| **Hedef (gerçek uygulama; A-17, A-27)** | Keşif: terminal-notifier, docker-cli, Ollama dilimi | Raporların **ilk satırı** buradan (ORTAK_D1 §1); dil başına oranlar |
+| **Kör sınama** | docker-compose, iTerm2, llama-server | Kural / uyarlayıcı dondurulduktan sonra bir kez (ORTAK_D1 §3) |
+| **Kilitli** | Doğrulama seti, test seti, ÖK-V'nin kör tarafı | **Açılmaz.** Bu hattın hiçbir paketi okumaz |
+
+Kaynağı elde olan dört programın bu hattın etiketli zemini olması bir sınır getirir: hepsi C. C++ / Go / Swift / ObjC'de denetleyicinin hata oranı için etiketli zemin bugün yok; kurulması GK-L'nin kalemidir (Go derleyicisi izni A-23'te verilmiş; indirme o paket sıraya girince).
+
+### 6.2 Raporun biçimi
+
+Her ölçüm aynı tabloyu verir; satır = çıktı (ikili), sütunlar:
+
+| işlev (toplam / decompile edilen) | B0 | B1 (yapay bildirimsiz / yapay bildirimle) | B2 | B3 `bayt_eş` | B3 `komut_eş` | B3 `smt` | B3 `öykünme` | `geçmedi` | `hükümsüz` | — motor tek başına — | + KaradulLM (ayrı sütun grubu) |
+
+- Oranlar işlev sayısıyla ve kod baytı ağırlığıyla, ikisi de.
+- **Motor ve model ayrı sütunlarda** (hüküm 3): model katmanının katkısı = modelsiz koşuda B3'te olmayıp modelli koşuda B3'e giren işlevler; toplam sütunu yazılırsa yanında ayrışımı durur. Hiçbir başlıkta ikisi toplanıp "kurtarılan" denmez.
+- Her B3 sayısının yanında kanıt türünün ölçülmüş yanlış kabul üst sınırı ve ölçüm künyesi.
+- Payda açık yazılır: decompile edilmeyen (tembel kip), taslak (thunk), "bağlama sığmadı", `hükümsüz`.
+
+### 6.3 "Yeni yanlış"ın bu hattaki tanımı
+
+- **Yanlış kabul:** denetleyiciden `geçti` alan ama gerçekte eşdeğer olmayan işlev. Yalnız etiketli zeminde (§3.4 N1, N2) sayılabilir; üründe gerçek bilinmez.
+- **Yeni yanlış (paket düzeyi):** bir paket main'e girmeden önce, sınama kümesinde, o paketin eklediği kanıt türü ya da onarımın kabul ettirdiği eşdeğer-olmayan çift sayısı. Beklenti her pakette ön kayıtla yazılır; `bayt_eş`, `komut_eş`, `smt` için **0**, `öykünme` için eşik (K-3).
+- **Geriye gitme:** daha önce B*k*'de olan bir işlevin, paket sonrası daha düşük basamakta olması. S8 ve 119'da 0 beklenir; istisna yalnız "yapay bildirimle B1" → "B1 değil" (yapay bildirimi kaldıran dürüstlük onarımı), sayılır ve ayrı yazılır.
+- **Model için ek sayaç:** kabul edilen model önerilerinin, kaynağı elde olan ikilide, doğru kaynağın derlemesiyle bağımsız karşılaştırmada (geniş vektör kümesi / K3) düşen payı.
+
+### 6.4 Ön kayıt düzeni
+
+ORTAK_D0 / D1'deki düzen aynen: ön kayıt ölçümden önce ayrı commit; tutmayan beklenti silinmez, eşik sonradan değişmez; tohumlar, vektör sayısı, profil kümesi, clang sürümü ön kayıtta yazılır. Paket başına ön kayıt çekirdekleri §8.1–8.4'te.
+
+**GK-K (modelli ölçüm) ön kayıt taslağı — kesinleşmedi; GK-J bitince ana oturum yazar:**
+
+- Nüfus: denetleyici sınama programlarında (sqlite3, redis) motorun B1'e getiremediği ya da B3'te `geçmedi` aldığı işlevlerden tohumlu örneklem (boyut bütçeye göre; TAHMİN 100–200 işlev ≈ 3–13 saat model zamanı).
+- Kollar: (0) motor tek başına; (1) + KaradulLM `onar_derleme`; (2) + `onar_esdegerlik`.
+- Ölçüler: kol başına B1 ve B3'e giren işlev; deneme sayısı dağılımı; süre, üretim jetonu, bellek tepesi; kabul edilen önerilerde bağımsız karşılaştırmada düşen pay.
+- Hipotezler (sayıları yazan doldurur): H1 kol 1'de B1'e giren pay ≥ ‹eşik›; H2 kabul edilen önerilerde bağımsız karşılaştırmada düşen pay ≤ K-3 eşiği; H3 bekçi kurallarını atlayan öneri 0.
+- Model koşusu paket ajanlarına yasak; ana oturum koşar (v2 tasarımı §8.3). Künye: Karadul commit'i, model sha256, `llama-server` sha256, istem sürümü, bağlam.
+
+## 7. Önceki çalışmalarla ilişki
+
+Bu bölüm yenilik iddiası taşımaz; yalnız konumlandırır. Kaynak: depodaki literatür notları (aşağıda dosya adlarıyla). Ağa çıkılmadı; notlarda olmayan her şey **"ana oturum kaynak taraması yapacak"** diye işaretlidir.
+
+| Akraba | Depodaki not ne diyor | Bu hatla ilişkisi |
+|---|---|---|
+| **Yeniden çalıştırılabilirlik ölçütlü decompile modelleri** | LLM4Decompile (Tan vd., EMNLP 2024): 1,3B–33B açık modeller; HumanEval ve ExeBench'te "yeniden çalıştırılabilirlik oranı" ölçütü; Ghidra çıktısını iyileştiren sürüm (`2026-10-15_makale/tersine_derleme_sinirlari.md` §4.6). Model seçimi notunda: "derleme kodunu ya da Ghidra sözde kodunu derlenebilir C'ye çeviriyor"; yalnız Linux x86-64; fonksiyon adı önermiyor (`2026-10-19_g6_pilot/model_secimi.md` K14) | En yakın akraba: ölçüt aynı aileden (derlenir + davranış). Fark iki yerde: (a) onların ölçütü derlenen kodu **çalıştırıp** sınamayla karşılaştırır; burada hedef çalıştırılmaz, denetim çalıştırmadan yapılır; (b) orada model çeviriyi yapar, burada model yalnız boşluk doldurur ve her dolgu denetleyiciden geçer. Bu modellerin arm64 / Mach-O'da ve gerçek uygulama ölçeğinde davranışı notlarda yok → kaynak taraması |
+| **Sinirsel ad / tip kurtarma** | DIRE, DIRTY: görülen ↔ görülmeyen kodda ad isabeti %85,5 → %35,3 ve %87,1 → %36,9; SymGen (NDSS 2025) x86-64 F1 0,351–0,397; REFORGE (2026): 7 LLM'de ortalama token F1 0,18–0,29, medyan 0; ReSym (CCS 2024): LLM + Prolog tabanlı tutarlılık denetimi (`tersine_derleme_sinirlari.md` §4.6–4.7; `2026-10-15_makale/veri_setleri.md`) | Ad hattının akrabaları; bu hat adın doğruluğunu ölçmez (A-41: "kendi isimlendirmeleri ile yazsa bile"). ReSym'in "model önerir, simgesel denetim eler" kalıbı hüküm 2 ile aynı ailedendir; orada denetlenen tip tutarlılığı, burada davranış eşdeğerliği |
+| **Decompiler doğruluğunu sınayan çalışmalar** | Not: "1 423 hata tetikleyen girdi", "Ghidra'nın fonksiyon, değişken ve tip çıkarımının DWARF'a karşı ölçümü" (`tersine_derleme_sinirlari.md` §4.5, §4.7; künyeler o belgenin kaynakçasında) | §4 ilke 2'nin dayanağı: decompiler çıktısı "derleniyor" olsa da yanlış olabilir; bu yüzden motorun kendi gövdesi de B3'ten geçer |
+| **Kuramsal sınır** | Çok-bire eşleme, kararsızlık sonuçları, derleyici aşaması başına kayıp (`tersine_derleme_sinirlari.md` §2–§3) | §9.1'in dayanağı: hedef "özgün kaynak" olamaz; "aynı davranışı veren derlenebilir kaynak" olabilir |
+| **Eşleşen yeniden derleme toplulukları** (oyun ve gömülü yazılımda, işlev işlev bayt eşit yeniden yazım) | **Depoda not yok** | B4 ve K1 (`bayt_eş`), o toplulukların ölçütünün aynısıdır; orada işi insan yapar ve özgün derleyici bilinir. Araçları, ölçütleri, derleyici tespiti yolları → **ana oturum kaynak taraması yapacak** |
+| **Yeniden derlenebilir decompile / ikili kaldırma (binary lifting) araçları, çeviri doğrulama (translation validation), ikili eşdeğerlik denetimi** | **Depoda not yok** (RetDec yalnız özellik envanterinde anılıyor: `docs/FEATURE_ADOPTION_PLAN.md`) | K2 / K3'ün doğrudan akrabaları. Hangi çalışmaların P-code / IR düzeyinde işlev eşdeğerliğini hangi kapsamla gösterdiği → **ana oturum kaynak taraması yapacak** (GK-E'den önce; yöntemi baştan yazmamak için) |
+| **LLM'li decompile onarımında derleyici geri bildirimi döngüsü** | **Depoda not yok** | §5.3'ün döngüsü bu ailedendir → **ana oturum kaynak taraması yapacak** |
+| **Kendi ölçümlerimiz** | KİMLİK: derleyiciler arası BSim 0,610, CFG 0 eşleşme, çapalı yayılım 0,990 (`kimlik/BULGULAR.md`) | §3.3'te K4 / K5'in neden denetleyici olmadığının ölçülmüş gerekçesi |
+
+Yaratıcılık protokolünün (CLAUDE.md §29) dört kuralı için tek satır: (1) denetlenebilir soru — evet, hattın tamamı makine cevabına indirgenmiş (B0–B4); (2) uzlaşıyı kırma — bu turda tek ajan çalıştı, karşı görüş alınmadı: K2'nin kör noktaları için Onuncu Adam turu GK-E'den **önce** önerilir; (3) tek hatta kalma — §8 çok dalgalı tek hat; (4) insan uzman — yok (A-1); eşik kararları (K-2, K-3) Berke'de.
 
 ## 8. Uygulama planı
 
