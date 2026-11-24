@@ -9,7 +9,7 @@ Başlangıç 2026-11-24 14:28; sert son 16:00. Dalın tabanı: main `6536057a`; 
 - **Önerilen kural tek cümle:** dosya gövdesi fonksiyonun koddaki adıdır (dizine giden önek düşülür); dizin, adın geldiği üst verinin kendi yapısıdır (Go paket yolu, ObjC sınıfı, Swift modülü); adı eşiği geçmeyen fonksiyon bugünkü yerinde kalır.
 - **Kuru sayım (Ollama kabul çıktısı, 13 688 fonksiyon, 13 157 dosya):** dizin 86 → 290; en kalabalık dizin 9 448 → 1 485 (`go/standart/runtime`); adı addan gelen dosya 1 015 → 11 469 (%7,7 → %87,2); harf duyarsız çakışma 115 grup / 232 dosya (hepsi Go'da yalnız harfle ayrılan adlar, ör. `time.NewTimer` ↔ `time.newTimer`; adres ekiyle çözülüyor, çözümden sonra çakışan yol 0); en uzun yol 126 → 180 karakter; 68 gövde kısaltıldı.
 - **Arayüz ve KaradulLM bu değişiklikten etkilenmiyor:** ikisi de çıktı ağacını değil ham decompile dökümünü okuyor (kimlik `FUN_<adres>`). Kırılan tek ölçüm aracı `harita_olc.py` (modül = ilk dizin varsayımı).
-- **Derlenebilirlik bozulmaz:** her kaynak yalnız `types.h` içeriyor (`-Iinclude`), derleme dosyaları kaynakları özyinelemeli buluyor; dosya derinliği değişse de komutlar aynı kalır. Geri kurma hattıyla ortak altı nokta §11'de.
+- **Derlenebilirlik bozulmaz:** her kaynak yalnız `types.h` içeriyor (`-Iinclude`), derleme dosyaları kaynakları özyinelemeli buluyor; dosya derinliği değişse de komutlar aynı kalır. Geri kurma hattıyla ortak yedi nokta §11'de; GK-0 tasarımıyla çelişki yok.
 - **Değişen tek ürün bileşeni proje kurucusudur** (`c_project_builder.py`); ara ağaçlara ve döküm adlandırmasına dokunulmaz. Sekiz alt paket (ÇA-A … ÇA-H); yalnız sonuncusu (uçtan uca kabul) Ghidra ister, öbürleri kayıtlı çalışma alanında yeniden oynatmayla ölçülür.
 
 ## Karar listesi (Berke / ana oturum)
@@ -25,7 +25,7 @@ Başlangıç 2026-11-24 14:28; sert son 16:00. Dalın tabanı: main `6536057a`; 
 | K-7 | Dizin dosyası | **Her düzende yazılır** (eski düzende de): `function_index.json`, proje kökünde. Tüketiciler yolu oradan okur. | Geçişi iki düzen için tek kod yoluna indirir (§6). |
 | K-8 | Çakışma çözümü | Aynı yola inen addan türemiş dosyaların **hepsi** `_<adres>` eki alır (ilk gelen eksiz kalmaz). | Sıradan bağımsız; bir fonksiyonun adı değişince en çok kendi çakışma grubu etkilenir. Ollama: 232 dosya. |
 | K-9 | Ara ağaçlar ve döküm adlandırması | **Değişmez.** `reconstructed/{src,merged,typed,…}` ve `decompiled/` birim anahtarıyla (Ghidra adı) kalır. | c_namer dosya gövdesini fonksiyon anahtarı sayıyor; arayüz ve KaradulLM kimliği bu. |
-| K-10 | Geri kurma hattıyla ortak (§11) | (a) "dosya başına bir işlev" iki hattın ortak değişmezi; (b) bildirim başlıklarının yeri ve adı GK'de karara bağlanır, ÇA yalnız dizin başına üretir; (c) `compile_commands.json`'daki bayat `directory` alanını GK onarır; (d) adres anahtarı ortak kimliktir; (e) GK aynı dilde kaynak üretirse ağaç aynı kalır, uzantı değişir; (f) `c_project_builder.py` iki hattın ortak zinciridir. | GK-0 belgesi bu tur boyunca main'de yoktu (14:42'de `docs/arge/2026-11-19_mythos/gerikurma/` yok); iş emrinden (`gonderim/GK0.md`) okundu. |
+| K-10 | Geri kurma hattıyla ortak (§11) | (a) "dosya başına bir işlev" iki hattın ortak değişmezi; (b) bildirim başlıklarının yeri ve adı GK'de karara bağlanır, ÇA yalnız dizin başına üretir; (c) `compile_commands.json`'daki bayat `directory` alanı GK-B'nin derleme dosyası kalemine eklenir; (d) adres ortak kimliktir, `function_index.json` ↔ `geri_kurma.json` alanları birlikte gözden geçirilir; (e) dil dizinleri altındaki dosyalar C kalır (GK K-7); (f) `c_project_builder.py` sırası GK-B → ÇA-B → ÇA-C (GK K-9 ile aynı); (g) birleşik dosyalardaki yeniden tanım (GK sınıf I) ÇA-C'ye kalem olsun mu. | GK-0 belgesi tur sürerken ana ağaca geldi (14:42'de yoktu, 14:57'de okundu); §11 ona göre hizalandı. İki belge çelişmiyor. |
 | K-11 | Öntanımda açma | §8'deki beş ölçüt; açma kararı ÇA-H ölçümünden sonra. | — |
 | K-12 | Bayrak | `binary_reconstruction.cikti_agaci_duzeni`: `"kume"` (öntanım, bugünkü) / `"ad"`. `config.py` yamayla (A-19, A-34). | — |
 | K-13 | Adlı taslak (thunk) ve giriş noktası | Bugünkü gibi `import_thunks/` ve `main.c`'de kalır; adı dizin dosyasında. | Ollama'da uygun adlı 19 fonksiyon taslak / giriş dosyasında. |
@@ -33,7 +33,7 @@ Başlangıç 2026-11-24 14:28; sert son 16:00. Dalın tabanı: main `6536057a`; 
 
 ## 0. Künye, yöntem, terimler
 
-- **Okunan belgeler:** `ORTAK_D1.md`, `ORTAK_D0.md`, `KARARLAR.md` (A-1 … A-41), `DURUM.md` "Ollama uçtan uca koşusu 2", iki Ollama özeti (`ANA/ollama_ba_kapali/ozet/OZET.md`, `ANA/ollama_kabul/ozet/OZET.md`), `ustveri/P-UV6a.md`, `2026-11-18_onarim/P18.md`, `olcek/OL10_TASARIM.md` (biçim), `gonderim/GK0.md`.
+- **Okunan belgeler:** `ORTAK_D1.md`, `ORTAK_D0.md`, `KARARLAR.md` (A-1 … A-41), `DURUM.md` "Ollama uçtan uca koşusu 2", iki Ollama özeti (`ANA/ollama_ba_kapali/ozet/OZET.md`, `ANA/ollama_kabul/ozet/OZET.md`), `ustveri/P-UV6a.md`, `2026-11-18_onarim/P18.md`, `olcek/OL10_TASARIM.md` (biçim), `gonderim/GK0.md`, `gerikurma/GERI_KURMA_TASARIM.md` (ana ağaçta, 14:57; §1.4, §3.2, §4 ilkeler, §8.0, §9.3).
 - **Yöntem:** kod okuması (atıflar Ek B'de `grep` ile doğrulandı) + var olan yedi koşu çıktısı üstünde kuru sayım. Ghidra koşulmadı, hiçbir ikili çalıştırılmadı, ürün kodu değişmedi.
 - **Birim:** ham dökümdeki bir `.c` dosyası = bir fonksiyon. **Birim anahtarı:** o dosyanın gövdesi (Ghidra adı; çakışmada adres ekli). **Küme:** bugünkü `subsystem_<ad>` dizini. **Uygun ad:** §4 kuralından geçen ad. **Dizin dosyası:** `function_index.json` (§6).
 - **Sahte veri yok:** ölçülmeyen her şey "ölçülmedi" diye yazıldı; bu belgede tahmin yok.
@@ -132,7 +132,7 @@ Sonuç: arayüz çıktı ağacını hiç okumuyor; kod görünümü ham dökümd
 | T34 | `urun_olc.py`, `ks1_olc.py` | ad haritası; yol yok | — |
 | T35 | `p04a_olc.py`, `p05_olc.py`, `p06_olc.py`, `p09_olc.py`, `masum_kapi.py`, `etiket_paketi.py`, `csrc_index.py`, `scripts/varname_f1_eval.py` | `rglob("*.c")`; içerik | — |
 | T36 | `scripts/benchmark_claude_code.py` | `subsystem_group_\d+` dizin adı | Y (eski kıyas betiği; düzen `kume` iken aynen çalışır) |
-| T37 | GK-0 `scripts/arge/gerikurma/derlenebilirlik.py` (henüz main'de değil; iş emrinden) | her `.c` tek başına `clang -fsyntax-only` | — (§11) |
+| T37 | GK-0 `scripts/arge/gerikurma/derlenebilirlik.py` (ana ağaçta; bu dalın tabanında yok) ve GK-A'nın `scripts/measurement/gk_derlenebilirlik.py`'si (planlı) | her `.c` tek başına derlenir; sonuç adres anahtarlı | — (§11) |
 
 ### 2.6 Testler
 
@@ -312,10 +312,10 @@ Sıra: A → B → C → (D ║ E ║ F ║ G) → H. A ve B hiçbir zinciri bek
 | Paket | İş | Dosyalar | Zincir | Ghidra |
 |---|---|---|---|---|
 | ÇA-A | Saf çekirdek: yol türetme, çakışma, dizin şeması | yalnız yeni | yok | hayır |
-| ÇA-B | Dizin dosyası her düzende; `kume` ağacı bayt eşit | `c_project_builder.py`, `project_build.py` | kurucu (bugün boş; GK'nin kurucuya dokunan paketinden önce) | hayır (yeniden oynatma) |
+| ÇA-B | Dizin dosyası her düzende; `kume` ağacı bayt eşit | `c_project_builder.py`, `project_build.py` | kurucu: GK-B → ÇA-B (GK K-9; §11 f) | hayır (yeniden oynatma) |
 | ÇA-C | `ad` düzeni bayrak arkasında | `c_project_builder.py` + `config.py` yaması | kurucu, B'den sonra | hayır (yeniden oynatma) |
 | ÇA-D | Biçimleyici ve raporlar | `output_formatter.py`, `report_generator.py` | `output_formatter.py`: PUV6b → PUV6c → ÇA-D | hayır |
-| ÇA-E | Ölçüm araçları dizine geçer | `harita_olc.py`, `s8_esitlik.py`, `yerlesim_urun_olc.py` | `s8_esitlik.py`: ÖL-3 (A-38) ile sıralı | hayır |
+| ÇA-E | Ölçüm araçları dizine geçer | `harita_olc.py`, `s8_esitlik.py`, `yerlesim_urun_olc.py` | `s8_esitlik.py` HIZ hattının dosyası (HZ1 yazdı): o hattın açık paketiyle sıralı | hayır |
 | ÇA-F | Arayüz: yol ve paket görünür | `ui/server.py`, `ui/index.html` | OL4 → GS-1 → ÇA-F | hayır |
 | ÇA-G | KaradulLM: paket / sınıf bağlamı | `karadul/lm/tools/__init__.py`, `context.py` | P22 paketleriyle sıralı | hayır |
 | ÇA-H | Uçtan uca kabul ve öntanım ölçümü | yalnız ölçüm betiği + belge | hepsi main'de | evet (Ollama 1 koşu + A/A) |
@@ -386,19 +386,20 @@ Kalemler: (1) ön kayıt (§8'in beş ölçütü, sayılı). (2) Ollama `ad` dü
 - `#include "types.h"`: derleyici önce kaynağın dizinine, sonra `-Iinclude`'a bakar; kaynak hangi derinlikte olursa olsun `include/types.h` bulunur. Kaynak dizinlerine `types.h` adlı dosya yazılmaz (kural: fonksiyon dosyası `.c`'dir), gölgeleme olmaz. Değişiklik gerekmez.
 - Derleme dosyaları: üçü de `src/` altını özyinelemeli buluyor; derinlik ve dizin adı varsaymıyor. Yol parçaları taşınabilir kümede olduğu için (boşluk yok) `Makefile`'ın `$(shell find …)` satırı bozulmaz. Değişiklik gerekmez; içerik (dosya listesi) kendiliğinden yeni yolları taşır.
 - Nesne dosyaları kaynağın yanına yazıldığı için farklı dizinlerdeki aynı adlı dosyalar (`init.c`) çakışmaz. CMake nesne yolunu kaynak yolundan türetir: aynı.
-- Bağlama birimleri: simge adı koddaki addır ve program genelinde tekildir (adlandırma çakışana ek veriyor); dosya yolundan bağımsız. Yeni düzen bağlama davranışını değiştirmez.
+- Bağlama birimleri: simge adı koddaki addır, dosya yolundan bağımsızdır (ölçüm: dört ad haritasında kod adları tekil; §3.2). Yeni düzen bağlama davranışını değiştirmez; çift tanım ve çözülmeyen simge denetimi GK-H'nin işi.
 - Alt sistem başlıkları (`include/subsystem_<küme>.h`) bugün hiçbir kaynakça içerilmiyor: belge / IDE yardımcısı. Yeni düzende dizin başına üretilir; adı yol ayırıcısı `__` ile düzleştirilir (`include/go__standart__net__http.h`) ya da `include/` altında aynı ağaç kurulur (K-10b).
 
 **Bu turda görülen, ÇA'nın değil GK'nin işi olan kusur:** `out/src/compile_commands.json`'daki `directory` alanı çalışma alanındaki `reconstructed/project` mutlak yolunu gösteriyor; çıktı `out/src`'ye kopyalanınca bayat kalıyor (çalışma alanı silinirse clangd ve derleme veritabanı kırılır).
 
-**GK hattıyla ortak karar gerektiren noktalar (K-10):**
+**GK hattıyla ortak noktalar (K-10).** GK-0 tasarımı (`docs/arge/2026-11-19_mythos/gerikurma/GERI_KURMA_TASARIM.md`) tur sürerken ana ağaca geldi ve 14:57'de okundu; aşağıdaki maddeler ona göre yazıldı. İki belge birbirini doğruluyor: GK §1.4 de kaynakların yalnız `types.h` içerdiğini saymış (S8'de 10 316 / 10 316, Ollama'da 13 554 / 13 554 satır).
 
-- (a) **Derleme birimi = dosya başına bir işlev.** GK-0'ın ilk ölçümü her `.c`'yi tek başına `clang -fsyntax-only` ile deniyor; ÇA bu değişmezi korur (uygun adlı fonksiyon birleşik dosyaya da girmez). Go'da "kaynak dosyası başına bir dosya" seçeneği (K-4) bu değişmezi bozar: bir işlevdeki hata bütün dosyayı düşürür ve işlev düzeyinde eşdeğerlik ölçümü zorlaşır. Karar iki hatta birlikte verilmeli.
-- (b) **Bildirim başlıkları.** GK'nin belirlenimci katmanı büyük olasılıkla bildirim üretecek (iş emrindeki "bildirim üretimi"); kaynaklar o başlıkları içermeye başlarsa yol kuralı önem kazanır. Öneri: içerme her zaman `include/` köküne göre yapılır (`#include "go/standart/net/http.h"` ya da tek `prototypes.h`), göreli (`../`) içerme hiç kullanılmaz; böylece dosya taşınması içermeleri bozmaz.
-- (c) **`compile_commands.json` ve derleme dosyalarının sahibi.** Bugün kurucu yazıyor, biçimleyici kopyalıyor. GK derlenebilirliği ölçecekse `directory` alanının göreli / çıktı köküne göre yazılması onun kabul kalemi olmalı; ÇA dokunmaz.
-- (d) **Ortak kimlik adrestir.** GK'nin işlev başına sonuç tablosu (derlendi / eşdeğer) yol değil adres anahtarlı olmalı; yol gerekiyorsa `function_index.json`'dan okunur. Böylece düzen bayrağı GK ölçümlerini kaydırmaz (§8 ölçüt 5 bunu sınar).
-- (e) **Dil.** GK "aynı dilde geri kurma"ya (Go kaynağı olarak `.go`, ObjC için `.m`) karar verirse ağaç hazırdır: dizinler dilin kendi yapısıdır, yalnız uzantı ve derleme dosyaları değişir. Tersi de doğru: GK C'de kalırsa `go/` altındaki dosyalar C kalır; dizin adı dili değil adın geldiği üst veriyi söyler. README bunu açık yazmalı (bugün "Language: C/C++" yazıyor; D5 / G7).
-- (f) **Kurucu dosyası zinciri.** `c_project_builder.py`'ye ÇA-B / ÇA-C ve GK'nin bildirim / derleme dosyası paketleri dokunacak: aynı zincirde sıralı gitmeli (A-19'un dosya sahipliği kuralı).
+- (a) **Derleme birimi = dosya başına bir işlev.** GK'nin ölçümü her `.c`'yi tek başına deniyor ve denetleyicisi "yalıtılmış birim" üstünde çalışıyor (GK §3.2); ÇA bu değişmezi korur (uygun adlı fonksiyon birleşik dosyaya da girmez). Go'da "kaynak dosyası başına bir dosya" seçeneği (K-4) bu değişmezi bozar: bir işlevdeki hata bütün dosyayı düşürür ve işlev düzeyinde eşdeğerlik ölçümü zorlaşır. K-4 yeniden açılırsa iki hatta birlikte karara bağlanmalı.
+- (b) **Bildirimler başlıkla değil birim önsözüyle gelir.** GK §4 ilke 4'e göre çıktı iki biçimde kalır: okunan çıktı (ÇA ile yeniden düzenlenecek) ve ondan belirlenimci türetilen derleme birimi (önsöz + gövde; GK-C); analistin okuduğu dosyaya derleme iskelesi gömülmez. Bu, ÇA için en elverişli çözüm: okunan dosyalara yeni `#include` satırı girmediği için dosya taşınması hiçbir içermeyi bozamaz. ÇA'nın dizin başına ürettiği bildirim başlıkları okuma / IDE yardımcısı olarak kalır; GK-M başka karar verirse (kaynaklar başlık içermeye başlarsa) içerme `include/` köküne göre yazılmalı, göreli (`../`) içerme kullanılmamalı.
+- (c) **Derleme dosyaları GK-B'nin.** GK-B `GHIDRA_TYPEDEF_LINES`, `_build_types_h` ve üç derleme dosyası üreticisine dokunuyor; hedef üçlüsü ve bayraklar GK K-6'da. Yukarıdaki bayat `directory` alanı o kaleme eklenmeli (GK belgesinde yazılı değil); ÇA derleme dosyası üreticilerine dokunmaz.
+- (d) **Ortak kimlik adrestir.** GK de aynı şeyi yazıyor: "GK paketleri dosya yoluna değil adrese bağlanır (`// Address:` satırı bugün; ÇA'nın dizini gelince o)". `function_index.json` (ÇA-B) GK'nin birim bulma yolu olur; düzen bayrağı GK ölçümlerini kaydırmaz (§8 ölçüt 5 bunu sınar). GK-I'nin `geri_kurma.json` şemasındaki `birim` alanı (bugün `src/…/FUN_….c` yolu) dizin dosyasındaki `adres` + `dosya` ile aynı yazımı kullanmalı: iki şema ÇA-B ve GK-I'de birlikte gözden geçirilir.
+- (e) **Dil.** GK K-7'nin önerisi: Go / Swift / ObjC / C++'ta "eski hâline dönmek" C olarak derlenen ve denetlenen koddur; aynı dilde kaynak planda yok (ObjC `.m` ayrı, sonraki karar). O hâlde `go/`, `objc/`, `swift/` altındaki dosyalar C kalır: dizin adı dosyanın dilini değil adın geldiği üst veriyi söyler. Proje README'si bunu açık yazmalı (bugün "Language: C/C++"; D5 / G7). `.m` kararı çıkarsa ağaç aynı kalır, yalnız uzantı ve derleme dosyaları değişir.
+- (f) **Kurucu dosyası zinciri.** GK'nin önerisi (GK K-9): `c_project_builder.py`'de GK-B önce, ÇA paketleri arkasından, sonra GK-G'nin bağlaması ve GK-M. Bu belge aynı sırayı öneriyor: GK-B → ÇA-B → ÇA-C. İşlev kümeleri ayrık (GK-B: tip başlığı ve derleme dosyaları; ÇA: `build`, yerleşim, adlandırma, bildirim başlığının adı, harita, README) ama dosya aynı; aynı anda gitmezler.
+- (g) **GK sınıf I** ("aynı birimde yeniden tanım"; dosyaların %0,3'ü; GK belgesinde "GK-B / ÇA"ya yazılı): birleşik dosyaların (`import_thunks` parçaları, `thunks_and_stubs`) kusuru. ÇA yeni düzende birleşik dosya sayısını artırmaz; var olanların onarımı `_write_merged_files`'tadır ve ÇA-C'nin dokunduğu bölgede olduğu için ÇA-C'ye kalem olarak alınabilir. Nedeni bu turda incelenmedi: karar ana oturumda.
 
 ## Ek A. Kuru sayım
 
@@ -446,6 +447,6 @@ Yöntem: belgede adı geçen her dosya : simge çifti için worktree'de (main `6
 - **Test dosyası: 13 / 13** (§2.6'daki liste; her biri `subsystem_`, `thunks_and_stubs`, `import_thunks` ya da `CProjectBuilder` içeriyor).
 - Dosya başına doğrulanan atıf: `c_project_builder.py` 36; `output_formatter.py` 12; `ui/server.py` 9; `karadul/lm/` 9 (6 dosya); `naming_labels.py` 5; `project_build.py` 4; `c_namer.py` 4; `headless.py` 3; `go_pclntab.py` 3; betikler 18 (16 dosya); kalanlar 13 (11 dosya).
 - **Veriden doğrulanan iddialar** (kod değil çıktı): sekiz ara ağacın dosya sayıları; `main.c`'nin tek birimi; kaynakların tek `#include` satırı; `report.json` / SARIF'te kaynak yolu olmaması; ad haritalarında kod adlarının tekilliği; kategorili ObjC kaydı sayısı; tmux'ta `kesin` adların kanalı (`ks1:func_kalibi` 148, `ks1:func_kalibi+func_aktarma` 2).
-- **Doğrulanamayan / main'de olmayan:** GK-0'ın betiği ve belgesi (T37; iş emrinden aktarıldı); ÖL-10'un `tembel_durum.json`'ı (tasarım belgesindeki ad; ürün kodunda aranmadı).
+- **Bu dalın ağacında olmayan (ana ağaçta okundu):** GK-0'ın betiği ve belgesi (T37; `scripts/arge/gerikurma/derlenebilirlik.py` ve `gerikurma/GERI_KURMA_TASARIM.md` ana ağaçta var). **Aranmadı:** ÖL-10'un `tembel_durum.json`'ı (tasarım belgesindeki ad; ürün kodunda aranmadı).
 
 ## PAKET BİTTİ
