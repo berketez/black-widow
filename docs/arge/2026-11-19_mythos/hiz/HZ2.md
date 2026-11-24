@@ -82,6 +82,12 @@ Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.
 - Fizibilite ve H4 1. turda (`af7dae70`) koşuldu; onarım o yollara dokunmuyor (kısmi ingest yöneticiyi saklamaz; yineleyici düşüşü yalnız Java olmayan öğede), yeniden koşulmadı.
 - **13:50 — bekliyorum (2. tur):** sürücü yeniden başladı (`urun-068be1fd`, ayrı kök `…/HZ2/s8`): S8 (8) → H2 (cat, zstd) → T25. Yuva 1'de PUV6b ile sıra, yuva 2'de ana oturumun Ollama koşusu. TAHMİNİ: S8 14:20–14:40, H2 14:30–14:50, T25 ancak 14:52'den önce başlarsa (15:12'de süre sınırı), değilse "kalan".
 
+## Kalem 11 — tam takım (yamasız)
+
+- 1. koşu (13:35:51–13:47:41, kod `db04064a` = `af7dae70` + belge / tanım): 11 181 geçti / 23 atlandı / 13 kaldı. 12'si `tests/test_hz2_bsim_hizli.py`: tam takımda başka bir test JVM'i başlatmışken `_java_iterator` sahte öğeleri `java.util.ArrayList`'e koyamadı (`TypeError: No matching overloads found for java.util.ArrayList.add(_Func)`) → kalem 9a'daki onarımla (`068be1fd`) giderildi. 13.'sü beklenen `test_p15a_etkisiz`.
+- **2. koşu (kesin; 13:55:24–14:05:58, 632 sn; kod `710d745e` = `068be1fd` + belge / tanım; 1 dk yük 8,82 → 7,23, aynı anda Ghidra kuyruğu ve başka ajanlar: yük altında): 11 197 geçti / 23 atlandı / 1 kaldı** (152 seçilmedi). Kalan tek test beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `AssertionError: kayıtta ama okunuyor: {'bsim.paralel_tarama': ['karadul/ghidra/bsim.py']}` (yama INERT satırını siler; yamalı kopyada 11 / 11 geçti, kalem 4 ek). Uyarılar (3) bu paketten değil (iki `ComputationRecoveryConfig`, bir `jpype.isThreadAttachedToJVM` — `headless.py:275`, ÖL-1).
+- Worktree'de geçici çalışma verisi bağları (`sigs`, `vendor`, `scripts/node_modules`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb`) kuruldu; commit'lenmedi; kapanışta kaldırılacak. Günlük `…/HZ2/tam_takim2/pytest.log`, kopyası `ozet/tam_takim_pytest.log`.
+
 ## Sonraki paketlere not
 
 ### ÖL-9 (kısmi ingest'in tamamlanması; önbellek)
