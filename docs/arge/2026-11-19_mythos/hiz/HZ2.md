@@ -10,14 +10,14 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/HZ2/` (özetler `ozet/`). 
 |---|---|---|---|
 | 1 | Ghidra API doğrulaması (`javap` + yerel kaynak zip'leri) | bitti (aşağıda) | `285ee3af` |
 | 2 | Kod (`bsim.py`) | bitti; S8 1. turda yakalanan dispose hatası onarıldı (kalem 9a) | `285ee3af`, `af7dae70`, `068be1fd` |
-| 3 | Testler (`tests/test_hz2_bsim_hizli.py`) | bitti: 31 / 31; ilgili eski testler (ol2, p16b, p16c, bsim) 119 / 119 | `af7dae70`, `068be1fd` |
+| 3 | Testler (`tests/test_hz2_bsim_hizli.py`) | bitti: 30 / 30; ilgili eski testler (ol2, p16b, p16c, bsim) 119 / 119 | `af7dae70`, `068be1fd` |
 | 4 | Mutasyon: hz2 23 / 23; taşınan ÖL-2 tanımı öldü; eski tanımlar ol2 33 / 33, p16b 24 / 24, p16c 16 / 16 | bitti (2. tur onarım sonrası) | `db04064a`, `068be1fd`, `710d745e` |
 | 5 | `config.py` yaması (`yamalar/HZ2__config.py.patch`; `git apply --check` temiz; uygulanmadı) | bitti; yamalı kopyada 9 dosya 335 / 335 | `3a81c102` |
 | 6 | Ön kayıt (`on_kayit_hz2.md`) | bitti | `3a81c102` |
 | 7 | Fizibilite (kısmi ingest'i tamamlama) | bitti: ikinci `InsertRequest` reddedilir; sil + yeniden ekle çalışır (ÖL-9'a not) | `76e810df` |
 | 8 | H4 (sqlite3, bütçe 2 sn) | bitti: **TUTTU** (2,064 sn, `kismi`, 6 / 429) | `5d880bab` |
 | 9 | H1 / H2 (S8) | bitti: **H1 TUTTU** (BSim 8 / 8; `.c` zstd tekrarıyla 8 / 8), **H2 TUTTU** (2 / 2) | `6b3fc56f`, `801b7274` |
-| 10 | H3 / H5 (T25) | koşuyor (14:38:21'den beri) | |
+| 10 | H3 / H5 (T25) | bitti: **H3 TUTTU** (ingest 576,3 → 55,9 sn; 13 160 / 13 160; `atlandi`, 0), H5 34 sn (büyüdü) | bu commit |
 | 11 | Tam takım (yamasız) | bitti: 11 197 geçti / 23 atlandı / 1 kaldı (beklenen p15a) | `c829a25a` |
 
 ## Kalem 1 — Ghidra 12.1.2 API (yerel kurulum `~/Library/BlackWidowBuild/ghidra_12.1.2_PUBLIC`; `javap` + `BSim-src.zip`, `Generic-src.zip`, `Decompiler-src.zip`, `Docking-src.zip`, `Project-src.zip`; ağa çıkılmadı)
@@ -113,6 +113,17 @@ Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.
 ## Kalem 10 — T25 (H3, H5)
 
 - **14:38 — bekliyorum:** T25 14:38:21'de yuva 2'de başladı (`HZ2 T25:ollama`; 1 dk yük 20,76; aynı anda yuva 1'de HZ4a'nın `T25:kapali` koşusu: **yük altında**). `python -m karadul analyze …/gosteri-2026-11-19/ollama/girdi/Ollama --stage static --config ayar/t25_ollama.yaml --verbose` (OL2 T25'in `analysis` bölümü + ÖL-2 değerleri + `bsim.paralel_tarama: true`), taze `KARADUL_CACHE_DIR`, ürün ağacı `urun-068be1fd`, süre sınırı 2 019 sn (15:12). TAHMİN: BSim ingest ≈ 14:55'te başlar (OL2'de köprü başından 16,5 dk), köprü 15:00–15:10 biter; 15:12'de bitmemişse koşu kesilir ve `ILERLEME` satırlarından ölçülebilen kadarı yazılır.
+
+- **Köprü sonucu** (14:38:21 başladı; köprü 15:04:57'de bitti, `step_errors` boş; özet `ozet/hz2_ozet.json` → `T25`, olay satırları `ozet/t25_ilerleme_satirlari.txt`): adım süreleri (HZ-1 saati, sn; **yük altında**, aynı anda yuva 1'de HZ4a'nın Ollama `T25:kapali` koşusu): jvm 2,3 · içe aktarma 3,5 · otomatik analiz 127,4 · functions 0,7 · strings 1,6 · call_graph 28,9 · decompile 643,5 · types 5,6 · xref 260,9 · pcode 2,0 · cfg 460,8 · function_id 0,06 · **bsim.ingest 55,903** · **bsim.query 0,292** · combined 0,01 · kapatma 0,3. (OL2 T25'e göre decompile / xref / cfg 1,4–2× yavaş: yük bu koşuda daha ağır.)
+- **BSim:** ingest **13 160 / 13 160** fonksiyon (`ingested_functions 13160`), `scan_mode: parallel`, sayaç okundu (`scan_sayac` yok); sorgu **atlandı** (taze depo: `bsim_status: atlandi`, `total_matches 0`, `total_queries 0`). BSim adımı 56,2 sn (ÖL-2'de 582,95; ingest 576,3 → **55,9**).
+- **H5:** ingest içi `ILERLEME` satırları: `basladi` 15:04:01 → `suruyor islenen=10595 toplam=13160 gecen_sn=34.3` 15:04:35 → `bitti gecen_sn=55.903` 15:04:57. En uzun sessizlik **34 sn** (ÖL-2'nin tekli yolunda 22 sn; **büyüdü**). Neden: okuyucu iş parçacığı tarama başlayınca başlar; ondan önceki hazırlık (`_exe_already_ingested` sorgusu, `GenSignatures.openProgram`, 13 160 fonksiyonun JPype ile listelenmesi ve `ArrayList`'e eklenmesi) olaysız geçiyor (~19 sn), ilk okuma aralık (15 sn) sonra. Sayaç gerçek (`islenen=10595`: izleyicinin tamamlanan iş sayısı). Taramanın sonrası (`sortCallgraph` döngüsü + `InsertRequest`) da olaysız (~22 sn).
+
+| Ön kayıt | Ölçülen | Hüküm |
+|---|---|---|
+| H3 ingest ≤ 288 sn | **55,903 sn** (önce 576,3; yük altında) | **TUTTU** |
+| H3 `bsim_status` ve eşleşme sayısı aynı (`atlandi`, 0) | `atlandi`, 0 | **TUTTU** |
+| H3 taranan 13 160 / 13 160 | 13 160 / 13 160 | **TUTTU** |
+| H5 ingest içi en uzun `ILERLEME` sessizliği (ilk ölçüm) | **34 sn** (sayaç okundu; ÖL-2'de 22 sn: büyüdü) | ölçüldü (yön bildirilmez) |
 
 ## Süre notu (S8)
 
