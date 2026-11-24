@@ -60,6 +60,12 @@ from karadul.core.naming_labels import (  # noqa: E402
     PRE_NAME_KIND_MANUAL,
     SOURCE_C_NAMER,
 )
+# ÖL-4: ILERLEME olaylarının tek ayrıştırıcısı (CLI ile ortak; olay sözleşmesi olcek/PLAN.md §1).
+from karadul.core.ilerleme import (  # noqa: E402
+    ILERLEME_ONEKI,
+    gosterim_alanlari,
+    ilerleme_ayristir,
+)
 # KaradulLM terminali (P22c1): arayüz motor değildir, karadul.lm'i içe aktarabilir (tasarım §3.1 K-M1).
 from karadul.lm import repl as lm_repl  # noqa: E402
 from karadul.lm import session as lm_session  # noqa: E402
@@ -2332,7 +2338,8 @@ def _start_analysis_locked(binary: str) -> dict:
         _JOBS[job] = {"proc": proc, "log": str(log_path), "ws_out": str(ws_out),
                       "run_dir": str(run_dir), "binary": rp.stem,
                       "started": time.time(), "lf": lf, "closed": False,
-                      "cancelled": False, "activated": False}
+                      "cancelled": False, "activated": False,
+                      "gunluk": _GunlukDurumu()}  # ÖL-4: artımlı okuma durumu
     return {"job": job, "binary": rp.stem}
 
 
@@ -2454,14 +2461,32 @@ def _parse_stage_log(log: str) -> list[dict]:
     running: terminal durumu (done/failed/skipped) olmayan ILK asama.
     """
     ended: dict[str, tuple[str, float | None, str | None]] = {}
-    for m in _STAGE_LINE_RE.finditer(log):
+    errored: set[str] = set()
+    _scan_stage_lines(log, ended, errored)
+    return _stage_list(ended, errored)
+
+
+def _scan_stage_lines(text: str, ended: dict, errored: set) -> None:
+    """Metindeki aşama satırlarını ``ended`` (son eşleşme kazanır) ve ``errored``'a işle.
+
+    Desenler satır sonunu aşmaz: metnin tamamında ya da satır satır taramak aynı sonucu verir
+    (ÖL-4 artımlı okuma bunu kullanır).
+    """
+    for m in _STAGE_LINE_RE.finditer(text):
         stage = m.group(2)
         if stage in STAGE_ORDER:
             reason = (m.group(4) or "").strip() or None
             ended[stage] = (_STAGE_LINE_STATUS[m.group(1)], float(m.group(3)), reason)
-    for m in _STAGE_ERROR_RE.finditer(log):
-        stage = m.group(1)
-        if stage in STAGE_ORDER and stage not in ended:
+    for m in _STAGE_ERROR_RE.finditer(text):
+        if m.group(1) in STAGE_ORDER:
+            errored.add(m.group(1))
+
+
+def _stage_list(ended_lines: dict, errored: set) -> list[dict]:
+    """Aşama listesi: süreli satırla bitmemiş ama ``FAIL|ERROR <aşama>:`` görülen aşama başarısız."""
+    ended = dict(ended_lines)
+    for stage in errored:
+        if stage not in ended:
             ended[stage] = ("failed", None, None)
     running = next((s for s in STAGE_ORDER if s not in ended), None)
     stages = []
@@ -2474,29 +2499,117 @@ def _parse_stage_log(log: str) -> list[dict]:
     return stages
 
 
+# ÖL-4: iş günlüğü her yoklamada baştan okunmaz. İş kaydında (``gunluk``) dosya ofseti ve birikmiş
+# durum saklanır; yalnız yeni baytlar okunur, yarım satır sonraki çağrıya kalır, iş bitince son yarım
+# satır da işlenir. Birikmiş durum tam okumanınkiyle aynıdır (``read_text(errors="ignore")``: UTF-8,
+# evrensel satır sonu; ``\r\n`` / ``\r`` -> ``\n``): aşama satırları, alt aşama eşleşmeleri, son 6
+# satır; ek olarak son ``ILERLEME`` olayı (yeni ``ilerleme`` alanı; olay yoksa ``null``).
+_GUNLUK_KODLAMA = "utf-8"
+_KUYRUK_SATIR_SAYISI = 6
+_GUNLUK_KILIDI = threading.Lock()  # aynı işi iki yoklama birlikte ilerletmesin
+
+
+class _GunlukDurumu:
+    """Bir işin günlüğünden birikmiş durum (artımlı okuma)."""
+
+    def __init__(self) -> None:
+        self.kimlik: tuple[int, int] | None = None  # (st_dev, st_ino): dosya değişirse baştan
+        self.ofset = 0
+        self.artik = b""  # işlenmemiş yarım satır (çevrilmiş) + bekletilen son "\r"
+        self.ended: dict = {}
+        self.errored: set = set()
+        self.alt: dict[int, str | None] = {}  # SUBSTAGE_PATTERNS sırası -> ilk eşleşme
+        self.son_olay: dict | None = None
+        self.kuyruk: list[str] = []
+
+    def besle(self, veri: bytes, bitti: bool) -> None:
+        veri = self.artik + veri
+        tut = b""
+        if not bitti and veri.endswith(b"\r"):  # ardından "\n" gelebilir: "\r\n" tek satır sonu
+            tut, veri = b"\r", veri[:-1]
+        veri = veri.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        kes = len(veri) if bitti else veri.rfind(b"\n") + 1
+        tam, self.artik = veri[:kes], veri[kes:] + tut
+        if not tam:
+            return
+        metin = tam.decode(_GUNLUK_KODLAMA, errors="ignore")
+        satirlar = metin.split("\n")
+        sonlu_son = metin.endswith("\n")
+        if sonlu_son:
+            satirlar.pop()
+        for satir in satirlar:
+            _scan_stage_lines(satir, self.ended, self.errored)
+            if len(self.alt) < len(SUBSTAGE_PATTERNS):
+                for i, (pat, _label, grp) in enumerate(SUBSTAGE_PATTERNS):
+                    if i not in self.alt:
+                        m = pat.search(satir)
+                        if m:
+                            self.alt[i] = m.group(grp) if grp else None
+        # yalnız son geçerli olay gerekir: sondan geriye ilk geçerli ILERLEME satırı
+        for satir in reversed(satirlar):
+            if ILERLEME_ONEKI in satir:
+                olay = ilerleme_ayristir(satir)
+                if olay is not None:
+                    self.son_olay = olay
+                    break
+        # son 6 satır: str.splitlines() ile aynı bölme (satır sonuyla biten parça "\n" ile bölünür)
+        parcalar: list[str] = []
+        for k in range(len(satirlar) - 1, -1, -1):
+            sonlu = sonlu_son or k < len(satirlar) - 1
+            parcalar[:0] = (satirlar[k] + "\n").splitlines() if sonlu else satirlar[k].splitlines()
+            if len(parcalar) >= _KUYRUK_SATIR_SAYISI:
+                break
+        self.kuyruk = (self.kuyruk + parcalar)[-_KUYRUK_SATIR_SAYISI:]
+
+    def stages(self) -> list[dict]:
+        return _stage_list(self.ended, self.errored)
+
+    def substages(self) -> list[dict]:
+        return [{"label": label, "count": self.alt[i]}
+                for i, (_pat, label, _grp) in enumerate(SUBSTAGE_PATTERNS) if i in self.alt]
+
+    def tail(self) -> str:
+        return "\n".join(self.kuyruk)
+
+
+def _gunluk_ilerlet(j: dict, bitti: bool) -> _GunlukDurumu:
+    """İşin günlüğünü yeni baytlarla ilerlet (dosya kısaldıysa / değiştiyse baştan)."""
+    with _GUNLUK_KILIDI:
+        d = j.get("gunluk")
+        try:
+            st = os.stat(j["log"])
+            kimlik = (st.st_dev, st.st_ino)
+            if not isinstance(d, _GunlukDurumu) or d.kimlik != kimlik or st.st_size < d.ofset:
+                d = _GunlukDurumu()
+                d.kimlik = kimlik
+            with open(j["log"], "rb") as f:
+                f.seek(d.ofset)
+                yeni = f.read()
+        except OSError:  # tam okumadaki gibi: okunamayan günlük boş sayılır
+            d, yeni = _GunlukDurumu(), b""
+        d.ofset += len(yeni)
+        if yeni or (bitti and d.artik):
+            d.besle(yeni, bitti)
+        j["gunluk"] = d
+        return d
+
+
 def _job_progress(job: str) -> dict:
     with _JOBS_LOCK:
         j = _JOBS.get(job)
     if not j:
         return {"error": "job yok"}
-    try:
-        log = Path(j["log"]).read_text(errors="ignore")
-    except OSError:
-        log = ""
 
-    stages = _parse_stage_log(log)
-
-    # alt-asamalar: canli log parse (setup_logging aktifse)
-    substages = []
-    for pat, label, grp in SUBSTAGE_PATTERNS:
-        m = pat.search(log)
-        if m:
-            substages.append({"label": label,
-                              "count": m.group(grp) if grp else None})
-
+    # Önce süreç durumu, sonra günlük: bitmiş sürecin bütün baytları dosyadadır (son yarım satır
+    # da işlenir); süren işte yarım satır sonraki yoklamaya kalır.
     proc = j["proc"]
     rc = proc.poll()
     finished = rc is not None
+    gunluk = _gunluk_ilerlet(j, finished)
+    stages = gunluk.stages()
+
+    # alt-asamalar: canli log parse (setup_logging aktifse)
+    substages = gunluk.substages()
     workspace = None
     outcome = None
     clean_dir = None
@@ -2532,7 +2645,10 @@ def _job_progress(job: str) -> dict:
         "workspace": workspace, "elapsed": round(time.time() - j["started"], 1),
         "binary": j["binary"], "rc": rc, "cancelled": bool(j.get("cancelled")),
         "outcome": outcome, "clean_dir": clean_dir,
-        "tail": "\n".join(log.splitlines()[-6:]),
+        "tail": gunluk.tail(),
+        # ÖL-4: son ILERLEME olayının adim / durum / islenen / toplam / gecen_sn / cozumleyici /
+        # neden'i (satırda olmayan alan null); olay yoksa null (sahte ilerleme yok).
+        "ilerleme": gosterim_alanlari(gunluk.son_olay),
     }
 
 
