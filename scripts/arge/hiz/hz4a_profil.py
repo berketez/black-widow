@@ -20,6 +20,8 @@ Kipler:
     (d) Genel simge döngüsü tek başına: eski yol (``getReferencesTo`` + ilk öğe) ↔
         ``hasReferencesTo``; simge başına hüküm farkı sayılır.
     (e) GC: her adımın çevresinde ``GarbageCollectorMXBean`` toplama süresi / sayısı farkı.
+    (f) CFG'nin parçaları (blok yinelemesi, blok başına komut yineleyicisi, fonksiyon başına tek
+        komut yineleyicisi, hedef kenarları) her 8. fonksiyonda yalın süreyle.
 
 ``kiyas``
     Aynı süreçte, aynı program üstünde üç işlev yeni yol → eski yol → yeni yol sırasıyla (yalın,
@@ -46,6 +48,7 @@ from typing import Any
 SIMGE_ORNEKLEM_SINIRI = 0  # 0 = hepsi
 KUME_ORNEKLEM_ADIMI = 25   # (a): her 25. fonksiyonda eski yürüyüşle küme kıyası
 TABAN_CAGRI = 300_000      # (c)
+CFG_ORNEKLEM_ADIMI = 8     # (f): her 8. fonksiyonda CFG parça denemesi
 
 
 def _uptime() -> str:
@@ -87,6 +90,7 @@ class _Sayac:
 
 
 _SAYAC = _Sayac()
+_ARA_YAZ: Any = None
 _JOBJECT: Any = None
 _JARRAY: Any = None
 
@@ -376,6 +380,160 @@ def _simge_dongusu(program: Any) -> dict[str, Any]:
             "fark": f}
 
 
+def _cfg_parcalari(program: Any, adim: int = CFG_ORNEKLEM_ADIMI) -> dict[str, Any]:
+    """(f) CFG'nin parçaları, her ``adim``'inci fonksiyonda, yalın (vekilsiz) süreyle.
+
+    A  blok yinelemesi + blok başına adres / boyut metni
+    B  blok başına ``getInstructions(blok, True)`` + komut adı (bugünkü yol)
+    C  fonksiyon başına tek ``getInstructions(gövde, True)`` + komut adı + komut adresi
+    D  blok başına ``getDestinations`` + hedef bloğu / akış türü (bugünkü yol)
+    Ayrıca B ↔ C komut sayısı eşit mi, blok gövdenin içinde mi (``body.contains(blok)``).
+    """
+    from ghidra.program.model.block import BasicBlockModel
+    from ghidra.util.task import ConsoleTaskMonitor
+
+    monitor = ConsoleTaskMonitor()
+    model = BasicBlockModel(program)
+    fm = program.getFunctionManager()
+    listing = program.getListing()
+    sn = {"A": 0.0, "B": 0.0, "C": 0.0, "D": 0.0}
+    say = {"fonksiyon": 0, "blok": 0, "komut_B": 0, "komut_C": 0, "kenar": 0,
+           "govde_disi_blok": 0, "komut_sayisi_farkli_fonksiyon": 0, "cok_aralikli_blok": 0,
+           "blok_sirasi_bozuk": 0}
+    pc = time.perf_counter
+    i = -1
+    for func in fm.getFunctions(True):
+        i += 1
+        if i % adim:
+            continue
+        say["fonksiyon"] += 1
+        body = func.getBody()
+        t = pc()
+        bloklar = []
+        it = model.getCodeBlocksContaining(body, monitor)
+        while it.hasNext():
+            b = it.next()
+            bloklar.append(b)
+            str(b.getFirstStartAddress())
+            str(b.getMaxAddress())
+            int(b.getNumAddresses())
+        sn["A"] += pc() - t
+        say["blok"] += len(bloklar)
+        t = pc()
+        nb = 0
+        for b in bloklar:
+            ii = listing.getInstructions(b, True)
+            while ii.hasNext():
+                str(ii.next().getMnemonicString()).lower()
+                nb += 1
+        sn["B"] += pc() - t
+        t = pc()
+        nc = 0
+        ii = listing.getInstructions(body, True)
+        while ii.hasNext():
+            ins = ii.next()
+            str(ins.getMnemonicString()).lower()
+            ins.getAddress().getOffset()
+            nc += 1
+        sn["C"] += pc() - t
+        t = pc()
+        for b in bloklar:
+            d = b.getDestinations(monitor)
+            while d.hasNext():
+                r = d.next()
+                db = r.getDestinationBlock()
+                if db is None:
+                    continue
+                str(db.getFirstStartAddress())
+                f = r.getFlowType()
+                if f.isCall():
+                    continue
+                f.isFallthrough() or f.isConditional() or f.isUnConditional()
+                say["kenar"] += 1
+        sn["D"] += pc() - t
+        say["komut_B"] += nb
+        say["komut_C"] += nc
+        if nb != nc:
+            say["komut_sayisi_farkli_fonksiyon"] += 1
+        onceki = None
+        for b in bloklar:
+            if not body.contains(b):
+                say["govde_disi_blok"] += 1
+            if int(b.getNumAddressRanges()) > 1:
+                say["cok_aralikli_blok"] += 1
+            bas = b.getFirstStartAddress()
+            if onceki is not None and onceki.compareTo(bas) >= 0:
+                say["blok_sirasi_bozuk"] += 1
+            onceki = bas
+    return {"ornekleme_adimi": adim, "sn": {k: round(v, 3) for k, v in sn.items()}, **say}
+
+
+def _cfg_model_denemesi(program: Any, adim: int = CFG_ORNEKLEM_ADIMI) -> dict[str, Any]:
+    """(g) Blok modeli önbelleği: program boyunca TEK ``BasicBlockModel`` (bugünkü yol; bulunan
+    bloklar ``SimpleBlockModel.foundBlockMap``'te birikir) ↔ fonksiyon başına TAZE model.
+
+    Her ``adim``'inci fonksiyonda bloklar + hedef kenarları iki yolla çıkarılır; süreler ayrı
+    toplanır, (başlangıç, bitiş, boyut) ve (kaynak, hedef, akış) listeleri karşılaştırılır.
+    Ortak model yalnız örneklenen fonksiyonlarda büyür (ürün koşusunda 8 kat daha çok blok
+    birikir): ortak yolun süresi burada alt sınırdır.
+    """
+    from ghidra.program.model.block import BasicBlockModel
+    from ghidra.util.task import ConsoleTaskMonitor
+
+    monitor = ConsoleTaskMonitor()
+    ortak = BasicBlockModel(program)
+    fm = program.getFunctionManager()
+    pc = time.perf_counter
+
+    def cikar(model: Any, body: Any) -> tuple[list, list]:
+        bloklar, kenarlar = [], []
+        it = model.getCodeBlocksContaining(body, monitor)
+        while it.hasNext():
+            b = it.next()
+            bas = str(b.getFirstStartAddress())
+            bloklar.append((bas, str(b.getMaxAddress()), int(b.getNumAddresses())))
+            d = b.getDestinations(monitor)
+            while d.hasNext():
+                r = d.next()
+                db = r.getDestinationBlock()
+                if db is None:
+                    continue
+                f = r.getFlowType()
+                kenarlar.append((bas, str(db.getFirstStartAddress()), bool(f.isCall()),
+                                 bool(f.isFallthrough()), bool(f.isConditional()),
+                                 bool(f.isUnConditional())))
+        return bloklar, kenarlar
+
+    sn_ortak = sn_taze = sn_kurucu = 0.0
+    fonk = esit = blok = 0
+    ceyrek: list[float] = []  # ortak modelin süresi, örneklemin dört çeyreğinde (birikme etkisi)
+    ornek = [f for i, f in enumerate(fm.getFunctions(True)) if i % adim == 0]
+    for j, func in enumerate(ornek):
+        body = func.getBody()
+        t = pc()
+        a = cikar(ortak, body)
+        dt = pc() - t
+        sn_ortak += dt
+        q = min(3, 4 * j // max(1, len(ornek)))
+        while len(ceyrek) <= q:
+            ceyrek.append(0.0)
+        ceyrek[q] += dt
+        t = pc()
+        taze = BasicBlockModel(program)
+        sn_kurucu += pc() - t
+        t = pc()
+        b = cikar(taze, body)
+        sn_taze += pc() - t
+        fonk += 1
+        blok += len(a[0])
+        if a == b:
+            esit += 1
+    return {"ornekleme_adimi": adim, "fonksiyon": fonk, "blok": blok, "esit_fonksiyon": esit,
+            "ortak_model_sn": round(sn_ortak, 3), "taze_model_sn": round(sn_taze, 3),
+            "taze_kurucu_sn": round(sn_kurucu, 3),
+            "ortak_model_ceyrek_sn": [round(x, 3) for x in ceyrek]}
+
+
 def _metin(veri: Any) -> str:
     return json.dumps(veri, indent=2, ensure_ascii=False, default=str)
 
@@ -384,12 +542,26 @@ def _metin(veri: Any) -> str:
 # Kipler
 # --------------------------------------------------------------------------
 
-def _profil(GH: Any, program: Any) -> dict[str, Any]:
+def _guvenli(out: dict[str, Any], ad: str, islev, *a: Any) -> None:
+    """Bir bölüm düşerse öbürleri koşsun; hata metni çıktıya yazılır, ara sonuç diske."""
+    import traceback
+
+    try:
+        out[ad], out[ad + "_olcum"] = _olc(ad, islev, *a)
+    except Exception as exc:
+        out[ad + "_hata"] = "%s: %s\n%s" % (type(exc).__name__, exc, traceback.format_exc())
+        print("[hz4a] %s DÜŞTÜ: %s" % (ad, exc), flush=True)
+    if _ARA_YAZ is not None:
+        _ARA_YAZ(out)
+
+
+def _profil(GH: Any, program: Any, out: dict[str, Any]) -> dict[str, Any]:
     global _SAYAC
-    out: dict[str, Any] = {}
-    out["yalin_gecis_once"] = _yalin_gecis(program)
-    out["sayilar"], out["sayilar_olcum"] = _olc("sayılar", _sayilar, program)
-    out["simge_dongusu"] = _simge_dongusu(program)
+    _guvenli(out, "yalin_gecis_once", _yalin_gecis, program)
+    _guvenli(out, "sayilar", _sayilar, program)
+    _guvenli(out, "simge_dongusu", _simge_dongusu, program)
+    _guvenli(out, "cfg_parcalari", _cfg_parcalari, program)
+    _guvenli(out, "cfg_model_denemesi", _cfg_model_denemesi, program)
 
     vekil = _Vekil(program)
     gercek = {ad: sys.modules.get(ad) for ad in ("ghidra.program.model.block", "ghidra.util.task")}
@@ -404,6 +576,15 @@ def _profil(GH: Any, program: Any) -> dict[str, Any]:
             sys.modules.update(_vekil_modulleri())
         try:
             _, kayit = _olc("vekilli " + ad, islev, vekil)
+        except Exception as exc:
+            import traceback
+            adimlar[ad] = {"hata": "%s: %s\n%s" % (type(exc).__name__, exc,
+                                                    traceback.format_exc()),
+                           "sayac": _SAYAC.ozet()}
+            out["vekilli_adimlar"] = adimlar
+            if _ARA_YAZ is not None:
+                _ARA_YAZ(out)
+            continue
         finally:
             if shim:
                 for mad, m in gercek.items():
@@ -416,8 +597,10 @@ def _profil(GH: Any, program: Any) -> dict[str, Any]:
         kayit["java_payi"] = round(ozet["java_cagrisi_sn"] / kayit["sn"], 4) if kayit["sn"] else None
         kayit["gc_payi"] = round(kayit["gc"]["toplam_ms"] / 1000.0 / kayit["sn"], 4) if kayit["sn"] else None
         adimlar[ad] = kayit
-    out["vekilli_adimlar"] = adimlar
-    out["yalin_gecis_sonra"] = _yalin_gecis(program)
+        out["vekilli_adimlar"] = adimlar
+        if _ARA_YAZ is not None:
+            _ARA_YAZ(out)
+    _guvenli(out, "yalin_gecis_sonra", _yalin_gecis, program)
     return out
 
 
@@ -458,7 +641,7 @@ def _kiyas(GH: Any, program: Any, yaz: Path | None) -> dict[str, Any]:
 
 
 def main() -> int:
-    global _JOBJECT, _JARRAY
+    global _JOBJECT, _JARRAY, _ARA_YAZ
     ap = argparse.ArgumentParser()
     ap.add_argument("--kip", choices=("profil", "kiyas"), required=True)
     ap.add_argument("--ikili", required=True, type=Path)
@@ -485,6 +668,14 @@ def main() -> int:
         "ghidra": str(kurulum), "config": str(a.config) if a.config else None,
         "pid": os.getpid(), "uptime_bas": _uptime(), "baslangic": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
+    hedef = a.cikti or (a.kok / ("hz4a_%s.json" % a.kip))
+    hedef.parent.mkdir(parents=True, exist_ok=True)
+
+    def ara_yaz(veri: dict[str, Any]) -> None:
+        hedef.write_text(json.dumps(veri, indent=1, ensure_ascii=False, default=str),
+                         encoding="utf-8")
+
+    _ARA_YAZ = ara_yaz
     H._ensure_pyghidra_started(
         kurulum, heap_mb=getattr(getattr(cfg, "analysis", None), "ghidra_max_heap_mb", None))
     import jpype
@@ -500,14 +691,12 @@ def main() -> int:
                                   if k in ("status", "duration_s", "disabled_analyzers")}
         out["uptime_analiz_sonu"] = _uptime()
         if a.kip == "profil":
-            out.update(_profil(H.GhidraHeadless, program))
+            _profil(H.GhidraHeadless, program, out)
         else:
             out.update(_kiyas(H.GhidraHeadless, program, a.kok / "dokum" if a.yaz else None))
     out["uptime_son"] = _uptime()
     out["bitis"] = time.strftime("%Y-%m-%d %H:%M:%S")
-    hedef = a.cikti or (a.kok / ("hz4a_%s.json" % a.kip))
-    hedef.parent.mkdir(parents=True, exist_ok=True)
-    hedef.write_text(json.dumps(out, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
+    ara_yaz(out)
     print("[hz4a] yazıldı: %s" % hedef, flush=True)
     return 0
 
