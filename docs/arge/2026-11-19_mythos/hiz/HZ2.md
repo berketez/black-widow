@@ -72,6 +72,15 @@ Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.
 - **H4: TUTTU** (≤ 2 + 10 sn; `kismi`; JSON geçerli; 6 ≤ 429).
 - **Not (hüküm değil, olumsuz bulgu):** 2 sn'lik bütçede paralel yol yalnız **6** fonksiyon taradı; ÖL-2'nin tekli yolu aynı ikilide aynı bütçeyle 253 taramıştı (dün akşam, farklı yük). Neden fizibilitede görüldü: işçi başına ayrı decompiler süreci açılıyor, ilk ~0,4–2 sn sayaç 0. Kısa bütçede (birkaç sn) paralel yol daha AZ iş yapar; büyük ikilide açılış payı küçük.
 
+## Kalem 9a — S8 1. tur (kod `af7dae70`): HATA yakalandı, tur durduruldu
+
+- 13:39–13:45 (yuva 1, 1 dk yük 10,9–18,3; **yük altında**): cat, sort, tree bitti; sqlite3 koşarken 13:49'da durduruldu (süreçler öldürüldü; çıktı `…/HZ2/s8_tur1_af7dae70/`, kanıt olarak duruyor).
+- cat: taban ile **eşit** (`scan_mode` dışında; taze depo, sorgu atlandı). sort ve tree: `.c`, öbür JSON'lar, ad haritaları eşit; eşleşme listesi eşit (sort 244 sorgu / 180 eşleşme, tree 119 / 50) AMA üç BSim dosyasında `bsim_detail.query_mode` `batch` → `per_function` ve yeni `bsim_detail.batch_query_error` = `RuntimeError: BSim QueryNearest (toplu) basarisiz: Fatal error during -querynearest- : Query signature data has no setting information`; sorgu sort'ta 2,607 → 56,511 sn, tree'de 1,674 → 27,305 sn.
+- **Kök neden:** `GenSignatures.dispose()` → `clear()` → `manager.clear()` (`GenSignatures.java` `clear()`; `DescriptionManager.clear()` fonksiyonları VE `major / minor / settings`'i sıfırlar). Ingest'in `finally`'si `gen.dispose()` çağırdığı için sorguya verilen "ingest yöneticisi" boş ve ayarsızdı → `checkSettingsForQuery` kod 3 → toplu sorgu düştü → `BSimDatabase` fonksiyon başına yola geçti (P16c yedeği; eşleşmeler o yüzden aynı). Kod yorumumdaki "yönetici dispose'dan etkilenmez" varsayımı kaynağa bakılmadan yazılmıştı; birim testindeki sahte `dispose` yöneticiyi temizlemiyordu → yeşil testler hatayı göremedi.
+- **Onarım (`068be1fd`):** tam ingest'in `GenSignatures`'ı açık tutulur, sahipliği sorguya geçer (sorgu bitince bırakır); kullanılmazsa yeni ingest'te ve `close`'da bırakılır. Sahte `dispose` artık yöneticiyi temizliyor, sahte `QueryNearest` ayarsız yöneticide `None` dönüyor (eski kodda `test_sorgu_ingest_yoneticisini_kullanir_yeni_tarama_yok` ve yeni `test_tam_ingest_taramasi_sorguya_kadar_birakilmaz` kırmızı: mutant `hz2_ingest_taramasi_birakilir`). Ayrıca tam takımda (başka bir test JVM'i başlatmışken) `_java_iterator` sahte öğeleri `ArrayList`'e koyamıyordu (`TypeError`) → Python yineleyicisine düşer (yalnız Java olmayan öğede).
+- Fizibilite ve H4 1. turda (`af7dae70`) koşuldu; onarım o yollara dokunmuyor (kısmi ingest yöneticiyi saklamaz; yineleyici düşüşü yalnız Java olmayan öğede), yeniden koşulmadı.
+- **13:50 — bekliyorum (2. tur):** sürücü yeniden başladı (`urun-068be1fd`, ayrı kök `…/HZ2/s8`): S8 (8) → H2 (cat, zstd) → T25. Yuva 1'de PUV6b ile sıra, yuva 2'de ana oturumun Ollama koşusu. TAHMİNİ: S8 14:20–14:40, H2 14:30–14:50, T25 ancak 14:52'den önce başlarsa (15:12'de süre sınırı), değilse "kalan".
+
 ## Sonraki paketlere not
 
 ### ÖL-9 (kısmi ingest'in tamamlanması; önbellek)
