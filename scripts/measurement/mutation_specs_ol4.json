@@ -1,0 +1,181 @@
+{
+  "_comment": "OL4 (2026-11-24, ÖL-4): ilerleme olaylarının CLI ve arayüz sunucusunda gösterimi. Her mutant bir korumayı bozar; tests/test_ol4_ilerleme.py KIRMIZI olmalı. Üretici: ~/karadul_olcum/runs/dalga1-2026-11-23/OL4/betik/spec_uret.py (find tekil, replace farklı uzunlukta). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ol4.json",
+  "mutants": [
+    {
+      "id": "ol4_shlex_yok",
+      "desc": "ayrıştırıcı shlex yerine boşlukla böler (tırnak / kaçış bozulur)",
+      "module": "karadul/core/ilerleme.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "parcalar = shlex.split(m.group(1))",
+      "replace": "parcalar = m.group(1).split()"
+    },
+    {
+      "id": "ol4_durum_denetimi_yok",
+      "desc": "sözleşmede olmayan durum olay sayılır",
+      "module": "karadul/core/ilerleme.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "if any(ad not in olay for ad in ZORUNLU_ALANLAR) or olay[\"durum\"] not in OLAY_DURUMLARI:",
+      "replace": "if any(ad not in olay for ad in ZORUNLU_ALANLAR):"
+    },
+    {
+      "id": "ol4_onek_siniri_yok",
+      "desc": "başka sözcüğün içindeki ILERLEME de olay sayılır",
+      "module": "karadul/core/ilerleme.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "r\"(?:^|\\s)\" + re.escape(",
+      "replace": "r\"\" + re.escape("
+    },
+    {
+      "id": "ol4_sayac_metin_kalir",
+      "desc": "islenen / toplam sayıya çevrilmez",
+      "module": "karadul/core/ilerleme.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "olay[ad] = int(olay[ad])",
+      "replace": "olay[ad] = olay[ad]"
+    },
+    {
+      "id": "ol4_verbose_isleyici_kurar",
+      "desc": "--verbose'da ayrı işleyici kurulur (satır iki kez)",
+      "module": "karadul/cli_common.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "if quiet or verbose:",
+      "replace": "if quiet:"
+    },
+    {
+      "id": "ol4_kip_ve_veya",
+      "desc": "stderr terminal ya da çubuk çiziliyorsa satır basılmaz",
+      "module": "karadul/cli_common.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "if stderr_tty and cubuk_cizilir:",
+      "replace": "if stderr_tty or cubuk_cizilir:"
+    },
+    {
+      "id": "ol4_cubuk_kipinde_satir",
+      "desc": "çubuk kipinde de satır basılır",
+      "module": "karadul/cli_common.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "akim=akim if kip == ILERLEME_KIP_SATIR else None,",
+      "replace": "akim=akim,"
+    },
+    {
+      "id": "ol4_yayilim_acik",
+      "desc": "yayılım açık kalır (kökteki işleyici satırı yineler)",
+      "module": "karadul/cli_common.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "gunlukcu.propagate = False",
+      "replace": "gunlukcu.propagate = True"
+    },
+    {
+      "id": "ol4_isleyici_kalir",
+      "desc": "çıkışta işleyici kaldırılmaz",
+      "module": "karadul/cli_common.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "gunlukcu.removeHandler(isleyici)",
+      "replace": "gunlukcu.handlers.count(isleyici)"
+    },
+    {
+      "id": "ol4_duzey_info_yok",
+      "desc": "günlükçü düzeyi INFO'ya çekilmez (olaylar düşer)",
+      "module": "karadul/cli_common.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "gunlukcu.setLevel(logging.INFO)",
+      "replace": "gunlukcu.setLevel(logging.WARNING)"
+    },
+    {
+      "id": "ol4_aciklamada_toplam_yok",
+      "desc": "çubuk açıklamasında islenen/toplam yerine yalnız islenen",
+      "module": "karadul/cli_common.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "f\"{olay['islenen']}/{olay['toplam']}\" if",
+      "replace": "f\"{olay['islenen']}\" if"
+    },
+    {
+      "id": "ol4_akim_stdout",
+      "desc": "olay satırları stdout'a gider",
+      "module": "karadul/cli.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "ilerleme_akimi = sys.stderr",
+      "replace": "ilerleme_akimi = sys.__stdout__"
+    },
+    {
+      "id": "ol4_verbose_iletilmez",
+      "desc": "analyze --verbose'u kip kararına iletmez",
+      "module": "karadul/cli.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "quiet=quiet, verbose=verbose, stderr_tty=akim_tty(ilerleme_akimi),",
+      "replace": "quiet=quiet, verbose=False, stderr_tty=akim_tty(ilerleme_akimi),"
+    },
+    {
+      "id": "ol4_akim_cubuk_icinde",
+      "desc": "akım çubuk açıldıktan sonra alınır (Rich Live yönlendirmesi)",
+      "module": "karadul/cli.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "with ilerleme_gosterimi(kip, akim=ilerleme_akimi,",
+      "replace": "with ilerleme_gosterimi(kip, akim=sys.stderr,"
+    },
+    {
+      "id": "ol4_seek_bastan",
+      "desc": "her yoklama günlüğü baştan okur",
+      "module": "ui/server.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "f.seek(d.ofset)",
+      "replace": "f.seek(0)"
+    },
+    {
+      "id": "ol4_yarim_satir_islenir",
+      "desc": "yarım satır hemen işlenir",
+      "module": "ui/server.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "kes = len(veri) if bitti else veri.rfind(b\"\\n\") + 1",
+      "replace": "kes = len(veri)"
+    },
+    {
+      "id": "ol4_cr_bekletilmez",
+      "desc": "parça sonundaki \\r bekletilmez (\\r\\n iki satır sonu olur)",
+      "module": "ui/server.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "if not bitti and veri.endswith(b\"\\r\"):",
+      "replace": "if False and veri.endswith(b\"\\r\"):"
+    },
+    {
+      "id": "ol4_kisalma_denetimi_yok",
+      "desc": "dosya kısalınca baştan okunmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "d.kimlik != kimlik or st.st_size < d.ofset:",
+      "replace": "d.kimlik != kimlik:"
+    },
+    {
+      "id": "ol4_ilk_olay_alinir",
+      "desc": "parçadaki son değil ilk geçerli olay kalır",
+      "module": "ui/server.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "                    self.son_olay = olay\n                    break",
+      "replace": "                    self.son_olay = olay\n                    pass"
+    },
+    {
+      "id": "ol4_bitiste_yarim_satir_kalir",
+      "desc": "iş bitince son yarım satır işlenmez",
+      "module": "ui/server.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "if yeni or (bitti and d.artik):",
+      "replace": "if yeni:"
+    },
+    {
+      "id": "ol4_ilerleme_hep_null",
+      "desc": "ilerleme alanı hep null",
+      "module": "ui/server.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "\"ilerleme\": gosterim_alanlari(gunluk.son_olay),",
+      "replace": "\"ilerleme\": None,"
+    },
+    {
+      "id": "ol4_kuyruk_bolme",
+      "desc": "son 6 satır satır sonuyla biten parçayı splitlines'tan farklı böler",
+      "module": "ui/server.py",
+      "test": "tests/test_ol4_ilerleme.py",
+      "find": "parcalar[:0] = (satirlar[k] + \"\\n\").splitlines() if sonlu else satirlar[k].splitlines()",
+      "replace": "parcalar[:0] = satirlar[k].splitlines()"
+    }
+  ]
+}
