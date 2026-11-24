@@ -87,3 +87,30 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/OL4/` (özetler `ozet/`). 
 - TTY kipi (çubuk açıklaması) gerçek koşuda sınanmadı: bu koşuda terminal yok (arka plan). Birim ve uçtan uca testlerde sınandı (`test_e2e_cubuk_kipi_stderr_terminal_satir_yok`, `test_cubuk_kipi_satir_basmaz`).
 - **T25 (en uzun boşluk ≤ 60 sn): ölçülmedi; ana oturumun koşusuna bırakıldı** (OL2 ve bu paket main'e girince Ollama koşusunda).
 - Özetler: `ozet/cat_olc.json`, `ozet/cat_ontanim_stderr.txt` (46 satır), `ozet/cat_verbose_ilerleme.txt`, `ozet/cat_quiet_stderr.txt` (boş), `ozet/kuyruk_OL4.txt`.
+
+## Sonraki paketlere not
+
+### ÖL-8 (arayüz ölçeği)
+
+- `index.html` yaması (`yamalar/OL4__index.html.patch`) ana oturumca uygulanınca CSP karması yamadaki değerdir; ÖL-8 betiği değiştirirse karma yeniden hesaplanır (`betik/csp_karma.py`; yöntem `test_ui_lm_panel.py::test_csp_betik_karmasi_ve_kisitlar`).
+- `renderStages` her yoklamada kutuyu baştan kurar: `.substage` sınıfının `slidein` animasyonu her yoklamada yeniden oynuyor (bugünkü reconstruct alt satırları dahil). Yama bu yüzden sınıfsız satır kullanıyor; ÖL-8 kutuyu yerinde güncellemeye geçerse animasyon tek seferlik olur.
+- `ilerleme` alanı `asama`'yı taşımıyor (hüküm 3 listesi); olaylar bugün yalnız `asama=static`. Başka aşama olay üretmeye başlarsa `gosterim_alanlari`'na (`karadul/core/ilerleme.py` `GOSTERILEN_ALANLAR`) `asama` eklenmeli ve yamadaki `s.key==='static'` koşulu `e.asama===s.key` olmalı.
+- `build_model`'e dokunulmadı.
+
+### OL10-G (rapor, CLI satırı, `--derinlik`)
+
+- `analyze`'da ilerleme çubuğu dalı artık `with ilerleme_gosterimi(…)` içinde `pipeline.run` çağırıyor; koşu sonu özet satırı bu bloğun DIŞINDA (çubuk kapandıktan sonra) basılmalı. `--quiet` / `--json` kipinde olay işleyicisi yok; aynı kural özet satırı için de geçerli.
+- Tembel kip yeni olay üretirse (ör. `adim=tembel.secim`), sözleşme dışı alan eklenmez (üretici `ValueError` atar); CLI çubuğu `asama` etiketini `STAGE_LABELS`'tan alır.
+- `mutation_specs_ol4.json`'un `cli.py` `find` metinleri: `ilerleme_akimi = sys.stderr`, `quiet=quiet, verbose=verbose, stderr_tty=akim_tty(ilerleme_akimi),`, `with ilerleme_gosterimi(kip, akim=ilerleme_akimi,` — `--derinlik` eklenirken bu satırlar tekil kalmalı.
+
+### OL10-H (arayüz, KaradulLM)
+
+- `_job_progress` iş kaydında `gunluk` (`_GunlukDurumu`) tutuyor; yeni uçlar günlüğü yeniden okumamalı, gerekirse bu durumdan beslenmeli. Tembel kipin "decompile edilmedi" sayaçları rapordan / sıra dosyasından okunmalı, günlükten değil.
+- `mutation_specs_ol4.json`'un `ui/server.py` `find` metinleri `_GunlukDurumu.besle`, `_gunluk_ilerlet` ve `_job_progress`'in dönüşünde; bu işlevlere dokunan paket tanımı yeniden koşmalı.
+
+### Riskler
+
+- **İlk yoklama** 10 MB günlükte 281–291 ms (tam okumanın 207,5 ms'sinin 1,35–1,40 katı; satır satır tarama); sonra yalnız yeni baytlar. Onlarca MB'lık günlükte sunucu yeniden başlatılıp iş yeniden bağlanırsa ilk yoklama bir kez o kadar sürer (iş kaydı bellekte; sunucu yeniden başlayınca iş zaten "job yok").
+- **Aynı boyda yeniden yazılan günlük** (aynı inode, aynı uzunluk) fark edilmez; tam okuma ederdi. Analiz günlüğü yalnız ekleniyor; olmayan bir durum.
+- **Kodlama:** artımlı yol UTF-8 sabit; tam okuma yerel ayarın kodlamasını kullanıyordu (macOS'ta UTF-8). UTF-8 dışı yerel ayarda `tail` farklı çözülebilir.
+- **TTY yorumu** (kalem 2): stdout dosyada, stderr terminaldeyse satır terminale yazılır (hükmün "TTY'de satır basılmaz"ının dışında; çubuk çizilmediği için olay başka türlü görünmezdi).
