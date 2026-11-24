@@ -1,0 +1,149 @@
+{
+ "_comment": "P-ÜV6b: Swift ad kanalı + RTTI kanıt satırı + ObjC güven satırı + durum sabitleri. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv6b.json",
+ "mutants": [
+  {
+   "id": "puv6b_swift_bayrak_hep_acik",
+   "desc": "Swift ad kanalı bayrağı okunmaz (öntanım açık gibi)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "    if flags.get(SOURCE_SWIFT_TYPE):",
+   "replace": "    if True or flags.get(SOURCE_SWIFT_TYPE):"
+  },
+  {
+   "id": "puv6b_rtti_bayrak_hep_acik",
+   "desc": "RTTI kanıt bayrağı okunmaz (öntanım açık gibi)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "    if flags.get(SOURCE_RTTI):",
+   "replace": "    if True or flags.get(SOURCE_RTTI):"
+  },
+  {
+   "id": "puv6b_adli_fonksiyona_aday",
+   "desc": "P13b kuralı kalkar: Ghidra'nın adlandırdığı erişim fonksiyonuna da Swift adayı",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "            ch[\"gecersiz_ad\"] = ch.get(\"gecersiz_ad\", 0) + 1\n            continue\n        key, outcome = index.key_for(addr)",
+   "replace": "            ch[\"gecersiz_ad\"] = ch.get(\"gecersiz_ad\", 0) + 1\n            continue\n        key, outcome = (index.by_addr.get(addr + index.delta), \"tuttu\")"
+  },
+  {
+   "id": "puv6b_ad_yazilabilir_suzgeci_yok",
+   "desc": "ad_yazilabilir süzgeci kalkar: ad verilemeyen tip ad adayı olur",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "    return [] if t.get(\"ad_yazilabilir\") is True else [SWIFT_NOT_WRITABLE]",
+   "replace": "    return []"
+  },
+  {
+   "id": "puv6b_etiket_kesin",
+   "desc": "H5: Swift adı kesin etiketiyle yazılır",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "        \"label\": LABEL_METADATA,",
+   "replace": "        \"label\": \"kesin\" if source == \"swift_type_accessor\" else LABEL_METADATA,"
+  },
+  {
+   "id": "puv6b_ozgun_ad_yerine_tanimlayici",
+   "desc": "ozgun_ad yerine C tanımlayıcısı yazılır",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "            source=source, addr=addr, original=original, key=key, outcome=outcome, index=index,",
+   "replace": "            source=source, addr=addr, original=c_identifier(original) or original, key=key, outcome=outcome, index=index,"
+  },
+  {
+   "id": "puv6b_guven_sabit",
+   "desc": "güven tablodan değil sabit 0,95",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "name=name, source=source, confidence=float(metadata_confidence(source) or 0.0),",
+   "replace": "name=name, source=source, confidence=0.95 if source == SOURCE_SWIFT_TYPE else float(metadata_confidence(source) or 0.0),"
+  },
+  {
+   "id": "puv6b_rtti_yuva_ad_adayi",
+   "desc": "A-32: RTTI yuvası yeniden Sınıf_vfunc_N ad adayı olur",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "        _add_rtti(load_rtti_functions(rtti_classes_path), rtti_status, index, stats, evidence)",
+   "replace": "        [_add_resolved(source=\"rtti\", addr=a, symbol=None, qualified=f\"{c['name']}_vfunc_{i}\", confidence=0.6, reason=\"RTTI\", index=index, candidates=candidates, stats=stats) for c in (rtti_classes or []) for i, a in enumerate(c.get(\"methods\") or []) if a]; _add_rtti(load_rtti_functions(rtti_classes_path), rtti_status, index, stats, evidence)"
+  },
+  {
+   "id": "puv6b_belirsizde_sinif_adi",
+   "desc": "belirsiz kararda sınıf adı yazılır",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "    if karar != RTTI_AMBIGUOUS and isinstance(sinif, str) and sinif:",
+   "replace": "    if isinstance(sinif, str) and sinif:"
+  },
+  {
+   "id": "puv6b_adim_tuketiciden_sonra",
+   "desc": "Swift üreticisi Faz 1'de tüketiciden sonra",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "                \"swift_metadata_recovery\",\n                \"rtti_recovery\",\n                # B7 (2026-05-13): type recovery JSON tüketici\n                \"type_recovery_consumer\",",
+   "replace": "                \"rtti_recovery\",\n                # B7 (2026-05-13): type recovery JSON tüketici\n                \"type_recovery_consumer\",\n                \"swift_metadata_recovery\","
+  },
+  {
+   "id": "puv6b_tablo_esigi_atlanir",
+   "desc": "hüküm 6: alt sınır AD_ESIGI ile karşılaştırılmaz",
+   "module": "karadul/core/naming_labels.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "    return conf is not None and conf >= AD_ESIGI",
+   "replace": "    return conf is not None"
+  },
+  {
+   "id": "puv6b_tabloya_bakilmaz",
+   "desc": "kanal tabloya bakmadan ad yazar (ölçülmemiş Swift ad verir)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "    if not metadata_writes_names(source):\n        ch[\"esik_alti\"]",
+   "replace": "    if False:\n        ch[\"esik_alti\"]"
+  },
+  {
+   "id": "puv6b_swift_yuva_aday",
+   "desc": "Swift yuvası ad adayı olur",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "        ch[\"yuva_kanit\"] = ch.get(\"yuva_kanit\", 0) + 1",
+   "replace": "        candidates.setdefault(f\"FUN_{addr:08x}\", []).append(_make_candidate(\"yuva\", source, 0.9, \"yuva\")); ch[\"yuva_kanit\"] = ch.get(\"yuva_kanit\", 0) + 1"
+  },
+  {
+   "id": "puv6b_rtti_olculmemis_sayilir",
+   "desc": "RTTI UNMEASURED_SOURCES'ta kalır (sayaçlar tutarsız)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "                                      - frozenset(METADATA_EVIDENCE_SOURCES))",
+   "replace": "                                      )"
+  },
+  {
+   "id": "puv6b_objc_satiri_eski",
+   "desc": "hüküm 5: ObjC güven satırı eski (33 611 / 33 611, 0,9998)",
+   "module": "karadul/core/naming_labels.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "    SOURCE_OBJC_METHOD: (33611, 33885, 0.9909),",
+   "replace": "    SOURCE_OBJC_METHOD: (33611, 33611, 0.9998),"
+  },
+  {
+   "id": "puv6b_durum_yerel_tanim",
+   "desc": "hüküm 7: swift.py durum sabitlerini yeniden yerel tanımlar",
+   "module": "karadul/analyzers/ustveri/swift.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "    DURUM_KAPALI,\n    DURUM_TUTARSIZ,\n    DURUM_VERI_YOK,\n)",
+   "replace": "    DURUM_VERI_YOK,\n)\nDURUM_TUTARSIZ = \"tutarsiz\"\nDURUM_KAPALI = \"kapali\""
+  },
+  {
+   "id": "puv6b_rtti_girdisi_iletilmez",
+   "desc": "birleştirici RTTI yapıtının yolunu kanala geçirmez",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "        \"rtti_classes_path\": get(\"rtti_classes_path\"),",
+   "replace": "        \"rtti_classes_path\": None,"
+  },
+  {
+   "id": "puv6b_swift_girdisi_iletilmez",
+   "desc": "birleştirici Swift yapıtını kanala geçirmez",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6b_baglama.py",
+   "find": "        \"swift_types\": _as_dict_list(get(\"swift_types\")),",
+   "replace": "        \"swift_types\": [],"
+  }
+ ]
+}

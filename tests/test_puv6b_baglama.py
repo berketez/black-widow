@@ -113,6 +113,14 @@ def test_flags_off_swift_and_rtti_do_nothing(tmp_path, swift_olculdu) -> None:
     assert r.ch[RT]["durum"] == "kapali" and "enable_rtti_naming" in r.ch[RT]["neden"]
 
 
+def test_other_channel_on_does_not_open_swift_or_rtti(tmp_path, swift_olculdu) -> None:
+    """Başka bir kanal açıkken (Go) Swift ve RTTI kendi bayrakları kapalıysa iş yapmaz."""
+    r = _run(_index(0x1000), flags=_flags(**{nl.SOURCE_GO_PCLNTAB: True}), swift=[_tip(0x1000)],
+             slots=[_yuva(0x1000)], rtti_path=_rtti_json(tmp_path, [_islev(0x1000)]))
+    assert r.cands == {} and r.recs == {} and r.ev == []
+    assert r.ch[SW]["durum"] == "kapali" and r.ch[RT]["durum"] == "kapali"
+
+
 def test_flag_names_and_defaults_are_off() -> None:
     assert FC.K4_CHANNEL_FLAGS[SW] == "enable_swift_metadata_naming"
     assert FC.K4_CHANNEL_FLAGS[RT] == "enable_rtti_naming"

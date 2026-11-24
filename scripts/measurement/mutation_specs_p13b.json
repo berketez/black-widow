@@ -62,7 +62,7 @@
       "desc": "BORU-14 a: run_name_merger kanalları yine beslemez",
       "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
       "test": "tests/test_p13b_kanallar.py::test_run_name_merger_feeds_pdb_channel_when_flag_on",
-      "find": "            k4=k4_inputs(ctx, functions_json),\n",
+      "find": "            k4=k4,\n",
       "replace": "            k4=None,\n"
     },
     {
@@ -174,8 +174,8 @@
       "desc": "RTTI üreticisi yokken yine 'sınıf bulunamadı'",
       "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
       "test": "tests/test_p13b_kanallar.py::test_disabled_producer_and_unwired_rtti_are_not_reported_as_no_data",
-      "find": "    if rtti_status is None:\n",
-      "replace": "    if rtti_status is None and False:\n"
+      "find": "    if durum is None:\n",
+      "replace": "    if durum is None and False:\n"
     },
     {
       "id": "p13b_k4_bn_kapali",

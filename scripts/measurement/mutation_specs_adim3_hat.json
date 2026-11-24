@@ -262,8 +262,8 @@
    "desc": "KS-1 main tohumundan önce çağrılır (tasarım §5.4 satır 7): main adı ikinci anahtara düşer",
    "module": "karadul/stages.py",
    "test": "tests/test_main_gnulib_seed_ordering.py::TestSeedKs1Order::test_priority_order",
-   "find": "        self._recover_main_from_entry(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n        _bg.apply_binding(extracted_names, kesin, meta, stats)\n",
-   "replace": "        _bg.apply_binding(extracted_names, kesin, meta, stats)\n        before = dict(extracted_names)  # mutant: KS-1 önce\n        self._recover_main_from_entry(extracted_names, static_dir, stats)\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n"
+   "find": "        self._recover_main_from_entry(extracted_names, static_dir, stats,\n                                      getattr(context, \"config\", None))\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n        _bg.apply_binding(extracted_names, kesin, meta, stats)\n",
+   "replace": "        _bg.apply_binding(extracted_names, kesin, meta, stats)\n        before = dict(extracted_names)  # mutant: KS-1 önce\n        self._recover_main_from_entry(extracted_names, static_dir, stats,\n                                      getattr(context, \"config\", None))\n        _bg.mark_changed(meta, before, extracted_names, _bg.KIND_MAIN)\n"
   },
   {
    "id": "stages_ks1_gnulib_den_sonra",
