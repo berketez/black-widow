@@ -141,3 +141,65 @@ Dış girdiden kalıp derleyen yer (not): `yara_scanner.py:372` / `:1591` YARA k
 - Kapsam `karadul/` tamamı + `ui/server.py` (BA-1: `reconstruction/` + `pipeline/steps/`). Sabit kalıp **1 509** (BA-1 kapsamında 1 073), derlenemeyen 0; durağan aday 61 kalıp (iç içe 61, örtüşen seçenek 8, kesişimli), zincir 138.
 - **H5: yeni üstel kalıp 0** (ilk ölçüm). Kapının hızlı doğrulaması da güçlü girdiyle sınıflama da 0 üstel; şablonlar ve içe aktarma anı taraması da 0. Onarılacak ya da yama bırakılacak dosya çıkmadı: **yama 0**. "Dokunma" listesindeki dosyalar (`block_annotator.py` dahil) tarandı, bulgu yok.
 - BA-1 kapsamı dışından gelen 22 aday: polinom 8 (`analyzers/bindiff.py:98`, `analyzers/go_demangler.py:125`, `analyzers/java_binary.py:760`, `analyzers/python_binary.py:117`, `analyzers/signature_db.py:426`, `quality/metrics/local_vars.py:95`, `quality/metrics/type_quality.py:86`, `:94`); güvenli 14 (`go_binary.py` 73 / 82 / 547, `go_demangler.py` 87 / 111, `java_binary.py` 83 / 88, `dotnet_binary.py:874` (sınırda), `signature_db.py:3397`, `swift_binary.py` 84 / 87 / 102, `deobfuscators/string_decryptor.py:105`, `anti_debug_detector.py:389` (bytes)).
+
+## Polinom listesi — gerçek veride en kötü süre (hüküm 2 / 7) (13:34 – 13:47)
+
+Araç `ozet/polinom_gercek.py` (her kalıp ayrı çocuk süreçte, 20 sn ilerleme bekçisi; hiçbiri kesilmedi). Derlem: S8'in 8 çalışma alanı (`urun-onarim-a62f15e`) + Ollama (`ANA/ollama_ustveri`); dört birim: `deobfuscated/decompiled/*.c` satırları (`strip`), aynı dosyaların tam içeriği, `ghidra_strings.json` dizgileri, işlev adları. Kalıbın üründe hangi birime uygulandığına bakılmadı, dördü de denendi: **üst sınır**. Yük altında (load 17–34). Ham `ozet/polinom_gercek.json` (+ `_ek`: `semantic_namer.py:389`, üçüncü sınıflama koşusunda polinoma geçtiği için ayrıca).
+
+| kalıp | satır | dosya | dizgi | ad |
+|---|---:|---:|---:|---:|
+| `analyzers/bindiff.py:98` | 0,40 ms | 3,1 ms | 6,0 ms | 0,02 ms |
+| `analyzers/go_demangler.py:125` | 0,30 ms | 0,02 ms | 0,01 ms | 0,01 ms |
+| `analyzers/java_binary.py:760` | 1,2 ms | 16 ms | 14 ms | 0,01 ms |
+| `analyzers/python_binary.py:117` | 48 ms | **1,04 sn** | **10,3 sn** | 9,5 ms |
+| `analyzers/signature_db.py:426` | 1,5 ms | 16 ms | 37 ms | 0,04 ms |
+| `quality/metrics/local_vars.py:95` | 1,8 ms | 0,2 ms | 7,4 ms | 0,12 ms |
+| `quality/metrics/type_quality.py:86` | 0,8 ms | 0,2 ms | 3,1 ms | 0,03 ms |
+| `quality/metrics/type_quality.py:94` | 1,5 ms | 1,4 ms | 6,9 ms | 0,02 ms |
+| `reconstruction/binary_name_extractor.py:185` | 3,4 ms | 3,1 ms | 14 ms | 0,06 ms |
+| `reconstruction/binary_name_extractor.py:2745` | 0,22 ms | 52 ms | 6,8 ms | < 0,01 ms |
+| `reconstruction/binary_name_extractor.py:2752` | 0,10 ms | 78 ms | 6,4 ms | 0,02 ms |
+| `reconstruction/binary_name_extractor.py:2759` | 0,65 ms | 77 ms | 2,6 ms | < 0,01 ms |
+| `reconstruction/c_flow_simplifier.py:147` | 9,6 ms | 5,1 ms | 30 ms | 0,02 ms |
+| `reconstruction/c_namer.py:1503` | 0,12 ms | 3,0 ms | 5,5 ms | < 0,01 ms |
+| `reconstruction/c_type_recoverer.py:440` | 0,24 ms | 0,01 ms | 0,02 ms | 0,01 ms |
+| `reconstruction/engineering/semantic_namer.py:389` | 42 ms | 0,94 sn | **10,8 sn** | 0,04 ms |
+| `reconstruction/engineering/struct_recovery.py:713` | 0,36 ms | 0,19 ms | 0,39 ms | < 0,01 ms |
+| `reconstruction/engineering/struct_recovery.py:724` | 0,11 ms | 1,3 ms | 0,39 ms | < 0,01 ms |
+| `reconstruction/engineering/struct_recovery.py:737` | 0,49 ms | 1,9 ms | 0,38 ms | < 0,01 ms |
+| `reconstruction/engineering/struct_recovery.py:748` | 0,26 ms | 0,64 ms | 0,41 ms | 0,01 ms |
+| `reconstruction/engineering/struct_recovery.py:777` | 0,23 ms | 0,10 ms | 6,0 ms | 0,01 ms |
+| `reconstruction/recovery_layers/formula_extractor.py:2430` | 15 ms | 0,33 sn | **4,05 sn** | 0,04 ms |
+| `reconstruction/string_intelligence.py:102` | 4,3 ms | 0,17 sn | **5,2 sn** | 0,01 ms |
+| `reconstruction/string_intelligence.py:110` | 0,07 ms | 2,5 ms | 1,1 ms | 0,01 ms |
+| `reconstruction/xtride_typer.py:633` | 0,57 ms | 1,2 ms | 5,8 ms | 0,01 ms |
+
+**> 1 sn olanlar (ayrıca işaret; onarım bu paketin kapsamı dışında):** dördü de aynı girdide: Ollama'nın `ghidra_strings.json`'ındaki **1 352 968 karakterlik tek dizgi**.
+- `analyzers/python_binary.py:117` (`_PYC_MODULE_PATTERN`) — dizgide 10,3 sn, en büyük C dosyasında 1,04 sn. Üründe `_extract_embedded_modules` bu kalıbı **ikilinin tamamının** `ascii` çözülmüş metnine `finditer` ile uyguluyor: gerçek girdi bu derlemdeki her birimden büyük. Bu yolun Python ikilisi olmayan bir hedefte çağrılıp çağrılmadığı ölçülmedi.
+- `reconstruction/string_intelligence.py:102` (C++ assert biçimi) — dizgide 5,2 sn. Bu modülün birimi zaten ikili dizgileri: **gerçek kullanımda erişilebilir** (çağrı yolu ölçülmedi).
+- `reconstruction/engineering/semantic_namer.py:389` — dizgide 10,8 sn, tam C dosyasında 0,94 sn; üründeki birim C bildirimi (satır: 42 ms).
+- `reconstruction/recovery_layers/formula_extractor.py:2430` (Horner) — dizgide 4,05 sn, tam C dosyasında 0,33 sn; üründeki birim C kodu.
+
+Ayrıca yüksek dereceli (düşmanca girdide kübik ve üstü): `binary_name_extractor.py` 2745 (800 karakterde 2,2 sn), 2752 / 2759 (800 karakterde > 3 sn); gerçek veride en kötü 52 / 78 / 77 ms (Ollama'nın 212 KB'lık C dosyası).
+
+## Hipotezler (ön kayıt `17b415a3`; eşikler değişmedi)
+
+| H | ön kayıt | ölçülen | sonuç |
+|---|---|---|---|
+| H1 | iki kalıbın BA-1 düşmanca girdileri ≤ 0,1 sn | `_ZN` 3,6 µs (eski: 28 tekrarda 5 sn'de bitmedi), `_LINKED_LIST_RE` 6,5 µs (eski: 30 karakterde 1,60 sn) | **TUTTU** |
+| H2 | gerçek girdide eski ↔ yeni farklı 0; her kalıp ≥ 200 girdi ya da "N kez denendi" | `_LINKED_LIST_RE`: 80 537 dosya, farklı 0; `_ZN`: gerçek veride 0 kez denendi (çağıranın koşulunu geçen ad 0) | **TUTTU** |
+| H3 | S8 8 ikili ad haritası önce ↔ sonra bayt eşit 8 / 8 | 8 / 8 | **TUTTU** |
+| H4 | 39 adaydan üstel (ilk ölçüm) | 0 (polinom 17, güvenli 22, doğrulanamadı 0) | ilk ölçüm |
+| H5 | genişletilmiş taramada yeni üstel (ilk ölçüm) | 0 (1 509 sabit + 118 şablon + 4 195 içe aktarma anı kalıbı) | ilk ölçüm |
+| H6 | kapı testi ≤ 60 sn; istisna listesi boş | 5,2 sn (ağır yükte 20,5 sn); istisna 0 | **TUTTU** |
+
+## Ana oturumun bilmesi gerekenler
+
+- **GS-1 için:** statik kapı yalnız `re.` ile derlenen ve AST'de ya da içe aktarma anında görülen kalıpları kapsar. Görmediği üç sınıf: (1) çalışma anında dış girdiden derlenen kalıp (`yara_scanner.py:372` / `:1591`, `lm/protocol.py:324` şema `pattern`'i); (2) işlev içinde kurulup değişkenle geçirilen kalıp (taranamayan 28, özellikle `binary_intelligence.py` gösterge kaynakları); (3) polinom kalıbın çok büyük girdide uzun sürmesi (yukarıdaki dört > 1 sn; 1,35 MB'lık tek dizgi). Bu üçü için tek koruma süreç dışı kesme (A-36 katman 3). SIGTERM davranışı bu pakette ölçülmedi (bu paketin bütün kesmeleri SIGKILL). GS-1'in kesme ölçümü için hazır, Ghidra'sız bir uzun eşleşme girdisi: Ollama'nın 1,35 MB'lık dizgisi + `python_binary.py:117` (≈ 10 sn, yük altında).
+- **HZ-7a için:** `c_namer.py`'de bu paket yalnız `_try_demangle_cpp`'deki kalıp satırına dokundu (3441 → 3445, dört satır yorum); `_strategy_dataflow` / `_strategy_local_var_naming`'e dokunulmadı. `c_namer.py:1503` (yerel bildirim kalıbı; polinom, gerçek veride en kötü 5,5 ms) HZ-7a'nın değiştirebileceği bölgeye yakınsa kapı (`tests/test_kalip_denetimi.py`) yeni yazımı denetler.
+- `_ZN` kalıbı gerçek veride hiç denenmedi (Ghidra C++ adlarını çözülmüş veriyor; 120 çalışma alanında `_Z` ile başlayan işlev adı 0). Onarım yine de doğru (eşdeğerlik ve süre sınamalarıyla), ama `_try_demangle_cpp` bugün ölü yol olabilir: ölçülmedi.
+- Kapıya yeni üstel kalıp eklenirse tam takım kırmızı olur; yanlış alarmda kalıp `ISTISNALAR`'a gerekçe ve ölçülen süreyle girer, `tests/test_kalip_denetimi.py`'deki `BEKLENEN_ISTISNA_SAYISI` birlikte artar.
+- Kapı Python'un iç modüllerini (`re._parser`, `re._constants`) kullanıyor: Python iç değişikliğinde test kırılabilir (ürün değil).
+- Sınıflama ölçüme dayalı ve yük altında: üç koşuda iki aday sınırda gidip geldi (`semantic_namer.py:389`, `dotnet_binary.py:874`). Kapının üstel ölçütü (40 → 80'de 64 kat ya da 1 sn ya da bekçi) ile polinom arasındaki boşluk geniş; kapı kararı bu kararsızlıktan etkilenmedi (beş bilinen kusurlu kalıp her koşuda üstel, onarılmışlar her koşuda değil).
+- H3 için "sonra" kolu `git worktree add` yerine `urun-534e252b`'nin kopyası + bu dalın iki dosyasıyla kuruldu (`BA2/agac_sonra`; ajan izolasyonu dış yola git işlemini reddetti); `diff -rq` ile bu dalın `karadul/`'u ile aynı olduğu denetlendi.
+- Takım tartışma dosyasına (`~/.claude/team-state/discussion.md`) yazılmadı: gönderim yalnız listelenen dosyalara yazma izni veriyor.
