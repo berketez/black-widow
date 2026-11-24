@@ -83,6 +83,26 @@ Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.
 - 2. tur kuyruk: yuva 1'i PUV6b ardışık çağrılarla tuttu (13:49–14:11 HZ2 bekledi); ana oturumun Ollama koşusu 14:11:45'te bitince S8 yuva 2'de başladı (14:11:46). Ara sonuç: cat **eşit**; sort **eşit** (`scan_mode` dışında; BSim dosyaları dahil; sorgu ingest yöneticisini kullandı: sorgu adımı 2,607 → **0,289 sn**, ingest 2,776 → 3,209 sn; yük altında).
 - **13:50 — bekliyorum (2. tur):** sürücü yeniden başladı (`urun-068be1fd`, ayrı kök `…/HZ2/s8`): S8 (8) → H2 (cat, zstd) → T25. Yuva 1'de PUV6b ile sıra, yuva 2'de ana oturumun Ollama koşusu. TAHMİNİ: S8 14:20–14:40, H2 14:30–14:50, T25 ancak 14:52'den önce başlarsa (15:12'de süre sınırı), değilse "kalan".
 
+## Kalem 9b — S8 2. tur (kod `068be1fd`; H1)
+
+- Koşu: ürün ağacı `urun-068be1fd`, kökte `karadul.yaml` = `ayar/s8_acik.yaml` (`bsim.paralel_tarama: true`; öbürleri main öntanımı), sürücü `betik/kos_hepsi.zsh` (ikili başına bir kuyruk çağrısı, `urun_kos.py --zaman-asimi 2400`), sıra ORTAK_D0 §6, tek kök `…/HZ2/s8`, koşuya özel boş `KARADUL_CACHE_DIR` (`…/HZ2/s8/cache`). 14:11:46–14:31:25, 8 / 8 çıkış 0, yuva 2; koşu başında 1 dk yük 9,1–18,4 (**yük altında**).
+- Kıyas: taban `ANA/s8_taban_534e252b` ↔ `HZ2/s8`, ham (`s8_esitlik.ikili_kiyasla`, `HARIC_ALANLAR` = zaman alanları); ek olarak yalnız `bsim_detail.scan_mode (yalnız sonra)` birimi düşüldü (`betik/analiz.py` → `ozet/hz2_ozet.json` `H1`).
+
+| İkili | JSON farklı / dosya | `.c` farklı / dosya | ad haritası farklı / dosya | `ghidra_status` eski alan | `pcode.jsonl` | BSim (sonra) | ingest sn (taban → sonra) | sorgu sn (taban → sonra) |
+|---|---|---|---|---|---|---|---|---|
+| debian/coreutils/cat | 0 / 23 | 0 / 296 | 0 / 3 | 0 | eşit | `atlandi`, 0 / 0 | 1,458 → 3,617 | 0,216 → 0,228 |
+| debian/coreutils/sort | 0 / 23 | 0 / 625 | 0 / 3 | 0 | eşit | `ok`, 244 / 180 | 2,776 → 3,209 | 2,607 → 0,289 |
+| debian/tree/tree | 0 / 23 | 0 / 250 | 0 / 3 | 0 | eşit | `ok`, 119 / 50 | 1,662 → 3,480 | 1,674 → 0,263 |
+| debian/sqlite3/sqlite3 | 0 / 23 | 0 / 1 144 | 0 / 3 | 0 | eşit | `ok`, 429 / 95 | 5,429 → 6,185 | 5,324 → 0,391 |
+| debian/htop/htop | 0 / 23 | 0 / 1 148 | 0 / 3 | 0 | eşit | `ok`, 609 / 188 | 3,336 → 3,830 | 3,091 → 0,218 |
+| debian/tmux/tmux | 0 / 23 | 0 / 2 588 | 0 / 3 | 0 | eşit | `ok`, 1 920 / 384 | 11,845 → 7,129 | 12,728 → 0,793 |
+| debian/zstd/zstd | **2 / 23** (`decompiled.json` ve `static/ghidra_decompiled.json`: `functions[].pcode_ops` 6 yaprak) | **1 / 1 444** (`FUN_001063c0.c`) | **2 / 3** (`ws/reconstructed/src{,_iter1}/naming_map.json`; `out/naming_map.json` eşit) | 0 | **farklı** | `ok`, 1 086 / 561; BSim dosyaları eşit | 32,739 → 8,935 | 42,652 → 0,706 |
+| mac/tmux | 0 / 23 | 0 / 2 821 | 0 / 3 | 0 | eşit | `ok`, 2 588 / 1 385 | 19,274 → 6,639 | 19,775 → 1,186 |
+
+- **BSim dosyaları** (`bsim_matches.json`, `bsim_shadow.json`, `static/ghidra_bsim.json`): `scan_mode` dışında **8 / 8 eşit** (eşleşme listesi, sayaçlar, `query_mode: batch`, dışlama sayaçları dahil). `scan_mode` 8 / 8 `parallel`; `scan_fallback_error` / `scan_sayac` hiçbirinde yok.
+- **zstd farkı:** `FUN_001063c0.c`'de iki geçici değişkenin yer değiştirmesi (`iVar11 = (int)local_180; iVar12 = local_180._4_4_;` ↔ tersi, ve çağrıdaki sıra) — ön kayıtta yazılı bilinen kendiliğinden fark (P16e: 6 koşunun 1'i). Decompile adımı BSim'den önce koşar ve bu paket ona dokunmaz; kural gereği zstd paralel açık bir kez daha koşuluyor (aşağıda).
+- Süreler "yük altında"; taban (ANA, 13:10–13:35) ile sonra aynı anda koşmadı → oran hükmü yok (yalnız yön): küçük ikililerde (≤ ~600 fonksiyon) ingest paralel yolda daha YAVAŞ (işçi açılışı), büyüklerde hızlı (zstd 3,7×, mac/tmux 2,9×); sorgu ingest yöneticisini kullandığı için ikinci tarama yok (sorgu 10–60× kısa).
+
 ## Kalem 11 — tam takım (yamasız)
 
 - 1. koşu (13:35:51–13:47:41, kod `db04064a` = `af7dae70` + belge / tanım): 11 181 geçti / 23 atlandı / 13 kaldı. 12'si `tests/test_hz2_bsim_hizli.py`: tam takımda başka bir test JVM'i başlatmışken `_java_iterator` sahte öğeleri `java.util.ArrayList`'e koyamadı (`TypeError: No matching overloads found for java.util.ArrayList.add(_Func)`) → kalem 9a'daki onarımla (`068be1fd`) giderildi. 13.'sü beklenen `test_p15a_etkisiz`.
