@@ -45,6 +45,25 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/HZ2/` (özetler `ozet/`). 
 - **Taşınan iki ÖL-2 tanımı** (`mutation_specs_ol2.json`): `ol2_ingest_kesilmez` paralel yolun bütçe satırına taşındı (`find` `iptal = self._paralel_tara(gen, funcs, denetci, kalan)` → `replace` `…, None)`: izleyiciye kalan süre verilmez; `test` `tests/test_hz2_bsim_hizli.py::test_ingest_butcesi_izleyicide_kismi_ve_taranan_kisim_eklenir`): **öldü**. `ol2_toplu_cagri_oncesi_denetim_yok`: satır iki tarama yoluna ortak yere kaydı, metni değişmedi → tanım değişmedi, **öldü** (paralel yol karşılığı `hz2_yonetici_yolunda_cagri_oncesi_denetim_yok` da öldü).
 - Eski tanımlar (`bsim.py`'ye bakan): ol2 **33 / 33**, p16b **24 / 24**, p16c **16 / 16** öldü (hata 0); bayatlayan `find` yok; koşu sonunda `git diff` yalnız tanım dosyaları (bsim.py temiz). Günlükler `…/HZ2/mutasyon/{hz2,ol2,p16b,p16c}.log`.
 
+## Kalem 4 ek — yamalı kopyada denetim (ön kayıt dışı)
+
+Worktree DIŞINDA bir kopyada (`…/HZ2/yamali_kopya/`: `karadul/`, `tests/`, `scripts/arge/hiz/`, `docker/measurement/karadul.yaml`, `pyproject.toml`; `patch -p1 < HZ2__config.py.patch`; ağaca uygulanmadı): `bsim.paralel_tarama` öntanımı True iken `test_hz2_bsim_hizli`, `test_ol2_bsim_kosul`, `test_p16b_bsim`, `test_p16c_bsim_toplu`, `test_bsim`, `test_hz1_olcum_kancasi`, `test_ol2_adim_butcesi`, `test_p15a_etkisiz`, `test_bayrak_on_paketi`: **335 geçti / 13 atlandı / 0 kaldı**. Yama başka test dosyası yaması gerektirmiyor (bu dokuz dosyada).
+
+## Kalem 7 — fizibilite (tek küçük Ghidra koşusu; kuyruk `HZ2 fizibilite:sqlite3`, yuva 1, 13:37:26–13:38:15; 1 dk yük 20,2 → 20,8: **yük altında**)
+
+Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.open_program(analyze=True)`; ayrı depo `…/HZ2/fizibilite/is/depo`). Sonuç `ozet/fizibilite.json`. Debian sqlite3, 429 gerçek fonksiyon.
+
+| Deney | Ölçülen |
+|---|---|
+| Sayaçlı izleyici (gerçek Ghidra) | kuruldu: `TimeoutTaskMonitor` + yansımayla `BasicTaskMonitor`; sayaç **okunuyor** (okuyucu 0,1 sn arayla 4 okuma, 0 okunamayan) |
+| A: 0,5 sn bütçeli paralel tarama | 0,521 sn'de **iptal** (`didTimeout` true), istisna yok; ilk 0,42 sn sayaç 0 (işçilerin decompiler süreçleri açılıyor). İptalden sonra `getProgress()` = **429** (iptal edilip atılan işler de "tamamlandı" sayılıyor → `islenen` için sayaç değil yönetici sayımı doğru). Yönetici: **2 imzalı** fonksiyon + 1 imzasız çağrılan tanımı (3); yarım fonksiyon yok |
+| A: kısmi yöneticinin eklenmesi | kabul: `numexe 1`, `numfunc 3` (2 imzalı + 1 çağrılan tanımı); md5 artık depoda (`_exe_already_ingested` true) |
+| D: tekli ↔ paralel tam tarama imzaları | **eşit**: 429 / 429 imza, ad@adres → `LSHVector.calcUniqueHash` farkı **0**; yönetici fonksiyon sayısı 668 / 668. Süre (yük altında, aynı koşu, art arda): tekli 8,836 sn, paralel 6,295 sn (oran 0,71; küçük ikilide işçi açılışı baskın) |
+| B: aynı yürütülebilir için İKİNCİ `InsertRequest` (tam küme) | **reddedildi**: `Skipping -insert- : sqlite3 is already ingested` (`testExecutableDuplication`: kütüphane olmayan aynı md5 → `DatabaseNonFatalException`) |
+| C: `QueryDelete` (md5) + tam `InsertRequest` | silme: 1 yürütülebilir, `funccount 3`; yeniden ekleme **kabul**: `numexe 2`, `numfunc 668` |
+
+**Hüküm (hüküm 5):** "kalanı ekleme" (aynı yürütülebilir için ikinci `InsertRequest`) Ghidra 12.1.2'de **mümkün değil** (ölçüldü ve kaynakta: kütüphane olmayan md5 ikinci kez eklenmez). Bu yüzden tamamlama bu pakette UYGULANMADI; uygulanan: köken kaydında `kismi` işareti + sonraki koşuda `onceki_ingest_kismi` durumu ve WARN. Çalışan aday yol (C): aynı md5'i `QueryDelete` ile silip tam ingest — ÖL-9'a not (aşağıda).
+
 ## Ölçüm
 
 **13:35 — bekliyorum:** ölçüm sürücüsü (`…/HZ2/betik/kos_hepsi.zsh`, arka planda) kuyrukta: fizibilite → H4 (sqlite3) → S8 (8 ikili, paralel açık, tek kök `…/HZ2/s8`) → H2 (cat taze depo, zstd S8'in zstd öncesi deposunun kopyasıyla; kapalı) → T25. Yuva 2'yi ana oturumun Ollama kabul koşusu tutuyor (13:10'dan beri), yuva 1'de OL4 ve PUV6b ile sıra. 1 dk yük 26–56 (**yük altında**). TAHMİNİ bitiş: fizibilite + H4 13:45–13:55; S8 14:25–14:45 (taban S8 yük altında ≈ 30 dk); H2 14:35–14:55; T25 ancak 14:52'den önce başlarsa (süre sınırı 15:12'de biter), değilse "kalan".
