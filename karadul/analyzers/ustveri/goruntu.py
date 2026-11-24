@@ -41,6 +41,10 @@ DURUM_VERI_YOK = "veri_yok"
 DURUM_DESTEKLENMIYOR = "desteklenmiyor"
 DURUM_HATA = "hata"
 GECERLI_DURUMLAR = (DURUM_CALISTI, DURUM_VERI_YOK, DURUM_DESTEKLENMIYOR, DURUM_HATA)
+# Okuyucu ve üretici adımlara özgü iki ek durum (P-ÜV6b: tek tanım; objc / swift / go_pclntab /
+# cpp_rtti_tara buradan içe aktarır). ``GECERLI_DURUMLAR`` görüntünün kendi durumlarıdır, bunları içermez.
+DURUM_TUTARSIZ = "tutarsiz"
+DURUM_KAPALI = "kapali"
 
 # --- biçim adları ------------------------------------------------------------------------
 BICIM_MACHO = "macho"

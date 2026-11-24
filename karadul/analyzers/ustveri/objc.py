@@ -42,6 +42,8 @@ from karadul.analyzers.ustveri.goruntu import (
     DURUM_CALISTI,
     DURUM_DESTEKLENMIYOR,
     DURUM_HATA,
+    DURUM_KAPALI,
+    DURUM_TUTARSIZ,
     DURUM_VERI_YOK,
 )
 
@@ -89,10 +91,8 @@ OBJC_SECTIONS = CLASS_SECTIONS + CATEGORY_SECTIONS + PROTOCOL_SECTIONS
 # dış sınıf bağının ad önekleri (Mach-O C öneki `_` olan ve olmayan yazım)
 CLASS_BIND_PREFIXES = ("_OBJC_CLASS_$_", "OBJC_CLASS_$_", "_OBJC_METACLASS_$_", "OBJC_METACLASS_$_")
 
-# --- durumlar: ortak dördü goruntu'dan (calisti / veri_yok / desteklenmiyor / hata); okuyucu ve
-# üretici adıma özgü ikisi (P-ÜV1 ile aynı adlar) burada ------------------------------------------
-DURUM_TUTARSIZ = "tutarsiz"
-DURUM_KAPALI = "kapali"
+# --- durumlar: altısı da goruntu'dan (calisti / veri_yok / desteklenmiyor / hata + tutarsiz / kapali;
+# P-ÜV6b: tek tanım) ------------------------------------------------------------------------------
 
 # --- yöntem türleri ve kaynakları ----------------------------------------------------------------
 TUR_ORNEK = "-"

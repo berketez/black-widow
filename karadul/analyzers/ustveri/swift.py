@@ -62,14 +62,14 @@ from karadul.analyzers.ustveri.goruntu import (
     DURUM_CALISTI,
     DURUM_DESTEKLENMIYOR,
     DURUM_HATA,
+    DURUM_KAPALI,
+    DURUM_TUTARSIZ,
     DURUM_VERI_YOK,
 )
 
 logger = logging.getLogger(__name__)
 
-# --- durumlar: ortak dördü goruntu'dan; okuyucu ve üretici adıma özgü ikisi (objc.py ile aynı adlar) ---
-DURUM_TUTARSIZ = "tutarsiz"
-DURUM_KAPALI = "kapali"
+# --- durumlar: altısı da goruntu'dan (tutarsiz / kapali dahil; P-ÜV6b: tek tanım) ---------------------
 
 # --- bağlam türleri (MetadataValues.h ContextDescriptorKind) --------------------------------------
 KIND_MODULE = 0

@@ -42,6 +42,7 @@ from karadul.analyzers.ustveri.goruntu import (
     DURUM_CALISTI,
     DURUM_DESTEKLENMIYOR,
     DURUM_HATA,
+    DURUM_KAPALI,
     DURUM_VERI_YOK,
     KISIM_DUZELTME,
     SEMBOL_DIGER,
@@ -53,8 +54,7 @@ from karadul.config import BinaryReconstructionConfig
 
 logger = logging.getLogger(__name__)
 
-# --- durumlar: ortak dördü goruntu'dan; üretici adıma özgü olan burada (P-ÜV1 / P-ÜV2 ile aynı ad) ------------
-DURUM_KAPALI = "kapali"
+# --- durumlar: hepsi goruntu'dan (``kapali`` dahil; P-ÜV6b: tek tanım) ------------------------------------------
 
 # --- biçim sabitleri (Itanium ABI §2.9.5; libcxxabi private_typeinfo.h) -----------------------------------------
 TUR_CLASS = "class"
