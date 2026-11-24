@@ -402,7 +402,7 @@ class AnalysisConfig:
     # HZ-3: dinamik decompile dağıtımında parti boyu (0 = bugünkü statik parçalama).
     decompile_parti_boyu: int = 0  # ETKİSİZ: HZ-3 bağlayacak (INERT_SETTINGS)
     # HZ-4a: çağrı grafı / xref / CFG dökümünde tek başvuru geçişi (kapalı = bugünkü döngüler).
-    dokum_tek_gecis: bool = False  # ETKİSİZ: HZ-4a bağlayacak (INERT_SETTINGS)
+    dokum_tek_gecis: bool = True  # okuyan: ghidra/headless.py _analyze_pyghidra (HZ-4a)
     # HZ-4b (koşullu paket): döküm Java yardımcı sınıfıyla üretilir.
     dokum_java_yardimci: bool = False  # ETKİSİZ: HZ-4b bağlayacak (INERT_SETTINGS)
 
@@ -1318,8 +1318,6 @@ INERT_SETTINGS: dict[str, str] = {
     # P-ÜV1 / P-ÜV2 / P-ÜV3 (Dalga 2; üretici adımı okuyan ilk kod; Faz 1 listesine P-ÜV6 ekler)
     # ÖL-3 (Dalga 2)
     "analysis.akis_yazimi": _pending_binding("ÖL-3"),
-    # HZ-4a (Dalga 2)
-    "analysis.dokum_tek_gecis": _pending_binding("HZ-4a"),
     # HZ-3 (Dalga 2)
     "analysis.decompile_parti_boyu": _pending_binding("HZ-3"),
     # ÖL-3b (Dalga 2)
