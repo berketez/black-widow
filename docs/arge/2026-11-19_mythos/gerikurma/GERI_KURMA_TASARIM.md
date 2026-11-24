@@ -1,6 +1,6 @@
 # GK-0 — Geri kurma hattının tasarımı
 
-**Durum: İSKELET (2026-11-24 14:1x).** Bölümler yazıldıkça doldurulur; yarıda kesilirse kalınan yer bu satırdan ve bölüm başlıklarındaki `[YAZILMADI]` işaretinden okunur.
+**Durum (2026-11-24 14:35): §2–§9 yazıldı; §1.3, §1.4, §1.6 yazıldı. Bekleyen: §1.2 (S8 ürün kipi koşusu sürüyor; 5 / 8 çıktı bitti, hepsinde 0 dosya geçti), §1.5 (K1 ön yoklaması koşmadı), §0, Ek A.** Yarıda kesilirse kalınan yer bu satırdan ve `‹…›` / `[YAZILMADI]` işaretlerinden okunur.
 
 Karar: `KARARLAR.md` A-41 (Berke, 2026-11-24). İş emri: `docs/arge/2026-11-23_dalga1/gonderim/GK0.md`. Ölçüm betiği: `scripts/arge/gerikurma/derlenebilirlik.py`. Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/GK0/` (özet `ozet/`).
 
@@ -8,7 +8,77 @@ Bu belge ürün kodu içermez. Ölçülmeyen her sayı "ölçülmedi" ya da "TAH
 
 ## 0. Özet [YAZILMADI]
 
-## 1. Bugünkü durumun ölçümü [YAZILMADI]
+## 1. Bugünkü durumun ölçümü
+
+### 1.1 Yöntem ve künye
+
+- **Betik:** `scripts/arge/gerikurma/derlenebilirlik.py` (commit `0cbac05c`; sha256 `f30a2753…`, koşu künyelerinde tam). Her `.c` dosyasını `clang -fsyntax-only -std=c11 -I<proje>/include -ferror-limit=0` ile dener; nesne dosyası üretmez, hiçbir şeyi çalıştırmaz; girdi köklerine yazmaz.
+- **Derleyici:** `/usr/bin/clang` = Apple clang 21.0.0 (clang-2100.4.1.1), hedef `arm64-apple-darwin27.2.0`. ELF çıktıları da bu ana makine üçlüsüyle derlendi (hedef üçlüsüyle ölçüm GK-A'nın kalemi; etkisi aşağıda `sdk_cakismasi` sınıfı olarak sayıldı).
+- **Girdiler (salt okundu):** S8 tabanının 8 çıktısı (`ANA/s8_taban_534e252b`, ürün `534e252b`) ve dünkü Ollama çıktısı (`ANA/ollama_ba_kapali/out`, ürün `152176b`, üst veri bayrakları açık, blok açıklama ve BSim kapalı).
+- **Kipler:** K = derleyicinin öntanımlı hata kümesi. G = aynı koşuda `[-W…]` etiketi taşıyan (hataya yükseltilmiş uyarı) hatalar sayılmazsa; türetilmiş sütun, ayrı koşu değil. Projenin kendi derleme dosyaları `-std=c11 -w -Iinclude` kullanıyor; **`-w` bu clang sürümünde hataya yükseltilmiş uyarıları susturmuyor**: 20 286 dosyada (önsöz kipi, 9 çıktı) ve 1 089 dosyada (ürün kipi, 4 çıktı) gerçek `-w` koşusunun hükmü ve hata sayısı K ile birebir aynı. Yani "projenin kendi bayraklarıyla" sütunu = K sütunu.
+- **İşlev düzeyi:** işlev sınırı sezgiseldir (üst düzeyde `)` ardından açılan küme ayracı); iki sayı verilir: "dosyası geçen işlev" (katı) ve "kendi satır aralığında hata olmayan işlev" (gövdesi temiz; başlıktan gelen hatalar hariç). İkincisi derleyicinin hata kurtarmasına bağlıdır, yaklaşık sayıdır.
+- **Hata sınıfı:** derleyicinin iletisinden mekanik (tırnak içi adlar ve sayılar silinir), kaba sınıf + tanımsız adlarda ad ailesi. Dosya başına ilk 400 hata sınıflanır; sayımlar hepsini kapsar.
+- **Süre ve örneklem:** eşzamanlı 4 iş. Ürün kipinde Ollama için tohumu yazılı (20261124) belirlenimci örneklem; ayrıntı 1.2'de. Önsöz kipinde 13 159 dosyanın hepsi (464 sn).
+- **Koşu kökü:** `~/karadul_olcum/runs/dalga1-2026-11-23/GK0/` — `urun_s8/`, `urun_ollama/`, `onsoz/`, `urun_ilk4_dogrula_w/` (ilk düzenin `-w` doğrulamalı dört çıktısı), `yoklama/`, özet `ozet/`.
+
+### 1.2 Ürün kipi: bugünkü `out/src` olduğu gibi
+
+‹ÜRÜN TABLOSU›
+
+### 1.3 Karşı olgu: `types.h` devre dışı, yerine Ghidra temel tip önsözü
+
+"Başlık onarılsa gövdeler ne durumda" sorusunun ölçümü. Projenin `types.h` dosyası başlık korumasıyla (`-D_TYPES_H_`) devre dışı bırakıldı; yerine yalnız Ghidra'nın temel tip adlarını tanımlayan 19 satırlık önsöz verildi (betikte `ONSOZ_METNI`: kurtarılmış tip, işlev bildirimi, p-code işleci **içermez**). **Bu tablo ürün çıktısının derlenebilirliği değildir**; GK-B'nin beklenen etkisinin alt sınır tahminidir (kurtarılmış yapılar geri gelince bir kısım dosya daha geçebilir ya da yeni çakışma çıkabilir: ölçülmedi).
+
+| Çıktı | `.c` (ölçülen / toplam) | işlev | dosya geçer K | dosya geçer G | ayrıştırma hatasız dosya (B0) | işlev: dosyası geçer K | işlev: gövdesi temiz K | gövdesi temiz G | hata K |
+|---|---|---|---|---|---|---|---|---|---|
+| debian/cat | 109 / 109 | 296 | 5 (%4,6) | 39 (%35,8) | 104 (%95,4) | 5 (%1,7) | 49 (%16,6) | 129 (%43,6) | 987 |
+| debian/sort | 247 / 247 | 625 | 32 (%13,0) | 108 (%43,7) | 227 (%91,9) | 32 (%5,1) | 104 (%16,6) | 255 (%40,8) | 3 592 |
+| debian/tree | 120 / 120 | 250 | 8 (%6,7) | 19 (%15,8) | 107 (%89,2) | 8 (%3,2) | 49 (%19,6) | 63 (%25,2) | 2 527 |
+| debian/htop | 613 / 613 | 1 148 | 69 (%11,3) | 290 (%47,3) | 560 (%91,4) | 69 (%6,0) | 191 (%16,6) | 537 (%46,8) | 7 368 |
+| debian/sqlite3 | 434 / 434 | 1 144 | 57 (%13,1) | 186 (%42,9) | 391 (%90,1) | 57 (%5,0) | 268 (%23,4) | 602 (%52,6) | 6 530 |
+| debian/zstd | 1 089 / 1 089 | 1 444 | 164 (%15,1) | 477 (%43,8) | 1 011 (%92,8) | 164 (%11,4) | 238 (%16,5) | 633 (%43,8) | 28 437 |
+| debian/tmux | 1 925 / 1 925 | 2 588 | 243 (%12,6) | 1 027 (%53,4) | 1 851 (%96,2) | 243 (%9,4) | 397 (%15,3) | 1 335 (%51,6) | 19 406 |
+| mac/tmux | 2 590 / 2 590 | 2 821 | 299 (%11,5) | 1 754 (%67,7) | 2 522 (%97,4) | 299 (%10,6) | 306 (%10,8) | 1 764 (%62,5) | 18 958 |
+| **S8 toplam** | 7 127 / 7 127 | 10 316 | 877 (%12,3) | 3 900 (%54,7) | 6 773 (%95,0) | 877 (%8,5) | 1 602 (%15,5) | 5 318 (%51,6) | 87 805 |
+| mac/Ollama | 13 159 / 13 159 | 13 554 | 852 (%6,5) | 1 589 (%12,1) | 3 634 (%27,6) | 852 (%6,3) | 853 (%6,3) | 1 602 (%11,8) | 470 819 |
+
+Bu kipte hataların tamamı `.c` dosyalarının kendi satırlarındadır (başlık kaynaklı 0). Sınıf dağılımı (hata sayısı payı; parantezde sınıfın görüldüğü dosya payı; kaynak `ozet/havuz_onsoz.json`):
+
+| Sıra | S8 havuzu (87 805 hata) | pay | Ollama (470 819 hata) | pay |
+|---|---|---|---|---|
+| 1 | eksik işlev bildirimi, adlı işlev | %24,9 (%60,3) | tanımsız tanımlayıcı, Ghidra yazmaç değişkeni (`in_`, `unaff_`, `register0x…`) | %42,7 (%69,6) |
+| 2 | eksik işlev bildirimi, `FUN_<adres>` | %23,9 (%63,3) | tanımsız tanımlayıcı, `DAT_` / `PTR_` | %16,2 (%61,6) |
+| 3 | tanımsız tanımlayıcı, adlı veri | %18,2 (%24,5) | eksik işlev bildirimi, adlı işlev | %14,2 (%79,8) |
+| 4 | tanımsız tanımlayıcı, `DAT_` / `PTR_` | %15,4 (%28,9) | üye erişimi tip hatası (parça erişimi) | %10,6 (%34,9) |
+| 5 | üye erişimi tip hatası | %4,5 (%3,8) | değer / tip uyuşmazlığı | %4,7 (%58,1) |
+| 6 | değer / tip uyuşmazlığı | %4,3 (%27,6) | tanımsız tanımlayıcı, adlı veri | %3,1 (%71,9) |
+| 7 | eksik işlev bildirimi, p-code işleci | %2,0 (%6,2) | sözdizimi (`expected …`) | %2,5 (%70,0) |
+| 8 | tanımsız tip adı | %1,5 (%1,9) | eksik işlev bildirimi, `FUN_<adres>` | %2,3 (%11,2) |
+| 9 | tanımsız tanımlayıcı, yığın değişkeni | %1,5 (%2,7) | eksik işlev bildirimi, p-code işleci | %1,4 (%18,5) |
+| 10 | sözdizimi (`expected …`) | %1,3 (%4,8) | çağrı tip hatası (argüman sayısı) | %1,1 (%14,6) |
+
+İlk 20 sınıfın tamamı, çıktı başına, `ozet/derlenebilirlik_onsoz.md` ve `ozet/derlenebilirlik_urun_*.md` dosyalarındadır (üçüncü taraf adı içermez: yalnız sınıf ve sayı).
+
+### 1.4 Ölçümün yan bulguları
+
+1. **`.c` dosyaları alt sistem başlıklarını içermiyor.** S8'in ve Ollama'nın bütün `.c` dosyalarındaki `#include` satırları yalnız `"types.h"`'dir (sayıldı: S8'in 8 çıktısında 10 316 / 10 316, Ollama'da 13 554 / 13 554 satır; bu sayılar betiğin sezgisel işlev sayımıyla 9 / 9 çıktıda birebir aynı, yani her işlev kendi `#include` satırıyla geliyor). P18'in tutarlı hâle getirdiği `include/subsystem_*.h` bildirimleri hiçbir derleme birimine girmiyor; 1.3'teki ilk iki sınıfın (S8'de hataların %48,8'i) nedeni budur.
+2. **`types.h` kendi başına derlenmiyor.** Tek başına derlendiğinde hata sayısı: debian/cat 164, debian/zstd 383, Ollama 2 559. Her `.c` dosyası bu hataları yeniden üretir; 1.2'deki "başlıkta" sütunu bunun toplamıdır.
+3. **Kurulan proje uçtan uca derlenmiyor.** `make` / `cmake` koşulmadı (gerek kalmadı): projenin kendi bayraklarıyla tek tek derlenen dosya sayısı her çıktıda 0 olduğundan ilk dosyada durur. Bağlama (B2) bu yüzden ölçülemedi.
+4. **Ana makine SDK'sı ile çakışma** (`+sdk_cakismasi` etiketli sınıflar): `types.h` barındırılan sistem başlıklarını çektiği için hedefin tip adları Mac SDK'sının tanımlarıyla çakışıyor; her dosyanın **ilk** hatası çoğu çıktıda budur. Hedef üçlüsü + `-ffreestanding` ile ölçüm GK-A'da.
+5. **G sütunu yanıltıcı iyimserdir** (§2.2): önsöz kipinde S8'de K ile %12,3, G ile %54,7 dosya geçiyor; aradaki 3 023 dosya bildirimsiz çağrıyı `int` döndüren işlev sayarak "geçiyor".
+
+### 1.5 Ön yoklama: K1 bugünkü çıktıda kaç işlevde tutuyor? (keşif; ön kayıtsız)
+
+‹YOKLAMA›
+
+### 1.6 Bu turda ölçülmeyenler
+
+- B2 (bağlama) ve B3 (eşdeğerlik; 1.5'teki keşif dışında): ölçülmedi.
+- Hedef üçlüsüyle derleme (ELF çıktıları Linux üçlüsüyle): ölçülmedi.
+- C++ ikilisi, terminal-notifier (ObjC), Swift ikilisi: ölçülmedi. 119'luk setin kalan 111 ikilisi: ölçülmedi.
+- Ara aşamaların (ham Ghidra çıktısı, `reconstructed/…`) derlenebilirliği: ölçülmedi (boru hattının derlenebilirliği artırıp azalttığı bilinmiyor).
+- İşlev başına yalıtılmış birim derlemesi (bugün dosya düzeyi; çok işlevli dosyalarda işlev düzeyi sayı yaklaşık): GK-A.
+- Yerel model: bu tur hiç koşmadı.
 
 ## 2. Boşluk sınıflaması
 
@@ -18,7 +88,7 @@ Bu belge ürün kodu içermez. Ölçülmeyen her sayı "ölçülmedi" ya da "TAH
 
 | Kod | Boşluk | S8 payı (hata; görüldüğü dosya) | Ollama payı | Belirlenimci onarılır mı | Model gerekir mi | Kurtarılamaz mı | Paket |
 |---|---|---|---|---|---|---|---|
-| **A** | Tip başlığı (`types.h`) derlenmiyor: Ghidra temel tip adları tanımsız, enum sabit çakışması ve geçersiz adlar, yapı üyesi ayrıştırma hataları, hedefin sistem tipleri, ana makine SDK'sıyla çakışma | ürün kipinde her dosyanın ilk hatası (§1.2) | aynı | **evet, tamamı** (hepsi üretici hatası; bilgi eksik değil) | hayır | hayır | GK-B |
+| **A** | Tip başlığı (`types.h`) derlenmiyor: Ghidra temel tip adları tanımsız, enum sabit çakışması ve geçersiz adlar, yapı üyesinde tip kategorisi yolu ve typedef gösterimi, hedefin sistem tipleri, ana makine SDK'sıyla çakışma | ürün kipinde her dosyanın ilk hatası (§1.2) | aynı | **evet, tamamı** (hepsi üretici hatası; bilgi eksik değil) | hayır | hayır | GK-B |
 | **B** | Çağrılan işlevin bildirimi yok: adlı işlev (içe aktarım, kurtarılmış ad) %24,9; `FUN_<adres>` %23,9 | %48,8; adlı %60,3, `FUN_` %63,3 dosyada | %14,2 + %2,3 | **evet**: program işlevinin imzası tanımından, içe aktarımınki Ghidra'nın imzasından. İmza kaynağı yoksa (Ghidra `undefined` döndürmüşse) bildirim yazılabilir ama doğruluğu bilinmez | yalnız imzası bilinmeyen içe aktarımda (tip önerisi) | hayır | GK-C |
 | **C** | Veri simgesinin bildirimi yok: `DAT_` / `PTR_` %15,4; adlı veri (içe aktarılan değişken, kurtarılmış genel değişken) %18,2 | %33,6 | %16,2 + %3,1 | **kısmen**: adres ve ad belli; tip Ghidra'nın o adresteki veri tipiyse yazılır, `undefinedN` ise yalnız genişlik bilinir | tip önerisi (yapı mı, dizi mi) | tipin **adı** ve alan adları kurtarılamaz; yerleşim (genişlik, ofset) kullanımından çıkar | GK-C, GK-J |
 | **D** | Ghidra'nın sahte değişkenleri: çözülememiş yazmaç girişi (`in_`, `unaff_`, `extraout_`, `register0x…`), yığın artığı | %0,1 + %1,5 | **%42,7** (dosyaların %69,6'sında; %48'inde ilk hata) | C'de: çoğu yanlış kurtarılmış parametre sayısı / çağrı düzeni → imza onarımı (belirlenimci aday; ölçülmedi). Go'da: dilin çağrı düzeni ve yığın büyütme önsözü → dile özgü uyarlayıcı | imza önerisi | hayır (bilgi ikilide var; decompiler çözememiş) | GK-G, GK-L |
@@ -78,7 +148,8 @@ Denetleyicinin girdisi tek işlevdir; çıktının tamamının derlenmesini bekl
 1. **Birim:** aday işlevin C metni + üretilmiş **birim önsözü**: o işlevin kullandığı tipler, çağırdığı işlevlerin bildirimleri, başvurduğu veri simgelerinin `extern` bildirimleri (§4 GK-C). Önsöz belirlenimci üretilir; modelin yazdığı metinde önişlemci yönergesi (`#…`) bulunamaz (bekçi kuralı, §5.6).
 2. **Derleme:** hedefin mimarisi ve nesne biçimi için `clang -c`. Bu turda denendi (kendi yazdığım iki satırlık bir C dosyasıyla, hedef kodla değil): `Apple clang 21.0.0` aynı makinede `--target=aarch64-unknown-linux-gnu -ffreestanding` ile ELF aarch64, `--target=x86_64-unknown-linux-gnu -ffreestanding` ile ELF x86-64, `--target=arm64-apple-macos` ile Mach-O arm64 nesne dosyası üretti; `/usr/bin/objdump` ELF aarch64 nesnesini çözdü (`GK0/capraz_deneme/`). Sistem başlıkları gerekmediği için (`-ffreestanding` + kendi önsözümüz) Linux hedefinde sysroot gerekmez. Bağlama (B2) için hedef kitaplıkları gerekmez: yalnız yeniden yerleştirilebilir bağlama yapılır.
 3. **Derleyici profili:** özgün derleyici ve bayraklar bilinmediğinden birim küçük bir profil kümesiyle derlenir (öneri: `clang` `-O0`, `-O1`, `-O2`, `-Os`, `-O3`; makinede Homebrew GCC 16.2.0 var ama yalnız Mach-O hedefli, ELF için GCC çapraz derleyicisi yok → ELF'te GCC profili bugün kurulamaz, "ölçülemedi" yazılır). Karşılaştırıcılar her profile uygulanır; biri geçerse işlev geçer ve geçen profil kayda yazılır. Profil sayısı yanlış kabul fırsatını çoğaltır: ölçüm (3.4) aynı profil kümesiyle yapılır, eşik o kümeyle birlikte geçerlidir.
-4. **Güvenlik:** derleme hedef kodu çalıştırmaz. Modelin yazdığı metni derlemek ayrı bir risktir (dosya içerme, derleyici eklentisi): önsöz dışında önişlemci yönergesi yasak, `-nostdinc` + yalnız kendi önsöz dizini, derleme `sandbox-exec` ile ağ kapalı ve yazma yalnız koşu dizinine (KİMLİK V1 derlemesindeki düzenin aynısı; `kimlik/PK-6.md` "V1 derlemesi"). Derlemeyi model değil denetleyici başlatır: KaradulLM'in araç kayıt defterinde süreç başlatan araç yine yoktur (`2026-11-18_karadullm_v2/TASARIM.md` §3.9).
+4. **Tanımsız davranış:** decompiler çıktısı C standardına göre tanımsız davranış içerir (işaretli taşma, tip üstünden erişim, işaretçi ↔ tamsayı). Derleyici bunları makine anlamından farklı derleyebilir. Bu yüzden (a) birim her profilde `-fwrapv -fno-strict-aliasing -fno-delete-null-pointer-checks` ile derlenir (makine anlamına en yakın C), (b) B3 hükmü **o profille derlenmiş nesne** için verilir ve profil etikette yazar; "kaynak metni her derleyicide eşdeğerdir" iddiası yapılmaz.
+5. **Güvenlik:** derleme hedef kodu çalıştırmaz. Modelin yazdığı metni derlemek ayrı bir risktir (dosya içerme, derleyici eklentisi): önsöz dışında önişlemci yönergesi yasak, `-nostdinc` + yalnız kendi önsöz dizini, derleme `sandbox-exec` ile ağ kapalı ve yazma yalnız koşu dizinine (KİMLİK V1 derlemesindeki düzenin aynısı; `kimlik/PK-6.md` "V1 derlemesi"). Derlemeyi model değil denetleyici başlatır: KaradulLM'in araç kayıt defterinde süreç başlatan araç yine yoktur (`2026-11-18_karadullm_v2/TASARIM.md` §3.9).
 
 ### 3.3 Karşılaştırıcılar (hüküm 4'ün adayları)
 
@@ -101,6 +172,7 @@ Denetleyicinin girdisi tek işlevdir; çıktının tamamının derlenmesini bekl
 - Karşılaştırılan gözlenebilirler: dönüş yazmaçları, giriş yığın işaretçisinin üstüne ve yığın dışına yapılan yazmalar, çağrı izi. Yığın çerçevesinin içi karşılaştırılmaz (derleyiciye göre değişir).
 - Girdi vektörleri: sınır değerleri (0, 1, −1, en büyük / en küçük, işlevdeki sabitler ve ±1 komşuları) + tohumlu rastgele; N ve tohum ön kayıtta yazılır.
 - Sistem çağrısı / kesme komutu, dolaylı dallanmanın bilinmeyen hedefe gitmesi, adım sınırı → `hükümsüz`.
+- Bilinen güçlükler (GK-E'nin ilk kalemleri; hiçbiri ölçülmedi): (1) yeniden derlenen birimin dizgi ve sabit havuzu başka adrestedir → işaretçi değerleri doğrudan karşılaştırılamaz; sabit veriye bakan işaretçiler gösterdikleri içerikle kanonikleştirilir; (2) yapı döndürme ve kayan nokta / vektör yazmaçları gözlenebilir kümesine girer; (3) dönmeyen çağrılar (`abort`, `exit` türü) izde son olaydır; (4) yığın koruması ve dal koruması komutları (Debian arm64 ikililerinde işlev girişinde `paciasp` görüldü) derleyici bayrağına bağlıdır, gözlenebilir değildir; (5) dolaylı çağrının hedefi izde değer olarak karşılaştırılır; (6) özgün işlevin başka bir işlevin ortasına atlaması (kuyruk birleştirme) → `hükümsüz`.
 
 **"Çalıştırma yasağı" ve öykünme (karar maddesi K-2, §9):** P-code öykünmesinde hedefin hiçbir komutu işlemcide koşmaz; komutlar JVM içinde yorumlanır, bellek bir kopyadır, dış çağrı ve sistem çağrısı yürütülmez. Önerim: bu, "hedef ikili çalıştırılmaz" kuralının kapsamı dışında sayılsın, şu koşullarla yazılı olarak: (1) yalnız yorumlama (yerel koda çeviri, hata ayıklayıcı, süreç başlatma yok); (2) tek işlev, yalıtılmış; (3) dış çağrı ve sistem çağrısı hiçbir zaman yürütülmez; (4) adım, bellek ve süre bütçesi; (5) durağan sınama: denetleyici kodunda süreç başlatan tek çağrı derleyici ve Ghidra'dır. Karar Berke'nindir; kabul edilmezse B3 yalnız K1 + K3 ile verilir (kapsam ölçülmedi; daha dar olacağı kesin).
 
@@ -152,6 +224,7 @@ Hüküm 3: motor LLM'siz kalır, tek başına koşar ve tek başına ölçülür
 | **D4** Tip birleştirme | Aynı simgenin birimler arasında farklı tiple görünmesi; çağıran ↔ tanım imza farkı; yapı alanı çakışmaları | `pipeline/steps/struct_recovery.py`, `type_recovery_consumer.py`, `reconstruction/type_inferrer.py`, `computation/struct_recovery/solver.py` (kısıt çözücüyle yapı yerleşimi) | GK-H (ölçer), sonra GK-G / ayrı kalem (onarır) |
 | **D5** Bağlama denetimi | Çift tanım, çözülmeyen simge, içe aktarım tablosuyla mutabakat | `_load_thunk_addresses` (içe aktarım taslakları `src/import_thunks/`'ta ayrı; P18 kalem 4) | GK-H |
 | **D6** Derleyici profili | Özgün derleyici / bayrak tahmini (K1 kapsamı için) | Üründe genel bir derleyici tespiti **yok** (bakıldı: yalnız `analyzers/delphi_binary.py` ve `reconstruction/reference_populator.py`'de dar kullanımlar). İlk sürüm: sabit profil kümesi (§3.2); geçen profilin sayımı ikili başına tek profile yakınsıyorsa sonraki işlevlerde o profil önce denenir (ölçülen sıklıkla, uydurma etiketle değil) | GK-D |
+| **D8** Veri bölümlerinin taşınması | Geri kurulan kod özgün verisine (`.data`, `.rodata`, sabit dizgiler, işlev işaretçisi tabloları) muhtaçtır; bugün çıktı yalnız kod içerir, veri simgeleri bildirimsiz adreslerdir | Baytlar ikilide; veri içindeki işaretçilerin (yeniden yerleştirme) simgeye çevrilmesi gerekir. Üründe karşılığı **yok** (bakıldı: `c_project_builder.py` yalnız kod birimi yazar) | GK-H (ölçer: kaç veri simgesi bölüme düşüyor), sonra ayrı kalem |
 | **D7** Dil çalışma zamanı bildirimleri | ObjC ileti gönderimi, Go / Swift çalışma zamanı çağrıları, C++ adlarının C'de yazılamaması | Üst veri okuyucuları (`karadul/analyzers/ustveri/`; main'de), `analyzers/cpp_rtti.py`, ayıklayıcılar | GK-L |
 
 İlkeler:
@@ -361,7 +434,7 @@ Yaratıcılık protokolünün (CLAUDE.md §29) dört kuralı için tek satır: (
 ### 8.2 GK-B — `types.h` onarımı (Opus; bugün; `c_project_builder.py` zincirinin başı)
 
 - **Amaç:** §1.3'ün bulgusu: her çıktıda bütün hataların büyük çoğunluğu ve her dosyanın ilk hatası `types.h`'den geliyor; başlık derlenmediği için hiçbir dosya derlenmiyor.
-- **Kalemler (hepsi §1.3'te ölçülmüş sınıflar):** (1) Ghidra'nın temel tip adları (`byte`, `word`, `dword`, `qword`, `uint`, `ulong`, `ushort`, `longlong`, …) `GHIDRA_TYPEDEF_LINES`'a; (2) enum sabit adları: geçersiz tanımlayıcı (eksi işaretli değerden üretilen ad) ve enum'lar arası çakışan sabit adı (`c_type_recoverer.py`'de `VAL_<değer>` üretimi) → sabit adı enum adıyla öneklenir, geçersiz karakter çevrilir; (3) kurtarılan yapıların üye bildirimlerindeki ayrıştırma hataları (üye adı tip adıyla aynı, saklama sınıfı belirteci, yinelenen üye): önce sınıf başına sayım, sonra onarım; (4) hedef platformun kendi sistem tipleri (`__off_t` ailesi): Ghidra'nın tip dökümünde (`static/ghidra_types.json`) tanımı varsa oradan, yoksa "tanımsız tip" olarak **yorumla** yazılır, uydurulmaz; (5) ana makine SDK'sıyla çakışan adlar (`sdk_cakismasi` sınıfı): `types.h` barındırılan başlıkları çekmeyecek biçimde kurulur ve projenin derleme dosyaları (`_build_makefile`, `_build_cmake`, `_build_compile_commands`) hedef üçlüsünü ve `-ffreestanding`'i yazar; (6) derleme dosyalarındaki `-w` bayrağına bu pakette dokunulmaz (karar K-6); ölçülen: bu clang sürümünde `-w` hataya yükseltilmiş uyarıları susturmuyor (§1.1); (7) testler: üretilen `types.h`'nin `clang -fsyntax-only`'den geçtiği, clang yoksa atlanan sınama + mutasyon.
+- **Kalemler (hepsi §1.3'te ölçülmüş sınıflar):** (1) Ghidra'nın temel tip adları (`byte`, `word`, `dword`, `qword`, `uint`, `ulong`, `ushort`, `longlong`, …) `GHIDRA_TYPEDEF_LINES`'a; (2) enum sabit adları: geçersiz tanımlayıcı (eksi işaretli değerden üretilen ad) ve enum'lar arası çakışan sabit adı (`c_type_recoverer.py`'de `VAL_<değer>` üretimi) → sabit adı enum adıyla öneklenir, geçersiz karakter çevrilir; (3) yapı üyesi bildirimlerindeki ayrıştırma hataları — bakıldı, iki üretici kusuru: Ghidra'nın tip kategorisi yolu üye tipinde kalıyor (`/‹kategori›/‹tip› alan;`) ve Ghidra'nın typedef gösterimi üye tipi diye yazılıyor (`typedef ‹A› ‹B› alan;`); ikisi de tipin çözülmüş adıyla yazılır, yinelenen üye adları ayrıca sayılır; (4) hedef platformun kendi sistem tipleri (`__off_t` ailesi): Ghidra'nın tip dökümünde (`static/ghidra_types.json`) tanımı varsa oradan, yoksa "tanımsız tip" olarak **yorumla** yazılır, uydurulmaz; (5) ana makine SDK'sıyla çakışan adlar (`sdk_cakismasi` sınıfı): `types.h` barındırılan başlıkları çekmeyecek biçimde kurulur ve projenin derleme dosyaları (`_build_makefile`, `_build_cmake`, `_build_compile_commands`) hedef üçlüsünü ve `-ffreestanding`'i yazar; (6) derleme dosyalarındaki `-w` bayrağına bu pakette dokunulmaz (karar K-6); ölçülen: bu clang sürümünde `-w` hataya yükseltilmiş uyarıları susturmuyor (§1.1); (7) testler: üretilen `types.h`'nin `clang -fsyntax-only`'den geçtiği, clang yoksa atlanan sınama + mutasyon.
 - **Dosyalar:** `karadul/reconstruction/c_project_builder.py` (yalnız `GHIDRA_TYPEDEF_LINES`, `_build_types_h`, üç derleme dosyası üreticisi), `karadul/reconstruction/c_type_recoverer.py` (yalnız enum sabit adı ve `types.h` metnini üreten işlevler), yeni `tests/test_gk_b_types_h.py`, `scripts/measurement/mutation_specs_gk_b.json`, `gerikurma/GK-B.md`, `GK-B_on_kayit.md`. **Dokunma:** yerleşim ve dosya adlandırma işlevleri (ÇA), `output_formatter.py` (PUV6b).
 - **Ölçüm yolu:** Ghidra'sız yeniden oynatma (P18'in yöntemi: `CProjectBuilder` çalışma alanının `reconstructed/annotated/` girdisiyle yeniden koşar; P18'de `out/src` ile bayt bayt aynı çıktı verdiği gösterildi).
 - **Ön kayıt:** H1: 9 / 9 çıktıda başlık kaynaklı hata 0 (bugün: §1.2 tablosunun "başlıkta" sütunu). H2: ürün kipinde K ile geçen dosya sayısı her çıktıda ≥ bugünkü önsöz kipindeki sayı (§1.3 tablosu); tutmayan çıktı nedenleriyle yazılır, eşik değişmez. H3: `.c` dosyalarının gövdesi ve ad haritası değişmez (S8 8 / 8 bayt eşit; fark yalnız `include/types.h` ve derleme dosyalarında). H4: 119 ikilinin yeniden oynatmasında `types.h` tek başına `clang -fsyntax-only`'den 119 / 119 geçer.
