@@ -257,6 +257,9 @@ def test_rtti_is_not_unmeasured_name_channel_and_swift_is_metadata() -> None:
 def test_objc_row_is_product_level_candidate_measurement_and_wilson_recomputed() -> None:
     from karadul.reconstruction.tarif import baglama
     assert nl.MEASURED_METADATA_PRECISION[nl.SOURCE_OBJC_METHOD][:2] == (33611, 33885)
+    # Swift satırı: H3 (iTerm2, dondurmadan sonra bir kez); A-14 için 1 program → öntanımda kapalı
+    assert nl.MEASURED_METADATA_PRECISION[SW][:2] == (2627, 2627)
+    assert nl.METADATA_MEASURED_PROGRAMS[SW] == ("iTerm2",)
     for src, (k, n, alt) in nl.MEASURED_METADATA_PRECISION.items():
         assert alt == math.floor(baglama.wilson(k, n)[0] * 1e4) / 1e4     # elle yazılmadı
         assert nl.metadata_writes_names(src) is (alt >= nl.AD_ESIGI)

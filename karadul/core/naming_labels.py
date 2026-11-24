@@ -181,17 +181,22 @@ METADATA_CHECK_UNMEASURED = "olculmedi"
 # ``tests/test_puv6a_baglama.py`` ve ``tests/test_puv6b_baglama.py`` kilitler. Bu kaynaklar
 # ``UNMEASURED_SOURCES``'ta değildir. Tabloda olmayan üst veri kanalı ölçülmemiştir: ad yazmaz,
 # kayıtları kanıt satırıdır (``metadata_writes_names``).
-# A-14: öntanımda açılmak için en az 3 bağımsız program gerekir; bugün kanal başına 2 program
-# ölçüldü (Go: docker-cli, docker-compose; ObjC: terminal-notifier, iTerm2) → bayraklar kapalı.
+# Swift: iTerm2 arm64 (``ustveri/P-UV6b.md`` H3: 2 627 doğru / 2 627 aday; kanal kodu dondurulduktan
+# sonra bir kez, aynı yöntemle; GT eşitliği ``swift-demangle`` çıktısıyla birebir).
+# A-14: öntanımda açılmak için en az 3 bağımsız program gerekir; bugün Go ve ObjC'de 2, Swift'te 1
+# program ölçüldü (Go: docker-cli, docker-compose; ObjC: terminal-notifier, iTerm2; Swift: iTerm2)
+# → bayraklar kapalı.
 MEASURED_METADATA_SOURCE = (
-    "docs/arge/2026-11-19_mythos/ustveri/P-UV6a.md H8 (docker-compose, iTerm2)")
+    "docs/arge/2026-11-19_mythos/ustveri/P-UV6a.md H8 (docker-compose, iTerm2), P-UV6b.md H3 (iTerm2)")
 MEASURED_METADATA_PRECISION: dict[str, tuple[int, int, float]] = {
     SOURCE_GO_PCLNTAB: (90077, 90077, 0.9999),
     SOURCE_OBJC_METHOD: (33611, 33885, 0.9909),
+    SOURCE_SWIFT_TYPE: (2627, 2627, 0.9985),
 }
 METADATA_MEASURED_PROGRAMS: dict[str, tuple[str, ...]] = {
     SOURCE_GO_PCLNTAB: ("docker-cli", "docker-compose"),
     SOURCE_OBJC_METHOD: ("terminal-notifier", "iTerm2"),
+    SOURCE_SWIFT_TYPE: ("iTerm2",),
 }
 
 
