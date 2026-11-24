@@ -128,3 +128,66 @@ Yük altında (load 26–28).
 
 Bekleme: ürün koşuları kuyrukta (13:36'da başladı; ANA Ollama kabul koşusu bir yuvayı tutuyor, öbüründe OL4 / HZ2 / BA2
 sırada). TAHMİN bitiş 14:30–15:00; 15:05'e yetişmeyen koşu "kalan" yazılır.
+
+## Kalem 5 — eski mutasyon tanımları ve tam takım
+
+Dokunulan dosyalara bakan tanımlar (kod `3872242`; günlükler `PUV6b/ozet/mutasyon_<ad>.log`, özet
+`PUV6b/ozet/mutasyon_eski.txt`); her koşudan sonra `git diff` temiz:
+
+| Tanım | Sonuç |
+|---|---|
+| puv6a | 20 / 20 öldü |
+| puv3 | 18 / 18 |
+| puv4 | 16 / 16 |
+| p13b (iki find düzeltildi) | 23 / 23 |
+| puv0 | 17 / 17 |
+| puv1 | 19 / 19 |
+| puv2 | 16 / 16 |
+| pk1 | 11 / 11 |
+| puv5 | 15 / 15 |
+| p12a_olculmemis_sayi, p12a_nokta_tahmini (find düzeltildi) | 1 / 1, 1 / 1 |
+| adim3_hat stages_ks1_main_den_once (find düzeltildi) | 1 / 1 |
+| bayrak | 11 öldü, **3 hata**: `m01_bayrak_ontanimi_acik`, `m04_alan_turu_degisir`, `m10_butce_ontanimi_plan_degeri` — üçü de `karadul/config.py`'deki INERT satırlarını arıyor (`oz_ad_verbatim … ÖK-1 bağlayacak`, `ghidra_adim … ÖL-2`, `ingest_butcesi_sn … ÖL-2`); o satırlar ÖK-1 / ÖL-2 yamalarıyla main'de değişti. Bu paketin dosyası değil (config.py'ye yazılmaz): MUTBAKIM'a not |
+
+**Tam takım (yamasız; 13:46–13:58, 717 sn, yük altında, load 9–21; kod `3872242`): 11 193 geçti / 23 atlandı / 0 kaldı**
+(152 seçim dışı). Günlük `PUV6b/ozet/tam_takim.log`. Beklenen `test_p15a_etkisiz` kırmızısı çıkmadı: alan adı
+`K4_CHANNEL_FLAGS` dizgisinde okunuyor, `_reads` öznitelik erişimi arıyor (PUV6a'da da böyleydi); yama uygulanınca
+INERT kaydı kalkar, `test_every_unread_field_is_registered` dizgi değişmezini bulduğu için yine yeşil kalır (yamalı
+kopyada koşulmadı: worktree dışı kopya kurulmadı, gerekçe bu satır). Eksik çalışma verisi bağları (`vendor`, `sigs`,
+`scripts/node_modules`, `sigs_macos_system.json`, `signatures.lmdb`, `signatures_homebrew*.json`) tam takımdan önce
+kuruldu, sonra kaldırıldı.
+
+## Kalem 4 — ürün koşuları (ağaç `~/karadul_olcum/urun-010971e0`: dondurma + Swift tablo satırı)
+
+Sıra sapması (gerekçeli): gönderimdeki sıra "kapalı 5 → açık 6 → terminal-notifier, Rectangle". Kuyruğun bir yuvası
+ANA Ollama koşusunda, öbürü HZ2 / OL4 / BA2 ile paylaşılıyordu; sert sona yetişmeme riskine karşı kabul ölçütünün
+(A-17) sayıları (H6) önce koşuldu. İlk zincir (`urun-d94ee206`, Swift satırı yokken) kuyrukta beklerken durduruldu
+(hiç koşmadı): o ağaçta Swift kanalı tablo satırı olmadığı için ad yazmazdı. Yaml `PUV6b/bayraklar_acik.yaml`: sekiz
+üst veri bayrağı (Go / ObjC / Swift / RTTI üretici + ad) `true`, başka ayar yok. Yamasız dalda
+`enable_swift_metadata_naming` için "etkisiz" uyarısı basılır, değer okunur.
+
+### H6 — hedef seti, bayraklar açık → TUTTU
+
+| İkili | Koşu | Üst veri adı (`naming_map` ∧ `out/src`) | GT'ye göre | `ozgun_ad` dolu / güven tablodan / `kesin` | Kanal sayaçları | Kanıt satırı |
+|---|---|---|---|---|---|---|
+| terminal-notifier (soyulmuş) | 13:45:38–13:46:34 (56 sn) | ObjC **32 / 32** (A-28 31 + adsız 1); Swift `veri_yok`; RTTI `veri_yok` | 32 doğru / 0 yanlış / 0 GT'siz | 32 / 32 / 0 | `objc_method` kayıt 32, `secici_yerine` 31, `tuttu` 1, aday 32 | 0 |
+| Rectangle arm64 (soyulmuş, GT yok, sha256 ilk 12 `a38996c976e1`) | 13:46:34–13:52:40 (366 sn) | Swift **180** (kodda 180); ObjC 127 (kodda 127) | ölçülmedi (GT yok) | Swift 180 / 180 / 0; ObjC 127 / 127 / 0 | `swift_type_accessor` kayıt 186, `tuttu` 180, aday 180, `ad_yazilamaz` 6, `yuva_kanit` 226, `yuva_adressiz` 926; `objc_method` kayıt 450, `secici_yerine` 127, `swift_kopru` 323 | Swift yuva 226 + ad verilemeyen tip 6; ObjC `swift_kopru` 323 |
+
+- terminal-notifier: ObjC adı 32 / 32 kaldı (geriye gitme yok); ad bekleyen 40'ta doğru 1 / 40 (PUV6a ile aynı; c_namer 0
+  + üst veri 1). Güven artık ürün düzeyi ObjC satırından (0,9909).
+- Rectangle: okuyucunun ad verdiği 180 tipin 180'i adlandı (ilk ölçüm). 926 Swift yuvasının adresi yok (uygulama adresi
+  çözülmemiş ya da dış): kanıt satırı olarak yazılmadı, yalnız sayıldı — sonraki paket için not.
+- Adım süreleri (yük altında): terminal-notifier Swift 0,033 / RTTI 0,033 sn; Rectangle Swift 0,299 / RTTI 0,859 sn.
+- Çıktılar `PUV6b/ozet/{urun_terminal-notifier,h6_terminal-notifier,h6_Rectangle,h6_kanit_sayilari}.json`.
+
+### H5 → TUTTU (bu koşularda)
+
+Üst veri kaynaklı hiçbir ad `kesin` taşımıyor (terminal-notifier 0, Rectangle 0); Swift adlarının 180 / 180'i
+`üst veriden`, `ozgun_ad` dolu, güven tablodan (0,9985). Birim testi + mutant `puv6b_etiket_kesin`.
+
+### H1 / H2 — sürüyor
+
+Bekliyorum: S8 kapalı kol (cat, tree, sqlite3 bitti 13:55; zstd, mac/tmux kuyrukta), ardından açık kol 6 ikili ve pzstd
+kapalı kolu. TAHMİN bitiş 14:30–14:55. İlk üç ikilinin ara karşılaştırması (`PUV6b/ozet/h1_ara.json`): `naming_map`
+(out / src / src_iter1) 3 / 3 bayt aynı, `decompiled/*.c` 0 fark, `out/src`'de tek fark `compile_commands.json`
+(mutlak çalışma alanı yolu), iki yeni adımın süresi 0,0 sn.
