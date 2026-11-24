@@ -3438,7 +3438,11 @@ class CVariableNamer:
         burada en yaygin pattern'leri yakaliyoruz.
         """
         # _ZN<len>name<len>name...E -> namespace::class::method
-        match = re.match(r"_ZN(\d+\w+)+E", mangled)
+        # BA-2: eski `_ZN(\d+\w+)+E` iç içe niceleyiciydi (\d ⊂ \w): `E`
+        # içermeyen uzun girdide üstel geri izleme. `(\d+\w+)+` ile `\d\w+`
+        # aynı dili tanır; eşleşme yine en sağdaki uygun `E`'de biter, span ve
+        # grup 1 aynı (grup okunmaz, yalnız eşleşmenin varlığı).
+        match = re.match(r"_ZN(\d\w+)E", mangled)
         if match:
             parts: list[str] = []
             remainder = mangled[3:]  # _ZN'den sonrasi

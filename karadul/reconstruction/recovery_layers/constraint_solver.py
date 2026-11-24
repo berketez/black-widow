@@ -265,12 +265,16 @@ _VTABLE_DISPATCH_RE = re.compile(
 
 # Self-referencing pointer update: var = *(TYPE*)(var + OFFSET)
 # Ayni degisken hem sol hem sag tarafta + dereference = next pointer
-# v1.7.6: [\w\s]* -> (?:\w+\s*)* -- orijinal [\w\s]* quantifier'i
-# \s* ile overlap yaparak O(n^2) backtracking yaratiyordu.
-# (?:\w+\s*)* her adimda en az 1 \w tuketir, backtracking sinirlar.
+# v1.7.6'da [\w\s]* -> (?:\w+\s*)* yapılmış ve "geri izlemeyi sınırlar"
+# denmişti; ölçüm (BA-1) tersini gösterdi: \s* boş olabildiği için bir \w
+# koşusu her bölünüşle denenir, eşleşmeyen girdide süre üstel büyür
+# ("a=*(a" + "a" * 24 + "!" 1,13 sn). BA-2: döngü atomik grupta. Döngünün
+# tükettiği karakterler (\w, \s) ardından gelen `\*{0,2}\s*\*?\s*\)`'nin
+# başarısına yardım edemez (geri verilen boşluğu dıştaki \s* yine yutar), bu
+# yüzden geri vermek hiçbir zaman yeni eşleşme üretmez: span ve gruplar aynı.
 _LINKED_LIST_RE = re.compile(
     r"(?P<var>\w+)\s*=\s*\*\s*\(\s*"
-    r"(?P<type>[a-zA-Z_](?:\w+\s*)*\*{0,2})\s*\*?\s*\)\s*\(\s*"
+    r"(?P<type>[a-zA-Z_](?>(?:\w+\s*)*)\*{0,2})\s*\*?\s*\)\s*\(\s*"
     r"(?P=var)\s*\+\s*(?P<offset>0x[0-9a-fA-F]+|\d+)\s*\)",
 )
 
@@ -1763,7 +1767,8 @@ class ConstraintSolver:
                 logger.debug("linked_list: C dosyasi okunamadi %s: %s", c_file, e, exc_info=True)
                 continue
 
-            # v1.8.0: _LINKED_LIST_RE O(n) safe (negated char class).
+            # BA-2: _LINKED_LIST_RE'nin tip döngüsü atomik grupta (üstel
+            # geri izleme yok; ayrıntı kalıbın yanındaki yorumda).
             # DOTALL pattern'leri (_LINKED_LIST_LOOP_RE) icin
             # loop keyword etrafinda 5KB pencere kullanilir.
 
