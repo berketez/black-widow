@@ -15,9 +15,12 @@ from pathlib import Path
 from typing import Any
 
 from karadul.core.naming_labels import (
+    METADATA_EVIDENCE_SOURCES,
     METADATA_SOURCES,
     SOURCE_GO_PCLNTAB,
     SOURCE_OBJC_METHOD,
+    SOURCE_RTTI,
+    SOURCE_SWIFT_TYPE,
     metadata_confidence,
     metadata_writes_names,
 )
@@ -170,14 +173,19 @@ K4_CHANNEL_FLAGS: dict[str, str] = {
     "go_demangler": "enable_go_naming",
     "bn_symbol": "enable_binaryninja_naming",
     "trex_struct": "enable_trex_naming",
-    "rtti": "enable_rtti_naming",
-    # P-ÜV6a: üst veri kanalları (üreticiler ``go_metadata_recovery`` / ``objc_metadata_recovery``,
-    # Faz 1). Ölçülmüş kesinlik ``naming_labels.MEASURED_METADATA_PRECISION``; etiket ``üst veriden``.
+    # P-ÜV6b (A-32): RTTI ad yazmaz; bayrağın anlamı "RTTI kanıtını köken kaydına yaz" (``_add_rtti``).
+    SOURCE_RTTI: "enable_rtti_naming",
+    # P-ÜV6a / P-ÜV6b: üst veri kanalları (üreticiler ``go_metadata_recovery`` / ``objc_metadata_recovery``
+    # / ``swift_metadata_recovery``, Faz 1). Ölçülmüş kesinlik ``naming_labels.MEASURED_METADATA_PRECISION``;
+    # etiket ``üst veriden``.
     SOURCE_GO_PCLNTAB: "enable_go_pclntab_naming",
     SOURCE_OBJC_METHOD: "enable_objc_metadata_naming",
+    SOURCE_SWIFT_TYPE: "enable_swift_metadata_naming",
 }
-# Güveni ölçülmemiş kanallar (köken kaydında güven ``null``); üst veri kanalları ölçüldü (tablo).
-UNMEASURED_SOURCES: frozenset[str] = frozenset(K4_CHANNEL_FLAGS) - frozenset(METADATA_SOURCES)
+# Güveni ölçülmemiş ad kanalları (köken kaydında güven ``null``). Üst veri ad kanalları ölçüldü
+# (tablo); RTTI (P-ÜV6b) ad yazmadığı için güveni yoktur, bu kümede de değildir.
+UNMEASURED_SOURCES: frozenset[str] = (frozenset(K4_CHANNEL_FLAGS) - frozenset(METADATA_SOURCES)
+                                      - frozenset(METADATA_EVIDENCE_SOURCES))
 
 CH_RAN = "calisti"
 CH_NO_DATA = "veri_yok"
@@ -424,6 +432,10 @@ def add_k4_channels(
     go_status: Any = None,
     objc_methods: list[dict[str, Any]] | None = None,
     objc_status: Any = None,
+    swift_types: list[dict[str, Any]] | None = None,
+    swift_slots: list[dict[str, Any]] | None = None,
+    swift_status: Any = None,
+    rtti_classes_path: Path | str | None = None,
     metadata_records: dict[str, dict[str, Any]] | None = None,
     metadata_evidence: list[dict[str, Any]] | None = None,
     candidates: dict[str, list[Any]],
@@ -436,8 +448,12 @@ def add_k4_channels(
     """
     for source in K4_CHANNEL_FLAGS:
         if not flags.get(source):
-            reason = ("bayrak kapalı (öntanım; A-14: 3 bağımsız programda ölçülmedi)"
-                      if source in METADATA_SOURCES else "kapalı (ölçülmedi)")
+            if source in METADATA_SOURCES:
+                reason = "bayrak kapalı (öntanım; A-14: 3 bağımsız programda ölçülmedi)"
+            elif source in METADATA_EVIDENCE_SOURCES:
+                reason = "bayrak kapalı (öntanım; RTTI kanıtı köken kaydına yazılmaz)"
+            else:
+                reason = "kapalı (ölçülmedi)"
             _set_status(stats, source, CH_DISABLED, f"{K4_CHANNEL_FLAGS[source]} {reason}")
     active = [s for s in K4_CHANNEL_FLAGS if flags.get(s)]
     if not active:
@@ -454,6 +470,9 @@ def add_k4_channels(
     if flags.get(SOURCE_OBJC_METHOD):
         _add_objc_methods(objc_methods or [], objc_status, index, candidates, stats, records,
                           evidence)
+    if flags.get(SOURCE_SWIFT_TYPE):
+        _add_swift_types(swift_types or [], swift_slots or [], swift_status, index, candidates,
+                         stats, records, evidence)
     metadata_keys = frozenset(records)
     if flags.get("dwarf"):
         _add_dwarf(binary_path, index, candidates, stats)
@@ -469,8 +488,10 @@ def add_k4_channels(
         _add_bn_symbols(bn_functions or [], bn_status, index, candidates, stats)
     if flags.get("trex_struct"):
         _add_trex_structs(trex_structs or [], trex_status, index, candidates, stats)
-    if flags.get("rtti"):
-        _add_rtti(rtti_classes or [], rtti_status, index, candidates, stats)
+    if flags.get(SOURCE_RTTI):
+        # ``rtti_classes`` (sınıf → yuva listesi) artık okunmaz: yuva adı üretilmez (A-32); kanıt
+        # satırları ``static/rtti_classes.json``'ın ``islevler[]`` kayıtlarından.
+        _add_rtti(load_rtti_functions(rtti_classes_path), rtti_status, index, stats, evidence)
 
 
 def _add_dwarf(
@@ -764,43 +785,72 @@ def _add_trex_structs(
     _set_status(stats, "trex_struct", CH_RAN)
 
 
-def _add_rtti(
-    rtti_classes: list[dict[str, Any]],
-    rtti_status: tuple[str, str] | None,
-    index: GhidraFunctionIndex,
-    candidates: dict[str, list[Any]],
-    stats: dict[str, Any],
-) -> None:
-    """C++ RTTI: vtable yuvasındaki adsız fonksiyona ``Sinif_vfunc_N`` adayı (IMZA-16).
+# P-ÜV6b (KARARLAR A-32): C++ RTTI yuvası ad DEĞİL kanıt satırıdır. Eskiden ``_add_rtti`` birincil
+# vtable yuvalarından ``Sınıf_vfunc_N`` adı üretiyordu (güven 0,6); yuvanın yöntem adı RTTI'de yoktur ve
+# tam eşitlikte doğruluğu 0'dı (P-UV4 H6). Şimdi her işlev → sınıf bağı (``rtti_recovery``'nin
+# ``static/rtti_classes.json`` ``islevler[]``) bir kanıt satırıdır: ``sinif``, ``karar``, ``yerler``;
+# ``belirsiz`` kararda sınıf adı yazılmaz, göründüğü ``siniflar`` yazılır. Aday üretilmez.
+RTTI_SLOT_EVIDENCE = "rtti_yuva"
+RTTI_AMBIGUOUS = "belirsiz"     # cpp_rtti_tara.BAG_BELIRSIZ
 
-    ``rtti_classes``: ``{"name": sınıf, "methods": [adres, …]}``. Yuvanın gerçek yöntem adı RTTI'de
-    yoktur; aday yalnız sınıf + yuva sırasıdır (ad doğruluğu ölçülmedi, bayrak arkasında).
+
+def load_rtti_functions(path: Path | str | None) -> list[dict[str, Any]] | None:
+    """``rtti_classes.json``'ın ``islevler[]`` listesi; yol yoksa ``None``, okunamazsa boş liste."""
+    if not isinstance(path, (str, Path)) or not str(path):
+        return None
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    items = data.get("islevler") if isinstance(data, dict) else None
+    return [i for i in items if isinstance(i, dict)] if isinstance(items, list) else []
+
+
+def _rtti_evidence_row(fn: dict[str, Any], addr: int, index: GhidraFunctionIndex) -> dict[str, Any]:
+    karar = fn.get("karar")
+    row: dict[str, Any] = {"kaynak": SOURCE_RTTI, "adres": f"{addr:#x}",
+                           "nedenler": [RTTI_SLOT_EVIDENCE], "karar": karar}
+    sinif = fn.get("sinif")
+    if karar != RTTI_AMBIGUOUS and isinstance(sinif, str) and sinif:
+        row["sinif"] = sinif
+    else:
+        row["siniflar"] = [c for c in fn.get("siniflar") or [] if isinstance(c, str)]
+    yerler = []
+    for y in fn.get("yerler") or []:
+        if isinstance(y, dict) and isinstance(y.get("vtable"), int):
+            yerler.append({"vtable": f"{y['vtable']:#x}", "sira": y.get("sira")})
+    row["yerler"] = yerler
+    ghidra = index.by_addr.get(addr + index.delta)
+    if ghidra is not None:
+        row["ghidra_adi"] = ghidra
+    return row
+
+
+def _add_rtti(
+    rtti_functions: list[dict[str, Any]] | None,
+    rtti_status: Any,
+    index: GhidraFunctionIndex,
+    stats: dict[str, Any],
+    evidence: list[dict[str, Any]],
+) -> None:
+    """C++ RTTI işlev → sınıf bağlarını kanıt satırı olarak yaz (ad adayı YOK; A-32).
+
+    Üretici durumu ``rtti_recovery``'den (``(durum, neden)``); adım koşmadıysa ``desteklenmiyor``.
     """
-    if rtti_status is None:
-        # P13b kalem 4 yapılmadı: RTTI kurtarmayı (analyzers/cpp_rtti.py) analiz akışında koşturan
-        # üretici yok; "sınıf bulunamadı" demek yalan olur (hiç aranmadı).
-        _set_status(stats, "rtti", CH_UNSUPPORTED,
-                    "RTTI kurtarma analiz akışına bağlı değil (üretici yok)")
+    source = SOURCE_RTTI
+    if not _metadata_gate(source, rtti_functions or [], rtti_status, "enable_rtti_recovery", stats):
         return
-    if rtti_status[0] != CH_RAN:
-        _set_status(stats, "rtti", rtti_status[0], rtti_status[1])
-        return
-    if not rtti_classes:
-        _set_status(stats, "rtti", CH_NO_DATA, "RTTI sınıfı bulunamadı")
-        return
-    for cls in rtti_classes:
-        cname = cls.get("name")
-        if not cname:
+    ch = _channel(stats, source)
+    for fn in rtti_functions or []:
+        addr = fn.get("adres")
+        if not isinstance(addr, int) or isinstance(addr, bool) or addr <= 0:
             continue
-        for slot, addr in enumerate(cls.get("methods") or []):
-            if not isinstance(addr, int) or addr <= 0:
-                continue
-            _add_resolved(
-                source="rtti", addr=addr, symbol=None, qualified=f"{cname}_vfunc_{slot}",
-                confidence=0.6, reason=f"RTTI vtable {cname}[{slot}]", index=index,
-                candidates=candidates, stats=stats,
-            )
-    _set_status(stats, "rtti", CH_RAN)
+        ch["kayit"] = ch.get("kayit", 0) + 1
+        karar = str(fn.get("karar"))
+        ch[karar] = ch.get(karar, 0) + 1
+        evidence.append(_rtti_evidence_row(fn, addr, index))
+        ch["kanit_satiri"] = ch.get("kanit_satiri", 0) + 1
+    ch["aday"] = 0
 
 
 # ---------------------------------------------------------------------------
@@ -830,6 +880,9 @@ def _producer_status(status: Any) -> tuple[str | None, str]:
         return status["durum"], str(status.get("neden") or "")
     if isinstance(status, str):
         return status, ""
+    # ``rtti_recovery`` durumu demet yazar: ``(durum, neden)`` (P-ÜV4)
+    if isinstance(status, (tuple, list)) and status and isinstance(status[0], str):
+        return status[0], (str(status[1] or "") if len(status) > 1 else "")
     return None, ""
 
 
@@ -854,7 +907,12 @@ def _metadata_gate(source: str, items: list[dict[str, Any]], status: Any,
     if not items:
         _set_status(stats, source, CH_NO_DATA, "üretici kayıt vermedi")
         return False
-    if not metadata_writes_names(source):
+    if source in METADATA_EVIDENCE_SOURCES:
+        _set_status(stats, source, CH_RAN, "kanal ad yazmaz: kayıtlar kanıt satırı (KARARLAR A-32)")
+    elif metadata_confidence(source) is None:
+        _set_status(stats, source, CH_RAN,
+                    "kanalın kesinliği ölçülmedi (tabloda yok): kayıtlar yalnız kanıt satırı")
+    elif not metadata_writes_names(source):
         _set_status(stats, source, CH_RAN,
                     "ölçülmüş kesinlik ad eşiğinin altında: kayıtlar yalnız kanıt satırı")
     return True
@@ -1002,6 +1060,100 @@ def _add_objc_methods(
             candidates=candidates, stats=stats, records=records, evidence=evidence,
             extra={"secici": m.get("secici") or None, "kategori": m.get("kategori") or None},
         )
+    if ch.get("durum") is None:
+        _set_status(stats, source, CH_RAN)
+
+
+# P-ÜV6b: Swift tip erişim fonksiyonu (``swift_metadata_recovery``). Aday: okuyucunun ``ad_yazilabilir is
+# True`` dediği tipin erişim fonksiyonu adresi; özgün ad ``type metadata accessor for <nitelikli_ad>``
+# (HEDEF ölçüm aracının kuralıyla birebir: GT sembolünün ``swift-demangle`` çıktısı); koda yazılan
+# tanımlayıcı Go / ObjC ile aynı dönüştürücüden (``c_identifier``). ``ad_yazilabilir`` olmayan tip (ayracı
+# ikilide olmayan özel tip, işlev içi tip, kısıtlı uzantı, erişim kodda değil / paylaşımlı) ve bütün
+# yuvalar (vtable / geçersiz kılma / tanık; ad alanı yok) kanıt satırıdır. P13b kuralı: aday yalnız
+# Ghidra'nın adsız bıraktığı fonksiyona (A-28 istisnası yalnız ObjC).
+SWIFT_NOT_WRITABLE = "ad_yazilamaz"
+SWIFT_SLOT_EVIDENCE = "swift_yuva"
+SWIFT_SLOT_FIELDS = ("tip", "sira", "yontem_turu", "ust_tip", "ust_sira", "protokol")
+
+
+def _swift_rejections(t: dict[str, Any]) -> list[str]:
+    """Ad yazılmayacak Swift tipinin nedenleri (boşsa ad adayı olabilir)."""
+    return [] if t.get("ad_yazilabilir") is True else [SWIFT_NOT_WRITABLE]
+
+
+def _swift_addr(value: Any) -> int | None:
+    """Swift kaydındaki adres (tipte ``"0x…"`` dizgisi, yuvada tamsayı); geçersizse ``None``."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if isinstance(value, str):
+        try:
+            v = int(value, 16)
+        except ValueError:
+            return None
+        return v if v > 0 else None
+    return None
+
+
+def _add_swift_types(
+    swift_types: list[dict[str, Any]],
+    swift_slots: list[dict[str, Any]],
+    swift_status: Any,
+    index: GhidraFunctionIndex,
+    candidates: dict[str, list[Any]],
+    stats: dict[str, Any],
+    records: dict[str, dict[str, Any]],
+    evidence: list[dict[str, Any]],
+) -> None:
+    """Swift erişim fonksiyonu adları (ad kanalı) ve yuvalar (kanıt satırı)."""
+    source = SOURCE_SWIFT_TYPE
+    if not _metadata_gate(source, swift_types or swift_slots, swift_status,
+                          "enable_swift_metadata_recovery", stats):
+        return
+    ch = _channel(stats, source)
+    for t in swift_types:
+        if not isinstance(t, dict):
+            continue
+        addr = _swift_addr(t.get("adres"))
+        if addr is None:
+            ch["erisim_yok"] = ch.get("erisim_yok", 0) + 1
+            continue
+        ch["kayit"] = ch.get("kayit", 0) + 1
+        original = t.get("ad")
+        reasons = _swift_rejections(t)
+        if reasons:
+            for r in reasons:
+                ch[r] = ch.get(r, 0) + 1
+            ch["kanit_satiri"] = ch.get("kanit_satiri", 0) + 1
+            evidence.append(_evidence_row(
+                source, addr, original if isinstance(original, str) else None, reasons,
+                kisa_ad=t.get("kisa_ad"), alt_kume=t.get("alt_kume"), ad_neden=t.get("ad_neden")))
+            continue
+        if not isinstance(original, str) or not original:
+            ch["gecersiz_ad"] = ch.get("gecersiz_ad", 0) + 1
+            continue
+        key, outcome = index.key_for(addr)
+        ch[outcome] = ch.get(outcome, 0) + 1
+        if key is None:
+            continue
+        _add_metadata_candidate(
+            source=source, addr=addr, original=original, key=key, outcome=outcome, index=index,
+            candidates=candidates, stats=stats, records=records, evidence=evidence,
+            extra={"nitelikli_ad": t.get("nitelikli_ad") or None, "tur": t.get("tur") or None},
+        )
+    for y in swift_slots:
+        if not isinstance(y, dict):
+            continue
+        addr = _swift_addr(y.get("adres"))
+        if addr is None:
+            ch["yuva_adressiz"] = ch.get("yuva_adressiz", 0) + 1
+            continue
+        ch["yuva_kanit"] = ch.get("yuva_kanit", 0) + 1
+        row: dict[str, Any] = {"kaynak": source, "adres": f"{addr:#x}",
+                               "nedenler": [SWIFT_SLOT_EVIDENCE], "yuva": y.get("tur")}
+        row.update({k: y[k] for k in SWIFT_SLOT_FIELDS if y.get(k) is not None})
+        evidence.append(row)
     if ch.get("durum") is None:
         _set_status(stats, source, CH_RAN)
 

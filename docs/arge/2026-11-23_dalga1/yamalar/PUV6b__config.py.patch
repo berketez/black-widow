@@ -1,0 +1,45 @@
+--- a/karadul/config.py
++++ b/karadul/config.py
+@@ -686,7 +686,7 @@
+     typeforge_timeout: float = 600.0         # Subprocess timeout (saniye)
+     typeforge_min_confidence: float = 0.85   # Merge icin minimum guven esigi
+     # v1.10.0 M3 T9: C++ RTTI/vtable reconstruction (Itanium ABI, single inheritance)
+-    enable_rtti_recovery: bool = False       # okuyan: pipeline/steps/rtti_recovery.py (P-ÜV4; Faz 1 listesine P-ÜV6b ekler)
++    enable_rtti_recovery: bool = False       # okuyan: pipeline/steps/rtti_recovery.py (P-ÜV4; Faz 1 adımı: P-ÜV6b)
+     rtti_abi: str = "itanium"                # `karadul rtti` öntanımı: "itanium" | "msvc" (analiz akışında okunmuyor)
+     rtti_max_vtable_entries: int = 64        # Vtable basina max okunacak method slot
+     # P13b / K-4: hata ayıklama bilgisi, ayrıştırılmış simge ve harici araç ad kanalları
+@@ -700,7 +700,7 @@
+     enable_go_naming: bool = False            # Go simgeleri (nm)
+     enable_binaryninja_naming: bool = False   # Binary Ninja fonksiyon adları (lisans gerekir)
+     enable_trex_naming: bool = False          # TRex yapı ipucu (girdisi üretilmiyor: desteklenmiyor)
+-    enable_rtti_naming: bool = False          # C++ RTTI vtable yuvası adları (bağlanmadı: P13b)
++    enable_rtti_naming: bool = False          # RTTI kanıtını köken kaydına yaz: yuva ad DEĞİL kanıt satırı (A-32; okuyan: _feedback_naming_candidates.py, P-ÜV6b)
+     # v1.13 Dalga 1: anti-debug + packer fingerprint pipeline step'leri.
+     # Default True -- opt-out flag'leri. KARADUL_DISABLE_ANTI_DEBUG vb.
+     # ile ileride env override eklenebilir.
+@@ -762,13 +762,13 @@
+     # P-ÜV2: Objective-C yöntem listesi üretici adımı.
+     enable_objc_metadata_recovery: bool = False  # okuyan: pipeline/steps/objc_metadata_recovery.py (P-ÜV2)
+     # P-ÜV3: Swift tip üst verisi üretici adımı.
+-    enable_swift_metadata_recovery: bool = False  # okuyan: pipeline/steps/swift_metadata_recovery.py (P-ÜV3)
++    enable_swift_metadata_recovery: bool = False  # okuyan: pipeline/steps/swift_metadata_recovery.py (P-ÜV3; Faz 1 adımı: P-ÜV6b)
+     # P-ÜV6: Go pclntab ad kanalı.
+     enable_go_pclntab_naming: bool = False  # okuyan: pipeline/steps/_feedback_naming_candidates.py (P-ÜV6a)
+     # P-ÜV6: Objective-C yöntem ad kanalı.
+     enable_objc_metadata_naming: bool = False  # okuyan: pipeline/steps/_feedback_naming_candidates.py (P-ÜV6a)
+-    # P-ÜV6: Swift erişim fonksiyonu ad kanalı.
+-    enable_swift_metadata_naming: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
++    # P-ÜV6b: Swift erişim fonksiyonu ad kanalı (ad verilemeyen tip ve yuvalar kanıt satırı; güven ölçülmüş tablodan).
++    enable_swift_metadata_naming: bool = False  # okuyan: pipeline/steps/_feedback_naming_candidates.py (P-ÜV6b)
+     # P-ÜV5: Mach-O LC_MAIN girişindeki fonksiyona main adı verilir.
+     enable_macho_entry_main: bool = False  # okuyan: stages.py _recover_main_from_entry (P-ÜV5)
+     # P-ÜV6 (P-ÜV7'nin denetimi): Go adlarına tutarlılık damgası.
+@@ -1339,7 +1339,6 @@
+     "binary_reconstruction.enable_separate_debug_naming": _pending_binding("PK-5"),
+     "binary_reconstruction.debug_file_dirs": _pending_binding("PK-5"),
+     # P-ÜV6 (Dalga 3)
+-    "binary_reconstruction.enable_swift_metadata_naming": _pending_binding("P-ÜV6"),
+     "binary_reconstruction.enable_go_metadata_integrity": _pending_binding("P-ÜV6"),
+     # PK-4 (Dalga 3)
+     "binary_reconstruction.enable_anchored_reference_matching": _pending_binding("PK-4"),

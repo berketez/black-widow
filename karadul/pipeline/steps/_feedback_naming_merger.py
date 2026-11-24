@@ -414,6 +414,12 @@ def k4_inputs(ctx: Any, functions_json: Path | None) -> dict[str, Any]:
         "go_status": get("go_status"),
         "objc_methods": _as_dict_list(get("objc_methods")),
         "objc_status": get("objc_status"),
+        # P-ÜV6b: Swift üreticisi (swift_metadata_recovery) ve RTTI'nin işlev → sınıf bağları
+        # (rtti_recovery → static/rtti_classes.json ``islevler[]``; kanal kanıt satırı yazar).
+        "swift_types": _as_dict_list(get("swift_types")),
+        "swift_slots": _as_dict_list(get("swift_slots")),
+        "swift_status": get("swift_status"),
+        "rtti_classes_path": get("rtti_classes_path"),
         # Kanallar doldurur; birleştirici köken kaydına yazar (anahtar → künye; kanıt satırları).
         "metadata_records": {},
         "metadata_evidence": [],

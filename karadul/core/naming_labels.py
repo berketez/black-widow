@@ -9,8 +9,8 @@ Etiketin anlamı:
     ölçümde hedefi (≥ %95) tuttu;
   - ``doğrulandı``: kanal ölçüldü ve yanlış oranı hedefin altında (bugün hiçbir kanal üretmiyor);
   - ``doğrulanmadı``: kanal ölçülmedi ya da ölçüm hedefi göstermedi;
-  - ``üst veriden`` (P-ÜV6a, KARARLAR A-10 / A-27): ad ikilinin dil üst verisinden (Go ``pclntab``,
-    Objective-C yöntem listesi) okundu; derleyicinin yazdığı hâliyle kanal düzeyi kesinliği ölçüldü
+  - ``üst veriden`` (P-ÜV6a / P-ÜV6b, KARARLAR A-10 / A-27): ad ikilinin dil üst verisinden (Go ``pclntab``,
+    Objective-C yöntem listesi, Swift tip erişim fonksiyonu) okundu; derleyicinin yazdığı hâliyle kanal düzeyi kesinliği ölçüldü
     (``MEASURED_METADATA_PRECISION``), ama ad metni çalışma için zorunlu olmadığından değiştirilebilir:
     ``kesin`` DEĞİLDİR, doğrulanamaz.
 Analistin elle verdiği ad etiket taşımaz.
@@ -148,11 +148,21 @@ susturma yok.
 # Kaynak adları ``stats["naming_channels"]`` ve birleştiricinin köken kaydında aynı yazılır.
 SOURCE_GO_PCLNTAB = "go_pclntab"
 SOURCE_OBJC_METHOD = "objc_method"
-METADATA_SOURCES: tuple[str, ...] = (SOURCE_GO_PCLNTAB, SOURCE_OBJC_METHOD)
+# P-ÜV6b: Swift tip erişim fonksiyonu (``type metadata accessor for <Tip>``; HEDEF ölçüm aracının
+# ``ustveri_olc.KANAL_SWIFT`` adıyla aynı).
+SOURCE_SWIFT_TYPE = "swift_type_accessor"
+# Ad yazabilen üst veri kanalları (güven ``MEASURED_METADATA_PRECISION``'dan; tabloda yoksa ya da alt
+# sınır ``AD_ESIGI``'nin altındaysa kayıtlar kanıt satırına iner).
+METADATA_SOURCES: tuple[str, ...] = (SOURCE_GO_PCLNTAB, SOURCE_OBJC_METHOD, SOURCE_SWIFT_TYPE)
+# P-ÜV6b (KARARLAR A-32): C++ RTTI yuvası ad DEĞİL kanıt satırıdır (yuvanın yöntem adı RTTI'de yok;
+# ``Sınıf_vfunc_N`` tam eşitlikte 0 doğru). Kanal ad yazmadığı için güveni de yoktur: ölçülmemiş ad
+# kanalları kümesinde (``UNMEASURED_SOURCES``) değildir.
+SOURCE_RTTI = "rtti"
+METADATA_EVIDENCE_SOURCES: tuple[str, ...] = (SOURCE_RTTI,)
 SOURCE_METADATA = "ust_veri"     # ad haritasının ``sources`` listesindeki adı
 
 # Köken kaydı alanları (birleştiricinin ``name_merger`` kararları ve ad haritası kaydı).
-METADATA_CHANNEL_FIELD = "ust_veri_kanali"      # go_pclntab / objc_method
+METADATA_CHANNEL_FIELD = "ust_veri_kanali"      # go_pclntab / objc_method / swift_type_accessor
 ORIGINAL_NAME_FIELD = "ozgun_ad"                # derleyicinin yazdığı ad (C tanımlayıcısı değil)
 METADATA_CHECK_FIELD = "ust_veri_dogrulama"     # cift_kaynak / tek_kaynak / tutarsiz / olculmedi
 METADATA_EVIDENCE_FIELD = "ust_veri_kanit"      # ad yazılmayan üst veri kayıtları (kanıt satırı)
@@ -162,18 +172,22 @@ CHANNEL_METADATA_PREFIX = "ust_veri"            # ``provenance_channel`` biçimi
 METADATA_CHECK_UNMEASURED = "olculmedi"
 
 # Ölçülmüş kanal düzeyi kesinliği: (doğru, ad verilen, Wilson %95 alt sınırı). Değerler SINAMA
-# ikililerinin soyulmuş kopyasında kanal ↔ özgün ikilinin sembol tablosu ölçümünden (P-ÜV8 tanımı;
-# Ghidra'sız): Go docker-compose (``ustveri/P-UV1.md`` H2 sınama yarısı), ObjC iTerm2 arm64
-# (``ustveri/P-UV2.md`` H2). Alt sınır ``baglama.wilson`` ile hesaplanır ve 4 basamağa AŞAĞI
-# yuvarlanır (yukarı yuvarlama 1,0 yazardı: kesinlik görüntüsü); eşitliği
-# ``tests/test_puv6a_baglama.py`` kilitler. Bu kaynaklar ``UNMEASURED_SOURCES``'ta değildir.
+# ikililerinin soyulmuş kopyasında ÜRÜN DÜZEYİ ADAY ölçümünden (kanalın süzgeçlerinden geçen aday
+# listesi ↔ özgün ikilinin sembol tablosu; P-ÜV8 tanımı; Ghidra'sız): Go docker-compose
+# (``ustveri/P-UV6a.md`` H8: 90 077 / 90 077), ObjC iTerm2 arm64 (``ustveri/P-UV6a.md`` H8: 33 611
+# doğru / 33 885 aday; P-ÜV6b düzeltmesi: eskiden P-UV2'nin 33 611 / 33 611'i yazılıydı, o sayı
+# ürünün süzgecinden geçen 274 yanlışı saymıyordu). Alt sınır ``baglama.wilson`` ile hesaplanır ve
+# 4 basamağa AŞAĞI yuvarlanır (yukarı yuvarlama 1,0 yazardı: kesinlik görüntüsü); eşitliği
+# ``tests/test_puv6a_baglama.py`` ve ``tests/test_puv6b_baglama.py`` kilitler. Bu kaynaklar
+# ``UNMEASURED_SOURCES``'ta değildir. Tabloda olmayan üst veri kanalı ölçülmemiştir: ad yazmaz,
+# kayıtları kanıt satırıdır (``metadata_writes_names``).
 # A-14: öntanımda açılmak için en az 3 bağımsız program gerekir; bugün kanal başına 2 program
 # ölçüldü (Go: docker-cli, docker-compose; ObjC: terminal-notifier, iTerm2) → bayraklar kapalı.
 MEASURED_METADATA_SOURCE = (
-    "docs/arge/2026-11-19_mythos/ustveri/P-UV1.md (docker-compose), P-UV2.md (iTerm2)")
+    "docs/arge/2026-11-19_mythos/ustveri/P-UV6a.md H8 (docker-compose, iTerm2)")
 MEASURED_METADATA_PRECISION: dict[str, tuple[int, int, float]] = {
     SOURCE_GO_PCLNTAB: (90077, 90077, 0.9999),
-    SOURCE_OBJC_METHOD: (33611, 33611, 0.9998),
+    SOURCE_OBJC_METHOD: (33611, 33885, 0.9909),
 }
 METADATA_MEASURED_PROGRAMS: dict[str, tuple[str, ...]] = {
     SOURCE_GO_PCLNTAB: ("docker-cli", "docker-compose"),

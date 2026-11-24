@@ -46,6 +46,9 @@ from karadul.pipeline.steps import (  # noqa: F401
     # P-ÜV6a: üst veri üreticileri (P-ÜV1 / P-ÜV2; bayrak kapalıyken iş yapmaz)
     go_metadata_recovery,
     objc_metadata_recovery,
+    # P-ÜV6b: Swift tip üst verisi ve C++ RTTI üreticileri (P-ÜV3 / P-ÜV4; bayrak kapalıyken iş yapmaz)
+    rtti_recovery,
+    swift_metadata_recovery,
     # B7 (2026-05-13): TRex/PDB/BN JSON tuketici
     type_recovery_consumer,
     # Plan v2.2 N1 adım 3: KS-1 kesin çapaları (bayrak kapalıyken iş yapmaz)
@@ -82,7 +85,9 @@ __all__ = [
     "project_build",
     "binaryninja_analysis",
     "pdb_symbol_recovery",
+    "rtti_recovery",
     "semantic_naming",
     "struct_recovery",
+    "swift_metadata_recovery",
     "trex_struct_recovery",
 ]

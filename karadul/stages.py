@@ -2763,6 +2763,10 @@ class ReconstructionStage(Stage):
                 # kapalıyken iş yapmaz (durum `kapali`); adlar Faz 2 ad kanallarına gider.
                 "go_metadata_recovery",
                 "objc_metadata_recovery",
+                # P-ÜV6b: Swift tip üst verisi ve C++ RTTI üreticileri (bayrak kapalıyken iş
+                # yapmaz; Swift adları Faz 2 ad kanalına, RTTI bağları kanıt satırına gider).
+                "swift_metadata_recovery",
+                "rtti_recovery",
                 # B7 (2026-05-13): type recovery JSON tüketici
                 "type_recovery_consumer",
                 "pcode_cfg_analysis",
