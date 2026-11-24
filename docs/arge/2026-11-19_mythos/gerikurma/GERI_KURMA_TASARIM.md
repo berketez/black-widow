@@ -596,11 +596,11 @@ Bu belgedeki dosya ve işlev atıfları yazıldıktan sonra ağaçta (`58715681`
 | Tür | Sayı | Yöntem | Sonuç |
 |---|---|---|---|
 | Dosya : işlev / sınıf / sabit atfı | 31 | Her biri için dosyada `def ad`, `class ad` ya da sabit adı satırı arandı (`grep` eşdeğeri; betik oturumun geçici dizininde) | 31 / 31 bulundu |
-| Ters tırnaklı yol atfı (belgeden otomatik çıkarıldı) | 93 | Yol, depo kökü ve belge dizinlerine göre arandı | 56 ağaçta var (4'ü yalnız dosya adıyla anılan belge); 37 ağaçta yok |
-| Ağaçta olmayan 37 yolun dökümü | — | Elle sınıflandı | 20 planlanan yeni dosya (GK paketleri; "yeni" diye yazılı) · 1 ÖL-10 tasarımının planladığı dosya (`static/tembel_durum.json`) · 8 çalışma alanı / çıktı yolu (depo yolu değil; S8 çalışma alanında var olduğu görüldü) · 8 bu turun koşu kökü yolu (`GK0/…`, `ozet/…`; diskte var) |
+| Ters tırnaklı yol atfı (belgeden otomatik çıkarıldı) | 94 | Yol, depo kökü ve belge dizinlerine göre arandı | 56 ağaçta var (4'ü yalnız dosya adıyla anılan belge); 38 ağaçta yok |
+| Ağaçta olmayan 38 yolun dökümü | — | Elle sınıflandı | 20 planlanan yeni dosya (GK paketleri; "yeni" diye yazılı) · 1 ÖL-10 tasarımının planladığı dosya (`static/tembel_durum.json`) · 9 çalışma alanı / çıktı yolu (depo yolu değil; S8 çalışma alanında var olduğu görüldü) · 8 bu turun koşu kökü yolu (`GK0/…`, `ozet/…`; diskte var) |
 | Başka belgelerden alınan sayı / ifade | 29 | Kaynak belgede metin olarak arandı | 29 / 29 bulundu (KARARLAR A-13, A-33; `kimlik/BULGULAR.md` §0, §2.3, §3.8; `zemin_olcumu.md`; `2026-11-23_dalga1/DURUM.md`; P18.md; `tersine_derleme_sinirlari.md` §4.6–4.7; `veri_setleri.md`; `model_secimi.md` K14) |
 
-"Bakıldı, yok" diye yazılan üç olumsuz atıf da arandı: `karadul/lm/guard.py`'de `check_patch` yok (0 eşleşme); üründe genel derleyici tespiti yok (yalnız iki dar işlev bulundu); `c_project_builder.py`'de veri bölümü yazan kod yok (0 eşleşme).
+"Bakıldı, yok" diye yazılan beş olumsuz atıf da arandı: `karadul/lm/guard.py`'de `check_patch` yok (0 eşleşme); üründe genel derleyici tespiti yok (yalnız iki dar işlev bulundu); `c_project_builder.py`'de veri bölümü yazan kod yok (0 eşleşme); iki çalışma alanının beş statik dökümünde `DAT_` adı yok (0 eşleşme); S8'in 8 ikilisinde derleyici dizgisi yok (7 ELF'te `.comment` bölümü 0).
 
 Doğrulanmayan / bakılmayan (belgede de öyle işaretli): P22'nin arayüz ve ölçüm paketlerinin durumu; özgün derleyicilerin kimliği (ikililerde derleyici izi bulunmadı: §4 D6).
 
