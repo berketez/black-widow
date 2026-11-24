@@ -176,7 +176,7 @@ Araç `ozet/polinom_gercek.py` (her kalıp ayrı çocuk süreçte, 20 sn ilerlem
 
 **> 1 sn olanlar (ayrıca işaret; onarım bu paketin kapsamı dışında):** dördü de aynı girdide: Ollama'nın `ghidra_strings.json`'ındaki **1 352 968 karakterlik tek dizgi**.
 - `analyzers/python_binary.py:117` (`_PYC_MODULE_PATTERN`) — dizgide 10,3 sn, en büyük C dosyasında 1,04 sn. Üründe `_extract_embedded_modules` bu kalıbı **ikilinin tamamının** `ascii` çözülmüş metnine `finditer` ile uyguluyor: gerçek girdi bu derlemdeki her birimden büyük. Bu yolun Python ikilisi olmayan bir hedefte çağrılıp çağrılmadığı ölçülmedi.
-- `reconstruction/string_intelligence.py:102` (C++ assert biçimi) — dizgide 5,2 sn. Bu modülün birimi zaten ikili dizgileri: **gerçek kullanımda erişilebilir** (çağrı yolu ölçülmedi).
+- `reconstruction/string_intelligence.py:102` (C++ assert biçimi) — dizgide 5,2 sn. Bu modülün birimi zaten ikili dizgileri: kalıp her dizgiye `search` ile uygulanıyor (satır 471), üst uzunluk sınırı yok (yalnız < 4 karakter atlanıyor, satır 387) → **gerçek kullanımda erişilebilir**; adımın Ollama koşusunda bu dizgiye gerçekten ulaşıp ulaşmadığı ölçülmedi.
 - `reconstruction/engineering/semantic_namer.py:389` — dizgide 10,8 sn, tam C dosyasında 0,94 sn; üründeki birim C bildirimi (satır: 42 ms).
 - `reconstruction/recovery_layers/formula_extractor.py:2430` (Horner) — dizgide 4,05 sn, tam C dosyasında 0,33 sn; üründeki birim C kodu.
 
@@ -203,3 +203,18 @@ Ayrıca yüksek dereceli (düşmanca girdide kübik ve üstü): `binary_name_ext
 - Sınıflama ölçüme dayalı ve yük altında: üç koşuda iki aday sınırda gidip geldi (`semantic_namer.py:389`, `dotnet_binary.py:874`). Kapının üstel ölçütü (40 → 80'de 64 kat ya da 1 sn ya da bekçi) ile polinom arasındaki boşluk geniş; kapı kararı bu kararsızlıktan etkilenmedi (beş bilinen kusurlu kalıp her koşuda üstel, onarılmışlar her koşuda değil).
 - H3 için "sonra" kolu `git worktree add` yerine `urun-534e252b`'nin kopyası + bu dalın iki dosyasıyla kuruldu (`BA2/agac_sonra`; ajan izolasyonu dış yola git işlemini reddetti); `diff -rq` ile bu dalın `karadul/`'u ile aynı olduğu denetlendi.
 - Takım tartışma dosyasına (`~/.claude/team-state/discussion.md`) yazılmadı: gönderim yalnız listelenen dosyalara yazma izni veriyor.
+
+## Kalem 6 — tam takım (13:42 – 13:54)
+
+- Çalışma verisi bağları (ORTAK_D1 §6: `vendor`, `sigs`, `signatures.lmdb`, `signatures_homebrew{,_bytes,_bytes_v2}.json`, `sigs_macos_system.json`, `scripts/node_modules`) koşudan önce kuruldu, sonra kaldırıldı; commit'lenmedi.
+- `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökünden, `fbe382a4` üstünde; ağır yük altında, load 17–34): **11 187 geçti / 23 atlandı / 152 seçilmedi / 0 kaldı (714 sn)**. Taban (`b536414d`: 11 168 / 23 / 0) + bu paketin 19 yeni sınaması (11 + 8) = 11 187. Günlük `ozet/tam_takim.log`.
+- Sonraki commit'ler yalnız bu belge.
+
+## Özet
+
+- Onarılan üstel kalıp 2: `karadul/reconstruction/c_namer.py:3445`, `karadul/reconstruction/recovery_layers/constraint_solver.py:275` (kalıp satırı 277). Yama 0. Kapı 1 509 sabit kalıbı 5,2 sn'de tarıyor (ağır yükte 20,5 sn). S8 ad haritası 8 / 8 bayt eşit.
+- Testler: yeni 19 sınama (`tests/test_ba2_kalip_onarimi.py` 11, `tests/test_kalip_denetimi.py` 8). Mutant: `mutation_specs_ba2.json` 9 / 9; eski tanımlar 104 / 104.
+- Commit'ler: `17b415a3` ön kayıt, `8bdf7f5c` onarım, `2269eb9c` kapı, `fd69a297` güçlü girdi, `fbe382a4` bytes kalıpları, `b6aebc9c` / `9b42f0c4` / bu commit belge.
+- Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/BA2/` (2,3 GB; `h3_once/`, `h3_sonra/`, `agac_sonra/` ara ürün, A-35'e göre silinebilir; ölçüm özeti ve 16 ad haritası `ozet/` altında, 2,6 MB).
+
+## PAKET BİTTİ
