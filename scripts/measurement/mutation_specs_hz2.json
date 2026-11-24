@@ -22,8 +22,32 @@
       "desc": "sorgu ingest'in yöneticisini kullanmaz (ikinci tarama)",
       "module": "karadul/ghidra/bsim.py",
       "test": "tests/test_hz2_bsim_hizli.py::test_sorgu_ingest_yoneticisini_kullanir_yeni_tarama_yok",
-      "find": "manager = self.hazir_yonetici(program, funcs) if paralel else None",
-      "replace": "manager = None"
+      "find": "hazir = self.hazir_yonetici(program, funcs) if paralel else None",
+      "replace": "hazir = None"
+    },
+    {
+      "id": "hz2_ingest_taramasi_birakilir",
+      "desc": "tam ingest'in GenSignatures'ı sorgudan önce bırakılır (dispose yöneticiyi temizler)",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_tam_ingest_taramasi_sorguya_kadar_birakilmaz",
+      "find": "                self._ingest_yoneticisi = (program, len(gercek), gen)\n                gen = None\n",
+      "replace": "                self._ingest_yoneticisi = (program, len(gercek), gen)\n"
+    },
+    {
+      "id": "hz2_sorgu_yonetici_birakmaz",
+      "desc": "sorgu, devraldığı ingest taramasını bırakmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_sorgu_ingest_yoneticisini_kullanir_yeni_tarama_yok",
+      "find": "gen = hazir if hazir is not None else self._gen_signatures(database, program)",
+      "replace": "gen = self._gen_signatures(database, program)"
+    },
+    {
+      "id": "hz2_java_yineleyici_tur_hatasi",
+      "desc": "Java olmayan öğede ArrayList hatası yutulmaz",
+      "module": "karadul/ghidra/bsim.py",
+      "test": "tests/test_hz2_bsim_hizli.py::test_java_yineleyici_jvm_varken_java_olmayan_oge",
+      "find": "    except (ImportError, TypeError):\n        pass\n    return iter(funcs)",
+      "replace": "    except ImportError:\n        pass\n    return iter(funcs)"
     },
     {
       "id": "hz2_kismi_yonetici_sorguya",

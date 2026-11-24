@@ -181,6 +181,7 @@ class _Dunya:
             def __init__(self) -> None:
                 self.funcs: list = []
                 self.fds: list = []
+                self.ayar = True    # sürüm / ayar bilgisi (clear() sıfırlar)
 
             def listAllFunctions(self):  # noqa: N802
                 return list(self.fds)
@@ -226,7 +227,10 @@ class _Dunya:
                 return self.m
 
             def dispose(self):
+                # Gerçek GenSignatures.dispose → clear() → manager.clear(): fonksiyonlar ve
+                # sürüm / ayarlar sıfırlanır (2026-11-24 S8'de yakalandı).
                 self.disposed = True
+                self.m.funcs, self.m.fds, self.m.ayar = [], [], False
 
         class InsertRequest:
             def __init__(self) -> None:
@@ -243,6 +247,8 @@ class _Dunya:
                 d.sorgular.append(self)
 
             def execute(self, db):
+                if not self.manage.ayar:
+                    return None     # "Query signature data has no setting information"
                 results = []
                 for f in self.manage.funcs:
                     off = f.getEntryPoint().getOffset()
@@ -404,7 +410,28 @@ def test_sorgu_ingest_yoneticisini_kullanir_yeni_tarama_yok(tmp_path, monkeypatc
         CLIENT, prog, list(FUNCS), 0.7, 5, 0.0, ex2, ex2.extra_slots())
     assert [m.to_dict() for m in out] == [m.to_dict() for m in out2] and len(out) > 0
     assert ex.counts == ex2.counts and ex.unrecorded_candidates == ex2.unrecorded_candidates
-    assert w._ingest_yoneticisi is None                          # bir kez kullanıldı
+    assert w._ingest_yoneticisi is None and d.gens[0].disposed   # bir kez kullanıldı, bırakıldı
+
+
+def test_tam_ingest_taramasi_sorguya_kadar_birakilmaz(tmp_path, monkeypatch, saat) -> None:
+    """GenSignatures.dispose yöneticiyi temizler: ingest onu sorgudan önce bırakmamalı."""
+    d = _Dunya(saat)
+    d.kur(monkeypatch)
+    w = _wrapper(tmp_path, d, True)
+    w.ingest_program(_Program(), DBN, database=CLIENT)
+    assert not d.gens[0].disposed and len(d.gens[0].m.fds) == len(FUNCS)
+    w.close()                                   # kullanılmadan oturum kapanırsa bırakılır
+    assert d.gens[0].disposed and w._ingest_yoneticisi is None
+
+
+def test_kullanilmayan_ingest_taramasi_yeni_ingestte_birakilir(tmp_path, monkeypatch,
+                                                               saat) -> None:
+    d = _Dunya(saat)
+    d.kur(monkeypatch)
+    w = _wrapper(tmp_path, d, True)
+    w.ingest_program(_Program(), DBN, database=CLIENT)
+    w.ingest_program(_Program(), DBN, database=CLIENT)
+    assert d.gens[0].disposed and not d.gens[1].disposed
 
 
 def test_sorgu_baska_program_ya_da_kisim_icin_yoneticiyi_kullanmaz(tmp_path, monkeypatch,
@@ -414,10 +441,14 @@ def test_sorgu_baska_program_ya_da_kisim_icin_yoneticiyi_kullanmaz(tmp_path, mon
     w = _wrapper(tmp_path, d, True)
     w.ingest_program(_Program(), DBN, database=CLIENT)
     assert w.hazir_yonetici(_Program(), list(FUNCS)) is None      # başka program nesnesi
+    assert d.gens[0].disposed                                     # eşleşmeyen kayıt bırakıldı
     prog = _Program()
     w.ingest_program(prog, DBN, database=CLIENT)
     assert w.hazir_yonetici(prog, list(FUNCS[:3])) is None        # farklı fonksiyon sayısı
-    assert w.hazir_yonetici(prog, list(FUNCS)) is d.gens[-1].m
+    prog2 = _Program()
+    w.ingest_program(prog2, DBN, database=CLIENT)
+    assert w.hazir_yonetici(prog2, list(FUNCS)) is d.gens[-1]     # sahiplik çağırana geçer
+    assert w._ingest_yoneticisi is None and not d.gens[-1].disposed
 
 
 def test_sorgu_zaten_ingestte_paralel_tarar_ayni_eslesme(tmp_path, monkeypatch, saat) -> None:
@@ -698,5 +729,44 @@ def test_kalan_butce(saat) -> None:
     assert _kalan_butce_sn(den) == pytest.approx(6.0)
 
 
-def test_java_yineleyici_jvm_yokken_ayni_sira() -> None:
+def test_java_yineleyici_jvm_yokken_ayni_sira(monkeypatch) -> None:
+    sahte = types.ModuleType("jpype")
+    sahte.isJVMStarted = lambda: False  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "jpype", sahte)
     assert list(_java_iterator(list(FUNCS))) == list(FUNCS)
+
+
+def test_java_yineleyici_jvm_varken_java_olmayan_oge(monkeypatch) -> None:
+    """Tam takımda başka bir test JVM'i başlatmış olabilir: sahte öğe ArrayList'e girmez."""
+    class _Liste:
+        def __init__(self, _n) -> None:
+            pass
+
+        def add(self, _x):
+            raise TypeError("No matching overloads found for java.util.ArrayList.add")
+
+    sahte = types.ModuleType("jpype")
+    sahte.isJVMStarted = lambda: True  # type: ignore[attr-defined]
+    sahte.JClass = lambda _ad: _Liste  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "jpype", sahte)
+    assert list(_java_iterator(list(FUNCS))) == list(FUNCS)
+
+
+def test_java_yineleyici_jvm_varken_ayni_sira(monkeypatch) -> None:
+    eklenen: list = []
+
+    class _Liste:
+        def __init__(self, n) -> None:
+            assert n == len(FUNCS)
+
+        def add(self, x):
+            eklenen.append(x)
+
+        def iterator(self):
+            return iter(list(eklenen))
+
+    sahte = types.ModuleType("jpype")
+    sahte.isJVMStarted = lambda: True  # type: ignore[attr-defined]
+    sahte.JClass = lambda ad: _Liste if ad == "java.util.ArrayList" else None  # type: ignore
+    monkeypatch.setitem(sys.modules, "jpype", sahte)
+    assert list(_java_iterator(list(FUNCS))) == list(FUNCS) and eklenen == list(FUNCS)

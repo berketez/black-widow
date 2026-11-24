@@ -1064,7 +1064,11 @@ def _butce_doldu(denetci: Any, islenen: int, toplam: Optional[int]) -> None:
 
 
 def _java_iterator(funcs: list[Any]) -> Any:
-    """``funcs`` ile aynı küme ve sırada ``java.util.Iterator`` (JVM yoksa Python yineleyicisi)."""
+    """``funcs`` ile aynı küme ve sırada ``java.util.Iterator``.
+
+    JVM yoksa ya da öğeler Java nesnesi değilse (JPype ``ArrayList.add`` uyuşmazlığı) Python
+    yineleyicisi döner; gerçek taramada o durumda ``scanFunctions`` düşer ve tekli yola geçilir.
+    """
     try:
         import jpype
 
@@ -1073,7 +1077,7 @@ def _java_iterator(funcs: list[Any]) -> Any:
             for func in funcs:
                 liste.add(func)
             return liste.iterator()
-    except ImportError:
+    except (ImportError, TypeError):
         pass
     return iter(funcs)
 
@@ -1087,6 +1091,14 @@ def _jvm_ayril() -> None:
             jpype.JClass("java.lang.Thread").detach()
     except Exception:  # noqa: BLE001
         logger.debug("BSim okuyucu iş parçacığı JVM'den ayrılamadı", exc_info=True)
+
+
+def _gen_birak(gen: Any) -> None:
+    """``GenSignatures.dispose`` (yöneticiyi de temizler); hata yutulur, günlüğe yazılır."""
+    try:
+        gen.dispose()
+    except Exception:  # noqa: BLE001
+        logger.debug("GenSignatures dispose basarisiz", exc_info=True)
 
 
 def _imzali_fonksiyon_sayisi(manager: Any) -> int:
@@ -1197,8 +1209,10 @@ class _BSimNativeWrapper:
         self.last_scan_mode: Optional[str] = None
         self.last_scan_hatasi = ""
         self.last_scan_sayac = ""
-        # HZ-2: bu oturumda TAM ingest edilen programın yöneticisi (sorgu yeniden taramasın):
-        # (program, fonksiyon sayısı, DescriptionManager).
+        # HZ-2: bu oturumda TAM ingest edilen programın taraması (sorgu yeniden taramasın):
+        # (program, fonksiyon sayısı, GenSignatures). GenSignatures AÇIK tutulur:
+        # ``dispose()`` yöneticiyi temizler (``manager.clear()``: fonksiyonlar VE sürüm /
+        # ayarlar sıfırlanır → sorgu "Query signature data has no setting information").
         self._ingest_yoneticisi: Optional[tuple[Any, int, Any]] = None
 
     # -- HZ-2: paralel tarama -------------------------------------------
@@ -1297,14 +1311,27 @@ class _BSimNativeWrapper:
         return len(funcs), gen
 
     def hazir_yonetici(self, program: Any, funcs: list[Any]) -> Any:
-        """Bu oturumda aynı program TAM ingest edildiyse onun yöneticisi (yoksa None)."""
+        """Bu oturumda aynı program TAM ingest edildiyse onun ``GenSignatures``'ı (yoksa None).
+
+        Kayıt bir kez verilir: sahiplik çağırana geçer (çağıran işi bitince ``dispose`` eder).
+        Eşleşmeyen kayıt burada bırakılır (``dispose``).
+        """
         kayit = getattr(self, "_ingest_yoneticisi", None)
+        self._ingest_yoneticisi = None
         if kayit is None:
             return None
-        prog, toplam, manager = kayit
+        prog, toplam, gen = kayit
         if prog is not program or toplam != len(funcs):
+            _gen_birak(gen)
             return None
-        return manager
+        return gen
+
+    def _yoneticiyi_birak(self) -> None:
+        """Kullanılmayan ingest taramasını bırak (decompiler / bellek tutulmasın)."""
+        kayit = getattr(self, "_ingest_yoneticisi", None)
+        self._ingest_yoneticisi = None
+        if kayit is not None:
+            _gen_birak(kayit[2])
 
     # -- yardimcilar --------------------------------------------------
 
@@ -1520,7 +1547,7 @@ class _BSimNativeWrapper:
         gen = None
         self.last_ingest_already = False
         self.last_ingest_kismi = None
-        self._ingest_yoneticisi = None
+        self._yoneticiyi_birak()
         self.last_scan_mode, self.last_scan_hatasi, self.last_scan_sayac = None, "", ""
         denetci = getattr(self, "denetci", None)
         paralel = bool(getattr(self, "paralel_tarama", False))
@@ -1599,8 +1626,10 @@ class _BSimNativeWrapper:
                     f"BSim InsertRequest basarisiz ({db_name}): {self._last_error(database)}"
                 )
             if paralel and self.last_ingest_kismi is None:
-                # HZ-2: sorgu aynı imzaları yeniden üretmesin (yönetici dispose'dan etkilenmez).
-                self._ingest_yoneticisi = (program, len(gercek), manager)
+                # HZ-2: sorgu aynı imzaları yeniden üretmesin. GenSignatures burada BIRAKILMAZ
+                # (dispose yöneticiyi temizler); sahibi artık kayıt: sorgu ya da close bırakır.
+                self._ingest_yoneticisi = (program, len(gercek), gen)
+                gen = None
             return func_count
         finally:
             if gen is not None:
@@ -1746,10 +1775,12 @@ class _BSimNativeWrapper:
         denetci = getattr(self, "denetci", None)
         paralel = bool(getattr(self, "paralel_tarama", False))
         self.last_scan_mode, self.last_scan_hatasi, self.last_scan_sayac = None, "", ""
-        # HZ-2: aynı oturumda tam ingest edildiyse onun yöneticisi (yeni GenSignatures yok).
-        manager = self.hazir_yonetici(program, funcs) if paralel else None
-        self._ingest_yoneticisi = None  # bir kez kullanılır; bellek tutulmaz
-        gen = None if manager is not None else self._gen_signatures(database, program)
+        # HZ-2: aynı oturumda tam ingest edildiyse onun taraması (yeni GenSignatures yok);
+        # sahiplik buraya geçer, sorgu bitince aşağıdaki finally bırakır.
+        hazir = self.hazir_yonetici(program, funcs) if paralel else None
+        self._yoneticiyi_birak()  # kullanılmayan kayıt (bayrak kapalı) tutulmasın
+        gen = hazir if hazir is not None else self._gen_signatures(database, program)
+        manager = gen.getDescriptionManager() if hazir is not None else None
         try:
             scanned: list[Any] = []
             taranan = 0
@@ -1855,7 +1886,7 @@ class _BSimNativeWrapper:
 
     def close(self) -> None:
         """Acik veritabani baglantisini kapat."""
-        self._ingest_yoneticisi = None
+        self._yoneticiyi_birak()
         if self._database is not None:
             try:
                 self._database.close()
