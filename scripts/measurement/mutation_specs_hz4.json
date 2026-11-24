@@ -1,0 +1,245 @@
+{
+  "_comment": "HZ-4a (döküm adımlarında tek başvuru geçişi) mutasyon koruması: başvuru tablosu (kaynak sırası denetimi, bayatlama, kayıt saklama, çağıran sırası, tekilleştirmeler, dizgi süzgeci, çözümleme önbellekleri, PK-8 iç tablosu, çıktı kopyaları, API denetimi), genel simge sayımı (tür süzgeci, başvuru hükmü, yol seçimi), CFG'de fonksiyon başına taze blok modeli, köprü bağlantıları (bayrak, ortak tablo, CFG argümanı, API yokken eski yol), bütçe sayacı. Mutant metinlerinin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_hz4.json",
+  "mutants": [
+    {
+      "id": "hz4_kaynak_sirasi_denetimsiz",
+      "desc": "Kaynak yineleyicisinin sırası denetlenmez: bozuk sırada çağrılan / dizgi sırası değişir",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_kaynak_yineleyicisi_bozuk_siradaysa_eski_yuruyuse_duser",
+      "find": "if onceki is not None and onceki.compareTo(addr) >= 0:",
+      "replace": "if False:"
+    },
+    {
+      "id": "hz4_yinelenen_adres_kabul",
+      "desc": "Yinelenen kaynak adresi sıra bozukluğu sayılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_kaynak_yineleyicisi_yinelenen_adres_verirse_eski_yuruyus",
+      "find": "onceki.compareTo(addr) >= 0:",
+      "replace": "onceki.compareTo(addr) > 0:"
+    },
+    {
+      "id": "hz4_bayat_tablo_bosaltilmaz",
+      "desc": "Program adımlar arasında değişse de tablo boşaltılmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_program_adimlar_arasinda_degisirse_tablo_bosaltilir",
+      "find": "if simdi != self._surum:",
+      "replace": "if simdi != simdi:"
+    },
+    {
+      "id": "hz4_kayit_saklanmaz",
+      "desc": "Kayıt tabloda saklanmaz: ikinci adım yeniden gezer (tek geçiş yok)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_yalniz_basvurusu_olan_adresler_gezilir_ve_iki_adim_tek_gecis",
+      "find": "k = self._kayitlar[func_addr] = self._hesapla(func, func_addr)",
+      "replace": "k = self._hesapla(func, func_addr)"
+    },
+    {
+      "id": "hz4_cagiran_sirasiz",
+      "desc": "Tablodaki çağıran listesi sıralanmaz (P16e yeni yolda düşer)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_cagiran_sirasi_getreferencesto_sirasindan_bagimsiz",
+      "find": "cagiranlar.sort(key=caller_sort_key)",
+      "replace": "pass"
+    },
+    {
+      "id": "hz4_ozyineleme_cagrilan_sayilir",
+      "desc": "Fonksiyonun kendine çağrısı çağrılan listesine girer",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_uc_dokum_eski_ve_yeni_yolda_bayt_bayt_ayni",
+      "find": "if hedef is not None and hedef[1] != func_addr and hedef[1] not in gorulen_c:",
+      "replace": "if hedef is not None and hedef[1] not in gorulen_c:"
+    },
+    {
+      "id": "hz4_cagrilan_tekillestirme_duser",
+      "desc": "Aynı fonksiyona ikinci çağrı yeri listeye yeniden girer",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_uc_dokum_eski_ve_yeni_yolda_bayt_bayt_ayni",
+      "find": "hedef[1] != func_addr and hedef[1] not in gorulen_c:",
+      "replace": "hedef[1] != func_addr:"
+    },
+    {
+      "id": "hz4_ozyineleme_cagiran_sayilir",
+      "desc": "Fonksiyonun kendine çağrısı çağıran listesine girer",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_uc_dokum_eski_ve_yeni_yolda_bayt_bayt_ayni",
+      "find": "if ca != func_addr and ca not in gorulen_a:",
+      "replace": "if ca not in gorulen_a:"
+    },
+    {
+      "id": "hz4_dizgi_tekillestirme_duser",
+      "desc": "Aynı dizgiye ikinci başvuru listeye yeniden girer",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_uc_dokum_eski_ve_yeni_yolda_bayt_bayt_ayni",
+      "find": "if ta not in gorulen_s:",
+      "replace": "if True:"
+    },
+    {
+      "id": "hz4_dizgi_olmayan_veri_girer",
+      "desc": "Dizgi olmayan veri ile değeri None olan dizgi karışır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_uc_dokum_eski_ve_yeni_yolda_bayt_bayt_ayni",
+      "find": "if val is not _DIZGI_DEGIL:",
+      "replace": "if val is not None:"
+    },
+    {
+      "id": "hz4_dizgi_tip_suzgeci_duser",
+      "desc": "Veri tipi adına bakılmaz: her tanımlı veri dizgi sayılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_uc_dokum_eski_ve_yeni_yolda_bayt_bayt_ayni",
+      "find": "if \"string\" in dtn or \"cstring\" in dtn:\n                val = data.getDefaultValueRepresentation()",
+      "replace": "if True:\n                val = data.getDefaultValueRepresentation()"
+    },
+    {
+      "id": "hz4_veri_disi_basvuru_dizgi_sayilir",
+      "desc": "Çağrı da veri de olmayan başvuru dizgi adayı olur",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_senaryo_bos_degil_beklenen_icerik",
+      "find": "                elif rt.isData():\n                    to_addr = ref.getToAddress()\n                    ta = str(to_addr)\n                    if ta not in gorulen_s:",
+      "replace": "                else:\n                    to_addr = ref.getToAddress()\n                    ta = str(to_addr)\n                    if ta not in gorulen_s:"
+    },
+    {
+      "id": "hz4_hedef_onbellegi_yazilmaz",
+      "desc": "Çağrı hedefi çözümlemesi saklanmaz: aynı adres yeniden çözülür",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_cagri_hedefi_ve_dizgi_cozumlemesi_program_boyunca_bir_kez",
+      "find": "self._hedefler[anahtar] = hedef",
+      "replace": "pass"
+    },
+    {
+      "id": "hz4_dizgi_onbellegi_yazilmaz",
+      "desc": "Veri adresi çözümlemesi saklanmaz",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_cagri_hedefi_ve_dizgi_cozumlemesi_program_boyunca_bir_kez",
+      "find": "self._veriler[ta] = val",
+      "replace": "pass"
+    },
+    {
+      "id": "hz4_cagri_disi_basvuru_tabloya_girmez",
+      "desc": "Giriş adresine çağrı olmayan başvurular iç tabloya yazılmaz (PK-8 verisi kaybolur)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_giris_adresine_cagri_olmayan_basvurular_ic_tabloda",
+      "find": "giris_cagri_disi.append(ref)",
+      "replace": "pass"
+    },
+    {
+      "id": "hz4_dizgi_sayimi_duser",
+      "desc": "Tablo yolunda dizgi adresleri sayılmaz (total_strings_with_xrefs 0)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_uc_dokum_eski_ve_yeni_yolda_bayt_bayt_ayni",
+      "find": "            strings_used.append({\"address\": ta, \"value\": val})\n            string_ref_counts[ta] = string_ref_counts.get(ta, 0) + 1",
+      "replace": "            strings_used.append({\"address\": ta, \"value\": val})"
+    },
+    {
+      "id": "hz4_cikti_listesi_ortak_nesne",
+      "desc": "xref çıktısındaki çağıran kayıtları tablodaki nesnelerin kendisi (takma ad)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_cikti_listeleri_iki_adim_arasinda_ortak_nesne_degil",
+      "find": "\"called_by\": [dict(c) for c in k.cagiranlar],",
+      "replace": "\"called_by\": k.cagiranlar,"
+    },
+    {
+      "id": "hz4_cagri_dugumu_ortak_nesne",
+      "desc": "Çağrı grafiği düğümündeki çağıran listesi tablodaki listenin kendisi (takma ad)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_cikti_listeleri_iki_adim_arasinda_ortak_nesne_degil",
+      "find": "unique_callers = [dict(c) for c in k.cagiranlar]",
+      "replace": "unique_callers = k.cagiranlar"
+    },
+    {
+      "id": "hz4_kur_api_denetimsiz",
+      "desc": "Başvuru yöneticisinde gereken API yokken de tablo kurulur",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_kur_gereken_api_yoksa_none",
+      "find": "            if not hasattr(ref_mgr, ad):\n                return None",
+      "replace": "            if False:\n                return None"
+    },
+    {
+      "id": "hz4_simge_tur_suzgeci_eksik",
+      "desc": "Yerel değişken simgeleri genel simge sayımına girer",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_simge_sayimi_hasreferencesto_ile_ayni_sayi",
+      "find": "for t in (SymbolType.FUNCTION, SymbolType.PARAMETER, SymbolType.LOCAL_VAR))",
+      "replace": "for t in (SymbolType.FUNCTION, SymbolType.PARAMETER))"
+    },
+    {
+      "id": "hz4_simge_basvuru_hukmu_duser",
+      "desc": "Başvurusu olmayan simge de sayılır",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_simge_sayimi_hasreferencesto_ile_ayni_sayi",
+      "find": "and ref_mgr.hasReferencesTo(sym.getAddress())):",
+      "replace": "and True):"
+    },
+    {
+      "id": "hz4_simge_yolu_secilmez",
+      "desc": "tek_gecis verilse de genel simge sayımı eski yineleyiciyle koşar",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_simge_sayimi_hasreferencesto_ile_ayni_sayi",
+      "find": "if (tek_gecis or tablo is not None) and ikinci_bolum:",
+      "replace": "if tablo is not None and ikinci_bolum:"
+    },
+    {
+      "id": "hz4_cfg_taze_model_kurulmaz",
+      "desc": "CFG tek geçişte de program boyunca tek blok modeli kullanır (önbellek birikir)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_cfg_tek_geciste_blok_modeli_fonksiyon_basina_kurulur",
+      "find": "                if tek_gecis:  # HZ-4a: fonksiyon başına taze model (blok önbelleği birikmez)",
+      "replace": "                if False:  # HZ-4a: fonksiyon başına taze model (blok önbelleği birikmez)"
+    },
+    {
+      "id": "hz4_kopru_bayrak_okunmaz",
+      "desc": "Köprü analysis.dokum_tek_gecis ayarını okumaz (hep eski döngüler)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_kopru_bayrak_acikken_ortak_tablo_ve_ayni_cikti",
+      "find": "\"dokum_tek_gecis\", False)):",
+      "replace": "\"dokum_tek_gecis_yok\", False)):"
+    },
+    {
+      "id": "hz4_kopru_bayrak_kapaliyken_tablo",
+      "desc": "Köprü bayrak kapalıyken de tabloyu kurar",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_kopru_bayrak_kapaliyken_ek_arguman_verilmez",
+      "find": "                if bool(getattr(getattr(self.config, \"analysis\", None),\n                                \"dokum_tek_gecis\", False)):",
+      "replace": "                if True or bool(getattr(getattr(self.config, \"analysis\", None),\n                                \"dokum_tek_gecis\", False)):"
+    },
+    {
+      "id": "hz4_kopru_xref_ayri_tablo",
+      "desc": "Köprü xref adımına ortak tabloyu vermez (iki adım ayrı gezer)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_kopru_bayrak_acikken_ortak_tablo_ve_ayni_cikti",
+      "find": "**({\"tablo\": basvuru_tablosu, \"tek_gecis\": True} if tek_gecis else {}))",
+      "replace": "**({\"tablo\": _BasvuruTablosu.kur(program), \"tek_gecis\": True} if tek_gecis else {}))"
+    },
+    {
+      "id": "hz4_kopru_cfg_tek_gecis_verilmez",
+      "desc": "Köprü CFG adımına tek_gecis vermez",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_kopru_bayrak_acikken_ortak_tablo_ve_ayni_cikti",
+      "find": "program, denetci=den, **({\"tek_gecis\": True} if tek_gecis else {}))",
+      "replace": "program, denetci=den)"
+    },
+    {
+      "id": "hz4_kopru_api_yokken_arguman_verir",
+      "desc": "Tablo kurulamadığında da işlevlere tek geçiş argümanı verilir",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_kopru_bayrak_acik_ama_api_yoksa_eski_donguler",
+      "find": "                tek_gecis = basvuru_tablosu is not None",
+      "replace": "                tek_gecis = True"
+    },
+    {
+      "id": "hz4_cagri_grafigi_tablo_tazelenmez",
+      "desc": "Çağrı grafiği adımı başında tablo tazelenmez (xref'tekiyle birlikte: iki tazele çağrısı)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_tazele_her_iki_adimin_basinda",
+      "find": "        nodes = {}\n        edges = []\n        if tablo is not None:\n            tablo.tazele()",
+      "replace": "        nodes = {}\n        edges = []"
+    },
+    {
+      "id": "hz4_islenen_cift_sayilir",
+      "desc": "Tablo yolunda işlenen fonksiyon sayacı iki kez artar (kısmi çıktıda yanlış sayaç)",
+      "module": "karadul/ghidra/headless.py",
+      "test": "tests/test_hz4_dokum.py::test_butce_dolunca_kismi_cikti_iki_yolda_ayni",
+      "find": "            if tablo is not None:  # HZ-4a: tek geçiş\n                nodes[func_addr] = tablo.cagri_dugumu(func, func_name, func_addr, edges)\n                continue",
+      "replace": "            if tablo is not None:  # HZ-4a: tek geçiş\n                nodes[func_addr] = tablo.cagri_dugumu(func, func_name, func_addr, edges)\n                islenen += 1\n                continue"
+    }
+  ]
+}

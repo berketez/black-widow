@@ -110,8 +110,8 @@
       "desc": "Çağrı grafiği adımına denetçi verilmez",
       "module": "karadul/ghidra/headless.py",
       "test": "tests/test_ol2_adim_butcesi.py::test_kopru_her_dokum_adimi_bagli",
-      "find": "cg_data = self._extract_call_graph(program, denetci=den)",
-      "replace": "cg_data = self._extract_call_graph(program)"
+      "find": "cg_data = self._extract_call_graph(\n                        program, denetci=den,",
+      "replace": "cg_data = self._extract_call_graph(\n                        program,"
     },
     {
       "id": "ol2_toplam_fonksiyon_adimindan_degil",
