@@ -117,10 +117,33 @@ def _bayrak(dugum: ast.AST | None) -> int | None:
     return None
 
 
+_KACISLI_ADLAR: set[str] = set()  # kaliplari_topla dosya başına doldurur
+
+
 def _re_escape_mi(dugum: ast.AST) -> bool:
-    return (isinstance(dugum, ast.Call) and isinstance(dugum.func, ast.Attribute)
-            and isinstance(dugum.func.value, ast.Name) and dugum.func.value.id == "re"
-            and dugum.func.attr == "escape")
+    """``re.escape(…)`` çağrısı, ``map(re.escape, …)`` ya da ``re.escape``'ten
+    atanmış bir ad (aynı modülde ``x = re.escape(…)``; yaklaşık)."""
+    if isinstance(dugum, ast.Name) and dugum.id in _KACISLI_ADLAR:
+        return True
+    if not isinstance(dugum, ast.Call):
+        return False
+    f = dugum.func
+    if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) and f.value.id == "re" \
+            and f.attr == "escape":
+        return True
+    if isinstance(f, ast.Name) and f.id == "map" and dugum.args:
+        a = dugum.args[0]
+        return (isinstance(a, ast.Attribute) and isinstance(a.value, ast.Name)
+                and a.value.id == "re" and a.attr == "escape")
+    return False
+
+
+def _kacisli_adlar(agac: ast.Module) -> set[str]:
+    out: set[str] = set()
+    for d in ast.walk(agac):
+        if isinstance(d, ast.Assign) and _re_escape_mi(d.value):
+            out |= {t.id for t in d.targets if isinstance(t, ast.Name)}
+    return out
 
 
 def _modul_sabitleri(agac: ast.Module) -> tuple[dict[str, str], dict[str, list[str]]]:
@@ -205,6 +228,8 @@ def _sablon(dugum: ast.AST, dizgi: dict[str, str], liste: dict[str, list[str]],
                 return taban.join(ogeler)
             if isinstance(arg, ast.Name) and arg.id in liste:
                 return taban.join(liste[arg.id])
+            if _re_escape_mi(arg):
+                return taban.join([YER_TUTUCU, YER_TUTUCU])
             if isinstance(arg, (ast.GeneratorExp, ast.ListComp)):
                 if not _re_escape_mi(arg.elt):
                     kacissiz.append(ast.unparse(arg))
@@ -213,7 +238,8 @@ def _sablon(dugum: ast.AST, dizgi: dict[str, str], liste: dict[str, list[str]],
             return taban.join([YER_TUTUCU, YER_TUTUCU])
         if taban is not None and dugum.func.attr == "format":
             for a in list(dugum.args) + [k.value for k in dugum.keywords]:
-                if not _re_escape_mi(a) and _sabit_dizgi(a) is None:
+                if not _re_escape_mi(a) and _sabit_dizgi(a) is None \
+                        and not (isinstance(a, ast.Name) and a.id in dizgi):
                     kacissiz.append(ast.unparse(a))
             return re.sub(r"\{[^{}]*\}", YER_TUTUCU, taban.replace("{{", "\x01").replace("}}", "\x02")) \
                 .replace("\x01", "{").replace("\x02", "}")
@@ -222,7 +248,8 @@ def _sablon(dugum: ast.AST, dizgi: dict[str, str], liste: dict[str, list[str]],
         if taban is not None:
             sag = dugum.right.elts if isinstance(dugum.right, ast.Tuple) else [dugum.right]
             for a in sag:
-                if not _re_escape_mi(a) and _sabit_dizgi(a) is None:
+                if not _re_escape_mi(a) and _sabit_dizgi(a) is None \
+                        and not (isinstance(a, ast.Name) and a.id in dizgi):
                     kacissiz.append(ast.unparse(a))
             return re.sub(r"%[sdr]", YER_TUTUCU, taban.replace("%%", "\x01")).replace("\x01", "%")
     return None
@@ -246,6 +273,9 @@ def kaliplari_topla(yollar: list[Path], sablonlar: bool = False) -> tuple[list[d
             except (SyntaxError, UnicodeDecodeError):
                 continue
             dizgi, liste = _modul_sabitleri(agac) if sablonlar else ({}, {})
+            _KACISLI_ADLAR.clear()
+            if sablonlar:
+                _KACISLI_ADLAR.update(_kacisli_adlar(agac))
             for d in ast.walk(agac):
                 if not (isinstance(d, ast.Call) and isinstance(d.func, ast.Attribute)
                         and isinstance(d.func.value, ast.Name) and d.func.value.id == "re"
@@ -744,6 +774,168 @@ def dogrula(kalip: str, bayrak: int, sinif: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# 3c. Güçlü düşmanca girdi (BA-2 hüküm 2; rapor için, kapıda kullanılmaz)
+# ---------------------------------------------------------------------------
+
+_GUCLU_KARAKTER = list("a0_ ,.:-/x()*;=\t\n'\"[]{}<>!+&|#@$%Q")
+
+
+def guclu_denemeler(kalip: str, bayrak: int, sinif: dict) -> list[dict]:
+    """Aday için daha geniş (önek, pompa, sonek) kümesi.
+
+    Pompa: yineleme gövdesinin tanığı, tanığın iki katı, gövdenin tüketebildiği
+    tek karakterler ve bunların ikilileri (iki farklı bölünüş: ``cc`` hem tek
+    hem iki yinelemeyle tüketilebilir), iç yinelemenin ve kesişen seçeneklerin
+    karakterleri. Sonek: ``SONEKLER`` + gövdenin tüketemediği karakterler
+    (eşleşmeyi bozan son karakter).
+    """
+    agac = sinif["agac"]
+    disler: list = [d for d, _ in sinif["ic_ice"]] + [d for d, _ in sinif["ortusen_secenek"]]
+    out: list[dict] = []
+    goruldu: set = set()
+    for dis in disler:
+        govde = dis[1][2]
+        bas = onek(agac, dis, bayrak)
+        tum = _tum_kume(govde, bayrak)
+        t = tanik(govde, bayrak)
+        tek = [c for c in _GUCLU_KARAKTER if c in tum][:8]
+        pompalar = [p for p in [t, t * 2] + tek + [a + b for a in tek[:4] for b in tek[:4] if a != b]
+                    if p]
+        sonekler = SONEKLER + [c for c in _GUCLU_KARAKTER if c not in tum][:6]
+        for p in pompalar:
+            for s in sonekler:
+                anahtar = (bas, p, s)
+                if anahtar in goruldu:
+                    continue
+                goruldu.add(anahtar)
+                out.append({"onek": bas, "pompa": p, "sonek": s})
+    return out
+
+
+_GUCLU_COCUK = r"""
+import json, math, re, sys, time
+g = json.load(open(sys.argv[1], encoding="utf-8"))
+out = open(sys.argv[2], "w", encoding="utf-8")
+def yaz(d):
+    out.write(json.dumps(d) + "\n"); out.flush()
+def olc(k, m):
+    t0 = time.perf_counter(); r = k.search(m); return time.perf_counter() - t0, r is not None
+for a in g["adaylar"]:
+    k = re.compile(a["kalip"], a["bayrak"])
+    en = None
+    for j, d in enumerate(a["denemeler"]):
+        satir = []
+        for L in g["uzunluklar"]:
+            n = max(1, L // len(d["pompa"]))
+            m = d["onek"] + d["pompa"] * n + d["sonek"]
+            yaz({"id": a["id"], "basla": [j, L]})
+            s, esl = olc(k, m)
+            satir.append([L, s, esl])
+        if en is None or satir[-1][1] > en["sureler"][-1][1]:
+            en = {"deneme": d, "sureler": satir}
+    # En kötü bileşimde büyüme: 1 000 / 2 000 / 4 000 karakter.
+    buyume = []
+    if en is not None:
+        d = en["deneme"]
+        for L in g["buyume"]:
+            n = max(1, L // len(d["pompa"]))
+            m = d["onek"] + d["pompa"] * n + d["sonek"]
+            yaz({"id": a["id"], "basla": ["buyume", L]})
+            s, esl = olc(k, m)
+            buyume.append([L, s, esl])
+    yaz({"id": a["id"], "son": {"en_kotu": en, "buyume": buyume,
+                                "deneme_sayisi": len(a["denemeler"])}})
+"""
+
+
+def guclu_sinifla(kayitlar: list[dict], uzunluklar: tuple[int, ...] = (20, 40, 80),
+                  buyume: tuple[int, ...] = (200, 400, 800),
+                  zaman_asimi: float = 3.0) -> list[dict]:
+    """Adayları güçlü düşmanca girdiyle sınıflar: ``ustel`` / ``polinom`` / ``guvenli``.
+
+    Ölçümler tek çocuk süreçte, bekçiyle (takılırsa SIGKILL). Sınıf:
+    20 / 40 / 80 karakterlik evrede zaman aşımı ya da 80 karakterde ≥ 1 sn ya
+    da 80'de ≥ 10 ms ve 40 → 80 ≥ 64 kat → ``ustel`` (derece ≤ 5 polinom 40 →
+    80'de en çok 32 kat verir). Değilse en kötü bileşimin 400 → 800 oranından
+    derece d = log2(oran): d ≥ 1,5 ve 800'de ≥ 0,1 ms → ``polinom``; büyüme
+    evresinde zaman aşımı da ``polinom`` (yüksek derece); değilse
+    ``guvenli`` (doğrusal).
+    """
+    import math
+
+    adaylar = []
+    for i, k in enumerate(kayitlar):
+        sinif = siniflandir(k["kalip"], k["bayrak"])
+        adaylar.append({"id": i, "kalip": k["kalip"], "bayrak": k["bayrak"],
+                        "denemeler": guclu_denemeler(k["kalip"], k["bayrak"], sinif)})
+    sonuc: dict[int, dict] = {}
+    kalan = list(adaylar)
+    with tempfile.TemporaryDirectory(prefix="kalip_guclu_") as td:
+        tur = 0
+        while kalan:
+            tur += 1
+            gd = Path(td) / f"g{tur}.json"
+            od = Path(td) / f"c{tur}.jsonl"
+            gd.write_text(json.dumps({"adaylar": kalan, "uzunluklar": list(uzunluklar),
+                                      "buyume": list(buyume)}), encoding="utf-8")
+            p = subprocess.Popen([sys.executable, "-I", "-c", _GUCLU_COCUK, str(gd), str(od)])
+            son_boyut, son_degisim, olduruldu = -1, time.monotonic(), False
+            while p.poll() is None:
+                time.sleep(0.02)
+                boyut = od.stat().st_size if od.exists() else 0
+                if boyut != son_boyut:
+                    son_boyut, son_degisim = boyut, time.monotonic()
+                elif time.monotonic() - son_degisim > zaman_asimi:
+                    p.kill()
+                    p.wait()
+                    olduruldu = True
+                    break
+            satirlar = [json.loads(s) for s in od.read_text(encoding="utf-8").splitlines()
+                        if s.strip()] if od.exists() else []
+            biten = set()
+            son_basla = None
+            for s in satirlar:
+                if "son" in s:
+                    sonuc[s["id"]] = s["son"]
+                    biten.add(s["id"])
+                else:
+                    son_basla = s
+            if olduruldu:
+                if son_basla is None or son_basla["id"] in biten:
+                    raise RuntimeError("bekçi: takılan aday belirlenemedi")
+                tid = son_basla["id"]
+                aday = next(a for a in kalan if a["id"] == tid)
+                j, L = son_basla["basla"]
+                d = aday["denemeler"][j] if isinstance(j, int) else None
+                sonuc[tid] = {"zaman_asimi": {"basla": son_basla["basla"], "deneme": d}}
+                biten.add(tid)
+            elif p.returncode != 0:
+                raise RuntimeError(f"çocuk süreç çıkışı {p.returncode}")
+            kalan = [a for a in kalan if a["id"] not in biten]
+    out = []
+    for i, k in enumerate(kayitlar):
+        r = sonuc[i]
+        kayit = {"yer": f"{k['dosya']}:{k['satir']}", "kalip": k["kalip"], "bayrak": k["bayrak"], **r}
+        if "zaman_asimi" in r:
+            buyumede = r["zaman_asimi"]["basla"][0] == "buyume"
+            kayit["sinif"] = "polinom" if buyumede else "ustel"
+        else:
+            sur = r["en_kotu"]["sureler"] if r["en_kotu"] else []
+            t = {L: s for L, s, _e in sur}
+            b = {L: s for L, s, _e in r["buyume"]}
+            t80, t40 = t.get(uzunluklar[-1], 0.0), t.get(uzunluklar[-2], 0.0)
+            if t80 >= 1.0 or (t80 >= 0.01 and t80 / max(t40, 1e-9) >= 64):
+                kayit["sinif"] = "ustel"
+            else:
+                b2, b4 = b.get(buyume[-2], 0.0), b.get(buyume[-1], 0.0)
+                d = math.log2(b4 / b2) if b2 > 0 and b4 > 0 else 0.0
+                kayit["derece_kestirimi"] = round(d, 2)
+                kayit["sinif"] = "polinom" if (d >= 1.5 and b4 >= 1e-4) else "guvenli"
+        out.append(kayit)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # 4. Kapı
 # ---------------------------------------------------------------------------
 
@@ -902,6 +1094,35 @@ def _gercek(args: argparse.Namespace) -> int:
     return 0
 
 
+def _guclu(args: argparse.Namespace) -> int:
+    """Durağan adayların hepsini (sabit + şablon) güçlü düşmanca girdiyle sınıflar."""
+    t0 = time.perf_counter()
+    hepsi, _ = kaliplari_topla([Path(y) for y in args.yollar], sablonlar=True)
+    adaylar = []
+    for k in hepsi:
+        if k["tur"] == "taranamadi":
+            continue
+        try:
+            s = siniflandir(k["kalip"], k["bayrak"])
+        except (re.error, RecursionError, OverflowError):
+            continue
+        if s["ic_ice"] or s["ortusen_secenek"]:
+            adaylar.append(k)
+    sonuc = guclu_sinifla(adaylar, zaman_asimi=args.zaman_asimi)
+    for k, r in zip(adaylar, sonuc):
+        r["tur"] = k["tur"]
+        print(f"{r['sinif']:8s} {r.get('derece_kestirimi', '-')!s:6s} {r['yer']}  {r['kalip'][:80]}",
+              flush=True)
+    ozet = {"aday": len(sonuc), "sure_sn": round(time.perf_counter() - t0, 1)}
+    for sinif in ("ustel", "polinom", "guvenli"):
+        ozet[sinif] = sum(1 for r in sonuc if r["sinif"] == sinif)
+    print(json.dumps(ozet, ensure_ascii=False))
+    if args.json:
+        Path(args.json).write_text(json.dumps({"ozet": ozet, "adaylar": sonuc}, ensure_ascii=False,
+                                              indent=1, default=str), encoding="utf-8")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     alt = ap.add_subparsers(dest="komut", required=True)
@@ -914,8 +1135,12 @@ def main(argv: list[str] | None = None) -> int:
     g.add_argument("--ws", action="append", required=True)
     g.add_argument("--zaman-asimi", type=float, default=900.0)
     g.add_argument("--json")
+    gu = alt.add_parser("guclu")
+    gu.add_argument("yollar", nargs="+")
+    gu.add_argument("--json")
+    gu.add_argument("--zaman-asimi", type=float, default=3.0)
     args = ap.parse_args(argv)
-    return _tara(args) if args.komut == "tara" else _gercek(args)
+    return {"tara": _tara, "gercek": _gercek, "guclu": _guclu}[args.komut](args)
 
 
 if __name__ == "__main__":
