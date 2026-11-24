@@ -174,3 +174,39 @@ Yani JPype her Java çöp toplamasından sonra **tam** bir Python toplaması (`P
 4. Aynı mekanizma decompile'dan sonraki öbür köprü adımlarını (P-code, FunctionID, BSim ingest / sorgu) ve decompile'ın kendisini de etkiliyor olabilir: ölçülmedi.
 
 **Ek koşu (ön kayıt dışı; hüküm yok):** çareyi (a) ölçmek için ürün kodunu değiştirmeyen bir sarmalayıcı (`…/HZ4a/betik/dondur_kos.py`: `_extract_xrefs` çağrılmadan önce `gc.collect(); gc.freeze()`), bayrak KAPALI, BSim kapalı, aynı ürün ağacı; T25 açık kolundan sonra koşacak.
+
+## Kalem 4b — CFG'deki değişiklik geri alındı (kıyasta kazanç ölçülmedi)
+
+İlk kod commit'inde (`0f2fefc0`) `_extract_cfg` tek geçişte fonksiyon başına taze `BasicBlockModel` kuruyordu. Tam ölçekli kıyasta (aşağıda) CFG: eski 17,4 sn ↔ yeni 17,7 / 19,7 sn — **kazanç yok**. Profilde yazılan kurala göre değişiklik geri alındı (bu commit): `_extract_cfg` imzası ve gövdesi main'dekiyle aynı, köprü CFG'ye ek argüman vermiyor; ilgili test `test_cfg_dokumu_degismedi_tek_blok_modeli` oldu, iki mutant tanımdan çıktı (30 → **28**; 28 / 28 öldü, `…/HZ4a/mutasyon_hz4_3.log`). Sekiz eski tanım geri alıştan sonra yeniden koşuldu (aşağıda). Test sayısı 30.
+
+**Ölçümlerin ağacı:** kıyas, H5, S8 ve T25 koşuları ürün ağacı `~/karadul_olcum/urun-f144b9c9`'da (taze model DAHİL) alındı. Son commit'te açık kolun CFG yolu kapalı kolun yoluyla aynı koddur (main'deki gövde); çağrı grafiği / xref kodu ölçülen ağaçtakiyle bayt bayt aynı. CFG'nin "açık" süreleri taze modelle ölçüldü; son koddaki karşılığı "kapalı" kolun CFG süresidir.
+
+## Kalem 5a — aynı süreçte kıyas (Ollama dilimi; 15:08:37–15:13:20, yük altında)
+
+`hz4a_profil.py --kip kiyas`, kuyruk `HZ4a kiyas:ollama` (yuva 2), ürün ağacı `urun-f144b9c9`, ayar T25 (ObjC ileti çözümleyicisi kapalı); `uptime` 5,14 / 5,87 / 8,57 → 7,60 / 6,68 / 8,15. Taze JVM, decompile / BSim yok; aynı program nesnesinde yeni → eski → yeni. Çıktı `…/HZ4a/ozet/kiyas_t25.json`; eski dökümler `…/HZ4a/kiyas_t25/dokum/`.
+
+| Adım | eski (sn) | yeni 1, soğuk (sn) | yeni 2 (sn) |
+|---|---|---|---|
+| çağrı grafiği | 27,54 | 9,35 | 9,53 |
+| xref | 30,85 | 1,47 | 1,47 |
+| CFG (taze model; geri alındı) | 17,38 | 17,69 | 19,71 |
+| toplam | 75,77 | 28,51 | 30,71 |
+| **oran (yeni / eski)** | | **0,376** | **0,405** |
+| çağrı grafiği + xref oranı | | 0,185 | 0,188 |
+
+- **Eşitlik: 3 / 3** — `json.dumps(indent=2, ensure_ascii=False)` metni iki yeni koşuda da eskiyle aynı (çağrı grafiği 18 978 176 bayt, xref 12 072 909 bayt, CFG 124 801 871 bayt).
+- Çağrı grafiği adımı yeni yolda xref'in kaydını da hesaplıyor (9,4 sn); xref hazır kayıttan + simge sayımından 1,5 sn.
+- GC (JVM): adım başına 0–235 ms.
+- **Bütçe denemesi (gerçek Ghidra, yeni yol, ürünün `_AdimDenetcisi`'yle; tam sürenin ~%40'ı bütçe):** çağrı grafiği 3,81 sn'de 1 924 / 13 308 fonksiyonda, xref 0,59 sn'de 376 / 13 308'de (neden "…; genel sembol sayımı yapılmadı", `total_globals_with_xrefs` 0), CFG 7,88 sn'de 4 962 / 13 308'de kesildi. Üçünde de çıktı geçerli JSON, `kismi: true`, `islenen` ≤ `toplam`, işlenen fonksiyonların kayıtları tam çıktıdakilerle aynı.
+
+## Kalem 5 — H5 (sqlite3, `timeouts.ghidra_adim: 1`, bayrak açık; ürün koşusu 15:13:20–15:13:53)
+
+Kuyruk `HZ4a H5:sqlite3` (yuva 2), `--stage static`, ayar `…/HZ4a/ozet/ayar/h5_acik.yaml`, çıkış 3 (kısmi). Ölçüm `…/HZ4a/ozet/h5_sqlite3.json`; `uptime` 7,60 / 6,68 / 8,15.
+
+- Adım süreleri: çağrı grafiği 0,353 sn, **xref 0,084 sn** (OL2'nin aynı koşusunda bayrak kapalıyken 1,023 sn ve kesilmişti), CFG 0,961 sn. **Üç adımdan hiçbiri 1 sn'lik bütçeye takılmadı;** kesilen tek adım BSim ingest (86 / 429, `kismi`).
+- `call_graph.json`, `xrefs.json`, `cfg.json` geçerli JSON, kısmi alan yok ve S8 tabanındaki tam sqlite3 çıktısıyla (bayrak kapalı, main `534e252b`) **JSON-eşit 3 / 3** (`total_globals_with_xrefs` 7 591 = 7 591).
+- **H5 hükmü:** ön kayıttaki koşul ("xref ya da CFG kesildiğinde") ürün koşusunda OLUŞMADI (adımlar bütçeden kısa; `ghidra_adim` tam sayı olduğu için 1 sn'nin altı verilemiyor). Kesilme yolu gerçek Ghidra'da aynı süreçte kıyasın bütçe denemesiyle (yukarıda, Ollama; üç adım) ve sahte programla testlerde sınandı: geçerli JSON, `kismi: true`, `islenen` ≤ `toplam`, kesilmeyen kayıtlar tam çıktıyla aynı. Ürün koşusu hükmü: "koşul oluşmadı"; kıyas kolu: tuttu.
+
+### Sekiz eski tanım, geri alıştan sonra (ikinci koşu)
+
+hz1 13 / 13, ol1 29 / 29, p13a 22 / 22, p16a 33 / 33, p16c 16 / 16, p16d 11 / 11, p16e 13 / 13, ol2 33 / 33 = **170 / 170 öldü** (`…/HZ4a/mutasyon_eski_2/OZET.txt`). Geri alıştan sonra `headless` köprüsüne değinen 37 test dosyası + `test_p15a_etkisiz` + `test_bayrak_on_paketi`: 849 geçti / 12 atlandı / 1 kaldı (beklenen `test_inert_registry_is_accurate`); günlük `…/HZ4a/tam_takim/pytest_ilgili_geri_alis_sonrasi.log`.
