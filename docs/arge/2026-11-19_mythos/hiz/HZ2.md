@@ -157,3 +157,26 @@ Betik `…/HZ2/betik/fizibilite.py` (ürün ağacının `bsim.py`'si; `pyghidra.
 ## Ölçüm
 
 **13:35 — bekliyorum:** ölçüm sürücüsü (`…/HZ2/betik/kos_hepsi.zsh`, arka planda) kuyrukta: fizibilite → H4 (sqlite3) → S8 (8 ikili, paralel açık, tek kök `…/HZ2/s8`) → H2 (cat taze depo, zstd S8'in zstd öncesi deposunun kopyasıyla; kapalı) → T25. Yuva 2'yi ana oturumun Ollama kabul koşusu tutuyor (13:10'dan beri), yuva 1'de OL4 ve PUV6b ile sıra. 1 dk yük 26–56 (**yük altında**). TAHMİNİ bitiş: fizibilite + H4 13:45–13:55; S8 14:25–14:45 (taban S8 yük altında ≈ 30 dk); H2 14:35–14:55; T25 ancak 14:52'den önce başlarsa (süre sınırı 15:12'de biter), değilse "kalan".
+
+(13:35 satırı geçmiş kayıttır: 1. tur 13:49'da durduruldu, 2. tur kalem 9a–10'da.)
+
+**T25 koşusunun sonu:** 15:08:36, **çıkış 3**; neden köprü dışında, OL2 T25 ile aynı ("static: Desteklenmiyor: evrensel ikilide go dilimi tanındı ama Go analizcisi (GOPCLNTAB / modül adları) şişman dosyayı açmıyor; yalnız yerel hat (seçilen dilim) koştu"); köprünün `step_errors`'ı boş. Sürücü 15:08:36'da bitti.
+
+## Riskler
+
+- **Küçük ikilide paralel yol yavaş:** ingest cat 1,46 → 3,62 sn, tree 1,66 → 3,48 sn; 2 sn bütçede 6 fonksiyon (tekli 253). İşçi başına decompiler süreci açılışı. Büyük ikilide kazanç büyük (Ollama 576 → 56 sn). Eşik ölçülmedi (HZ-9 / boş makine).
+- **Ingest taraması sorguya kadar açık:** tam ingest'in `GenSignatures`'ı (yönetici + tekli yedekte bir decompiler süreci) sorgu ya da `close` bırakana kadar bellekte; Ollama'da 13 160 imza. Sorgu atlanırsa `close`'da bırakılır (headless `bsim_db.close()` çağırıyor).
+- **Yansımayla kurulan `BasicTaskMonitor`:** paket-içi sınıf; Ghidra sürümü değişirse kurulamayabilir → sayaç okunamaz, olay üretilmez, `scan_sayac` durum alanı ve WARN (tarama yine paralel, bütçe `TaskMonitorAdapter` ile yine işler).
+- **H5 büyüdü (22 → 34 sn):** tarama öncesi hazırlık ve ekleme olaysız; Ollama'dan büyük ikilide hazırlık (JPype ile liste kurma) uzar. ÖL-4 / gösterim için not.
+- **Yama sonrası S8 tabanı:** `bsim_detail.scan_mode` her koşuda çıkar (yukarıda "Ana oturum").
+- Ürün ağaçları `~/karadul_olcum/urun-af7dae70` (1. tur; HATALI kod, kullanılmamalı), `~/karadul_olcum/urun-068be1fd`, `~/karadul_olcum/urun-068be1fd-b` (zstd tekrarı) silinmedi (ORTAK_D0 §3); köklerindeki `karadul.yaml` kaldırıldı, altı bağ duruyor.
+
+## Koşu kökü
+
+`~/karadul_olcum/runs/dalga1-2026-11-23/HZ2/` — **2,7 GB** (15:08, `du -sh`). Özet `ozet/`: `hz2_ozet.json` (H1, H2, H4, T25, fizibilite), `zstd_tekrar.json`, `fizibilite.json`, `t25_ilerleme_satirlari.txt`, `t25_uptime_{bas,son}.txt`, `h4_uptime_{bas,son}.txt`, `fizibilite_uptime_bas.txt`, `tam_takim_pytest.log`, `kuyruk_HZ2.txt`, `ilerleme_surucu.txt`, `ayar/*.yaml`. Betikler `betik/` (`kos_hepsi.zsh`, `tek_kos.zsh`, `fiz_kos.zsh`, `fizibilite.py`, `analiz.py`, `zstd_tekrar.py`, `spec_uret.py`, `yama_uret.py`). Çalışma alanları (`s8/`, `s8_tur1_af7dae70/`, `s8_kapali/`, `s8_zstd_tekrar/`, `t25/`, `h4_sqlite3/`, `fizibilite/`), yamalı kopya (`yamali_kopya/`), Ghidra kaynak alıntıları (`ghidra_src/`, yerel zip'lerden) silinmedi (A-35: ana oturum siler).
+
+## Commit'ler (dal `worktree-agent-a551a0529f5c15b60`, push yok)
+
+`285ee3af` kod · `af7dae70` testler · `3a81c102` ön kayıt + yama · `db04064a` mutasyon tanımları · `76e810df` fizibilite · `5d880bab` H4 · `2e1a491b` notlar · `068be1fd` dispose hatası onarımı · `847ac7b0` 1. tur belgesi · `710d745e` mutasyon 2. tur · `c829a25a` tam takım · `4e486164` S8 ara sonuç · `6b3fc56f` S8 (H1) · `801b7274` H1 / H2 · `8d7e8a68` tablo · `14f32cf6` T25 · bu commit kapanış.
+
+## PAKET BİTTİ
