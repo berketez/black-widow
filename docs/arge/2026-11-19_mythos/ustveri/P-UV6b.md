@@ -185,7 +185,25 @@ ANA Ollama koşusunda, öbürü HZ2 / OL4 / BA2 ile paylaşılıyordu; sert sona
 Üst veri kaynaklı hiçbir ad `kesin` taşımıyor (terminal-notifier 0, Rectangle 0); Swift adlarının 180 / 180'i
 `üst veriden`, `ozgun_ad` dolu, güven tablodan (0,9985). Birim testi + mutant `puv6b_etiket_kesin`.
 
-### H1 / H2 — sürüyor
+### H1 — bayraklar kapalı, S8'in 5 ikilisi ↔ `ANA/s8_taban_534e252b` (`urun_kos.py`, aynı komut ve sıra; 13:52–14:04, yük altında) → TUTTU
+
+| İkili | `naming_map` (out / src / src_iter1) | `decompiled/*.c` fark / dosya | `out/src` fark / dosya | `swift_metadata_recovery` / `rtti_recovery` süresi (sn) |
+|---|---|---|---|---|
+| debian/coreutils/cat | bayt aynı / aynı / aynı | 0 / 296 | 1 / 138 | 0,0 / 0,0 |
+| debian/tree/tree | aynı / aynı / aynı | 0 / 250 | 1 / 145 | 0,0 / 0,0 |
+| debian/sqlite3/sqlite3 | aynı / aynı / aynı | 0 / 1 144 | 1 / 458 | 0,0 / 0,0 |
+| debian/zstd/zstd | aynı / aynı / aynı | 0 / 1 444 | 1 / 1 119 | 0,0 / 0,0 |
+| mac/tmux | aynı / aynı / aynı | 0 / 2 821 | 1 / 2 633 | 0,0 / 0,0 |
+
+- `out/src`'deki tek farklı dosya beş ikilide de `compile_commands.json`: yalnız mutlak çalışma alanı yolu (kök ve zaman
+  damgası); yol normalleştirilince 5 / 5 eşit (`PUV6b/ozet/h1_compile_commands.txt`). Taban kökünden gelen yol farkı,
+  ürün kodundan değil.
+- İki yeni adımın süresi (koşucunun `<adım>_duration_s` kaydı, 4 basamak) 5 / 5 ikilide 0,0 sn ≤ 0,1 sn; iki kanal
+  `kapali`. Ayrıntı `PUV6b/ozet/h1_esitlik.json`.
+
+### H2 — sürüyor
+
+Bekliyorum: açık kol 6 ikili (14:04'te başladı) ve pzstd kapalı kolu. TAHMİN bitiş 14:25–14:45.
 
 Bekliyorum: S8 kapalı kol (cat, tree, sqlite3 bitti 13:55; zstd, mac/tmux kuyrukta), ardından açık kol 6 ikili ve pzstd
 kapalı kolu. TAHMİN bitiş 14:30–14:55. İlk üç ikilinin ara karşılaştırması (`PUV6b/ozet/h1_ara.json`): `naming_map`
