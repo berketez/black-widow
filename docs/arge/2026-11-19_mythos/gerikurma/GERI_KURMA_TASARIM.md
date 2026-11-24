@@ -14,7 +14,7 @@ Bu belge ürün kodu içermez. Ölçülmeyen her sayı "ölçülmedi" ya da "TAH
 2. **Neden tek yerde:** her dosyanın içerdiği `types.h` kendisi derlenmiyor (dosya başına 159–2 559 hata; bütün hataların S8'de %92,8'i, Ollama örnekleminde %97,5'i başlıkta). Bu bilgi eksikliği değil, üretici kusuru: Ghidra'nın temel tip adları tanımlanmamış, enum sabitleri birbiriyle çakışıyor, yapı üyelerinde Ghidra'nın iç gösterimi kalmış (§1.2, §8.2).
 3. **Başlık devre dışı bırakılınca** (karşı olgu ölçümü; ürün değil): S8'de dosyaların %12,3'ü (işlevlerin %8,5'i), Ollama'da %6,5'i derleniyor. S8'de kalan hataların %82,4'ü eksik bildirim: `.c` dosyaları, P18'in düzelttiği başlıkları hiç içermiyor (§1.3, §1.4).
 4. **Go ayrı bir sorun:** Ollama'da dosyaların yalnız %27,6'sı C sözdizimi olarak bile geçerli (C ikililerinde %89–97); en büyük sınıf (%42,7) Ghidra'nın çözemediği yazmaç girişleri. "Eski hâline dönmek" Go / Swift / ObjC / C++'ta "C olarak derlenen ve denetlenen kod" demek olmalı; aynı dilde kaynak yalnız C'de hedef (§2.3, K-7).
-5. **Eşdeğerlik için ilk işaret (keşif, ön kayıtsız, iki ikili):** başlık devre dışıyken derlenen işlevler gerçekten derlenip özgün komutlarla karşılaştırıldı. mac/tmux'ta 299 işlevin 178'i (%59,5), debian/tmux'ta 243 işlevin 48'i (%19,8) özgünle aynı komut dizisini verdi; ikincisinde yalnız en çok 8 komutluk işlevler. Yani komut eşitliği, derleyici ailesi tuttuğunda gerçek bir kanıt kaynağı; tutmadığında yük öykünmeye kalıyor (§1.5).
+5. **Eşdeğerlik için ilk işaret (keşif, ön kayıtsız, S8'in 8 ikilisi):** başlık devre dışıyken derlenen 877 işlev gerçekten derlenip özgün komutlarla karşılaştırıldı. mac/tmux'ta 299 işlevin 178'i (%59,5), Debian'ın 7 ikilisinde 578 işlevin 146'sı (%25,3) özgünle aynı komut dizisini verdi; Debian'da yalnız en çok 8 komutluk işlevler (9 komut ve üstü: 0 / 274). Yani komut eşitliği gerçek bir kanıt kaynağı, ama kapsamı ikiliye çok bağlı; tutmadığı yerde yük öykünmeye kalıyor. Özgün derleyiciler bu turda saptanmadı; farkın derleyici ailesinden geldiği bir yorumdur, ölçüm değil (§1.5).
 6. **Tasarım:** beş basamak (B0 sözdizimi → B1 derlenir → B2 bağlanır → B3 denetlenmiş eşdeğer → B4 bayt eşit). Denetleyici üç kanıt türünü sırayla dener: komut dizisi eşitliği (Ghidra'sız; tuttuğunda en sağlam kanıt), simgesel ispat (küçük işlev), P-code öykünmesinde davranış farkı (genel, olasılık hükmü). BSim ve CFG eşbiçimliliği denetleyici **olamaz** (KİMLİK ölçümü: derleyici değişince 0,61 ve 0 eşleşme). Her kanıt türü, kaynağı elde olan ikililerde bozulmuş işlevlerle ölçülmeden etiket yazamaz (§3).
 7. **Model önerir, hesap karar verir:** KaradulLM'in gövde önerisi B1 + B3'ü geçmeden çıktıya girmez; "derleniyor ama doğrulanmadı" diye de girmez. Model derleme ya da denetim başlatmaz; denetleyicinin girdi vektörlerini görmez (§3.6, §5).
 8. **Plan:** 14 alt paket; ilk üçü (GK-A ölçüm kapısı, GK-B `types.h` onarımı, GK-C bildirim üretimi) ve GK-D (etiketli çift kümesi + komut eşitliği) bugün gönderilebilir, hiçbiri Ghidra ya da model istemez. TAHMİN 6–9 oturum + 1–2 gece, var olan plana eklenir (§8).
@@ -114,29 +114,29 @@ Bu kipte hataların tamamı `.c` dosyalarının kendi satırlarındadır (başl�
 
 ### 1.5 Ön yoklama: K1 bugünkü çıktıda kaç işlevde tutuyor? (keşif; ön kayıtsız)
 
-Tasarımın en büyük riski B3'ün kapsamıdır (§9.2). Bu yüzden, ölçüm bittikten sonra kalan sürede küçük bir **keşif** yapıldı: önsöz kipinde hatasız geçen dosyalar gerçekten nesne dosyasına derlendi (`clang -c`, beş profil: `-O0`, `-O1`, `-O2`, `-Os`, `-O3`; hedefin üçlüsüyle) ve her işlevin komut dizisi, özgün ikilideki aynı adresteki işlevin komut dizisiyle karşılaştırıldı (`/usr/bin/objdump` ile durağan çözme; hiçbir şey çalıştırılmadı; nesne dosyaları koşu kökünde). Karşılaştırma K1'in kaba bir ilk sürümüdür: komut adı + işlenenler; çağrı hedefi, sayfa adresi ve sayfa içi ofset maskeli; işlev içi dallar başa göre bağıl.
+Tasarımın en büyük riski B3'ün kapsamıdır (§9.2). Bu yüzden, ölçüm bittikten sonra kalan sürede küçük bir **keşif** yapıldı: önsöz kipinde hatasız geçen dosyalar (S8'in 8 çıktısında 877 dosya = 877 işlev; hepsi tek işlevli) gerçekten nesne dosyasına derlendi (`clang -c`, beş profil: `-O0`, `-O1`, `-O2`, `-Os`, `-O3`; hedefin üçlüsüyle; ELF için ek bayrak `-ffreestanding -mbranch-protection=standard`) ve her işlevin komut dizisi, özgün ikilideki aynı adresteki işlevin komut dizisiyle karşılaştırıldı (`/usr/bin/objdump` ile durağan çözme; hiçbir şey çalıştırılmadı; nesne dosyaları koşu kökünde). Karşılaştırma K1'in kaba bir ilk sürümüdür: komut adı + işlenenler; çağrı hedefi, sayfa adresi ve sayfa içi ofset maskeli; işlev içi dallar başa göre bağıl.
 
-**Sınırları:** ön kayıtsız; iki ikili (aynı program, iki platform); yeniden yerleştirme **hedefleri** denetlenmedi (bu yüzden "komut eş adayı"; B4 değil); nüfus, hiçbir bildirim olmadan derlenebilen dosyalardır — küçük yaprak işlevlere yanlıdır, oranlar kalan işlevlere taşınamaz. Betikler koşu kökünde (`GK0/yoklama/k1_yoklama.py`, `k1_karsi_denetim.py`), depoda değil; GK-D yeniden ve sınamalı yazar.
+**Sınırları:** ön kayıtsız; yeniden yerleştirme **hedefleri** denetlenmedi (bu yüzden "komut eş adayı"; B4 değil); nüfus, hiçbir bildirim olmadan derlenebilen dosyalardır — küçük yaprak işlevlere yanlıdır (877 işlevin 455'i en çok 8 komut), oranlar kalan işlevlere taşınamaz; Ollama (Go) koşulmadı. Betikler koşu kökünde (`GK0/yoklama/k1_yoklama.py`, `k1_karsi_denetim.py`; özetler `ozet/yoklama_*.json`), depoda değil; GK-D yeniden ve sınamalı yazar.
 
-| Ölçü (en az bir profilde) | mac/tmux (Mach-O arm64) | debian/tmux (ELF aarch64; ek bayrak `-ffreestanding -mbranch-protection=standard`) |
-|---|---|---|
-| Önsöz kipinde geçen dosya = işlev (hepsi tek işlevli) | 299 | 243 |
-| Nesne dosyası üretildi, simgesi bulundu | 299 | 243 |
-| Komut sayısı özgünle eşit | 249 (%83,3) | 150 (%61,7) |
-| Komut adı dizisi eşit | 209 (%69,9) | 85 (%35,0) |
-| **Komut eş adayı** (ad + işlenen, maskeli) | **178 (%59,5)** | **48 (%19,8)** |
-| … özgün işlev ≤ 8 komut | 139 / 151 | 48 / 104 |
-| … 9–32 komut | 39 / 119 | 0 / 100 |
-| … > 32 komut | 0 / 29 | 0 / 39 |
-| Profil başına komut eş adayı | `-Os` 178, `-O1` 171, `-O2` 170, `-O3` 169, `-O0` 3 | `-O1` = `-O2` = `-Os` = `-O3` = 48, `-O0` 0 |
-| Çıktının bütün işlevlerine oranı | 178 / 2 821 = %6,3 | 48 / 2 588 = %1,9 |
-| Karşı denetim (`-Os`): işlev **başka** işlevlerin özgünüyle karşılaştırıldı | 89 102 çapraz çiftte 84 eşleşme; 74'ünde iki özgün dizi zaten aynı, 10'unda farklı | 58 806 çiftte 66 eşleşme; 66'sında özgünler zaten aynı, 0 farklı |
-| Eşleşenlerden özgün dizisi kümede tekil olan | 142 / 178 | 21 / 48 |
+| Çıktı | derlenen işlev | komut sayısı eşit | komut adı dizisi eşit | **komut eş adayı** (en az bir profilde) | özgün ≤ 8 komut | 9–32 komut | > 32 komut | çıktının bütün işlevlerine oranı |
+|---|---|---|---|---|---|---|---|---|
+| mac/tmux (Mach-O arm64) | 299 | 249 (%83,3) | 209 (%69,9) | **178 (%59,5)** | 139 / 151 | 39 / 119 | 0 / 29 | 178 / 2 821 = %6,3 |
+| debian/cat | 5 | 0 | 0 | **0** | 0 / 2 | 0 / 3 | — | 0 / 296 |
+| debian/sort | 32 | 8 (%25,0) | 8 (%25,0) | **6 (%18,8)** | 6 / 13 | 0 / 12 | 0 / 7 | 6 / 625 = %1,0 |
+| debian/tree | 8 | 3 (%37,5) | 3 (%37,5) | **3 (%37,5)** | 3 / 6 | 0 / 2 | — | 3 / 250 = %1,2 |
+| debian/htop | 69 | 40 (%58,0) | 27 (%39,1) | **14 (%20,3)** | 14 / 34 | 0 / 32 | 0 / 3 | 14 / 1 148 = %1,2 |
+| debian/sqlite3 | 57 | 33 (%57,9) | 16 (%28,1) | **5 (%8,8)** | 5 / 39 | 0 / 9 | 0 / 9 | 5 / 1 144 = %0,4 |
+| debian/zstd | 164 | 113 (%68,9) | 99 (%60,4) | **70 (%42,7)** | 70 / 106 | 0 / 42 | 0 / 16 | 70 / 1 444 = %4,8 |
+| debian/tmux | 243 | 150 (%61,7) | 85 (%35,0) | **48 (%19,8)** | 48 / 104 | 0 / 100 | 0 / 39 | 48 / 2 588 = %1,9 |
+| **Debian 7 ikili (ELF aarch64)** | 578 | 347 (%60,0) | 238 (%41,2) | **146 (%25,3)** | 146 / 304 | **0 / 200** | **0 / 74** | 146 / 7 495 = %1,9 |
+
+- **Profil başına:** mac/tmux'ta `-Os` 178, `-O1` 171, `-O2` 170, `-O3` 169, `-O0` 3. Debian'ın 7 ikilisinde `-O1` = `-O2` = `-Os` = `-O3` (toplam 131), `-O0` 28; "en az bir profilde" 146.
+- **Karşı denetim (`-Os`):** her yeniden derlenen işlev, kümedeki **başka** işlevlerin özgün dizisiyle de karşılaştırıldı. mac/tmux: 89 102 çapraz çiftte 84 eşleşme (74'ünde iki özgün dizi zaten birbirinin aynısı); kendi özgünüyle eşleşen 178 işlevin 142'sinde özgün dizi kümede tekil. Debian 7 ikili: 394 çapraz eşleşme; `-Os`'ta kendi özgünüyle eşleşen 131 işlevin 66'sında özgün dizi tekil. Çapraz eşleşme karşılaştırıcının hatası değildir (diziler gerçekten aynı); en küçük işlevlerde aynı komut dizisinin ne kadar yaygın olduğunu gösterir. Sonucu: eşleşme "aynı davranış" kanıtıdır, "aynı işlev" kanıtı değil; ve §3.4'teki N2 kümesi özgün dizileri aynı olan çiftleri dışlamalıdır.
 
 Okuma (hüküm değil, yön):
 
-1. **K1 kâğıt üstünde bir fikir değil.** Clang ailesinden derlenmiş görünen Mach-O ikilisinde, derlenebilen işlevlerin %59,5'i yeniden derlenince özgünle aynı komut dizisini verdi; 9–32 komutluk işlevlerde 39 / 119. Karşı denetimde çapraz eşleşme, özgünleri farklı olan çiftlerde 10 / 89 102: karşılaştırma ayırt edici.
-2. **Derleyici tutmayınca K1 yalnız en küçük işlevlerde kalıyor.** Debian ELF'inde (özgün derleyici bu turda saptanmadı; clang ile yeniden derlendi) 9 komut ve üstündeki hiçbir işlev eşleşmedi (0 / 139). Bu, §3.3'teki sıralamanın (K1 → K3 → K2) ve K-4'ün (derleyici profili kümesi) ölçülmüş gerekçesidir: ELF tarafında B3'ün yükünü K2 taşıyacak.
+1. **K1 kâğıt üstünde bir fikir değil.** Mach-O ikilisinde derlenebilen işlevlerin %59,5'i yeniden derlenince özgünle aynı komut dizisini verdi; 9–32 komutluk işlevlerde 39 / 119.
+2. **Derleyici tutmayınca K1 yalnız en küçük işlevlerde kalıyor.** Debian'ın 7 ELF ikilisinde (özgün derleyici bu turda saptanmadı; clang ile yeniden derlendi) 9 komut ve üstündeki 274 işlevin **hiçbiri** eşleşmedi; eşleşen 146 işlevin hepsi en çok 8 komutluk. Bu, §3.3'teki sıralamanın (K1 → K3 → K2) ve K-4'ün (derleyici profili kümesi, ELF için GCC) ölçülmüş gerekçesidir: ELF tarafında B3'ün yükünü K2 taşıyacak ya da özgün derleyici ailesi kurulacak.
 3. **Derleyici profili ölçümle bulunabilir (D6):** mac/tmux'ta `-Os` öbür düzeylerden fazla eşleşme verdi (178 ↔ 169–171); fark küçük, tek ikili — iddia değil, GK-D'nin ölçeceği şey.
 4. **Bugünkü ürün için anlamı:** hiçbir şey. Bu işlevler ürün çıktısında derlenmiyor (1.2); sayı, GK-B + GK-C'den sonra K1'in bulacağı zeminin ilk işaretidir.
 
@@ -207,7 +207,7 @@ Program düzeyi sayılar her basamak için oran olarak verilir: işlev sayısıy
 
 İki not:
 
-1. **B4 yalnız üst basamak değil, en ucuz ve yanlış kabulü olmayan denetleyicidir.** Bayt eşitliği tuttuğu yerde eşdeğerlik tanım gereği tutar; öykünmeye ya da SMT'ye gerek kalmaz. Bu yüzden denetim sırası ucuzdan pahalıya ve sağlamdan olasılığa doğrudur: `bayt_eş` → `komut_eş` → `smt` → `öykünme`. Kapsamı ön kayıtlı biçimde ölçülmedi; keşif ölçümü §1.5'te (derlenebilen işlevlerde mac/tmux %59,5, debian/tmux %19,8; derleyici ailesi tutmayınca yalnız en küçük işlevler).
+1. **B4 yalnız üst basamak değil, en ucuz ve yanlış kabulü olmayan denetleyicidir.** Bayt eşitliği tuttuğu yerde eşdeğerlik tanım gereği tutar; öykünmeye ya da SMT'ye gerek kalmaz. Bu yüzden denetim sırası ucuzdan pahalıya ve sağlamdan olasılığa doğrudur: `bayt_eş` → `komut_eş` → `smt` → `öykünme`. Kapsamı ön kayıtlı biçimde ölçülmedi; keşif ölçümü §1.5'te (derlenebilen işlevlerde mac/tmux %59,5, Debian'ın 7 ikilisi %25,3; derleyici ailesi tutmayınca yalnız en küçük işlevler).
 2. **B3 bir olasılık hükmüdür, ispat değil** (`smt` ve `bayt_eş` dışında). Çıktıda her işlev hangi kanıt türüyle geçtiğini ve o türün ölçülmüş hata sınırını taşır (§5.5 etiket şeması).
 
 ### 3.2 Yalıtılmış birim ve derleme
@@ -253,7 +253,7 @@ Denetleyici, çıktıya bağlanmadan önce kendisi ölçülür. Zemin: kaynağı
 |---|---|---|---|
 | **P (pozitif)** | Aynı kaynak işlevinin iki ayrı derlemesi: (a) aynı derleyici, farklı düzey; (b) farklı derleyici (GCC ↔ clang; Mach-O'da ikisi de var); (c) aynı derleyici ve bayrak (denetim: K1 burada %100 vermelidir) | eşdeğer (derleyicinin doğruluğu varsayılır) | yanlış ret, karşılaştırıcı × derleme uzaklığı başına |
 | **N1 (bozulmuş)** | Kaynak işlevine tek mutasyon (karşılaştırma işleci, sabit ±1, sınır, argüman sırası, işaret / genişlik, bir atamanın silinmesi, dal koşulunun değillenmesi) + derleme | eşdeğer değil; **üst sınır:** eşdeğer mutantlar ayıklanamaz, yalnız nesne kodu bozulmamış hâliyle bayt eşit olan mutantlar atılır | yanlış kabulün üst sınırı |
-| **N2 (yabancı)** | Aynı imza biçimine sahip başka bir işlevle eşleştirme | eşdeğer değil | kolay yanlış kabul (ayrı satır; N1 ile havuzlanmaz) |
+| **N2 (yabancı)** | Aynı imza biçimine sahip başka bir işlevle eşleştirme; özgün komut dizileri aynı olan çiftler dışlanır (§1.5 karşı denetimi) | eşdeğer değil | kolay yanlış kabul (ayrı satır; N1 ile havuzlanmaz) |
 | **A (gerçek aday)** | Aynı ikililerin Karadul çıktısındaki işlevler, B1'e getirilebilenler | bilinmiyor | hüküm dağılımı ve `hükümsüz` payı (hata oranı değil) |
 
 - Sayım A-14 düzeniyle: örnek düzeyi ve tekil kaynak işlevi düzeyi; en az 3 bağımsız program; Wilson aralığı. Kümeler tohumla seçilir, tohum ön kayıtta.
@@ -559,7 +559,7 @@ Dayanak: iki uygulama oturumunda ölçülen hız yaklaşık 2,8 paket / saat (4�
 
 ### 9.2 En büyük üç risk
 
-1. **B3'ün kapsamı küçük çıkabilir.** K1 derleyici tutmayınca tutmaz; K3 yalnız küçük işlevlerde; K2'nin `hükümsüz` payı ve ölçülecek yanlış kabulü bilinmiyor. KİMLİK ölçümü yapısal benzerliğin derleyiciler arasında çöktüğünü gösterdi (BSim 0,61; CFG 0 eşleşme) — K2 de beklentiyi karşılamazsa hattın söyleyebildiği "derleniyor ama eşdeğerliği gösterilemedi" olur. İlk işaret §1.5'te: derleyici ailesi tuttuğunda komut eşitliği derlenebilen işlevlerin %59,5'inde, tutmadığında %19,8'inde (yalnız en küçük işlevler). Erken ölçüm: GK-D (Ghidra'sız, bugün) ve GK-E'nin ilk 100 çifti; ikisi de üründen önce.
+1. **B3'ün kapsamı küçük çıkabilir.** K1 derleyici tutmayınca tutmaz; K3 yalnız küçük işlevlerde; K2'nin `hükümsüz` payı ve ölçülecek yanlış kabulü bilinmiyor. KİMLİK ölçümü yapısal benzerliğin derleyiciler arasında çöktüğünü gösterdi (BSim 0,61; CFG 0 eşleşme) — K2 de beklentiyi karşılamazsa hattın söyleyebildiği "derleniyor ama eşdeğerliği gösterilemedi" olur. İlk işaret §1.5'te: komut eşitliği mac/tmux'ta derlenebilen işlevlerin %59,5'inde, Debian'ın 7 ikilisinde %25,3'ünde (9 komut ve üstünde 0 / 274). Erken ölçüm: GK-D (Ghidra'sız, bugün) ve GK-E'nin ilk 100 çifti; ikisi de üründen önce.
 2. **B1'e giden yol "derlenir kılmak için uydurma"ya kayabilir.** Eksik bildirimi `int f()` ile, sahte değişkeni boş yerel değişkenle doldurmak derleme sayısını yükseltir ama kodu yanlış yapar. Bugünkü G sütunu (§1) tam olarak bu sahte iyileşmenin büyüklüğünü gösteriyor. Koruma: B1 tek başına hiçbir yerde "kurtarıldı" diye raporlanmaz; yapay bildirimle derlenen birim etiketlidir (GK-G); model dolgusu B3 almadan çıktıya girmez (§3.6).
 3. **Modelin onardığı gövde denetleyicinin kör noktasına oturabilir.** Model, K2'nin girdi vektörlerinde aynı davranan ama genelde farklı kod yazabilir (özellikle vektörleri görürse). Koruma: model girdi vektörlerini ve tohumu görmez; kabul için kullanılan vektör kümesi onarım döngüsündekinden ayrıdır (döngüde geri bildirim yalnız derleyici hatası ve "geçmedi" + tek karşı örnek); yanlış kabul, model önerileri üstünde ayrıca ölçülür (GK-K: kaynağı elde olan ikilide modelin geçen önerileri doğru kaynağın derlemesiyle K3 / geniş vektörle yeniden sınanır).
 
