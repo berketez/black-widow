@@ -210,3 +210,40 @@ Kuyruk `HZ4a H5:sqlite3` (yuva 2), `--stage static`, ayar `…/HZ4a/ozet/ayar/h5
 ### Sekiz eski tanım, geri alıştan sonra (ikinci koşu)
 
 hz1 13 / 13, ol1 29 / 29, p13a 22 / 22, p16a 33 / 33, p16c 16 / 16, p16d 11 / 11, p16e 13 / 13, ol2 33 / 33 = **170 / 170 öldü** (`…/HZ4a/mutasyon_eski_2/OZET.txt`). Geri alıştan sonra `headless` köprüsüne değinen 37 test dosyası + `test_p15a_etkisiz` + `test_bayrak_on_paketi`: 849 geçti / 12 atlandı / 1 kaldı (beklenen `test_inert_registry_is_accurate`); günlük `…/HZ4a/tam_takim/pytest_ilgili_geri_alis_sonrasi.log`.
+
+## Kalem 6 — S8 (H1, H4): 15:14:15–15:32:30, yük altında
+
+Tek kök `…/HZ4a/s8_acik`, ORTAK_D0 §6 sırası, ikili başına ayrı kuyruk çağrısı (yuva 2), ürün ağacı `urun-f144b9c9` + kökte `karadul.yaml` (`analysis.dokum_tek_gecis: true`; koşu günlüklerinde "Döküm kipi: tek geçiş"). Taban `…/ANA/s8_taban_534e252b`. Kıyas `scripts/arge/hiz/s8_esitlik.py` (ham): `…/HZ4a/ozet/s8_ham.{json,md}`.
+
+**H1 — TUTTU: 8 / 8 ham eşit.** Her ikilide JSON farklı 0 / 23 dosya (`ghidra_output/*.json` + `static/ghidra_*.json`), `.c` farklı 0 (296 / 625 / 250 / 1 144 / 1 148 / 2 588 / 1 444 / 2 821 dosya), `naming_map` farklı 0 / 3 (`out/` dahil), `ghidra_status` eski alan farkı 0, `pcode.jsonl` eşit. zstd'de bilinen kendiliğinden fark görülmedi.
+
+**H4 — karşılaştırılamaz (hüküm yok).** Üç adımın toplamı (sn), taban → açık: cat 0,449 → 0,189; sort 1,192 → 0,507; tree 0,715 → 0,304; sqlite3 3,195 → 1,348; htop 3,062 → 1,329; tmux 12,944 → 6,654; zstd 22,276 → 7,558; mac/tmux 16,219 → 7,655. Oranlar 0,34–0,51, **ortanca 0,425** (8 ikilinin toplamı 60,05 → 25,54 sn). Taban başka yük koşulunda alındı (13:10–13:34; `uptime` başta 2,76, sonda 28,06; açık kol 15:14–15:32; 8,84 → 6,15): ön kayıttaki kurala göre hüküm verilmez; sayılar yön gösterici (eşiğin, 0,8'in, altında). Ölçüm `…/HZ4a/ozet/s8_h4.json`.
+
+## Kalem 7 — T25 (H2, H3, H6): ürün koşuları, yük altında
+
+Ollama dilimi, `python -m karadul analyze … --stage static --skip-dynamic`, taze `KARADUL_CACHE_DIR`, iki kolda da `JAVA_TOOL_OPTIONS=-Xlog:gc` (ürün kodu değişmez). Ayarlar `…/HZ4a/ozet/ayar/t25_{kapali,acik}.yaml` (OL2'nin T25 ayarı: ObjC ileti çözümleyicisi kapalı). Kıyas `…/HZ4a/ozet/t25_kiyas.json`.
+
+| Kol | Ağaç | Kuyruk penceresi | `uptime` (baş → son) | BSim | Çıkış |
+|---|---|---|---|---|---|
+| kapalı | `urun-f144b9c9` | 14:36:35–15:16:14 (yuva 1) | 23,13 → 8,96 | açık (ingest 835 sn, sorgu atlandı) | 3 (`step_errors` boş; neden köprü dışı, OL2'deki gibi) |
+| açık | `urun-f144b9c9` (CFG'de taze model DAHİL) | 15:16:14–15:36:49 (yuva 1; kapalının hemen ardından) | 8,96 → 5,79 | **kapalı** (sert sona yetişmek için; BSim üç adımdan SONRA koşar) | 3 |
+| açık-2 | `urun-8bf027a0` (**son kod**: CFG main'deki gibi) | aşağıda | | kapalı | |
+
+Koşullar aynı değil: kapalı kolun decompile / xref / CFG'si sırasında makinede iki tam takım (pytest) ve HZ2'nin T25'i de koşuyordu; açık kol sırasında S8 koşuyordu. Decompile 694,4 sn (kapalı) ↔ 435,2 sn (açık) bu farkı gösteriyor.
+
+| Adım (sn) | kapalı | açık (`f144b9c9`) | oran |
+|---|---|---|---|
+| çağrı grafiği (decompile'dan önce) | 28,52 | 9,83 | 0,345 |
+| xref (decompile'dan sonra) | 130,87 | 8,67 | 0,066 |
+| CFG | 292,17 | 402,12 | 1,376 |
+| **toplam** | **451,56** | **420,61** | **0,931** |
+
+- **H2 — TUTTU: 3 / 3.** `ghidra_output/{call_graph,xrefs,cfg}.json` ve `static/ghidra_{call_graph,xrefs,cfg}.json` iki kolda JSON-eşit (altı dosya).
+- **H3 — TUTMADI: 0,931 > 0,5.** Çağrı grafiği + xref 159,4 → 18,5 sn'ye indi (0,116), ama CFG toplamın %65'i ve inmedi; açık kolda CFG daha da uzun sürdü. Neden: "Ayrı bulgu" (JPype tetikli tam Python toplaması). CFG süresi = Java toplaması sayısı × Python toplaması süresi: kapalı 41 Java toplaması × 7,1 sn; açık 57 × 7,1 sn (GC günlüğü: `…/ozet/gc_t25_{kapali,acik}.json`). Açık kolda Java toplamasının %39 fazla olmasının adayı, o ağaçtaki fonksiyon başına taze blok modeli (her fonksiyonda atılan model = daha çok Java çöpü); taze süreçte bu fark görünmüyordu (17,4 ↔ 17,7–19,7 sn) çünkü orada Python toplaması ucuz. Değişiklik son kodda yok (Kalem 4b); son kodun açık kolu ayrıca ölçülüyor (açık-2).
+- **H6 — TUTTU: en uzun `ILERLEME` sessizliği üç adımda 22 sn** (kapalı 22 sn, açık 22 sn; ≤ 60).
+- Adım içi JVM GC payı her adımda < %0,6 (iki kol).
+- Yan gözlem (aynı mekanizma): açık kolda `ghidra.types` 5,4 sn (kapalı 0,04), `ghidra.function_id` 14,2 sn (kapalı 0,09) — adım sırasında denk gelen tek bir tetiklenmiş Python toplaması adımı saniyelerce uzatıyor.
+
+### HZ-4b koşulu için sayı (hüküm 8)
+
+Açık kolda (BSim'siz köprü 1 003,1 sn) üç adımın payı **%41,9** (420,6 sn; neredeyse tamamı CFG). Kapalı kolun BSim süresi (842,2 sn) eklenirse köprü 1 845,4 sn, pay **%22,8**. Son kodun (açık-2) payı aşağıda. Not: bu pay Java çağrısı sayısından değil tetiklenen Python toplamasından geliyor; HZ-4b'nin (Java yardımcısı) CFG'de kazandıracağı şey çağrı sayısı değil Java ayırma miktarıdır. Önce HZ-4c (aşağıdaki notlar) ölçülmeli.
