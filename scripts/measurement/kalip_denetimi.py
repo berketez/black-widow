@@ -96,6 +96,10 @@ ISTISNALAR: list[dict] = []
 def _sabit_dizgi(dugum: ast.AST) -> str | None:
     if isinstance(dugum, ast.Constant) and isinstance(dugum.value, str):
         return dugum.value
+    if isinstance(dugum, ast.Constant) and isinstance(dugum.value, bytes):
+        # bytes kalıbı latin-1 ile birebir karakterlere açılır ve ASCII
+        # bayrağıyla derlenir (bytes kalıbında \w / \d / \s ASCII'dir).
+        return dugum.value.decode("latin-1")
     if isinstance(dugum, ast.BinOp) and isinstance(dugum.op, ast.Add):
         a, b = _sabit_dizgi(dugum.left), _sabit_dizgi(dugum.right)
         if a is not None and b is not None:
@@ -115,6 +119,14 @@ def _bayrak(dugum: ast.AST | None) -> int | None:
     if isinstance(dugum, ast.Constant) and isinstance(dugum.value, int):
         return dugum.value
     return None
+
+
+def _bytes_mi(dugum: ast.AST) -> bool:
+    if isinstance(dugum, ast.Constant):
+        return isinstance(dugum.value, bytes)
+    if isinstance(dugum, ast.BinOp):
+        return _bytes_mi(dugum.left)
+    return False
 
 
 _KACISLI_ADLAR: set[str] = set()  # kaliplari_topla dosya başına doldurur
@@ -306,6 +318,8 @@ def kaliplari_topla(yollar: list[Path], sablonlar: bool = False) -> tuple[list[d
                     if len(d.args) > k:
                         bayrak_d = d.args[k]
                 bayrak = _bayrak(bayrak_d)
+                if bayrak is not None and _bytes_mi(d.args[0]):
+                    bayrak |= re.ASCII
                 kayit = {
                     "dosya": str(f.relative_to(KOK)) if f.is_relative_to(KOK) else str(f),
                     "satir": d.lineno, "islev": d.func.attr, "kalip": kalip,
