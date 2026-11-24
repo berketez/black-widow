@@ -1,0 +1,77 @@
+{
+  "_comment": "BA2 (BA-2: kalan üstel düzenli ifadeler + tam takımda kalıp denetimi kapısı) mutasyon koruması. Eski kalıbı geri koyan mutantlarda süre testi AYRI SÜREÇTE zaman aşımıyla kırmızı olur (asılı kalmaz). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_ba2.json",
+  "mutants": [
+    {
+      "id": "ba2_eski_cpp_zn",
+      "desc": "c_namer _ZN kalıbı eski iç içe niceleyiciye döner; düşmanca girdi çocuk süreçte zaman aşımıyla kırmızı",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ba2_kalip_onarimi.py::test_demangle_dusmanca_girdi_hizli",
+      "find": "match = re.match(r\"_ZN(\\d\\w+)E\", mangled)",
+      "replace": "match = re.match(r\"_ZN(\\d+\\w+)+E\", mangled)"
+    },
+    {
+      "id": "ba2_cpp_zn_dil_genisler",
+      "desc": "c_namer _ZN kalıbı `\\w*` ile `_ZN1E`'yi de kabul eder; eski kalıpla eşdeğerlik sınaması kırmızı",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_ba2_kalip_onarimi.py::test_demangle_eski_yeni_esdeger",
+      "find": "match = re.match(r\"_ZN(\\d\\w+)E\", mangled)",
+      "replace": "match = re.match(r\"_ZN(\\d\\w*)E\", mangled)"
+    },
+    {
+      "id": "ba2_eski_linked_list",
+      "desc": "_LINKED_LIST_RE tip döngüsü atomik gruptan çıkar (eski kalıp); düşmanca girdi çocuk süreçte zaman aşımıyla kırmızı",
+      "module": "karadul/reconstruction/recovery_layers/constraint_solver.py",
+      "test": "tests/test_ba2_kalip_onarimi.py::test_linked_list_dusmanca_girdi_hizli",
+      "find": "(?P<type>[a-zA-Z_](?>(?:\\w+\\s*)*)\\*{0,2})",
+      "replace": "(?P<type>[a-zA-Z_](?:\\w+\\s*)*\\*{0,2})"
+    },
+    {
+      "id": "ba2_linked_list_dil_daralir",
+      "desc": "_LINKED_LIST_RE tip döngüsü en az bir yineleme ister (tek harfli tip düşer); eşdeğerlik sınaması kırmızı",
+      "module": "karadul/reconstruction/recovery_layers/constraint_solver.py",
+      "test": "tests/test_ba2_kalip_onarimi.py::test_linked_list_eski_yeni_esdeger",
+      "find": "(?P<type>[a-zA-Z_](?>(?:\\w+\\s*)*)\\*{0,2})",
+      "replace": "(?P<type>[a-zA-Z_](?>(?:\\w+\\s*)+)\\*{0,2})"
+    },
+    {
+      "id": "ba2_kapi_istisna_denetimi_yok",
+      "desc": "kapının istisna denetimi kalkar (her üstel kalıp istisna sayılır); bilinen kusurlu beş kalıp üstel bulunmaz, kırmızı",
+      "module": "scripts/measurement/kalip_denetimi.py",
+      "test": "tests/test_kalip_denetimi.py::test_bilinen_kusurlu_kaliplar_ustel_bulunur",
+      "find": "return any(i[\"dosya\"] == kayit[\"dosya\"] and i[\"kalip\"] == kayit[\"kalip\"] for i in istisnalar)",
+      "replace": "return True"
+    },
+    {
+      "id": "ba2_kapi_ic_ice_kor",
+      "desc": "durağan sınıflayıcı iç içe yinelemeyi kaydetmez; bilinen kusurlu kalıplar aday olmaz, kırmızı",
+      "module": "scripts/measurement/kalip_denetimi.py",
+      "test": "tests/test_kalip_denetimi.py::test_bilinen_kusurlu_kaliplar_ustel_bulunur",
+      "find": "bulgular[\"ic_ice\"].append((dis_tekrar, (op, av)))",
+      "replace": "pass"
+    },
+    {
+      "id": "ba2_kapi_bekci_ustel_saymaz",
+      "desc": "bekçinin öldürdüğü (takılan) aday üstel sayılmaz; bekçi sınaması kırmızı",
+      "module": "scripts/measurement/kalip_denetimi.py",
+      "test": "tests/test_kalip_denetimi.py::test_bekci_takilan_cocugu_oldurup_ustel_sayar",
+      "find": "sonuc[tid] = {\"ustel\": True,",
+      "replace": "sonuc[tid] = {\"ustel\": False,"
+    },
+    {
+      "id": "ba2_kapi_kapsam_daralir",
+      "desc": "kapı ui/server.py'yi taramaz; kapsam sınaması kırmızı",
+      "module": "scripts/measurement/kalip_denetimi.py",
+      "test": "tests/test_kalip_denetimi.py::test_kapi_kapsami_korlesmedi",
+      "find": "KAPI_YOLLARI = (\"karadul\", \"ui/server.py\")",
+      "replace": "KAPI_YOLLARI = (\"karadul\",)"
+    },
+    {
+      "id": "ba2_kapi_istisna_sessiz_eklenir",
+      "desc": "istisna listesine gerekçesiz kayıt girer; sayılı liste sınaması kırmızı",
+      "module": "scripts/measurement/kalip_denetimi.py",
+      "test": "tests/test_kalip_denetimi.py::test_istisna_listesi_sayili",
+      "find": "ISTISNALAR: list[dict] = []",
+      "replace": "ISTISNALAR: list[dict] = [{\"dosya\": \"x\", \"kalip\": \"y\"}]"
+    }
+  ]
+}

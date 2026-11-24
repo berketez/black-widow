@@ -18,9 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
-import time
 from pathlib import Path
 
 # Ana ağaca editable kurulu karadul yerine BU ağacın kodu yüklensin.
@@ -35,53 +33,9 @@ ESKI_KALIPLAR: dict[str, str] = {
     "memmove": r"memmove\s*\(\s*(\w+)\s*,\s*(\w+)\s*,\s*((?:[^()]+|\([^)]*\))+)\s*\)",
 }
 
-_COCUK = r"""
-import json, re, sys, time
-girdi = json.loads(sys.stdin.read())
-kalip = re.compile(girdi["kalip"], girdi.get("bayrak", 0))
-metinler = girdi["metinler"]
-t0 = time.perf_counter()
-sonuc = []
-for metin in metinler:
-    m = kalip.search(metin)
-    sonuc.append(None if m is None else [m.start(), m.end(), list(m.groups())])
-sure = time.perf_counter() - t0
-print(json.dumps({"sure": sure, "sonuc": sonuc}))
-"""
-
-
-def ayri_surecte_ara(
-    kalip: str,
-    metinler: list[str],
-    zaman_asimi: float,
-    bayrak: int = 0,
-) -> dict:
-    """Kalıbı ayrı süreçte metinlerde arar.
-
-    Dönüş: ``{"sure": sn, "sonuc": [...], "zaman_asimi": False}`` ya da
-    süre dolduysa ``{"sure": None, "sonuc": None, "zaman_asimi": True,
-    "duvar": sn}``.
-    """
-    veri = json.dumps({"kalip": kalip, "bayrak": bayrak, "metinler": metinler})
-    t0 = time.perf_counter()
-    try:
-        cp = subprocess.run(
-            [sys.executable, "-I", "-c", _COCUK],
-            input=veri,
-            capture_output=True,
-            text=True,
-            timeout=zaman_asimi,
-        )
-    except subprocess.TimeoutExpired:
-        # subprocess.run süre dolunca çocuğu kill() (SIGKILL) ile öldürür.
-        return {"sure": None, "sonuc": None, "zaman_asimi": True,
-                "duvar": round(time.perf_counter() - t0, 3)}
-    if cp.returncode != 0:
-        raise RuntimeError(f"çocuk süreç hatası: {cp.stderr[-2000:]}")
-    out = json.loads(cp.stdout)
-    out["zaman_asimi"] = False
-    out["duvar"] = round(time.perf_counter() - t0, 3)
-    return out
+# BA-2: ayrı süreçte ölçüm ``scripts/measurement/kalip_denetimi.py``'ye taşındı.
+sys.path.insert(0, str(KOK / "scripts" / "measurement"))
+from kalip_denetimi import ayri_surecte_ara  # noqa: E402
 
 
 def yeni_kaliplar() -> dict[str, tuple[str, int]]:
