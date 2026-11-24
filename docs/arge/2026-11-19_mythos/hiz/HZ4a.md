@@ -1,0 +1,32 @@
+# HZ-4a — döküm adımlarında tek başvuru geçişi ve yineleyiciler (ilerleme)
+
+İş emri: `docs/arge/2026-11-23_dalga1/gonderim/HZ4a.md`. Dal `worktree-agent-aafb4378ffb9a2eb9`, taban main `2263c887` (ürün kodu `534e252b` ile aynı; aradaki commit'ler belge). Başlangıç 2026-11-24 13:56; sert son 16:10. Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/HZ4a/`.
+
+## Durum
+
+| # | Kalem | Durum | Commit |
+|---|---|---|---|
+| 1 | Profil betiği (`scripts/arge/hiz/hz4a_profil.py`) | yazıldı; sqlite3'te duman sınaması kuyrukta | bu commit |
+| 2 | Profil (H0), Ollama dilimi | bekliyor | |
+| 3 | Ön kayıt | bekliyor (profilden sonra, koddan önce) | |
+| 4 | Kod + testler + mutasyon | bekliyor | |
+| 5 | H5 (sqlite3, 1 sn bütçe) | bekliyor | |
+| 6 | H1 / H4 (S8) | bekliyor | |
+| 7 | H2 / H3 / H6 (T25) | bekliyor | |
+| 8 | Tam takım | bekliyor | |
+
+## Doğrulanan API imzaları (Ghidra 12.1.2, yerel `javap`; `SoftwareModeling.jar`)
+
+- `ReferenceManager.getReferenceSourceIterator(AddressSetView, boolean) → AddressIterator`
+- `ReferenceManager.getReferencesFrom(Address) → Reference[]`, `getReferencesTo(Address) → ReferenceIterator`
+- `ReferenceManager.hasReferencesTo(Address) → boolean`
+- `Listing.getInstructions(AddressSetView, boolean) → InstructionIterator`
+- `AddressIterator extends Iterator<Address>, Iterable<Address>`; `Address.compareTo`, `Address.getOffset() → long`
+- `SymbolType.getID() → byte`; `SymbolType.equals` ad + ad alanı bayrağını karşılaştırıyor (bayt kodu okundu)
+- `Program.getModificationNumber()` (aşağıda yeniden denetlenecek)
+
+**Sıra güvencesi:** yerel belge (`docs/GhidraAPI_javadoc.zip`) `getReferenceSourceIterator` için yalnız "forward - true means to iterate in the forward direction" diyor; "artan adres" sözü YOK. Bu yüzden sıra kodda denetlenir (ardışık adreslerde `Address.compareTo`) ve bozuksa o fonksiyon eski yürüyüşe düşer; sınaması yazılacak. Gerçek veride sıranın bozulup bozulmadığı profilde sayılıyor.
+
+## Profil yöntemi (hüküm 2)
+
+Ürün kodu değişmeden, `hz4a_profil.py --kip profil`: ikili ürünle aynı yoldan açılır ve çözümlenir (`pyghidra.open_program` + `GhidraHeadless._run_auto_analysis`; ayar OL2'nin T25 YAML'ı: ObjC ileti çözümleyicisi kapalı), decompile / BSim koşmaz. Üç döküm işlevi bir **sayaç vekili** üstünden çağrılır: her Java çağrısı sınıf.yöntem başına sayılır, süresi (yalnız Java çağrısının çevresi) toplanır. Ayrıca: gövde adresi ↔ başvurusu olan adres sayısı, genel simge döngüsü tek başına (eski ↔ `hasReferencesTo`), yalın geçiş tabanı (önemsiz çağrı başına µs), adım başına GC süresi. Decompile koşmadığı için JVM yığını ürün koşusundakinden boştur: GC payı alt sınırdır (yazıldı).
