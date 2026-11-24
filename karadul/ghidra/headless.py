@@ -535,6 +535,227 @@ def caller_sort_key(entry: dict) -> tuple:
     )
 
 
+_DIZGI_DEGIL = object()  # HZ-4a: "bu adreste dizgi verisi yok" (değer None da olabildiği için ayrı)
+
+
+class _BasvuruKaydi:
+    """HZ-4a: bir fonksiyonun tek başvuru geçişinden çıkan kayıt (çağrı grafiği + xref ortak).
+
+    ``cagrilanlar``: gövdeden çıkan çağrı başvurularının hedef fonksiyonları, ``(ad, giriş)``;
+    giriş adresine göre tekil, ilk görülme sırasıyla (kaynak adresi artan, adres içinde
+    ``getReferencesFrom`` dizi sırası). ``cagiranlar``: giriş adresine gelen çağrı başvurularının
+    kaynak fonksiyonları, ``{"name", "address"}``; tekil ve ``caller_sort_key`` sıralı (P16e).
+    ``dizgiler``: gövdeden çıkan veri başvurularının gösterdiği dizgi verileri, ``(adres, değer)``;
+    adrese göre tekil, ilk görülme sırasıyla (A-38: komut içi sıra bu listenin sırasıdır).
+    ``giris_cagri_disi``: giriş adresine gelen ve çağrı OLMAYAN başvurular (Java ``Reference``
+    nesneleri, yineleme sırasıyla; JSON'a yazılmaz — PK-8'in ``address_taken_by`` alanı için).
+    """
+
+    __slots__ = ("cagrilanlar", "cagiranlar", "dizgiler", "giris_cagri_disi")
+
+    def __init__(self, cagrilanlar: list, cagiranlar: list, dizgiler: list,
+                 giris_cagri_disi: list) -> None:
+        self.cagrilanlar = cagrilanlar
+        self.cagiranlar = cagiranlar
+        self.dizgiler = dizgiler
+        self.giris_cagri_disi = giris_cagri_disi
+
+
+class _BasvuruTablosu:
+    """HZ-4a: çağrı grafiği ve xref dökümünün ortak başvuru tablosu (fonksiyon başına tek geçiş).
+
+    Eski döngüler aynı başvuru verisini iki adımda ayrı ayrı, gövdedeki HER adres için
+    ``getReferencesFrom`` çağırarak geziyordu. Tablo fonksiyon başına bir kez, yalnız başvurusu
+    olan adresleri (``ReferenceManager.getReferenceSourceIterator(gövde, True)``) gezer; kaydı ilk
+    isteyen adım hesaplar, ikincisi hazır bulur. Çağrı hedefi → fonksiyon ve veri adresi → dizgi
+    çözümlemeleri program boyunca bir kez yapılır (aynı adres için sonuç değişmez).
+
+    Çıktı eski döngülerle bayt bayt aynıdır; iki güvence:
+
+    - **Sıra:** yineleyicinin artan adres sırası Ghidra belgesinde yazılı değil ("forward
+      direction"). Ardışık kaynak adresleri ``Address.compareTo`` ile denetlenir; artan değilse o
+      fonksiyon eski yürüyüşle (gövdenin bütün adresleri) hesaplanır (``eski_yuruyus`` sayacı).
+    - **Bayatlama:** adımlar arasında program değişirse (``Program.getModificationNumber``)
+      tablo boşaltılır ve kayıtlar yeniden hesaplanır (``bosaltma`` sayacı).
+    """
+
+    def __init__(self, program: Any) -> None:
+        self.program = program
+        self.fm = program.getFunctionManager()
+        self.ref_mgr = program.getReferenceManager()
+        self.listing = program.getListing()
+        self._kayitlar: dict[str, _BasvuruKaydi] = {}
+        self._hedefler: dict[str, tuple[str, str] | None] = {}
+        self._veriler: dict[str, Any] = {}
+        self._surum = self._degisiklik_no()
+        self.eski_yuruyus = 0
+        self.bosaltma = 0
+
+    @classmethod
+    def kur(cls, program: Any) -> "_BasvuruTablosu | None":
+        """Tabloyu kur; başvuru yöneticisinde gereken API yoksa ``None`` (eski döngüler koşar)."""
+        try:
+            ref_mgr = program.getReferenceManager()
+        except AttributeError:
+            return None
+        for ad in ("getReferenceSourceIterator", "getReferencesFrom", "getReferencesTo",
+                   "hasReferencesTo"):
+            if not hasattr(ref_mgr, ad):
+                return None
+        try:
+            return cls(program)
+        except AttributeError:
+            return None
+
+    def _degisiklik_no(self) -> Any:
+        oku = getattr(self.program, "getModificationNumber", None)
+        return oku() if oku is not None else None
+
+    def tazele(self) -> None:
+        """Adım başında: program tablo kurulduktan sonra değiştiyse kayıtları at."""
+        simdi = self._degisiklik_no()
+        if simdi != self._surum:
+            self._kayitlar.clear()
+            self._hedefler.clear()
+            self._veriler.clear()
+            self._surum = simdi
+            self.bosaltma += 1
+
+    def kayit(self, func: Any, func_addr: str) -> _BasvuruKaydi:
+        k = self._kayitlar.get(func_addr)
+        if k is None:
+            k = self._kayitlar[func_addr] = self._hesapla(func, func_addr)
+        return k
+
+    def _kaynak_adresleri(self, body: Any) -> list:
+        """Gövdede başvurusu olan adresler, artan sırada; sıra tutmuyorsa gövdenin bütün adresleri."""
+        adresler = []
+        onceki = None
+        it = self.ref_mgr.getReferenceSourceIterator(body, True)
+        while it.hasNext():
+            addr = it.next()
+            if onceki is not None and onceki.compareTo(addr) >= 0:
+                self.eski_yuruyus += 1
+                adresler = []
+                tum = body.getAddresses(True)
+                while tum.hasNext():
+                    adresler.append(tum.next())
+                return adresler
+            onceki = addr
+            adresler.append(addr)
+        return adresler
+
+    def _cagri_hedefi(self, to_addr: Any) -> tuple[str, str] | None:
+        anahtar = str(to_addr)
+        try:
+            return self._hedefler[anahtar]
+        except KeyError:
+            pass
+        callee = self.fm.getFunctionAt(to_addr)
+        if callee is None:
+            callee = self.fm.getFunctionContaining(to_addr)
+        hedef = None if callee is None else (callee.getName(), str(callee.getEntryPoint()))
+        self._hedefler[anahtar] = hedef
+        return hedef
+
+    def _dizgi_degeri(self, to_addr: Any, ta: str) -> Any:
+        try:
+            return self._veriler[ta]
+        except KeyError:
+            pass
+        val: Any = _DIZGI_DEGIL
+        data = self.listing.getDefinedDataAt(to_addr)
+        if data is not None:
+            dtn = str(data.getDataType().getName()).lower()
+            if "string" in dtn or "cstring" in dtn:
+                val = data.getDefaultValueRepresentation()
+                if val and len(val) >= 2 and val[0] in ('"', "'") and val[-1] in ('"', "'"):
+                    val = val[1:-1]
+        self._veriler[ta] = val
+        return val
+
+    def _hesapla(self, func: Any, func_addr: str) -> _BasvuruKaydi:
+        ref_mgr = self.ref_mgr
+        cagrilanlar: list[tuple[str, str]] = []
+        gorulen_c: set = set()
+        dizgiler: list[tuple[str, Any]] = []
+        gorulen_s: set = set()
+
+        # Giden başvurular: yalnız başvurusu olan adresler, artan sırada.
+        for addr in self._kaynak_adresleri(func.getBody()):
+            for ref in ref_mgr.getReferencesFrom(addr):
+                rt = ref.getReferenceType()
+                if rt.isCall():
+                    hedef = self._cagri_hedefi(ref.getToAddress())
+                    if hedef is not None and hedef[1] != func_addr and hedef[1] not in gorulen_c:
+                        gorulen_c.add(hedef[1])
+                        cagrilanlar.append(hedef)
+                elif rt.isData():
+                    to_addr = ref.getToAddress()
+                    ta = str(to_addr)
+                    if ta not in gorulen_s:
+                        val = self._dizgi_degeri(to_addr, ta)
+                        if val is not _DIZGI_DEGIL:
+                            gorulen_s.add(ta)
+                            dizgiler.append((ta, val))
+
+        # Gelen başvurular (giriş adresine): çağrılar arayan listesine, öbürleri PK-8 tablosuna.
+        cagiranlar: list[dict[str, Any]] = []
+        gorulen_a: set = set()
+        giris_cagri_disi: list = []
+        for ref in ref_mgr.getReferencesTo(func.getEntryPoint()):
+            if ref.getReferenceType().isCall():
+                caller = self.fm.getFunctionContaining(ref.getFromAddress())
+                if caller is not None:
+                    ca = str(caller.getEntryPoint())
+                    if ca != func_addr and ca not in gorulen_a:
+                        gorulen_a.add(ca)
+                        cagiranlar.append({"name": caller.getName(), "address": ca})
+            else:
+                giris_cagri_disi.append(ref)
+        cagiranlar.sort(key=caller_sort_key)  # P16e: getReferencesTo sırası kararsız
+        return _BasvuruKaydi(cagrilanlar, cagiranlar, dizgiler, giris_cagri_disi)
+
+    def cagri_dugumu(self, func: Any, func_name: str, func_addr: str,
+                     edges: list) -> dict[str, Any]:
+        """``_extract_call_graph`` düğümü; fonksiyonun kenarlarını ``edges``'e ekler."""
+        k = self.kayit(func, func_addr)
+        unique_callees = []
+        for ad, ca in k.cagrilanlar:
+            unique_callees.append({"name": ad, "address": ca})
+            edges.append({
+                "from": func_addr,
+                "to": ca,
+                "from_name": func_name,
+                "to_name": ad,
+            })
+        unique_callers = [dict(c) for c in k.cagiranlar]
+        return {
+            "name": func_name,
+            "address": func_addr,
+            "caller_count": len(unique_callers),
+            "callee_count": len(unique_callees),
+            "callers": unique_callers,
+            "callees": unique_callees,
+        }
+
+    def xref_kaydi(self, func: Any, func_name: str, func_addr: str,
+                   string_ref_counts: dict[str, int]) -> dict[str, Any]:
+        """``_extract_xrefs`` fonksiyon kaydı; dizgi adreslerini ``string_ref_counts``'a sayar."""
+        k = self.kayit(func, func_addr)
+        strings_used = []
+        for ta, val in k.dizgiler:
+            strings_used.append({"address": ta, "value": val})
+            string_ref_counts[ta] = string_ref_counts.get(ta, 0) + 1
+        return {
+            "name": func_name,
+            "address": func_addr,
+            "strings_used": strings_used,
+            "functions_called": [{"name": ad, "address": ca} for ad, ca in k.cagrilanlar],
+            "called_by": [dict(c) for c in k.cagiranlar],
+        }
+
+
 class GhidraHeadless:
     """Ghidra headless analiz wrapper.
 
@@ -785,11 +1006,27 @@ class GhidraHeadless:
                     _step_failed("strings", exc)
                 saat.bitti(ADIM_STRINGS)
 
+                # HZ-4a: ``analysis.dokum_tek_gecis`` açıkken çağrı grafiği ve xref dökümü ortak
+                # başvuru tablosundan kurulur, CFG blok başına komut yineleyicisi kurmaz.
+                # Kapalıyken (ya da programın başvuru yöneticisinde gereken API yoksa) bugünkü
+                # döngüler koşar ve işlevlere ek argüman verilmez. Çıktı iki yolda aynıdır.
+                basvuru_tablosu = None
+                if bool(getattr(getattr(self.config, "analysis", None),
+                                "dokum_tek_gecis", False)):
+                    basvuru_tablosu = _BasvuruTablosu.kur(program)
+                    if basvuru_tablosu is None:
+                        logger.warning("Döküm tek geçişi kurulamadı (başvuru yöneticisinde "
+                                       "gereken API yok); eski döngüler koşuyor")
+                tek_gecis = basvuru_tablosu is not None
+                logger.info("Döküm kipi: %s", "tek geçiş" if tek_gecis else "eski döngüler")
+
                 # 3. Call graph
                 saat.basla(ADIM_CALL_GRAPH)
                 try:
                     den = _denetci(ADIM_CALL_GRAPH, toplam=_fonksiyon_toplami())
-                    cg_data = self._extract_call_graph(program, denetci=den)
+                    cg_data = self._extract_call_graph(
+                        program, denetci=den,
+                        **({"tablo": basvuru_tablosu} if tek_gecis else {}))
                     scripts_output["call_graph"] = cg_data
                     self._save_output(output_dir, "call_graph.json", cg_data)
                     log_lines.append(
@@ -869,7 +1106,9 @@ class GhidraHeadless:
                 saat.basla(ADIM_XREF)
                 try:
                     den = _denetci(ADIM_XREF, toplam=_fonksiyon_toplami())
-                    xref_data = self._extract_xrefs(program, denetci=den)
+                    xref_data = self._extract_xrefs(
+                        program, denetci=den,
+                        **({"tablo": basvuru_tablosu, "tek_gecis": True} if tek_gecis else {}))
                     scripts_output["xrefs"] = xref_data
                     self._save_output(output_dir, "xrefs.json", xref_data)
                     log_lines.append(
@@ -882,6 +1121,7 @@ class GhidraHeadless:
                     _butce_doldu("xrefs", den)
                 except Exception as exc:
                     _step_failed("xrefs", exc)
+                basvuru_tablosu = None  # HZ-4a: tablo xref'ten sonra gerekmez (bellek)
                 saat.bitti(ADIM_XREF)
 
                 # 8. P-Code (v1.5: decompile icinde toplandiysa JSONL yaz)
@@ -927,7 +1167,8 @@ class GhidraHeadless:
                 saat.basla(ADIM_CFG)
                 try:
                     den = _denetci(ADIM_CFG, toplam=_fonksiyon_toplami())
-                    cfg_data = self._extract_cfg(program, denetci=den)
+                    cfg_data = self._extract_cfg(
+                        program, denetci=den, **({"tek_gecis": True} if tek_gecis else {}))
                     scripts_output["cfg"] = cfg_data
                     self._save_output(output_dir, "cfg.json", cfg_data)
                     log_lines.append(
@@ -1486,13 +1727,21 @@ class GhidraHeadless:
         return out
 
     @staticmethod
-    def _extract_call_graph(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
-        """Call graph cikar (ÖL-2: ``denetci`` ile fonksiyon başına bütçe / olay denetimi)."""
+    def _extract_call_graph(program, denetci: _AdimDenetcisi | None = None,
+                            tablo: _BasvuruTablosu | None = None) -> dict[str, Any]:
+        """Call graph cikar (ÖL-2: ``denetci`` ile fonksiyon başına bütçe / olay denetimi).
+
+        HZ-4a: ``tablo`` verilirse düğümler ortak başvuru tablosundan kurulur (fonksiyon başına
+        tek geçiş, yalnız başvurusu olan adresler); verilmezse aşağıdaki eski döngü koşar. Çıktı
+        iki yolda bayt bayt aynıdır.
+        """
         fm = program.getFunctionManager()
         ref_mgr = program.getReferenceManager()
 
         nodes = {}
         edges = []
+        if tablo is not None:
+            tablo.tazele()
 
         islenen = 0
         for func in fm.getFunctions(True):
@@ -1501,6 +1750,9 @@ class GhidraHeadless:
             islenen += 1
             func_name = func.getName()
             func_addr = str(func.getEntryPoint())
+            if tablo is not None:  # HZ-4a: tek geçiş
+                nodes[func_addr] = tablo.cagri_dugumu(func, func_name, func_addr, edges)
+                continue
 
             callers = []
             callees = []
@@ -2388,12 +2640,19 @@ class GhidraHeadless:
         return out
 
     @staticmethod
-    def _extract_xrefs(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
+    def _extract_xrefs(program, denetci: _AdimDenetcisi | None = None,
+                       tablo: _BasvuruTablosu | None = None,
+                       tek_gecis: bool = False) -> dict[str, Any]:
         """Cross-reference haritasi cikar: fonksiyon -> string/global/fonksiyon.
 
         ÖL-2: ``denetci`` ile fonksiyon başına (ikinci bölümde, genel sembol sayımında,
         ``KUCUK_BIRIM_DENETIM_ADIMI`` sembolde bir) bütçe / olay denetimi. Sayaç birimi
         fonksiyondur; bütçe genel sembol sayımında dolarsa neden bunu söyler.
+
+        HZ-4a: ``tablo`` verilirse fonksiyon kayıtları ortak başvuru tablosundan kurulur (çağrı
+        grafiği adımı hesapladıysa hazır bulunur). ``tek_gecis`` (ya da ``tablo``) genel sembol
+        sayımında ``getReferencesTo`` yineleyicisi yerine ``hasReferencesTo`` kullanır. Çıktı
+        eski döngülerle bayt bayt aynıdır.
         """
         fm = program.getFunctionManager()
         ref_mgr = program.getReferenceManager()
@@ -2401,6 +2660,8 @@ class GhidraHeadless:
 
         func_xrefs: dict = {}
         string_ref_counts: dict[str, int] = {}  # addr -> ref count
+        if tablo is not None:
+            tablo.tazele()
 
         islenen = 0
         for func in fm.getFunctions(True):
@@ -2409,6 +2670,10 @@ class GhidraHeadless:
             islenen += 1
             func_name = func.getName()
             func_addr = str(func.getEntryPoint())
+            if tablo is not None:  # HZ-4a: tek geçiş
+                func_xrefs[func_addr] = tablo.xref_kaydi(func, func_name, func_addr,
+                                                         string_ref_counts)
+                continue
 
             strings_used = []
             funcs_called = []
@@ -2480,6 +2745,13 @@ class GhidraHeadless:
         ikinci_bolum = not (denetci is not None and denetci.doldu)
         if not ikinci_bolum:
             denetci.ek_neden = "genel sembol sayımı yapılmadı"
+        # HZ-4a: tür süzgeci kimlik baytıyla (``SymbolType.getID``), başvuru hükmü
+        # ``hasReferencesTo`` ile (yineleyici kurmadan).
+        sayilmayan_turler = None
+        if (tek_gecis or tablo is not None) and ikinci_bolum:
+            sayilmayan_turler = frozenset(
+                int(t.getID())
+                for t in (SymbolType.FUNCTION, SymbolType.PARAMETER, SymbolType.LOCAL_VAR))
         while ikinci_bolum and sym_iter.hasNext():
             if (denetci is not None and semboller % KUCUK_BIRIM_DENETIM_ADIMI == 0
                     and denetci.denetle(islenen)):
@@ -2487,6 +2759,11 @@ class GhidraHeadless:
                 break
             semboller += 1
             sym = sym_iter.next()
+            if sayilmayan_turler is not None:  # HZ-4a
+                if (int(sym.getSymbolType().getID()) not in sayilmayan_turler
+                        and ref_mgr.hasReferencesTo(sym.getAddress())):
+                    global_count += 1
+                continue
             st = sym.getSymbolType()
             if st != SymbolType.FUNCTION and st != SymbolType.PARAMETER and st != SymbolType.LOCAL_VAR:
                 refs = ref_mgr.getReferencesTo(sym.getAddress())
@@ -2736,7 +3013,8 @@ class GhidraHeadless:
         }
 
     @staticmethod
-    def _extract_cfg(program, denetci: _AdimDenetcisi | None = None) -> dict[str, Any]:
+    def _extract_cfg(program, denetci: _AdimDenetcisi | None = None,
+                     tek_gecis: bool = False) -> dict[str, Any]:
         """Control flow graph (basic block + edge) cikar.
 
         Her fonksiyon icin basic block'lari ve aralarindaki
@@ -2767,6 +3045,8 @@ class GhidraHeadless:
 
             try:
                 body = func.getBody()
+                if tek_gecis:  # HZ-4a: fonksiyon başına taze model (blok önbelleği birikmez)
+                    block_model = BasicBlockModel(program)
                 blocks_iter = block_model.getCodeBlocksContaining(body, monitor)
 
                 blocks_data = []
