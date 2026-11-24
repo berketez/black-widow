@@ -290,3 +290,36 @@ Belge `docs/arge/2026-11-19_mythos/cikti/CIKTI_AGACI_TASARIM.md` (452 satır), k
 - **Sonuç (ana oturum):** HZ-4a çağrı grafiği + xref'i 159,4 → 18,5 sn'ye indiriyor ama toplamı CFG ve aynı mekanizmaya bağlı öbür adımlar (decompile'ın ≈ yarısı, BSim ingest) belirliyor. **HZ-4c (JPype ↔ Python çöp toplama) sıradaki en değerli hız paketi:** tek başına üç adımı 5 kat hızlandırdı; decompile ve BSim ingest'e etkisi ölçülecek. Çare adayları: adımlar arası `gc.freeze`, köprü boyunca `gc.disable()` (CPython 3.12.7'de `PyGC_Collect` toplayıcı kapalıyken iş yapmıyor: yerelde sınandı, köprüde ölçülmedi), decompile sonuçlarını bellekte tutmamak (ÖL-3). HZ-4b kararı HZ-4c ölçüldükten sonra.
 - Ayar yaması bağlam kayması yüzünden (HZ-2 yaması komşu satırları silmişti) elle uygulandı; fark yamanınkiyle aynı. Koşu kökü 4,4 GB (`ozet/` 2,5 MB); ürün ağaçları `urun-f144b9c9`, `urun-8bf027a0`.
 
+## 24 Kasım kapanışı (16:3x)
+
+Berke (14:4x, 15:3x): "bunlar bitince yavaştan duralım"; "ölçüm bitince kapatacağım."
+
+- **Bugün main'e girenler** (7 ajan: 4 Opus + 3 Mythos; hiçbiri takılmadı; her biri ana oturumca test + mutasyon + sayı yeniden üretimiyle doğrulandı): BA2, OL4, PUV6b, HZ2, HZ4a (kod) + GK-0, ÇA-0 (tasarım belgesi). HZ4a: çağrı grafiği + xref Ollama'da 159,4 → 18,5 sn, çıktı aynı (S8 8 / 8 ham eşit, T25 3 / 3); toplam oran 0,931 ile H3 tutmadı — CFG'yi JPype'ın tetiklediği tam Python çöp toplaması belirliyor (dondurmalı ek kolda üç adım 451,6 → 88,8 sn; ayrı paket HZ-4c); bayrak öntanımda açık; bağımsız doğrulama: 392 test, mutasyon hz4 28 / 28 + sekiz eski tanım 170 / 170.
+- **Birleşik main `ed28e36b` tam takımı: 11 321 geçti / 26 atlandı / 0 kaldı (585 sn; ürün kodu commit'i ed28e36b)** (`dogrulama-d1`). Ara denetim: HZ4a'sız main `89437077`'de 11 292 geçti / 25 atlandı / 0 kaldı (681 sn). Gün başında 11 168 / 23 / 0'dı.
+- **Ana oturumun ölçümleri:** S8 tabanı yenilendi (eski tabanla fark yalnız beklenen iki yerde); Ollama kabul koşusu öntanımlarla bitti (61,5 dk, 10 626 üst veri adı; BA-1'in uçtan uca kabulü tuttu).
+- **Kararlar:** A-39 (çıktı ağacı addan), A-40 (zor işler Mythos ajanına), A-41 (projenin ana amacı: geri kurma).
+- **Push:** 13:2x'te `152176bd..c9d3f217` (87 commit) push edildi; kapanışta main origin'in 100 commit önünde, push Berke'ye soruldu.
+
+**Öntanımda değişen ürün davranışı (bugün):**
+1. HZ2: BSim taraması paralel (`bsim.paralel_tarama: true`); çıktıda yeni alan `bsim_detail.scan_mode`.
+2. OL4: `analyze` ilerleme olaylarını `--verbose` olmadan gösterir (TTY değilse stderr'e satır; TTY'de çubuğun açıklaması).
+3. BA2: iki kalıp (eşleşme aynı, yalnız süre); tam takımda kalıp denetimi kapısı.
+Bayrak arkasında, öntanımda kapalı: Swift ad kanalı ve RTTI kanıt satırı (PUV6b), HZ4a'nın bayrağı (durumu yukarıdaki satırda).
+
+**Sonraki oturumun ilk işleri (sırayla):**
+1. **İki tasarım belgesini satır satır oku, kabul kararını yaz** (A-33 düzeninde): `gerikurma/GERI_KURMA_TASARIM.md` (GK-0) ve `cikti/CIKTI_AGACI_TASARIM.md` (ÇA-0). Berke'ye sor: GK K-2 (P-code öykünmesi "çalıştırma" sayılır mı), K-3 (eşdeğer eşiği), K-5 (ürün clang çağırsın mı), K-7 (Go / Swift / ObjC / C++'ta hedef "C olarak derlenen kod"), K-8 (model önerisi ayrı katmanda); ÇA K-2 (Go'da kendi / bağımlılık / standart dizin düzeyi).
+2. **S8 tabanını yenile** (HZ2'nin `scan_mode` alanı + HZ4a sonrası): 8 Ghidra koşusu, tek kök.
+3. **`~/karadul_olcum/ghidra_kuyruk.sh`'ye sıra ekle** (ilk gelen ilk girer): bugün iki kez açlık oldu; geçici çare `ghidra_kuyruk.bekle.<PAKET>` idi.
+4. **Gönder (metinleri hazır):** `gonderim/GS1.md` (OL4 main'de: önkoşul sağlandı), `gonderim/HZ7a.md` (BA2 main'de), `gonderim/PUV6c.md` (PUV6b main'de).
+5. **Yazılacak metinler:** GK-A / GK-B / GK-C (geri kurmanın ilk üç paketi; GK-B `c_project_builder.py`: ÇA-B / ÇA-C'den ÖNCE), GK-D (Mythos), ÇA-A, HZ-4c (JPype ↔ Python çöp toplama; `HZ4a.md` "HZ-4c için notlar"), ÖL-3 (akış biçimli yazım + A-38), PUV6d (`main` / `entry`, `PUV5__output_formatter.py.patch`, etiketsiz `swift_demangle` adları), ÖK-1b, açılış ölçümü, MUTBAKIM-2 (`bayrak` 3, `pguv` 3, `adim3_alt_kanal` 3 bayat tanım), BA-3 (polinom kalıplar + girdi uzunluk sınırı).
+6. **Kaynak taraması (ana oturum; CLAUDE.md §14):** geri kurmanın akrabaları — eşleşen yeniden derleme, yeniden çalıştırılabilirlik ölçütlü decompile modelleri, derleyici geri bildirimli onarım, ikili eşdeğerlik. Yenilik iddiası ondan önce yazılmaz.
+
+**Kalan iş sayımı (ana oturumun; TAHMİN):** dün yaklaşık 79 paket; bugün 5 bitti (BA-2, ÖL-4, P-ÜV6b'nin ilk yarısı, HZ-2, HZ-4a); eklenenler: geri kurma hattı 14 (GK-A … GK-N), çıktı ağacı 8 (ÇA-A … ÇA-H), HZ-4c, PUV6d, BA-3 → yaklaşık 99 paket. Takvim tahmini iki tasarım belgesi okunduktan sonra yenilenecek (A-41: bitiş çizgisi bu hattı da kapsar).
+
+**Duran ağaçlar ve koşu çıktıları (silme Berke'nin kalem kalem onayına bağlı; A-35):**
+- Bugünün 7 ajan worktree'si (dallarının hepsi main'e alındı) + dünün 6'sı + önceki günün 7'si + P12d + `dogrulama-d1` / `-d2`.
+- Ürün ağaçları (bugün): `urun-534e252b` (sabit ağaç), `urun-75ecbc61` (OL4), `urun-d94ee206`, `urun-010971e0` (PUV6b), `urun-af7dae70` (HZ2; HATALI kod), `urun-068be1fd`, `urun-068be1fd-b` (HZ2), HZ4a'nın ürün ağaçları (`HZ4a.md`'de).
+- `~/karadul_olcum/runs/dalga1-2026-11-23/`: bugün eklenenler HZ2 2,7 GB, BA2 2,3 GB, PUV6b 2,2 GB, `ANA/ollama_kabul` (kabul koşusu), `ANA/s8_taban_534e252b` (S8 tabanı; yenisi koşulana kadar silinmez), GK0 809 MB, HZ4a (boyutu `HZ4a.md`'de), OL4 72 MB.
+
+Çalışan ajan, koşu ve Ghidra süreci yok; bekçiler kapandı; kuyrukta bekletme dosyası yok.
+
