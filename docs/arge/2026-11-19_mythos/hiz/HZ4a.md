@@ -247,3 +247,76 @@ Koşullar aynı değil: kapalı kolun decompile / xref / CFG'si sırasında maki
 ### HZ-4b koşulu için sayı (hüküm 8)
 
 Açık kolda (BSim'siz köprü 1 003,1 sn) üç adımın payı **%41,9** (420,6 sn; neredeyse tamamı CFG). Kapalı kolun BSim süresi (842,2 sn) eklenirse köprü 1 845,4 sn, pay **%22,8**. Son kodun (açık-2) payı aşağıda. Not: bu pay Java çağrısı sayısından değil tetiklenen Python toplamasından geliyor; HZ-4b'nin (Java yardımcısı) CFG'de kazandıracağı şey çağrı sayısı değil Java ayırma miktarıdır. Önce HZ-4c (aşağıdaki notlar) ölçülmeli.
+
+## Ek koşu (ön kayıt DIŞI; hüküm değil bulgu; ana oturumun onayıyla): xref öncesi `gc.freeze()`, CFG sonrası `gc.unfreeze()`
+
+Ürün kodu DEĞİŞMEDİ: sarmalayıcı `…/HZ4a/betik/dondur_kos.py` ürünü aynen koşar (`runpy`), yalnız `_extract_xrefs` çağrılmadan önce `gc.collect(); gc.freeze()`, `_extract_cfg` döndükten sonra `gc.unfreeze()`. **Bayrak KAPALI** (bugünkü döngüler: çarenin etkisi HZ-4a'dan ayrı görünsün), BSim kapalı, ürün ağacı `urun-f144b9c9`, T25 ayarı (`…/ozet/ayar/t25_dondur.yaml`), kuyruk `HZ4a T25:dondur` (yuva 2) 15:32:35–15:46:37, `uptime` 5,82 → 6,10 (aynı anda yuva 1'de açık / açık-2 kolları koşuyordu: yük altında). Çıkış 3 (köprü dışı neden; `step_errors` boş).
+
+| Adım (sn) | kapalı kol (14:36) | freeze'li kol | oran |
+|---|---|---|---|
+| çağrı grafiği (decompile'dan önce; freeze yok) | 28,52 | 26,30 | 0,92 |
+| xref (içinde 5,63 sn `gc.collect` + 3 sn'lik yığın örneği) | 130,87 | 39,25 | 0,30 |
+| CFG (içinde 3 sn'lik yığın örneği) | 292,17 | **23,25** | **0,080** |
+| üç adım toplamı | 451,56 | 88,80 | 0,197 |
+
+- **(a) Süreler:** xref 130,9 → 39,2 sn, CFG 292,2 → 23,2 sn. Freeze'li kolda süreler taze süreçteki kıyasın "eski" sürelerine iniyor (27,5 / 30,8 / 17,4 sn): fark tetiklenen Python toplamasıydı. Java toplaması sayısı benzer (xref 15 ↔ 11, CFG 41 ↔ 28); değişen, toplama başına Python süresi.
+- Dondurulan nesne sayısı (xref başında): **15 256 488**; dondurmadan önceki tek `gc.collect` 5,63 sn (0,37 µs / nesne). `gc.unfreeze` 0,00 sn.
+- **(b) Bellek** (dışarıdan `ps` ile 2 sn'de bir RSS; `…/t25_*/rss.txt`): xref penceresi — kapalı kol tek okuma 2 953 MB (14:52:20; izleyici 14:55'te başladı), freeze'li kol 3 343–3 378 MB; CFG penceresi tepe — kapalı kol 3 242 MB (pencerenin 14:55:27'den sonraki kısmı), açık kol 3 145 MB, **freeze'li kol 4 059 MB** (pencere başında 3 421 MB). Freeze'li kolda CFG sonunda RSS ~0,8–0,9 GB daha yüksek. Ne kadarının dondurulan çöpten, ne kadarının 12 kat hızlı döngüde JVM genç kuşağının büyümesinden geldiği AYRILMADI (JVM yığını ayrıca ölçülmedi). Sürecin `ru_maxrss`'i 7 878 MB (koşunun tamamı; tepe decompile'da; `ps` RSS'iyle aynı ölçü değil).
+- **(c) Çıktı:** `ghidra_output/{call_graph,xrefs,cfg}.json` kapalı kolla **bayt bayt aynı, 3 / 3** (sha256 önekleri eşit; `…/ozet/t25_kapali_dondur.json`).
+- **(d) Mekanizma öbür adımlarda** (yığın örnekleri, `…/ozet/ornek_*.txt`; "ana iş parçacığı `take_gil`'de" / örnek):
+
+| Adım | Kol | Ana iş parçacığı GIL bekliyor | "Python Reference Queue" `PyGC_Collect`'te |
+|---|---|---|---|
+| çağrı grafiği (decompile'dan önce) | freeze'li (o anda freeze yok) | ~49 / 2 228 | 32 / 2 228 (%1,4: var ama ucuz, yığın küçük) |
+| decompile (4. dakika) | açık | 613–615 / 1 218 | 614 / 1 218 (**~%50**) |
+| xref | kapalı | 2 838 / 2 844 | 2 844 / 2 844 |
+| P-code (1 sn'lik örnek) | açık | 3 / 762 | görülmedi (o saniyede Java toplaması yok) |
+| CFG | kapalı | 2 221 / 2 228 | tamamı |
+| BSim ingest | kapalı | 2 186 / 2 195 | 2 195 / 2 195 |
+| xref | freeze'li | 14 / 2 168 | görülmedi |
+| CFG | freeze'li | ~226 / 2 231 | 190 / 2 231 (%8,5: yalnız dondurmadan sonraki nesneler) |
+| types / FunctionID | — | örneklenmedi (adımlar < 0,1 sn) | açık kolda bu adımlar 5,4 / 14,2 sn sürdü: tek tetiklenmiş toplama denk gelmiş (dolaylı) |
+
+  Decompile adımının kendisi de etkileniyor: örneğin yarısı tetiklenen toplamada (kapalı kolda decompile penceresinde 122 Java toplaması, 694 sn). BSim ingest (kapalı kol 835 sn) örneğin tamamında GIL bekliyor.
+
+### (ii) için TAHMİN: Python yığını küçülürse (ÖL-3) kazanç
+
+- Ölçülen: xref başında izlenen nesne 15,26 M; köprünün o ana kadar ürettiği döküm sözlüklerinin kap sayısı (diskteki JSON'lardan sayıldı, `…/ozet/kap_sayimi_kapali.json`): functions 27 580 + strings 60 540 + call_graph 197 922 + decompiled 290 913 + types 828 = **0,58 M**; yorumlayıcı + Karadul içe aktarma tabanı 0,09 M. Yani 15,26 M'nin ~14,6 M'si döküm çıktısı DEĞİL: decompile adımının bellekte tuttuğu ara veri (aday: P-code için saklanan fonksiyon listesi; `pcode.jsonl` 128,3 MB). CFG sırasında da toplama ~7 sn sürdüğüne göre P-code adımındaki serbest bırakma yığını küçültmüyor: **kimin tuttuğu ölçülmedi** (HZ-4c'nin ilk işi: `gc.get_objects()` türe göre sayım).
+- Varsayım: tam toplamanın süresi izlenen nesne sayısıyla orantılı (ölçülen 0,37 µs / nesne tek başına; adım içinde ortalama 7,1 sn / 15,3 M = 0,46 µs).
+- TAHMİN: ara veri bellekte tutulmazsa yığın xref / CFG sırasında 1–2,5 M nesneye iner (0,7 M taban + adımın kendi çıktısı: xref 0,16 M, CFG 0,97 M) → toplama başına 0,4–1,2 sn → CFG (41–57 Java toplaması) **~35–90 sn** (bugün 292–402), xref (eski döngü, 15 toplama) ~37–50 sn (bugün 131), BSim ingest (175 toplama) ~70–210 sn + kendi işi (bugün 835; kendi işi ölçülmedi). Aralık geniş: Java toplaması sayısı koşudan koşuya %40 oynuyor ve adımın kendi çıktısı da yığını büyütüyor. `gc.freeze` (i) ile ölçülen değer bu aralığın altında (CFG 23 sn) çünkü dondurma o anki yığının TAMAMINI toplama dışına alıyor.
+
+## HZ-4c için notlar (ayrı paket; karar ana oturumda — bu pakette ürün koduna hiçbir GC değişikliği GİRMEDİ)
+
+### Kanıt (özet; ayrıntı "Ayrı bulgu" bölümünde ve ek koşuda)
+
+- Mekanizma: JPype 1.6.0'da Java tarafındaki `org.jpype.ref.JPypeReferenceQueue` iş parçacığı ("Python Reference Queue") her Java çöp toplamasından sonra `JPypeReferenceNative.wake` → `JPGarbageCollection::triggered()` → **`PyGC_Collect()`** çağırıyor: GIL'i tutan TAM bir Python toplaması. Süresi Python'da izlenen kap (sözlük / liste) sayısıyla orantılı; decompile adımı milyonlarca kabı bellekte bıraktığı için decompile'dan sonraki her Java toplaması saniyeler süren bir Python toplamasına dönüşüyor.
+- Yığın örnekleri (`/usr/bin/sample`, T25 kapalı kol; ana iş parçacığının `take_gil`'de beklediği örnek / toplam): xref 2 838 / 2 844, CFG 2 221 / 2 228, **BSim ingest 2 186 / 2 195**; üçünde de "Python Reference Queue" iş parçacığı örneklerin tamamında `PyGC_Collect` içinde.
+- GC günlüğü (kapalı kol): xref penceresinde 15 Java duraklaması, toplam 48 ms (adımın %0,04'ü) ↔ adım 130,9 sn: Java toplaması başına ~8,7 sn Python toplaması.
+- Etkilenen adımlar: decompile'dan sonraki bütün köprü adımları (xref, CFG, BSim ingest örneklendi; öbürleri aşağıda). T25'te bu üç adımın toplamı ~16–17 dk.
+
+### Çare adayları ve riskleri
+
+**(i) Adımlar arasında `gc.freeze()` / `gc.unfreeze()`** (decompile'dan sonra `gc.collect(); gc.freeze()`, köprünün sonunda `gc.unfreeze()`).
+- Etki: tetiklenen `PyGC_Collect` yalnız dondurmadan SONRA oluşan nesneleri gezer (ek koşuda ölçüldü; aşağıda).
+- Riskler: (a) dondurulan nesneler arasındaki döngüsel çöp `unfreeze`'e kadar toplanmaz (bellek maliyeti: ek koşuda tepe RSS farkı); (b) `gc.freeze` süreç genelidir: aynı süreçte başka iş parçacığı / kitaplık da etkilenir (Karadul'un sunucu kipinde uzun ömürlü süreçte `unfreeze` unutulursa kalıcı sızıntı → `try / finally` şart); (c) `unfreeze`'den sonraki ilk tam toplama bütün yığını bir kez gezer (bir kerelik bedel); (d) döküm adımlarının kendi çıktısı (CFG ~10⁶ kap) dondurmadan sonra oluştuğu için adım ilerledikçe toplama yine uzar — her adımın sonunda yeniden `freeze` çağrılabilir (ölçülmedi); (e) decompile'ın KENDİSİ korunmaz (yığın o sırada büyüyor): parti aralarında `freeze` denenebilir (ölçülmedi).
+
+**(ii) Decompile sonuçlarını bellekte tutmamak (ÖL-3'ün akış biçimli yazımı).**
+- Etki: toplama süresi izlenen kap sayısıyla orantılı olduğu için Python yığını küçüldükçe her tetiklenen toplama kısalır; Java toplaması sayısı değişmez.
+- Riskler: ÖL-3'ün kendi riskleri (şema, okuyucular); kazanç yığının ne kadarının decompile sonucu olduğuna bağlı. Tek başına yetmeyebilir: döküm adımlarının kendi çıktıları da bellekte birikiyor (`scripts_output`).
+
+**(iii) JPype'ın Java GC → `PyGC_Collect` bağını kapatan ayar: YOK.** Yerelde kurulu JPype 1.6.0 (`/opt/anaconda3/lib/python3.12/site-packages/jpype`): `jpype/config.py`'de yalnız `onexit`, `destroy_jvm`, `free_resources` var; Python dosyalarında GC bağıyla ilgili seçenek yok; yerel kitaplıkta (`_jpype…so`, `native/common/jp_gc.cpp`) dışarı açılan tek şey salt okunur `_jpype.gcStats()`. (Yalnız yerel kurulum okundu; ağa çıkılmadı.)
+
+**(iv) Ek aday (yerelde tek satırla sınandı, köprüde ölçülmedi): döküm adımları boyunca `gc.disable()`.** CPython 3.12.7'de `PyGC_Collect()` toplayıcı kapalıyken hiçbir şey yapmadan dönüyor (`ctypes.pythonapi.PyGC_Collect()`: kapalıyken 0, açıkken 1 000 nesne). Yani `gc.disable()` JPype'ın tetiklediği toplamayı da etkisiz kılar. Risk: o aralıkta hiç döngüsel toplama olmaz (döküm çıktıları döngüsüz sözlük / liste olduğu için beklenen bellek etkisi küçük; ölçülmedi); süreç genelidir (`try / finally` ile `gc.enable()`).
+
+**(v) Java toplamasını seyreltmek** (genç kuşağı büyütmek; HZ-5): tetikleme sayısını düşürür, toplama başına süreyi düşürmez. Kapalı kolda JVM yığını 880 MB'ta kalıyor (üst sınır ~14 GB): genç kuşak küçük, toplamalar sık. Risk: A-9 (ayar donanımdan türetilmeli), bellek.
+
+### Ek koşunun (i) için gösterdiği
+
+Bayrak kapalıyken bile xref 130,9 → 39,2 sn, CFG 292,2 → 23,2 sn; çıktı bayt bayt aynı; bellek maliyeti CFG sonunda ~0,8–0,9 GB RSS (nedeni ayrılmadı). HZ-4a ile birlikte beklenen (ölçülmedi, TAHMİN): çağrı grafiği ~10 sn + xref ~2 sn (+ dondurma öncesi tek toplama ~6 sn) + CFG ~20–25 sn ≈ 40 sn (kapalı kol 451,6 sn). Dondurma decompile'dan ÖNCE de düşünülmeli (decompile'ın yarısı aynı toplamada): ölçülmedi.
+
+### HZ-4c'nin ilk adımları (öneri)
+
+1. Yığını kimin tuttuğunu say (`gc.get_objects()` türe / sahibine göre; decompile'dan hemen sonra ve P-code adımından sonra).
+2. (iv) `gc.disable()` ve (i) `gc.freeze()` kollarını aynı T25'te ölç (xref, CFG, BSim ingest, decompile; tepe RSS; JVM yığını ayrı).
+3. Çıktı eşitliği S8 + T25 (bu pakette ek koşuda 3 / 3 bayt eşit).
+4. `_jpype.gcStats()` sayaçlarını `ghidra_status.json`'a ölçüm alanı olarak yazmak (HZ-1'in kancası gibi) kalıcı görünürlük sağlar. Not: ek koşuda `gcStats()['triggered']` xref öncesi ve CFG sonrası aynıydı (43): bu sayacın neyi saydığı (Python → Java yönü olabilir) kaynaktan doğrulanmadı.

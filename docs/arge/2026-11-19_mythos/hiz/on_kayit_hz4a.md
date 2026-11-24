@@ -28,3 +28,19 @@ Kaynak: `docs/arge/2026-11-23_dalga1/gonderim/HZ4a.md` "Ön kayıt" (sayılar an
 ## Bilinen kendiliğinden fark
 
 zstd `FUN_001063c0`: decompiler 6 koşunun 1'inde iki geçici değişkeni yer değiştiriyor (P16e). Bir `.c` farkı görülürse o ikili bir kez daha koşulur.
+
+## Hükümler (2026-11-24 15:4x; yukarıdaki beklentiler ve eşikler değiştirilmedi)
+
+| # | Beklenti | Ölçülen | Hüküm |
+|---|---|---|---|
+| H0 | baskın maliyet (≥ %50) hangisi; oran | Taze süreçte (profil) çağrı sayısı payı: çağrı grafiği %68, xref %66, CFG %50,4, toplam %64 (üst sınır tabanıyla; alt sınırla %19–25); GC %0,2. Başvurusu olan adres / gövde adresi 665 483 / 5 972 683 = 0,111 | **çağrı sayısı** (CFG sınırda: çağrı sayısı + Java işi karışık). Ürün koşusunda (decompile'dan sonra) ise baskın maliyet bunların hiçbiri değil: JPype'ın tetiklediği tam Python toplaması (ön kayıtta öngörülmeyen dördüncü neden; `HZ4a.md` "Ayrı bulgu") |
+| H1 | S8 ham eşit 8 / 8 | JSON 0 / 23, `.c` 0, `naming_map` 0 / 3 fark; 8 ikilide | **TUTTU (8 / 8)** |
+| H2 | T25 üç döküm JSON-eşit | `ghidra_output/` ve `static/` kopyaları, altı dosya eşit | **TUTTU (3 / 3)** |
+| H3 | T25 toplam açık / kapalı ≤ 0,5 | 420,61 / 451,56 = 0,931 (çağrı grafiği 0,345; xref 0,066; CFG 1,376) | **TUTMADI** |
+| H4 | S8 ortanca açık / taban ≤ 0,8 | ortanca 0,425 (0,34–0,51) | **karşılaştırılamaz** (taban başka yük koşulunda; hüküm yok) |
+| H5 | sqlite3'te 1 sn bütçeyle xref / CFG kesilince çıktı geçerli, `kismi`, `islenen` ≤ `toplam`, kesilmeyen alanlar aynı | Ürün koşusunda xref 0,084 sn, CFG 0,961 sn: kesilmedi (üç döküm tam çıktıyla JSON-eşit). Aynı süreçte gerçek Ghidra'yla bütçe denemesi (Ollama ve sqlite3; üç adım): geçerli JSON, `kismi: true`, `islenen` ≤ `toplam`, işlenen kayıtlar tam çıktıyla aynı | **koşul ürün koşusunda oluşmadı**; kıyas kolunda tuttu |
+| H6 | T25'te en uzun `ILERLEME` sessizliği ≤ 60 sn | 22 sn (iki kol) | **TUTTU** |
+
+H3'ün tutmamasının nedeni: beklenti "üç adımın süresi Java çağrısı sayısıyla orantılı" varsayımına dayanıyordu. Çağrı grafiği + xref'te öyle (159,4 → 18,5 sn); CFG'de değil: CFG'nin süresi adım sırasındaki Java çöp toplaması sayısı × decompile'dan kalan Python yığınını gezen tam Python toplamasının süresi (≈ 7 sn). Eşik değiştirilmedi; aynı süreçte kıyasın oranı (0,376 / 0,405; taze süreç, decompile yok) hüküm yerine geçmez.
+
+Açık kol, CFG'de fonksiyon başına taze blok modeli içeren ağaçta (`f144b9c9`) koştu; o değişiklik kıyas sonucuyla geri alındı. Son kodun (`8bf027a0`) açık kolu ayrıca koşuldu (açık-2; `HZ4a.md` "Kalem 7b"): H3'ün hükmü yukarıdaki ilk koşuya göredir, açık-2 ek bilgidir.
