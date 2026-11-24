@@ -9,11 +9,11 @@
 | 1 | Profil betiği (`scripts/arge/hiz/hz4a_profil.py`) | yazıldı; vekil Ghidra'sız (yalın JPype) sınandı | `5a570ee5` + ek |
 | 2 | Profil (H0), Ollama dilimi | **bitti** (14:25–14:31): baskın maliyet çağrı sayısı (CFG sınırda), oran 0,111 | bu commit |
 | 3 | Ön kayıt | commit'lendi (profilden sonra, koddan ve sonra ölçümlerinden önce) | `9e9b2400` |
-| 4 | Kod + testler + mutasyon | kod `0f2fefc0`, testler `fb1f2142` (30 test; commit iletisindeki "31" yanlış sayım), mutasyon `d8d0d2b7` (30 / 30; eski sekiz tanım 170 / 170), yama `f144b9c9` | → |
-| 5 | H5 (sqlite3, 1 sn bütçe) | bekliyor | |
-| 6 | H1 / H4 (S8) | bekliyor | |
-| 7 | H2 / H3 / H6 (T25) | bekliyor | |
-| 8 | Tam takım | bekliyor | |
+| 4 | Kod + testler + mutasyon | **bitti:** kod `0f2fefc0` + CFG geri alışı `879e8ea1`; 30 test; mutasyon 28 / 28 (eski sekiz tanım 170 / 170); yama `f144b9c9` | → |
+| 5 | H5 (sqlite3, 1 sn bütçe) | **bitti:** koşul ürün koşusunda oluşmadı; kıyas kolunda tuttu | `8bf027a0` |
+| 6 | H1 / H4 (S8) | **bitti:** H1 tuttu 8 / 8 ham eşit; H4 karşılaştırılamaz (ortanca 0,425) | `a589e294` |
+| 7 | H2 / H3 / H6 (T25) | **bitti:** H2 tuttu 3 / 3; H3 TUTMADI 0,931 (son kodla 0,940); H6 tuttu 22 sn | `a589e294`, kapanış |
+| 8 | Tam takım | **bitti:** 11 195 geçti / 25 atlandı / 1 kaldı (beklenen) | kapanış |
 
 ## Doğrulanan API imzaları (Ghidra 12.1.2, yerel `javap`; `SoftwareModeling.jar`)
 
@@ -320,3 +320,48 @@ Bayrak kapalıyken bile xref 130,9 → 39,2 sn, CFG 292,2 → 23,2 sn; çıktı 
 2. (iv) `gc.disable()` ve (i) `gc.freeze()` kollarını aynı T25'te ölç (xref, CFG, BSim ingest, decompile; tepe RSS; JVM yığını ayrı).
 3. Çıktı eşitliği S8 + T25 (bu pakette ek koşuda 3 / 3 bayt eşit).
 4. `_jpype.gcStats()` sayaçlarını `ghidra_status.json`'a ölçüm alanı olarak yazmak (HZ-1'in kancası gibi) kalıcı görünürlük sağlar. Not: ek koşuda `gcStats()['triggered']` xref öncesi ve CFG sonrası aynıydı (43): bu sayacın neyi saydığı (Python → Java yönü olabilir) kaynaktan doğrulanmadı.
+
+## Kalem 7b — açık-2: son kodla T25 (ek bilgi; H3'ün hükmü ilk açık kola göre)
+
+Ürün ağacı `~/karadul_olcum/urun-8bf027a0` (CFG main'deki gibi; çağrı grafiği / xref tek geçiş), kuyruk `HZ4a T25:acik2` (yuva 1) 15:37:11'de başladı, `uptime` başta 5,48 / 6,02 / 7,51 (aynı anda yuva 2'de freeze'li ek koşu: yük altında); ayar açık kolla aynı (BSim kapalı). Koşu 15:57:38'de bitti (çıkış 3; `step_errors` boş, neden köprü dışı); kıyas `…/ozet/t25_kapali_acik2.json` (altı dosya JSON-eşit, en uzun sessizlik 22 sn).
+
+| Adım (sn) | kapalı | açık (`f144b9c9`) | açık-2 (`8bf027a0`, son kod) | Java toplaması (kapalı / açık / açık-2) |
+|---|---|---|---|---|
+| çağrı grafiği | 28,52 | 9,83 | 11,35 | 4 / 4 / 26 |
+| xref | 130,87 | 8,67 | 13,46 | 15 / 1 / 4 |
+| CFG | 292,17 | 402,12 | 399,87 | 41 / 57 / 70 |
+| toplam | 451,56 | 420,61 | **424,67** | |
+| oran (kapalıya) | | 0,931 | **0,940** | |
+
+- **Eşitlik:** açık-2'nin `ghidra_output/{call_graph,xrefs,cfg}.json` dosyaları kapalı kolla **bayt bayt aynı, 3 / 3** (`uc_dosya_esit.py`; sha256 önekleri eşit). Son kod için H2 de tutuyor.
+- **Düzeltme:** Kalem 7'de açık kolun CFG'sindeki fazla Java toplaması için "taze blok modeli" adayı yazılmıştı; açık-2 bunu ÇÜRÜTTÜ: taze model olmayan son kodda da CFG 399,9 sn ve Java toplaması 70. CFG süresi koşudan koşuya Java toplaması sayısıyla oynuyor (41 → 292 sn, 57 → 402 sn, 70 → 400 sn; toplama başına 5,7–7,1 sn); sayıyı JVM'in genç kuşak boyutlaması belirliyor (decompile penceresinde de 122 / 52 / 343 toplama). Kapalı kolda CFG'nin kısa görünmesinin adayı: önceki adımın (eski xref) yoğun ayırması genç kuşağı büyütmüş olabilir — ölçülmedi.
+- **Son kodla H3 karşılığı: 0,940 (yine tutmuyor).** Çağrı grafiği + xref 159,4 → 24,8 sn (0,156); CFG değişmedi (aynı kod) ve toplamı belirliyor.
+- **HZ-4b için pay (son kod):** üç adım 424,7 sn / BSim'siz köprü 1 006,6 sn = **%42,2**; kapalı kolun BSim süresi (842,2 sn) eklenirse **%23,0**. İkisi de %20 eşiğinin üstünde, ama pay çağrı sayısından değil tetiklenen Python toplamasından geliyor (freeze'li ek koşuda aynı üç adım 88,8 sn; BSim'siz köprünün ~%15'i): HZ-4b kararı HZ-4c ölçüldükten sonra verilmeli.
+
+## Kalem 8 — tam takım (yamasız) ve yamalı kopya
+
+- **Yamasız, worktree'de** (commit `f144b9c9` + belge; geçici bağlar kurulup kaldırıldı): **11 195 geçti / 25 atlandı / 1 kaldı**, 787,5 sn (yük altında; `uptime` 16,15 → 15,66). Kalan tek test beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `AssertionError: kayıtta ama okunuyor: {'analysis.dokum_tek_gecis': ['karadul/ghidra/headless.py']}` (yama INERT kaydını silince geçer). Günlük `…/HZ4a/tam_takim/pytest.log`.
+- **Yamalı kopyada** (`…/HZ4a/yamali_kopya`: `git archive HEAD` + `patch -p1`; worktree'ye dokunulmadı): 11 192 geçti / 28 atlandı / 1 kaldı. `test_inert_registry_is_accurate` geçti; kalan tek test `tests/test_macho_measure.py::test_default_data_dir_is_repo_workspace_and_env_overridable` kopyanın YERİNDEN (yol `karadul_olcum` içeriyor; test bu dizgiyi yasaklıyor), değişiklikle ilgisiz. Öntanım açıkken HZ-1 / ÖL-2'nin sahte köprü testleri geçiyor (sahte programda API yok → eski döngüler).
+- Tam takım CFG geri alışından (`879e8ea1`) ÖNCE koştu. Geri alıştan sonra köprüye değinen 39 test dosyası yeniden koşuldu: 849 geçti / 12 atlandı / 1 kaldı (aynı beklenen test). Geri alış `_extract_cfg`'yi main'deki metne döndürdü (`git diff main` CFG işlevinde boş).
+
+## Kalan / riskler
+
+- **H3 tutmadı** (0,931; son kodla 0,940). Paket çağrı grafiği + xref'i T25'te 159,4 → 18,5–24,8 sn'ye indiriyor; CFG'ye dokunmuyor. Toplam kazanç ancak HZ-4c (tetiklenen Python toplaması) ile gelir.
+- **Süreler yük altında ve koşullar eşit değil** (kollar farklı saatlerde, farklı eşzamanlı işlerle koştu); CFG süresi Java toplaması sayısına bağlı olarak koşudan koşuya ±%40 oynuyor. Kesin oran boş makinede (HZ-9).
+- **H4 hükümsüz** (taban başka yük koşulunda). **H5'in koşulu ürün koşusunda oluşmadı** (adımlar 1 sn'den kısa).
+- T25 açık kolunda BSim kapalıydı (kapalı kolda açık): üç adım BSim'den önce koştuğu için etkisiz; HZ-4b payı iki biçimde yazıldı.
+- S8 ve ilk açık kol `f144b9c9` ağacında (CFG'de taze model dahil) ölçüldü; son kodun CFG'si main'deki kod. Son kodla yeniden S8 koşulmadı (çağrı grafiği / xref kodu aynı; CFG = taban kodu); açık-2 son kodla T25 eşitliğini 3 / 3 gösterdi.
+- `_BasvuruTablosu` çağrı grafiği ile xref arasında (decompile boyunca) bellekte kalır: fonksiyon başına üç küçük liste + iki çözümleme sözlüğü + giriş adresine çağrı olmayan başvuruların Java nesneleri. Boyutu ölçülmedi (T25'te açık kolun RSS'i kapalıdan yüksek değil: CFG penceresi tepe 3 145 ↔ 3 242 MB).
+- İlk test commit'inin iletisinde "31 test" yazıyor; doğrusu 30 (sonraki commit iletilerinde ve bu dosyada 30).
+- Kuyruk günlüğüne (`~/karadul_olcum/ghidra_kuyruk.log`) 14:07:13'te elle bir satır yazdım (geri çekilen sqlite3 duman sınaması). Koşu kökümün dışında değiştirdiğim tek şey budur.
+- Ürün ağaçları silinmedi: `~/karadul_olcum/urun-f144b9c9`, `~/karadul_olcum/urun-8bf027a0` (ikisinde de altı bağ + kökte `karadul.yaml`).
+
+## Koşu kökü
+
+`~/karadul_olcum/runs/dalga1-2026-11-23/HZ4a/` — 4,4 GB (15:57, bütün koşular bittikten sonra). Özetler `ozet/` (2,5 MB): `profil_t25.json`, `kiyas_t25.json`, `kiyas_sqlite3.json`, `h5_sqlite3.json`, `s8_ham.{json,md}`, `s8_h4.json`, `t25_kiyas.json`, `t25_kapali_acik2.json`, `t25_kapali_dondur.json`, `gc_t25_{kapali,acik,acik2,dondur}.json`, `kap_sayimi_kapali.json`, `ornek_*.txt` (yığın örnekleri), `ayar/`, tam takım özetleri. Betikler `betik/`. Çalışma alanları (`t25_*`, `s8_acik`, `kiyas_*`, `profil_t25`, `h5_sqlite3`, `yamali_kopya`, `agac_profil`) ara üründür.
+
+## Commit'ler (dal `worktree-agent-aafb4378ffb9a2eb9`, push yok)
+
+`5a570ee5` profil betiği + ilerleme · `1e5c2410` profil ekleri · `9e9b2400` ön kayıt · `0f2fefc0` kod · `fb1f2142` testler · `d8d0d2b7` mutasyon tanımı + ÖL-2 tanımı · `f144b9c9` config yaması + kıyas kipi · `e965759f` profil sonuçları · `78cd0e6d` kod kaydı + notlar · `f70fe691` ayrı bulgu · `879e8ea1` CFG geri alışı · `8bf027a0` kıyas + H5 · `a589e294` S8 + T25 · `d43b929a` hükümler + ek koşu + HZ-4c notları · bu commit kapanış.
+
+## PAKET BİTTİ
