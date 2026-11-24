@@ -67,3 +67,25 @@ Sonraki paketlerin sırası ve sahipliği `docs/arge/2026-11-23_dalga1/DURUM.md`
 | OL2 | `karadul/ghidra/headless.py` (döküm işlevleri + BSim bloğu), `karadul/ghidra/bsim.py` |
 | OK1 | `karadul/reconstruction/c_namer.py` (yalnız `_strategy_string_context`), iki `alt_kanal.py` (yalnız `_is_own_name`) |
 | OL10A | yalnız yeni dosyalar (`karadul/core/tembel_*.py`, …) |
+
+## 6. 24 Kasım eki (2026-11-24'te gönderilen paketler)
+
+Dalga 1 aynı klasörde sürüyor: koşu kökün `~/karadul_olcum/runs/dalga1-2026-11-23/<PAKET>/`, yamalar `docs/arge/2026-11-23_dalga1/yamalar/`. §5'teki "taban", "bu dilim", "sabit ürün ağacı" ve "Ghidra kuyruğu" satırlarının yerine bunlar geçerlidir:
+
+- **Taban:** main `534e252b`. Tam takım `b536414d`'de 11 168 geçti / 23 atlandı / 0 kaldı (577 sn); o commit'ten beri main'e yalnız belge girdi. Dün akşam main'e girenler: PK1, BA1, OK1 (P12d etkin; `oz_ad_verbatim` kapalı), OL10A, PUV5 (bayrak kapalı), OL2.
+- **Öntanımlar dün değişti (OL2):** `timeouts.ghidra_adim` 3 600 sn, `bsim.bos_depoda_sorgu_atla` açık, `bsim.ingest_butcesi_sn` 900. Taze `KARADUL_CACHE_DIR` ile koşulan ilk ikilide BSim sorgusu atlanır (`bsim_status: atlandi`): kendi değişikliğine bağlama.
+- **S8 tabanı YENİ:** `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/s8_taban_534e252b/` (son main'in ürünü; kökte `BITTI` dosyası olunca tamamdır; 2026-11-24 13:10'da başladı). Eski tabanlar (`P16e/s8_sonra_3`, `s8_taban_b6aceb9`) artık geçerli değil: P12d `oz_ad` adlarını, OL2 BSim durum alanlarını değiştirdi.
+- **Sabit ürün ağacı (bugünkü ürün):** `~/karadul_olcum/urun-534e252b`.
+- **Bu dilim 7 paket, aynı anda en çok 4:** OL4, PUV6b, BA2, HZ2 (ilk dört); yer açıldıkça GS1 (OL4'ten sonra), PUV6c (PUV6b'den sonra), HZ7a (BA2'den sonra). Hepsi Opus.
+- **Ghidra kuyruğu:** ana oturumun Ollama kabul koşusu (`ANA ollama:kabul`) bir yuvayı TAHMİN 1,5–2,5 saat tutar; S8 tabanı öbür yuvada ≈ 13:40'a kadar. Kuyruğa kod, test ve mutasyon bittikten sonra gir.
+- **Worktree'de eksik çalışma verisi:** tam takımda `vendor`, `scripts/node_modules`, `sigs`, `signatures*.json`, `sigs_macos_system.json`, `signatures.lmdb` bağları yoksa 4–7 test ortam yüzünden kalır (dün dört ajanda görüldü). Tam takımdan ÖNCE geçici symlink kur (ana ağaçtaki aynı adlara), commit'leme, bitince kaldır.
+- **Mutasyon tanımları:** dokunduğun dosyaya bakan ESKİ tanımları da yeniden koş (`grep -l '"<dosya yolu>"' scripts/measurement/mutation_specs_*.json`); dün iki paket bunu atladı ve üç tanım bayatladı. Bayatlayan `find` metnini kendi paketinde düzelt (yalnız `find` / `replace` metni) ve yaz.
+- **Disk:** boş alan 13:09'da 244,6 GB (kullanılan 721,6 GB).
+
+| Paket | Yazabileceği dosyalar (tam liste gönderim metninde) |
+|---|---|
+| OL4 | `karadul/cli.py` (yalnız `analyze`), `karadul/cli_common.py`, `ui/server.py` (yalnız `_job_progress` ve yardımcıları), yeni `karadul/core/ilerleme.py` |
+| PUV6b | `karadul/stages.py` (yalnız Faz 1 adım listesi), `karadul/pipeline/steps/{__init__,_feedback_naming_candidates,_feedback_naming_merger}.py`, `karadul/core/naming_labels.py`, `karadul/core/output_formatter.py`, `karadul/analyzers/ustveri/` (yalnız durum sabitleri) |
+| BA2 | `karadul/reconstruction/c_namer.py` (yalnız kalıp satırları), `recovery_layers/constraint_solver.py`, taramada bulunan ve başka paketin listesinde olmayan dosyalarda yalnız kalıp satırları, yeni `scripts/measurement/kalip_denetimi.py` |
+| HZ2 | `karadul/ghidra/bsim.py` |
+

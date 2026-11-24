@@ -210,3 +210,21 @@ Bayrak arkasında, öntanımda kapalı: `enable_macho_entry_main` (PUV5), `oz_ad
 
 Çalışan ajan, koşu ve Ghidra süreci yok; bekçiler kapandı.
 
+## 2026-11-24 (13:09 – ) — uygulama oturumu 4
+
+Berke (13:0x): "ertesi gün oldu, kaldığımız yerden devam edelim." Düzen aynı: mimari / gönderim metni / birleştirme / bağımsız doğrulama ana oturumda (Mythos), kod Opus'ta, aynı anda en çok 4 ajan.
+
+- **Başlangıç durumu (doğrulandı):** main `534e252b`, ağaç temiz, origin'in 83 commit önünde (push sorusu açık); çalışan süreç yok; yük 2,3; kullanılan 721,6 GB, boş 244,6 GB; başka açık oturum: karadelik (ayrı proje).
+- **13:10 ana oturumun iki koşusu başladı** (ürün ağacı `~/karadul_olcum/urun-534e252b`): (1) S8 tabanının yenilenmesi `ANA/s8_taban_534e252b/` (8 ikili, sırayla, tek kök); (2) Ollama kabul koşusu `ANA/ollama_kabul/` — öntanımlar + üst veri bayrakları, blok açıklama AÇIK, BSim öntanımda, `--verbose` (arayüzün koşu biçimi), süre sınırı 12 600 sn.
+- **Bu dilim 7 ajan** (aynı anda en çok 4; CLAUDE.md §26): OL4, PUV6b, BA2, HZ2 (ilk dört); yer açıldıkça GS1, PUV6c, HZ7a. Takılan ajanın yerine açılan sayıya dahildir. Yeni metin `gonderim/HZ2.md`; `gonderim/BA2.md` ve `gonderim/PUV6b.md` bugünün durumuna göre güncellendi; ortak brifin eki `ORTAK_D1.md` §6.
+
+| Paket | Ajan | Model | Durum | Not |
+|---|---|---|---|---|
+| OL4 | — | Opus | gönderiliyor | `gonderim/OL4.md` |
+| PUV6b | — | Opus | gönderiliyor | `gonderim/PUV6b.md` |
+| BA2 | — | Opus | gönderiliyor | `gonderim/BA2.md` |
+| HZ2 | — | Opus | gönderiliyor | `gonderim/HZ2.md` |
+| GS1 | — | Opus | sırada (OL4'ten sonra; metni yazılacak) | A-36 |
+| PUV6c | — | Opus | sırada (PUV6b'den sonra; metni yazılacak) | |
+| HZ7a | — | Opus | sırada (BA2'den sonra; metni yazılacak) | |
+
