@@ -1,12 +1,28 @@
 # GK-0 — Geri kurma hattının tasarımı
 
-**Durum (2026-11-24 14:35): §2–§9 yazıldı; §1.3, §1.4, §1.6 yazıldı. Bekleyen: §1.2 (S8 ürün kipi koşusu sürüyor; 5 / 8 çıktı bitti, hepsinde 0 dosya geçti), §1.5 (K1 ön yoklaması koşmadı), §0, Ek A.** Yarıda kesilirse kalınan yer bu satırdan ve `‹…›` / `[YAZILMADI]` işaretlerinden okunur.
+**Durum (2026-11-24 14:5x): bütün bölümler yazıldı.** Ölçümler bitti (§1); denetleyicinin hata oranları, B2 ve model katmanı bu turda ölçülmedi ve öyle işaretli. Belgedeki `‹…›` işaretleri bilerek bırakılmış yer tutuculardır (şema örneği, ön kayıt taslağı, README cümlesi, tip gösterimi örneği).
 
 Karar: `KARARLAR.md` A-41 (Berke, 2026-11-24). İş emri: `docs/arge/2026-11-23_dalga1/gonderim/GK0.md`. Ölçüm betiği: `scripts/arge/gerikurma/derlenebilirlik.py`. Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/GK0/` (özet `ozet/`).
 
 Bu belge ürün kodu içermez. Ölçülmeyen her sayı "ölçülmedi" ya da "TAHMİN" diye işaretlidir.
 
-## 0. Özet [YAZILMADI]
+## 0. Özet
+
+### Berke için
+
+1. **Bugün derlenen dosya sayısı sıfır.** S8'in 8 ikilisinde 7 127 `.c` dosyasının 0'ı, Ollama'da ölçülen 1 000 dosyalık örneklemin (13 159 dosyadan; tohum yazılı) 0'ı tek başına derleniyor. İşlev düzeyinde de 0. Kurulan proje uçtan uca derlenmiyor (§1.2, §1.4).
+2. **Neden tek yerde:** her dosyanın içerdiği `types.h` kendisi derlenmiyor (dosya başına 159–2 559 hata; bütün hataların S8'de %92,8'i, Ollama örnekleminde %97,5'i başlıkta). Bu bilgi eksikliği değil, üretici kusuru: Ghidra'nın temel tip adları tanımlanmamış, enum sabitleri birbiriyle çakışıyor, yapı üyelerinde Ghidra'nın iç gösterimi kalmış (§1.2, §8.2).
+3. **Başlık devre dışı bırakılınca** (karşı olgu ölçümü; ürün değil): S8'de dosyaların %12,3'ü (işlevlerin %8,5'i), Ollama'da %6,5'i derleniyor. S8'de kalan hataların %82,4'ü eksik bildirim: `.c` dosyaları, P18'in düzelttiği başlıkları hiç içermiyor (§1.3, §1.4).
+4. **Go ayrı bir sorun:** Ollama'da dosyaların yalnız %27,6'sı C sözdizimi olarak bile geçerli (C ikililerinde %89–97); en büyük sınıf (%42,7) Ghidra'nın çözemediği yazmaç girişleri. "Eski hâline dönmek" Go / Swift / ObjC / C++'ta "C olarak derlenen ve denetlenen kod" demek olmalı; aynı dilde kaynak yalnız C'de hedef (§2.3, K-7).
+5. **Eşdeğerlik için ilk işaret (keşif, ön kayıtsız, iki ikili):** başlık devre dışıyken derlenen işlevler gerçekten derlenip özgün komutlarla karşılaştırıldı. mac/tmux'ta 299 işlevin 178'i (%59,5), debian/tmux'ta 243 işlevin 48'i (%19,8) özgünle aynı komut dizisini verdi; ikincisinde yalnız en çok 8 komutluk işlevler. Yani komut eşitliği, derleyici ailesi tuttuğunda gerçek bir kanıt kaynağı; tutmadığında yük öykünmeye kalıyor (§1.5).
+6. **Tasarım:** beş basamak (B0 sözdizimi → B1 derlenir → B2 bağlanır → B3 denetlenmiş eşdeğer → B4 bayt eşit). Denetleyici üç kanıt türünü sırayla dener: komut dizisi eşitliği (Ghidra'sız; tuttuğunda en sağlam kanıt), simgesel ispat (küçük işlev), P-code öykünmesinde davranış farkı (genel, olasılık hükmü). BSim ve CFG eşbiçimliliği denetleyici **olamaz** (KİMLİK ölçümü: derleyici değişince 0,61 ve 0 eşleşme). Her kanıt türü, kaynağı elde olan ikililerde bozulmuş işlevlerle ölçülmeden etiket yazamaz (§3).
+7. **Model önerir, hesap karar verir:** KaradulLM'in gövde önerisi B1 + B3'ü geçmeden çıktıya girmez; "derleniyor ama doğrulanmadı" diye de girmez. Model derleme ya da denetim başlatmaz; denetleyicinin girdi vektörlerini görmez (§3.6, §5).
+8. **Plan:** 14 alt paket; ilk üçü (GK-A ölçüm kapısı, GK-B `types.h` onarımı, GK-C bildirim üretimi) ve GK-D (etiketli çift kümesi + komut eşitliği) bugün gönderilebilir, hiçbiri Ghidra ya da model istemez. TAHMİN 6–9 oturum + 1–2 gece, var olan plana eklenir (§8).
+9. **Senden beklenen kararlar** (§9.3): K-2 (P-code öykünmesi "çalıştırma" sayılır mı — önerim: sayılmaz, beş koşulla), K-3 ("eşdeğer" etiketinin eşiği — önerim: yanlış kabul üst sınırı ≤ %1), K-5 (ürün çalışma anında derleyici çağırsın mı), K-7 (dil başına hedef), K-8 (model önerisinin çıktıya giriş yolu). Kalanı öneriyle yürür.
+
+### Dürüst sınır
+
+"Eski hâline döndü" cümlesi hiçbir zaman kurulamaz: özgün kaynak metni ikilide yok, program düzeyinde eşdeğerlik ispatlanamaz, hedef çalıştırılmadığı için uçtan uca sınanamaz. Kurulabilecek en güçlü cümle: "işlevlerin şu kadarı derleniyor ve özgün işlevle eşdeğerlik denetiminden şu kanıtla geçti" (§9.1). Bugün o cümledeki ilk sayı 0 (ölçüldü); ikincisi ölçülmedi (hiçbir birim derlenmezken verilemez).
 
 ## 1. Bugünkü durumun ölçümü
 
@@ -23,11 +39,40 @@ Bu belge ürün kodu içermez. Ölçülmeyen her sayı "ölçülmedi" ya da "TAH
 
 ### 1.2 Ürün kipi: bugünkü `out/src` olduğu gibi
 
-‹ÜRÜN TABLOSU›
+**Sonuç: hiçbir dosya derlenmiyor.** S8'in 8 çıktısında 7 127 `.c` dosyasının 0'ı; Ollama'da ölçülen 1 000 dosyanın 0'ı. İşlev düzeyinde "dosyası geçen işlev" de 0.
+
+| Çıktı | `.c` (ölçülen / toplam) | işlev | dosya geçer K (= projenin kendi bayrakları) | işlev: dosyası geçer | hata toplam | başlıkta (pay) | dosya başına başlık hatası | kendi satırlarında hatasız dosya | kendi satırlarında ayrıştırma hatasız dosya |
+|---|---|---|---|---|---|---|---|---|---|
+| debian/cat | 109 / 109 | 296 | 0 (%0,0) | 0 (%0,0) | 20 582 | 17 876 (%86,9) | 164 | 4 (%3,7) | 100 (%91,7) |
+| debian/sort | 247 / 247 | 625 | 0 (%0,0) | 0 (%0,0) | 77 688 | 69 160 (%89,0) | 280 | 16 (%6,5) | 201 (%81,4) |
+| debian/tree | 120 / 120 | 250 | 0 (%0,0) | 0 (%0,0) | 22 689 | 19 080 (%84,1) | 159 | 8 (%6,7) | 89 (%74,2) |
+| debian/htop | 613 / 613 | 1 148 | 0 (%0,0) | 0 (%0,0) | 326 887 | 312 630 (%95,6) | 510 | 39 (%6,4) | 405 (%66,1) |
+| debian/sqlite3 | 434 / 434 | 1 144 | 0 (%0,0) | 0 (%0,0) | 143 753 | 128 030 (%89,1) | 295 | 46 (%10,6) | 328 (%75,6) |
+| debian/zstd | 1 089 / 1 089 | 1 444 | 0 (%0,0) | 0 (%0,0) | 577 769 | 417 087 (%72,2) | 383 | 90 (%8,3) | 647 (%59,4) |
+| debian/tmux | 1 925 / 1 925 | 2 588 | 0 (%0,0) | 0 (%0,0) | 1 292 035 | 1 243 550 (%96,2) | 646 | 169 (%8,8) | 1 240 (%64,4) |
+| mac/tmux | 2 590 / 2 590 | 2 821 | 0 (%0,0) | 0 (%0,0) | 1 779 246 | 1 727 530 (%97,1) | 667 | 198 (%7,6) | 1 621 (%62,6) |
+| **S8 toplam** | 7 127 / 7 127 | 10 316 | **0 (%0,0)** | **0 (%0,0)** | 4 240 649 | 3 934 943 (%92,8) | 552 | 570 (%8,0) | 4 631 (%65,0) |
+| mac/Ollama (örneklem) | 1 000 / 13 159 | 1 000 | **0 (%0,0)** | **0 (%0,0)** | 2 623 871 | 2 559 000 (%97,5) | 2 559 | 31 (%3,1) | 131 (%13,1) |
+
+- **Ollama örneklemi:** 13 159 dosyanın tohumlu (20261124) karıştırmasının ilk 1 000'i; 454,7 sn. Tamamı ölçülmedi (dosya başına 2 559 başlık hatası ayrıştırılıyor; 13 159 dosya TAHMİN 100 dk sürerdi). Örneklemde geçen 0 / 1 000 → tüm kümede geçme oranının %95 Wilson üst sınırı %0,4. Başlık bütün dosyalarda aynı olduğu için tam kümede de 0 beklenir; yine de "0 / 13 159" **ölçülmedi**.
+- "Kendi satırlarında hatasız dosya" sütunu başlık onarımının etkisinin tahmini **değildir**: bozuk başlık, gövdede de tip hatası üretir (karşılaştır: 1.3'te aynı çıktılarda geçen dosya sayısı daha yüksek).
+- Hata toplamı sütunu derleyicinin hata kurtarmasına bağlıdır (aynı kusur dosya başına yüzlerce ileti üretir); büyüklük karşılaştırması için değil, payların paydası olarak okunmalı.
+
+**En büyük sınıflar (ürün kipi; hata sayısı payı; kaynak `ozet/havuz_urun_s8.json`, `ozet/havuz_urun_ollama.json`):**
+
+| Sıra | S8 havuzu (4 240 649 hata) | pay | Ollama örneklemi (2 623 871 hata) | pay |
+|---|---|---|---|---|
+| 1 | başlıkta yeniden tanım (enum sabiti, yinelenen üye) | %42,9 | başlıkta ayrıştırma hatası (`expected …` %35,8 + öbür %15,5) | %51,3 |
+| 2 | başlıkta bilinmeyen tip adı (Ghidra temel tip adları %17,1 + öbür adlar %7,0 + SDK çakışmalı %0,2) | %24,3 | başlıkta yeniden tanım | %37,4 |
+| 3 | başlıkta ayrıştırma hatası (`expected …` %15,2 + öbür %8,9) | %24,1 | başlıkta bilinmeyen tip adı | %8,2 |
+| 4 | gövdede tanımsız tanımlayıcı (bozuk başlığın düşürdüğü tipler dahil) | %5,4 | gövdede tanımsız tanımlayıcı | %1,8 |
+| 5 | gövdede eksik işlev bildirimi | %1,0 | gövdede eksik işlev bildirimi | %0,2 |
+
+İlk üç sınıf başlıktadır, her dosyada (%100) görülür ve hataların S8'de %91,3'ünü, Ollama örnekleminde %96,9'unu oluşturur. Her dosyanın **ilk** hatası da başlıktadır: S8'de 3 568 dosyada enum sabitinin yeniden tanımı, 2 590 dosyada (mac/tmux'un tamamı) ayrıştırma hatası, 969 dosyada (cat, sort, htop'un tamamı) ana makine SDK'sıyla tip çakışması; Ollama örnekleminde 1 000 / 1 000 dosyada ayrıştırma hatası.
 
 ### 1.3 Karşı olgu: `types.h` devre dışı, yerine Ghidra temel tip önsözü
 
-"Başlık onarılsa gövdeler ne durumda" sorusunun ölçümü. Projenin `types.h` dosyası başlık korumasıyla (`-D_TYPES_H_`) devre dışı bırakıldı; yerine yalnız Ghidra'nın temel tip adlarını tanımlayan 19 satırlık önsöz verildi (betikte `ONSOZ_METNI`: kurtarılmış tip, işlev bildirimi, p-code işleci **içermez**). **Bu tablo ürün çıktısının derlenebilirliği değildir**; GK-B'nin beklenen etkisinin alt sınır tahminidir (kurtarılmış yapılar geri gelince bir kısım dosya daha geçebilir ya da yeni çakışma çıkabilir: ölçülmedi).
+"Başlık onarılsa gövdeler ne durumda" sorusunun ölçümü. Projenin `types.h` dosyası başlık korumasıyla (`-D_TYPES_H_`) devre dışı bırakıldı; yerine yalnız Ghidra'nın temel tip adlarını tanımlayan 19 satırlık önsöz verildi (betikte `ONSOZ_METNI`: kurtarılmış tip, işlev bildirimi, p-code işleci **içermez**). **Bu tablo ürün çıktısının derlenebilirliği değildir**; GK-B'nin beklenen etkisinin ilk tahminidir (kurtarılmış yapılar geri gelince bir kısım dosya daha geçebilir ya da yeni çakışma çıkabilir: ölçülmedi; GK-B ön kaydı H2 bunu sınar).
 
 | Çıktı | `.c` (ölçülen / toplam) | işlev | dosya geçer K | dosya geçer G | ayrıştırma hatasız dosya (B0) | işlev: dosyası geçer K | işlev: gövdesi temiz K | gövdesi temiz G | hata K |
 |---|---|---|---|---|---|---|---|---|---|
@@ -64,12 +109,36 @@ Bu kipte hataların tamamı `.c` dosyalarının kendi satırlarındadır (başl�
 1. **`.c` dosyaları alt sistem başlıklarını içermiyor.** S8'in ve Ollama'nın bütün `.c` dosyalarındaki `#include` satırları yalnız `"types.h"`'dir (sayıldı: S8'in 8 çıktısında 10 316 / 10 316, Ollama'da 13 554 / 13 554 satır; bu sayılar betiğin sezgisel işlev sayımıyla 9 / 9 çıktıda birebir aynı, yani her işlev kendi `#include` satırıyla geliyor). P18'in tutarlı hâle getirdiği `include/subsystem_*.h` bildirimleri hiçbir derleme birimine girmiyor; 1.3'teki ilk iki sınıfın (S8'de hataların %48,8'i) nedeni budur.
 2. **`types.h` kendi başına derlenmiyor.** Tek başına derlendiğinde hata sayısı: debian/cat 164, debian/zstd 383, Ollama 2 559. Her `.c` dosyası bu hataları yeniden üretir; 1.2'deki "başlıkta" sütunu bunun toplamıdır.
 3. **Kurulan proje uçtan uca derlenmiyor.** `make` / `cmake` koşulmadı (gerek kalmadı): projenin kendi bayraklarıyla tek tek derlenen dosya sayısı her çıktıda 0 olduğundan ilk dosyada durur. Bağlama (B2) bu yüzden ölçülemedi.
-4. **Ana makine SDK'sı ile çakışma** (`+sdk_cakismasi` etiketli sınıflar): `types.h` barındırılan sistem başlıklarını çektiği için hedefin tip adları Mac SDK'sının tanımlarıyla çakışıyor; her dosyanın **ilk** hatası çoğu çıktıda budur. Hedef üçlüsü + `-ffreestanding` ile ölçüm GK-A'da.
+4. **Ana makine SDK'sı ile çakışma** (`+sdk_cakismasi` etiketli sınıflar): `types.h` barındırılan sistem başlıklarını çektiği için hedefin tip adları Mac SDK'sının tanımlarıyla çakışıyor; üç Debian çıktısında (cat, sort, htop; 969 dosya) her dosyanın **ilk** hatası budur. Hedef üçlüsü + `-ffreestanding` ile ölçüm GK-A'da.
 5. **G sütunu yanıltıcı iyimserdir** (§2.2): önsöz kipinde S8'de K ile %12,3, G ile %54,7 dosya geçiyor; aradaki 3 023 dosya bildirimsiz çağrıyı `int` döndüren işlev sayarak "geçiyor".
 
 ### 1.5 Ön yoklama: K1 bugünkü çıktıda kaç işlevde tutuyor? (keşif; ön kayıtsız)
 
-‹YOKLAMA›
+Tasarımın en büyük riski B3'ün kapsamıdır (§9.2). Bu yüzden, ölçüm bittikten sonra kalan sürede küçük bir **keşif** yapıldı: önsöz kipinde hatasız geçen dosyalar gerçekten nesne dosyasına derlendi (`clang -c`, beş profil: `-O0`, `-O1`, `-O2`, `-Os`, `-O3`; hedefin üçlüsüyle) ve her işlevin komut dizisi, özgün ikilideki aynı adresteki işlevin komut dizisiyle karşılaştırıldı (`/usr/bin/objdump` ile durağan çözme; hiçbir şey çalıştırılmadı; nesne dosyaları koşu kökünde). Karşılaştırma K1'in kaba bir ilk sürümüdür: komut adı + işlenenler; çağrı hedefi, sayfa adresi ve sayfa içi ofset maskeli; işlev içi dallar başa göre bağıl.
+
+**Sınırları:** ön kayıtsız; iki ikili (aynı program, iki platform); yeniden yerleştirme **hedefleri** denetlenmedi (bu yüzden "komut eş adayı"; B4 değil); nüfus, hiçbir bildirim olmadan derlenebilen dosyalardır — küçük yaprak işlevlere yanlıdır, oranlar kalan işlevlere taşınamaz. Betikler koşu kökünde (`GK0/yoklama/k1_yoklama.py`, `k1_karsi_denetim.py`), depoda değil; GK-D yeniden ve sınamalı yazar.
+
+| Ölçü (en az bir profilde) | mac/tmux (Mach-O arm64) | debian/tmux (ELF aarch64; ek bayrak `-ffreestanding -mbranch-protection=standard`) |
+|---|---|---|
+| Önsöz kipinde geçen dosya = işlev (hepsi tek işlevli) | 299 | 243 |
+| Nesne dosyası üretildi, simgesi bulundu | 299 | 243 |
+| Komut sayısı özgünle eşit | 249 (%83,3) | 150 (%61,7) |
+| Komut adı dizisi eşit | 209 (%69,9) | 85 (%35,0) |
+| **Komut eş adayı** (ad + işlenen, maskeli) | **178 (%59,5)** | **48 (%19,8)** |
+| … özgün işlev ≤ 8 komut | 139 / 151 | 48 / 104 |
+| … 9–32 komut | 39 / 119 | 0 / 100 |
+| … > 32 komut | 0 / 29 | 0 / 39 |
+| Profil başına komut eş adayı | `-Os` 178, `-O1` 171, `-O2` 170, `-O3` 169, `-O0` 3 | `-O1` = `-O2` = `-Os` = `-O3` = 48, `-O0` 0 |
+| Çıktının bütün işlevlerine oranı | 178 / 2 821 = %6,3 | 48 / 2 588 = %1,9 |
+| Karşı denetim (`-Os`): işlev **başka** işlevlerin özgünüyle karşılaştırıldı | 89 102 çapraz çiftte 84 eşleşme; 74'ünde iki özgün dizi zaten aynı, 10'unda farklı | 58 806 çiftte 66 eşleşme; 66'sında özgünler zaten aynı, 0 farklı |
+| Eşleşenlerden özgün dizisi kümede tekil olan | 142 / 178 | 21 / 48 |
+
+Okuma (hüküm değil, yön):
+
+1. **K1 kâğıt üstünde bir fikir değil.** Clang ailesinden derlenmiş görünen Mach-O ikilisinde, derlenebilen işlevlerin %59,5'i yeniden derlenince özgünle aynı komut dizisini verdi; 9–32 komutluk işlevlerde 39 / 119. Karşı denetimde çapraz eşleşme, özgünleri farklı olan çiftlerde 10 / 89 102: karşılaştırma ayırt edici.
+2. **Derleyici tutmayınca K1 yalnız en küçük işlevlerde kalıyor.** Debian ELF'inde (özgün derleyici bu turda saptanmadı; clang ile yeniden derlendi) 9 komut ve üstündeki hiçbir işlev eşleşmedi (0 / 139). Bu, §3.3'teki sıralamanın (K1 → K3 → K2) ve K-4'ün (derleyici profili kümesi) ölçülmüş gerekçesidir: ELF tarafında B3'ün yükünü K2 taşıyacak.
+3. **Derleyici profili ölçümle bulunabilir (D6):** mac/tmux'ta `-Os` öbür düzeylerden fazla eşleşme verdi (178 ↔ 169–171); fark küçük, tek ikili — iddia değil, GK-D'nin ölçeceği şey.
+4. **Bugünkü ürün için anlamı:** hiçbir şey. Bu işlevler ürün çıktısında derlenmiyor (1.2); sayı, GK-B + GK-C'den sonra K1'in bulacağı zeminin ilk işaretidir.
 
 ### 1.6 Bu turda ölçülmeyenler
 
@@ -122,7 +191,7 @@ Bu tablonun sonucu: "eski hâline dönmek" her dilde **C sözdiziminde, hedefin 
 
 ## 3. Denetleyicinin tasarımı
 
-Denetleyici bu hattın kalbidir: motorun ya da modelin ürettiği her parça için "geçti / geçmedi / hükümsüz" cevabını **makine** verir. Bu bölümdeki oranların hiçbiri ölçülmedi; hepsi GK-D ve GK-E'nin ön kayıtlı ölçümüdür. Ölçülmüş olan yalnız şunlardır: (a) bugünkü çıktının B0 / B1 sayıları (§1), (b) makinedeki derleyicinin başka hedefler için nesne dosyası üretebildiği (aşağıda 3.2), (c) KİMLİK hattının derleyiciler arası benzerlik sayıları (3.3'te taban olarak anılır).
+Denetleyici bu hattın kalbidir: motorun ya da modelin ürettiği her parça için "geçti / geçmedi / hükümsüz" cevabını **makine** verir. Bu bölümdeki hata oranlarının (yanlış kabul, yanlış ret) hiçbiri ölçülmedi; hepsi GK-D ve GK-E'nin ön kayıtlı ölçümüdür. Ölçülmüş olan yalnız şunlardır: (a) bugünkü çıktının B0 / B1 sayıları (§1) ve K1'in keşif ölçümü (§1.5), (b) makinedeki derleyicinin başka hedefler için nesne dosyası üretebildiği (aşağıda 3.2), (c) KİMLİK hattının derleyiciler arası benzerlik sayıları (3.3'te taban olarak anılır).
 
 ### 3.1 Basamaklar ve "ne zaman tuttu sayılır"
 
@@ -138,7 +207,7 @@ Program düzeyi sayılar her basamak için oran olarak verilir: işlev sayısıy
 
 İki not:
 
-1. **B4 yalnız üst basamak değil, en ucuz ve yanlış kabulü olmayan denetleyicidir.** Bayt eşitliği tuttuğu yerde eşdeğerlik tanım gereği tutar; öykünmeye ya da SMT'ye gerek kalmaz. Bu yüzden denetim sırası ucuzdan pahalıya ve sağlamdan olasılığa doğrudur: `bayt_eş` → `komut_eş` → `smt` → `öykünme`. Kapsamının ne olacağı ölçülmedi; derleyicisi ve bayrakları bilinmeyen ikilide düşük olması beklenir (TAHMİN, sayı verilmiyor).
+1. **B4 yalnız üst basamak değil, en ucuz ve yanlış kabulü olmayan denetleyicidir.** Bayt eşitliği tuttuğu yerde eşdeğerlik tanım gereği tutar; öykünmeye ya da SMT'ye gerek kalmaz. Bu yüzden denetim sırası ucuzdan pahalıya ve sağlamdan olasılığa doğrudur: `bayt_eş` → `komut_eş` → `smt` → `öykünme`. Kapsamı ön kayıtlı biçimde ölçülmedi; keşif ölçümü §1.5'te (derlenebilen işlevlerde mac/tmux %59,5, debian/tmux %19,8; derleyici ailesi tutmayınca yalnız en küçük işlevler).
 2. **B3 bir olasılık hükmüdür, ispat değil** (`smt` ve `bayt_eş` dışında). Çıktıda her işlev hangi kanıt türüyle geçtiğini ve o türün ölçülmüş hata sınırını taşır (§5.5 etiket şeması).
 
 ### 3.2 Yalıtılmış birim ve derleme
@@ -224,8 +293,8 @@ Hüküm 3: motor LLM'siz kalır, tek başına koşar ve tek başına ölçülür
 | **D4** Tip birleştirme | Aynı simgenin birimler arasında farklı tiple görünmesi; çağıran ↔ tanım imza farkı; yapı alanı çakışmaları | `pipeline/steps/struct_recovery.py`, `type_recovery_consumer.py`, `reconstruction/type_inferrer.py`, `computation/struct_recovery/solver.py` (kısıt çözücüyle yapı yerleşimi) | GK-H (ölçer), sonra GK-G / ayrı kalem (onarır) |
 | **D5** Bağlama denetimi | Çift tanım, çözülmeyen simge, içe aktarım tablosuyla mutabakat | `_load_thunk_addresses` (içe aktarım taslakları `src/import_thunks/`'ta ayrı; P18 kalem 4) | GK-H |
 | **D6** Derleyici profili | Özgün derleyici / bayrak tahmini (K1 kapsamı için) | Üründe genel bir derleyici tespiti **yok** (bakıldı: yalnız `analyzers/delphi_binary.py` ve `reconstruction/reference_populator.py`'de dar kullanımlar). İlk sürüm: sabit profil kümesi (§3.2); geçen profilin sayımı ikili başına tek profile yakınsıyorsa sonraki işlevlerde o profil önce denenir (ölçülen sıklıkla, uydurma etiketle değil) | GK-D |
-| **D8** Veri bölümlerinin taşınması | Geri kurulan kod özgün verisine (`.data`, `.rodata`, sabit dizgiler, işlev işaretçisi tabloları) muhtaçtır; bugün çıktı yalnız kod içerir, veri simgeleri bildirimsiz adreslerdir | Baytlar ikilide; veri içindeki işaretçilerin (yeniden yerleştirme) simgeye çevrilmesi gerekir. Üründe karşılığı **yok** (bakıldı: `c_project_builder.py` yalnız kod birimi yazar) | GK-H (ölçer: kaç veri simgesi bölüme düşüyor), sonra ayrı kalem |
 | **D7** Dil çalışma zamanı bildirimleri | ObjC ileti gönderimi, Go / Swift çalışma zamanı çağrıları, C++ adlarının C'de yazılamaması | Üst veri okuyucuları (`karadul/analyzers/ustveri/`; main'de), `analyzers/cpp_rtti.py`, ayıklayıcılar | GK-L |
+| **D8** Veri bölümlerinin taşınması | Geri kurulan kod özgün verisine (`.data`, `.rodata`, sabit dizgiler, işlev işaretçisi tabloları) muhtaçtır; bugün çıktı yalnız kod içerir, veri simgeleri bildirimsiz adreslerdir | Baytlar ikilide; veri içindeki işaretçilerin (yeniden yerleştirme) simgeye çevrilmesi gerekir. Üründe karşılığı **yok** (bakıldı: `c_project_builder.py` yalnız kod birimi yazar) | GK-H (ölçer: kaç veri simgesi bölüme düşüyor), sonra ayrı kalem |
 
 İlkeler:
 
@@ -403,7 +472,7 @@ Yaratıcılık protokolünün (CLAUDE.md §29) dört kuralı için tek satır: (
 
 **Zincirler (aynı dosya; sıralı gider):**
 
-1. `karadul/reconstruction/c_project_builder.py`: GK-B → ÇA paketleri (A-39; sırayı ana oturum belirler, ikisi aynı anda gitmez) → GK-G'nin bağlaması → GK-M. GK-B yalnız `GHIDRA_TYPEDEF_LINES` ve `_build_types_h`'ye dokunur; ÇA yerleşim ve adlandırma işlevlerine. İşlev kümeleri ayrık ama dosya aynı: CLAUDE.md §2 kuralı gereği **sıralı**.
+1. `karadul/reconstruction/c_project_builder.py`: GK-B → ÇA paketleri (A-39; sırayı ana oturum belirler, ikisi aynı anda gitmez) → GK-G'nin bağlaması → GK-M. GK-B yalnız `GHIDRA_TYPEDEF_LINES`, `_build_types_h` ve üç derleme dosyası üreticisine dokunur; ÇA yerleşim ve adlandırma işlevlerine. İşlev kümeleri ayrık ama dosya aynı: CLAUDE.md §2 kuralı gereği **sıralı**.
 2. `karadul/reconstruction/c_type_recoverer.py`: GK-B (enum sabit adları, `types.h` metni) — bugün başka paketin listesinde değil (HZ7a `c_namer.py` ve `api_param_db.py`'de; `gonderim/HZ7a.md`).
 3. `karadul/lm/**`: P22'nin kalanları → GK-J. GK-J yeni dosyada (`karadul/lm/onar.py`) yaşar; `agent.py`, `protocol.py`, `guard.py`'ye dokunuşu yama ya da zincir sırasıyla.
 4. Ghidra köprüsü: GK-E ve GK-F `karadul/ghidra/headless.py`'ye **dokunmaz** (ÖL-3 / HZ-4a zinciri orada); ayrı, tek amaçlı başsız betik yazar (`karadul/ghidra/scripts/` altında yeni dosya) ve kuyruğa ad / kimlik koşusu gibi girer (A-31).
@@ -416,7 +485,7 @@ Yaratıcılık protokolünün (CLAUDE.md §29) dört kuralı için tek satır: (
 | Var olan iş | Bu hatla ilişkisi |
 |---|---|
 | P18 (alt sistem başlıkları; main'de) | Başlıklar tanımla tutarlı hâle geldi (36 078 çelişkili bildirim → 0) ama `.c` dosyaları onları **içermiyor** (§1.4): GK-C bu boşluğu kapatır. P18'in "kalan"ı (`analysis/xref_index.md`, `subsystem_map.md` eski adlar) bu hattı etkilemez |
-| Tip kurtarma (`c_type_recoverer.py`, `struct_recovery`, `type_recovery_consumer`) | `types.h`'nin içeriğini üretir; bugün derlenmiyor (§1.3). GK-B onarır; tip **doğruluğu** B3'le dolaylı denetlenir (yanlış alan genişliği davranışı değiştirir) |
+| Tip kurtarma (`c_type_recoverer.py`, `struct_recovery`, `type_recovery_consumer`) | `types.h`'nin içeriğini üretir; bugün derlenmiyor (§1.2, §1.4). GK-B onarır; tip **doğruluğu** B3'le dolaylı denetlenir (yanlış alan genişliği davranışı değiştirir) |
 | ÇA (çıktı ağacı, A-39) | Adres ↔ dosya dizini GK'nin birim bulma yoludur: GK paketleri dosya yoluna değil adrese bağlanır (`// Address:` satırı bugün; ÇA'nın dizini gelince o). ÇA dosya adlarını değiştirince GK-A tabanı adres anahtarlı olduğu için bozulmaz |
 | ÖL-10 (tembel derinlik) | Decompile edilmemiş işlevin adayı yoktur: B düzeyleri "decompile edilmedi" paydasını ayrı gösterir (`static/tembel_durum.json` sayacı; `olcek/OL10_TASARIM.md` §4) |
 | P22 (KaradulLM altyapısı) | Olay akışı, kipler, oturum, araç kaydı v2 ağaçta (`karadul/lm/events.py`, `modes.py`, `session.py`, `tools/read_more.py`); arayüz ve ölçüm paketlerinin durumu bu turda denetlenmedi. GK-J bunların üstüne kurulur |
@@ -490,7 +559,7 @@ Dayanak: iki uygulama oturumunda ölçülen hız yaklaşık 2,8 paket / saat (4�
 
 ### 9.2 En büyük üç risk
 
-1. **B3'ün kapsamı küçük çıkabilir.** K1 derleyici tutmayınca tutmaz; K3 yalnız küçük işlevlerde; K2'nin `hükümsüz` payı ve ölçülecek yanlış kabulü bilinmiyor. KİMLİK ölçümü yapısal benzerliğin derleyiciler arasında çöktüğünü gösterdi (BSim 0,61; CFG 0 eşleşme) — K2 de beklentiyi karşılamazsa hattın söyleyebildiği "derleniyor ama eşdeğerliği gösterilemedi" olur. Erken ölçüm: GK-D (Ghidra'sız, bugün) ve GK-E'nin ilk 100 çifti; ikisi de üründen önce.
+1. **B3'ün kapsamı küçük çıkabilir.** K1 derleyici tutmayınca tutmaz; K3 yalnız küçük işlevlerde; K2'nin `hükümsüz` payı ve ölçülecek yanlış kabulü bilinmiyor. KİMLİK ölçümü yapısal benzerliğin derleyiciler arasında çöktüğünü gösterdi (BSim 0,61; CFG 0 eşleşme) — K2 de beklentiyi karşılamazsa hattın söyleyebildiği "derleniyor ama eşdeğerliği gösterilemedi" olur. İlk işaret §1.5'te: derleyici ailesi tuttuğunda komut eşitliği derlenebilen işlevlerin %59,5'inde, tutmadığında %19,8'inde (yalnız en küçük işlevler). Erken ölçüm: GK-D (Ghidra'sız, bugün) ve GK-E'nin ilk 100 çifti; ikisi de üründen önce.
 2. **B1'e giden yol "derlenir kılmak için uydurma"ya kayabilir.** Eksik bildirimi `int f()` ile, sahte değişkeni boş yerel değişkenle doldurmak derleme sayısını yükseltir ama kodu yanlış yapar. Bugünkü G sütunu (§1) tam olarak bu sahte iyileşmenin büyüklüğünü gösteriyor. Koruma: B1 tek başına hiçbir yerde "kurtarıldı" diye raporlanmaz; yapay bildirimle derlenen birim etiketlidir (GK-G); model dolgusu B3 almadan çıktıya girmez (§3.6).
 3. **Modelin onardığı gövde denetleyicinin kör noktasına oturabilir.** Model, K2'nin girdi vektörlerinde aynı davranan ama genelde farklı kod yazabilir (özellikle vektörleri görürse). Koruma: model girdi vektörlerini ve tohumu görmez; kabul için kullanılan vektör kümesi onarım döngüsündekinden ayrıdır (döngüde geri bildirim yalnız derleyici hatası ve "geçmedi" + tek karşı örnek); yanlış kabul, model önerileri üstünde ayrıca ölçülür (GK-K: kaynağı elde olan ikilide modelin geçen önerileri doğru kaynağın derlemesiyle K3 / geniş vektörle yeniden sınanır).
 
@@ -520,4 +589,19 @@ Ek riskler: çıkış süresi (13 159 işlev × 5 profil × K2; ölçülmedi); a
 
 Yer tutucular GK-A'nın tabanından dolar. Bugünkü değerlerle (§1) cümle "‹B1› = 0" diye yazılırdı; bu yüzden cümlenin README'ye girişi K-10'a bağlandı. "Kurtarıldı", "geri kazanıldı", "özgün kaynak" sözcükleri kullanılmaz.
 
-## Ek A. Atıf doğrulaması [YAZILMADI]
+## Ek A. Atıf doğrulaması
+
+Bu belgedeki dosya ve işlev atıfları yazıldıktan sonra ağaçta (`58715681`, worktree) mekanik olarak arandı.
+
+| Tür | Sayı | Yöntem | Sonuç |
+|---|---|---|---|
+| Dosya : işlev / sınıf / sabit atfı | 31 | Her biri için dosyada `def ad`, `class ad` ya da sabit adı satırı arandı (`grep` eşdeğeri; betik oturumun geçici dizininde) | 31 / 31 bulundu |
+| Ters tırnaklı yol atfı (belgeden otomatik çıkarıldı) | 93 | Yol, depo kökü ve belge dizinlerine göre arandı | 56 ağaçta var (4'ü yalnız dosya adıyla anılan belge); 37 ağaçta yok |
+| Ağaçta olmayan 37 yolun dökümü | — | Elle sınıflandı | 20 planlanan yeni dosya (GK paketleri; "yeni" diye yazılı) · 1 ÖL-10 tasarımının planladığı dosya (`static/tembel_durum.json`) · 8 çalışma alanı / çıktı yolu (depo yolu değil; S8 çalışma alanında var olduğu görüldü) · 8 bu turun koşu kökü yolu (`GK0/…`, `ozet/…`; diskte var) |
+| Başka belgelerden alınan sayı / ifade | 29 | Kaynak belgede metin olarak arandı | 29 / 29 bulundu (KARARLAR A-13, A-33; `kimlik/BULGULAR.md` §0, §2.3, §3.8; `zemin_olcumu.md`; `2026-11-23_dalga1/DURUM.md`; P18.md; `tersine_derleme_sinirlari.md` §4.6–4.7; `veri_setleri.md`; `model_secimi.md` K14) |
+
+"Bakıldı, yok" diye yazılan üç olumsuz atıf da arandı: `karadul/lm/guard.py`'de `check_patch` yok (0 eşleşme); üründe genel derleyici tespiti yok (yalnız iki dar işlev bulundu); `c_project_builder.py`'de veri bölümü yazan kod yok (0 eşleşme).
+
+Doğrulanmayan / bakılmayan (belgede de öyle işaretli): P22'nin arayüz ve ölçüm paketlerinin durumu; veri simgelerinin tip dökümünün statik dökümlerde bulunup bulunmadığı; ELF `.comment` bölümünden derleyici okunup okunamayacağı.
+
+## PAKET BİTTİ
