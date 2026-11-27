@@ -15,10 +15,10 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6c/` (özetler `ozet/`,
 | 1 | Ön kayıt | yazıldı | `a10bb811` |
 | 2 | Okuyucu düzeltmeleri (hüküm 4) + H3 | bitti; H3 `ozgun_ad` farkı 0 TUTTU, `paket` sayısı TUTMADI (neden aşağıda) | `ad4ebe3f` |
 | 3 | Damga bağlama + testler + mutasyon → dondurma | bitti: 41 test, puv6c 20 / 20 mutant öldü; hüküm 5 + 6'nın kodu da `d6cc3fbd`'de (aynı dosya) | `d6cc3fbd`, **DONDURMA `72b3a637`**, rapor sayısı düzeltmesi `b3ce5bb1` |
-| 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | bitti: H1 (Ollama yarısı), H2, H4, H5 (yeniden oynatma), H6 TUTTU; H1'in S8 yarısı ürün koşusunda | `68bcd268` |
+| 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | bitti: H1 (Ollama yarısı), H2, H4, H5 (yeniden oynatma), H6 TUTTU; H1'in S8 yarısı ürün koşusunda TUTTU | `68bcd268`, `0b6b468b` |
 | 5 | Hüküm 5 + 6 | bitti: kod `d6cc3fbd` (kalem 3'le aynı commit; aynı dosya), H5 yeniden oynatmada TUTTU, hüküm 6 test + mutant | `d6cc3fbd`, `68bcd268` |
 | 6 | Ürün koşusu (isteğe bağlı) | koşuldu: terminal-notifier ObjC 32 / 32 duruyor | `0c1af921` |
-| 7 | Tam takım | — | — |
+| 7 | Tam takım | bitti: 11 361 geçti / 26 atlandı / 1 kaldı (beklenen `test_p15a_etkisiz`, yama) | (bu commit) |
 
 ## Kalem 2 — okuyucu düzeltmeleri (hüküm 4) ve H3
 
@@ -280,11 +280,44 @@ karadul` temiz.
 
 **Toplam 222 / 222 öldü**, hayatta 0, hata 0. Başka paketin dosyasına bakan mutantlara dokunulmadı ve koşulmadı.
 
-## Bekleme (22:58)
+## Bekleme (22:58; bitti 23:11)
 
-Şu an: tam takım arka planda (worktree kökünden, yamasız; günlük `PUV6c/ozet/tam_takim.log`; TAHMİN bitiş 23:08–23:20,
-yük altında) ve H1'in S8 koşusu (`PUV6c/s8_sonra`, 8 ikili, ana oturumun sırası; 6 / 8 bitti, TAHMİN bitiş 23:05).
-Çalışma verisi bağları tam takım için geçici kuruldu (commit'lenmez; bitince kaldırılacak).
+22:58'de tam takım ve H1'in S8 koşusu arka plandaydı; ikisi de bitti (aşağıda ve kalem 4'te).
+
+## Kalem 7 — tam takım (22:57:58–23:10:56, yamasız, yük altında: `uptime` 7,9 → 8,4 / 10,3 / 10,3)
+
+Worktree kökünden `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (kod `232d23b7`; sonraki
+commit'ler yalnız belge): **11 361 geçti / 26 atlandı / 1 kaldı** (152 seçim dışı, 776 sn). Taban `ed28e36b` 11 321 +
+bu paketin 41 koşusu = 11 362 = 11 361 + 1. Tek kırmızı beklenen:
+`tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — "kayıtta ama okunuyor:
+{'binary_reconstruction.enable_go_metadata_integrity': ['karadul/pipeline/steps/go_metadata_recovery.py']}" (yama
+uygulanınca kalkar; ORTAK_D1 §2). Başka kırmızı yok. Günlük `PUV6c/ozet/tam_takim.log`. Çalışma verisi bağları
+(`vendor`, `sigs`, `scripts/node_modules`, `signatures.lmdb`, `signatures_homebrew*.json` ×3, `sigs_macos_system.json`)
+tam takımdan önce kuruldu, sonra kaldırıldı; `git status` temiz.
+
+## Özet: hükümler (ön kayıt `a10bb811`, DONDURMA `72b3a637`)
+
+| | Hüküm | Sayı |
+|---|---|---|
+| H1 | **TUTTU** | S8: cat ve mac/tmux tabanla aynı (`naming_map` ×3, `decompiled/*.c` bayt; `out/src` yalnız `compile_commands.json` yolu); Ollama yeniden oynatma: Go ad adayı 10 475, hepsi `olculmedi` |
+| H2 | **TUTTU** | Ollama: `cift_kaynak` 3 907, `tek_kaynak` 6 568, `tutarsiz` 0; yazılan 10 475; karar `temiz`; uyarı 0 |
+| H3 | `ozgun_ad` **TUTTU**, `paket` sayısı **TUTMADI** | `ozgun_ad` farkı 0 / 0; `paket` değişen Ollama 8 (beklenen 4), docker-cli 506 (beklenen 264); parantezli paket 4 → 0, 264 → 0; fazlası değer alıcılı adsız tip sarmalayıcıları (aynı kusur) |
+| H4 | **TUTTU** | bozuk `gh` (A): ikinci kaynaklı 66 / 66 `tutarsiz`, adı yazılmadı; ikinci kaynaksız 134 / 134 bozuk adı yazıldı; karar `uyari`; uyarı 1 |
+| H5 | **TUTTU** (yeniden oynatma) | statik "evrensel ikilide go dilimi" iletisi 1 → 0 (bilgi satırı); okuyucu kapalı kolda 1 → 1; uçtan uca ürün koşusunda ölçülmedi |
+| H6 | **TUTTU** | `kesin` etiketli üst veri adı 0 (Ollama iki kol, gh A, terminal-notifier); birim testi + mutant |
+
+Kalem 6 (isteğe bağlı): terminal-notifier, dört üst veri bayrağı + bütünlük → ObjC 32 / 32 duruyor.
+
+## Koşu kökü ve ağaçlar
+
+- Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6c/` (1,2 GB; `ozet/` 208 KB: `hipotezler.json`,
+  `oynat_ollama.json`, `h4_gh_A.json`, `h3_paket.json`, `h3_kirilim.txt`, `h1_esitlik.json`, `h1_outsrc.json`,
+  `urun_terminal-notifier.json`, mutasyon günlükleri, `tam_takim.log`). Ara ürün: `s8_sonra/` (S8 çalışma alanları),
+  `urun/` (terminal-notifier), `gecici/` (12 MB: H3'ün ad dökümleri ve yama kopyaları — ad listesi içerir, depoya
+  girmedi; ana oturumun `ozet/` dışı temizliğine), `betik/` (ölçüm betikleri, commit'lenmedi).
+- Ürün ağacı `~/karadul_olcum/urun-72b3a637` (dondurma commit'i; altı veri bağı; git worktree olarak kayıtlı) —
+  silinmedi, ana oturum siler.
+- Arka planda süreç kalmadı (S8 döngüsü, eski mutasyon döngüsü, ürün koşusu, tam takım, bekleme döngüleri bitti).
 
 ## Yama
 
@@ -325,3 +358,5 @@ kurulmadı).
 - **Ollama çıkış kodu:** bu düzeltmeyle evrensel ileti kalkıyor; ÖL-1 bekçisi koşuda çözümleyici kapatırsa statik aşama
   yine `kismi` (dürüst). Bekçi devreye girmezse Ollama koşusunun `tam` (çıkış 0) olması beklenir — uçtan uca
   ölçülmedi.
+
+## PAKET BİTTİ
