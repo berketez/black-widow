@@ -361,6 +361,20 @@ class APIParamDB:
         self._db: dict[str, list[str]] = {}
         self._callback_db: dict[str, dict[int, str]] = dict(_CALLBACK_PARAMS)
         self._load_builtins()
+        self._desenleri_sifirla()
+
+    def _desenleri_sifirla(self) -> None:
+        """Örnek başına saklanan arama desenlerini boşaltır (HZ-7a).
+
+        ``propagate_params`` ve ``reverse_propagate_function_names``'in büyük seçenekli
+        desenleri yalnız ``self._db`` / ``self._callback_db``'ye bağlıdır; ilk kullanımda
+        kurulup örnekte saklanır (eskiden her çağrıda yeniden kuruluyordu: seri profilde
+        18 047 derleme, 108 sn; HIZ BULGULAR §3). Bu iki sözlüğü değiştiren bir yöntem
+        bunu çağırmalıdır (bugün ikisi yalnız ``__init__``'te kuruluyor; çağıran yok).
+        """
+        self._call_re: re.Pattern[str] | None = None
+        self._call_start_re: re.Pattern[str] | None = None
+        self._fun_re: re.Pattern[str] | None = None
 
     def _load_builtins(self) -> None:
         for source in [_POSIX_PARAMS, _OPENSSL_PARAMS, _APPLE_PARAMS,
@@ -392,11 +406,14 @@ class APIParamDB:
             {param_N: suggested_name} dict'i
         """
         renames: dict[str, str] = {}
-        # func_name(arg1, arg2, ...) pattern'i bul
-        call_re = re.compile(
-            r'\b(' + '|'.join(re.escape(n) for n in sorted(self._db, key=len, reverse=True))
-            + r')\s*\(([^)]*)\)'
-        )
+        # func_name(arg1, arg2, ...) pattern'i bul (HZ-7a: örnek başına bir kez, tembel)
+        call_re = getattr(self, "_call_re", None)
+        if call_re is None:
+            call_re = re.compile(
+                r'\b(' + '|'.join(re.escape(n) for n in sorted(self._db, key=len, reverse=True))
+                + r')\s*\(([^)]*)\)'
+            )
+            self._call_re = call_re
 
         for match in call_re.finditer(c_code):
             func_name = match.group(1)
@@ -503,20 +520,27 @@ class APIParamDB:
         renames: dict[str, str] = {}
 
         # FUN_xxx pattern -- Ghidra auto-generated function names
-        fun_re = re.compile(r'^FUN_[0-9a-fA-F]+$')
+        # (HZ-7a: bu ve çağrı başlangıcı deseni örnek başına bir kez, tembel)
+        fun_re = getattr(self, "_fun_re", None)
+        if fun_re is None:
+            fun_re = re.compile(r'^FUN_[0-9a-fA-F]+$')
+            self._fun_re = fun_re
 
         # Tum bilinen API cagrilarini bul -- sadece fonksiyon adini ve
         # acilan parantezin pozisyonunu yakala, argumanlari balanced parse et
         # Hem _db hem _callback_db fonksiyonlarini kapsayacak birlesik kumeyi kullan
-        all_known = set(self._db.keys()) | set(self._callback_db.keys())
-        if not all_known:
-            return renames
+        call_start_re = getattr(self, "_call_start_re", None)
+        if call_start_re is None:
+            all_known = set(self._db.keys()) | set(self._callback_db.keys())
+            if not all_known:
+                return renames
 
-        # func_name( pattern'ini bul, argindan balanced parse yap
-        call_start_re = re.compile(
-            r'\b(' + '|'.join(re.escape(n) for n in sorted(all_known, key=len, reverse=True))
-            + r')\s*\('
-        )
+            # func_name( pattern'ini bul, argindan balanced parse yap
+            call_start_re = re.compile(
+                r'\b(' + '|'.join(re.escape(n) for n in sorted(all_known, key=len, reverse=True))
+                + r')\s*\('
+            )
+            self._call_start_re = call_start_re
 
         for match in call_start_re.finditer(c_code):
             func_name = match.group(1)

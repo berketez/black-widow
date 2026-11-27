@@ -1837,6 +1837,124 @@ def _build_param_alias(body: str) -> dict[str, str]:
 
 
 # ---------------------------------------------------------------------------
+# HZ-7a: düzenli ifade deseni önbelleği ve satır ön süzgeci (çıktıyı değiştirmez)
+# ---------------------------------------------------------------------------
+# `_strategy_dataflow` ve `_strategy_local_var_naming` her (değişken, desen) çifti için
+# şablondaki ``PARAM``'ı ``re.escape(ad)`` ile değiştirip yeniden derliyordu: seri profilde
+# 3,68 M derleme, yeniden kurmanın %50,5'i (HIZ BULGULAR §3). ``re``'nin kendi önbelleği
+# (512 girdi) bu kadar farklı desenle taştığı için sabit desenler bile yeniden derleniyordu.
+# Aynı şablon metni + aynı ad her zaman aynı desen metnini verir; derlenmiş ifade süreç
+# içinde saklanınca sonuç değişmez. Anahtar şablonun METNİ ve ad: iki listenin sıra
+# numaraları çakışır, ``id`` ise nesne ölünce yeniden kullanılabilir. Sözlük süreç
+# başınadır (işçi süreçleri kendi sözlüğünü kurar). Girdi sayısı ``perf.desen_onbellegi_
+# ust_sinir``'a varınca sözlük temizlenir: sonuç değişmez, yalnız yeniden derlenir.
+# Derlenemeyen desen de "derlenemedi" olarak saklanır ve her istekte aynı ``re.error``
+# yeniden yükseltilir (çağıranın bugünkü hata yolu aynen işler).
+_OZEL_DESEN_ONBELLEGI: dict[tuple[str, str], Any] = {}
+_OZEL_DESEN_SAYAC: dict[str, int] = {"isabet": 0, "derleme": 0, "hata": 0, "temizleme": 0}
+# Şablon metni -> satır ön süzgeci uygulanabilir mi (``_ozel_desen_suzgec_uygun``).
+_OZEL_DESEN_SUZGEC: dict[str, bool] = {}
+# ``PARAM``'ın yerine konan iki karakterlik işaret (şablon metinlerinde geçmez). İki karakter:
+# karakter sınıfı (``[PARAM]``) ya da adın son karakterine uygulanan niceleyici (``PARAM?``)
+# çifti ayırır; ayrılmış çift zorunlu konum sayılmaz.
+_OZEL_DESEN_ISARET = "\ue000\ue001"
+_OZEL_DESEN_DERLENEMEDI = "derlenemedi"
+
+
+def _ozel_desen(kalip: "re.Pattern[str] | str", ad: str, ust_sinir: int) -> "re.Pattern[str]":
+    """Şablondaki ``PARAM``'ı ``re.escape(ad)`` ile değiştirilmiş derlenmiş desen (önbellekli).
+
+    Bugünkü ``re.compile(kalip.pattern.replace("PARAM", re.escape(ad)))`` ile aynı desen
+    metni derlenir (şablonun bayrakları o çağrıda da kullanılmıyordu). Derlenemezse aynı
+    ileti / desen / konumla ``re.error`` yükselir; hata da önbelleğe girer.
+    """
+    kalip_metni = kalip if isinstance(kalip, str) else kalip.pattern
+    anahtar = (kalip_metni, ad)
+    sonuc = _OZEL_DESEN_ONBELLEGI.get(anahtar)
+    if sonuc is None:
+        if len(_OZEL_DESEN_ONBELLEGI) >= ust_sinir:
+            _OZEL_DESEN_ONBELLEGI.clear()
+            _OZEL_DESEN_SAYAC["temizleme"] += 1
+        try:
+            sonuc = re.compile(kalip_metni.replace("PARAM", re.escape(ad)))
+            _OZEL_DESEN_SAYAC["derleme"] += 1
+        except re.error as hata:
+            sonuc = (_OZEL_DESEN_DERLENEMEDI, hata.msg, hata.pattern, hata.pos)
+            _OZEL_DESEN_SAYAC["hata"] += 1
+        _OZEL_DESEN_ONBELLEGI[anahtar] = sonuc
+    else:
+        _OZEL_DESEN_SAYAC["isabet"] += 1
+    if type(sonuc) is tuple:
+        raise re.error(sonuc[1], sonuc[2], sonuc[3])
+    return sonuc
+
+
+def _ozel_desen_suzgec_uygun(kalip: "re.Pattern[str] | str") -> bool:
+    """Satır ön süzgeci bu şablonda doğru mu: ``PARAM`` tam bir kez ve zorunlu konumda.
+
+    Koşul sağlanırsa desenin her eşleşmesi ``re.escape(ad)``'ın eşlediği metni, yani adın
+    kendisini içerir; adı içermeyen satır eşleşemez ve atlanabilir. Zorunlu konum: dizinin
+    üst düzeyi ya da içinden geçilen grup / atomik grup / en az bir kez yinelenen öğe
+    (seçenek, ileri / geri bakış, koşullu grup, en az sıfır kez yinelenen öğe ve karakter
+    sınıfı zorunlu sayılmaz). Büyük / küçük harf duyarsız şablonda uygulanmaz. Koşulu
+    sağlamayan şablon süzgeçsiz aranır. Sonuç şablon metni başına bir kez hesaplanır.
+    """
+    kalip_metni = kalip if isinstance(kalip, str) else kalip.pattern
+    uygun = _OZEL_DESEN_SUZGEC.get(kalip_metni)
+    if uygun is None:
+        uygun = _param_zorunlu_tek(kalip_metni)
+        _OZEL_DESEN_SUZGEC[kalip_metni] = uygun
+    return uygun
+
+
+def _param_zorunlu_tek(kalip_metni: str) -> bool:
+    if kalip_metni.count("PARAM") != 1 or any(c in kalip_metni for c in _OZEL_DESEN_ISARET):
+        return False
+    import re._constants as _rc
+    import re._parser as _rp
+
+    try:
+        agac = _rp.parse(kalip_metni.replace("PARAM", _OZEL_DESEN_ISARET))
+    except (re.error, RecursionError, OverflowError, ValueError):
+        return False
+    if agac.state.flags & re.IGNORECASE:
+        return False
+    ilk, ikinci = (ord(c) for c in _OZEL_DESEN_ISARET)
+
+    def _zorunlu(dizi: Any) -> bool:
+        ogeler = list(dizi)
+        for i, (op, av) in enumerate(ogeler):
+            if op == _rc.LITERAL:
+                # İşaretin iki karakteri aynı dizide art arda, iki ayrı LITERAL olmalı.
+                if av == ilk and i + 1 < len(ogeler) and ogeler[i + 1] == (_rc.LITERAL, ikinci):
+                    return True
+            elif op == _rc.SUBPATTERN:
+                _grup, ekle, _sil, alt = av
+                if not (ekle & re.IGNORECASE) and _zorunlu(alt):
+                    return True
+            elif op == _rc.ATOMIC_GROUP:
+                if _zorunlu(av):
+                    return True
+            elif op in (_rc.MAX_REPEAT, _rc.MIN_REPEAT, _rc.POSSESSIVE_REPEAT):
+                en_az, _en_cok, alt = av
+                if en_az >= 1 and _zorunlu(alt):
+                    return True
+        return False
+
+    return _zorunlu(agac.data)
+
+
+def _ozel_desen_ust_siniri(config: Any) -> int:
+    """``perf.desen_onbellegi_ust_sinir`` (geçersizse alanın öntanımı)."""
+    from karadul.config import PerfConfig
+
+    deger = getattr(getattr(config, "perf", None), "desen_onbellegi_ust_sinir", None)
+    if isinstance(deger, bool) or not isinstance(deger, int):
+        return PerfConfig.desen_onbellegi_ust_sinir
+    return deger
+
+
+# ---------------------------------------------------------------------------
 # ProcessPoolExecutor worker fonksiyonlari -- module-level (pickle edilebilir)
 # ---------------------------------------------------------------------------
 
@@ -3946,12 +4064,37 @@ class CVariableNamer:
         # v1.8.0: Body'yi ONCE satirlara parcala (tek maliyet O(n))
         body_lines = body.splitlines()
 
-        def _line_search(pattern: re.Pattern[str]) -> bool:
-            """Herhangi bir satirda pattern eslesiyor mu."""
-            for ln in body_lines:
+        def _line_search(
+            pattern: re.Pattern[str], satirlar: list[str] | None = None,
+        ) -> bool:
+            """Herhangi bir satirda pattern eslesiyor mu.
+
+            HZ-7a: ``satirlar`` verilirse yalnız onlarda aranır (adı içeren satırlar;
+            yalnız ``_ozel_desen_suzgec_uygun`` şablonlarda verilir).
+            """
+            for ln in (body_lines if satirlar is None else satirlar):
                 if pattern.search(ln):
                     return True
             return False
+
+        # HZ-7a: desenler (şablon, ad) başına bir kez derlenir (`_ozel_desen`); ön süzgecin
+        # uygulanabildiği şablonlar liste sırasıyla bir kez belirlenir.
+        ust_sinir = _ozel_desen_ust_siniri(self._config)
+        suzgec = [_ozel_desen_suzgec_uygun(p) for p, _s, _c in _PARAM_USAGE_PATTERNS]
+
+        def _desen_ara(ad: str) -> tuple[str | None, float]:
+            """Adın en yüksek güvenli kullanım deseni (bugünkü döngüyle aynı seçim)."""
+            ad_satirlari = [ln for ln in body_lines if ad in ln]
+            best: str | None = None
+            best_c = 0.0
+            for (pattern, suggested, conf), uygun in zip(_PARAM_USAGE_PATTERNS, suzgec):
+                # Pattern'deki PARAM'i gercek ad ile degistir (önbellekli)
+                specific_pattern = _ozel_desen(pattern, ad, ust_sinir)
+                if _line_search(specific_pattern, ad_satirlari if uygun else None):
+                    if conf > best_c:
+                        best_c = conf
+                        best = suggested
+            return best, best_c
 
         # Her parametre icin usage pattern'lerini kontrol et
         params = func_info.params
@@ -3972,18 +4115,9 @@ class CVariableNamer:
             if param_name not in body:
                 continue
 
-            best_name: str | None = None
-            best_conf: float = 0.0
-
-            for pattern, suggested, conf in _PARAM_USAGE_PATTERNS:
-                # Pattern'deki PARAM'i gercek parametre ismiyle degistir
-                specific_pattern = re.compile(
-                    pattern.pattern.replace("PARAM", re.escape(param_name))
-                )
-                if _line_search(specific_pattern):
-                    if conf > best_conf:
-                        best_conf = conf
-                        best_name = suggested
+            best_name: str | None
+            best_conf: float
+            best_name, best_conf = _desen_ara(param_name)
 
             if best_name and best_conf >= self._min_confidence:
                 # Ayni fonksiyondaki diger parametrelerle cakisma kontrolu
@@ -4009,17 +4143,7 @@ class CVariableNamer:
             if not _is_ghidra_auto_name(local_name):
                 continue
 
-            best_name = None
-            best_conf = 0.0
-
-            for pattern, suggested, conf in _PARAM_USAGE_PATTERNS:
-                specific_pattern = re.compile(
-                    pattern.pattern.replace("PARAM", re.escape(local_name))
-                )
-                if _line_search(specific_pattern):
-                    if conf > best_conf:
-                        best_conf = conf
-                        best_name = suggested
+            best_name, best_conf = _desen_ara(local_name)
 
             if best_name and best_conf >= self._min_confidence:
                 self._add_candidate(_NamingCandidate(
@@ -4057,17 +4181,7 @@ class CVariableNamer:
             if var_name not in body:
                 continue
 
-            best_name = None
-            best_conf = 0.0
-
-            for pattern, suggested, conf in _PARAM_USAGE_PATTERNS:
-                specific_pattern = re.compile(
-                    pattern.pattern.replace("PARAM", re.escape(var_name))
-                )
-                if _line_search(specific_pattern):
-                    if conf > best_conf:
-                        best_conf = conf
-                        best_name = suggested
+            best_name, best_conf = _desen_ara(var_name)
 
             if best_name and best_conf >= self._min_confidence:
                 self._add_candidate(_NamingCandidate(
@@ -4429,11 +4543,22 @@ class CVariableNamer:
         # v1.8.0: Body'yi ONCE satirlara parcala
         body_lines = body.splitlines()
 
-        def _line_search(pattern: re.Pattern[str]) -> bool:
-            for ln in body_lines:
+        def _line_search(
+            pattern: re.Pattern[str], satirlar: list[str] | None = None,
+        ) -> bool:
+            # HZ-7a: ``satirlar`` verilirse yalnız onlarda (adı içeren satırlar).
+            for ln in (body_lines if satirlar is None else satirlar):
                 if pattern.search(ln):
                     return True
             return False
+
+        # HZ-7a: desenler (şablon, ad) başına bir kez derlenir (`_ozel_desen`).
+        ust_sinir = _ozel_desen_ust_siniri(self._config)
+        suzgec = [_ozel_desen_suzgec_uygun(p) for p, _s, _c in _LOCAL_VAR_USAGE_PATTERNS]
+        # Layer 1.5'in dönüş yakalama deseni (bugünkü
+        # ``r"\b" + re.escape(var_name) + r"\s*=\s*(\w+)\s*\("`` ile aynı metin).
+        ret_kalip = re.compile(r"\bPARAM\s*=\s*(\w+)\s*\(")
+        ret_suzgec = _ozel_desen_suzgec_uygun(ret_kalip)
 
         # 1. Collect ALL Ghidra auto-vars in this function
         # Use wide regex to also catch pcVar5, plVar3, ppvVar7, etc.
@@ -4480,20 +4605,21 @@ class CVariableNamer:
             best_conf: float = 0.0
             best_reason: str = ""
 
+            # HZ-7a: adı içeren satırlar bir kez süzülür.
+            ad_satirlari = [ln for ln in body_lines if var_name in ln]
+
             # --- Layer 1: Usage-based analysis (highest priority) ---
             # v1.8.0: Satir bazli arama
-            for pattern, suggested, conf in _LOCAL_VAR_USAGE_PATTERNS:
+            for (pattern, suggested, conf), uygun in zip(_LOCAL_VAR_USAGE_PATTERNS, suzgec):
                 try:
-                    specific = re.compile(
-                        pattern.pattern.replace("PARAM", re.escape(var_name))
-                    )
+                    specific = _ozel_desen(pattern, var_name, ust_sinir)
                 except re.error as e:
                     logger.debug(
                         "Local var pattern derlenemedi (var=%s, pattern=%r): %s",
                         var_name, pattern.pattern, e,
                     )
                     continue
-                if _line_search(specific):
+                if _line_search(specific, ad_satirlari if uygun else None):
                     if conf > best_conf:
                         best_conf = conf
                         best_name = suggested
@@ -4516,10 +4642,8 @@ class CVariableNamer:
             # If generic "ret" matched (conf 0.30), try to extract function name
             # for a more descriptive name: var = someFunc(...) -> someFunc_ret
             if best_name == "ret" and best_conf <= 0.35:
-                _ret_capture_re = re.compile(
-                    r"\b" + re.escape(var_name) + r"\s*=\s*(\w+)\s*\("
-                )
-                for ln in body_lines:
+                _ret_capture_re = _ozel_desen(ret_kalip, var_name, ust_sinir)
+                for ln in (ad_satirlari if ret_suzgec else body_lines):
                     m = _ret_capture_re.search(ln)
                     if m:
                         func_called = m.group(1)
