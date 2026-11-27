@@ -62,6 +62,13 @@
 
 **Önce kolu bitti (23:00).** S8: 8 / 8 `basari True` (22:33–22:47). Ollama: `basari True`, 1 645 sn (22:32:39 → 23:00:04, yük 10,8 → 11,3); `c_naming` **715,1 sn** (yalnız 1. tur: `pipeline_loop` 939,6 sn > 600 → `iteration_timeout`, 2. tur koşmadı; özgün koşudaki gibi).
 
-**Ön kayıttaki bilinen risk gerçekleşecek (öngörü, 23:01):** sonra kolunda `c_naming` profildeki oranla düşerse 1. tur ≈ 939,6 − 715 + (50–100) sn ≈ 300 sn < 600 olur ve 2. tur koşar; Ollama çıktısı süre yüzünden farklılaşır. Bu yüzden ön kayıttaki "ayrıştırma" için **ön kayıt dışı ek kol** açıldı: sonra ağacı + aynı ayar + `binary_reconstruction.pipeline_iterations: 1` (`ollama_bayraklar_tek_tur.yaml`; kök `sonra_tek_tur/`). Önce kolu tek tur koştuğu için bu kol önce koluyla aynı tur sayısında karşılaştırılır. Ön kayıtlı H1 / H2 hükmü pre-registered kol (`sonra/`) üstünden verilir; ek kol yalnız farkın nedenini ayırır.
+**Ön kayıttaki bilinen risk gerçekleşecek (öngörü, 23:01):** sonra kolunda `c_naming` profildeki oranla düşerse 1. tur ≈ 939,6 − 715 + (50–100) sn ≈ 300 sn < 600 olur ve 2. tur koşar; Ollama çıktısı süre yüzünden farklılaşır. Bu yüzden ön kayıttaki "ayrıştırma" için **ön kayıt dışı ek kol** açıldı: sonra ağacı + aynı ayar + `binary_reconstruction.pipeline_iterations: 1` (`ollama_bayraklar_tek_tur.yaml`; kök `sonra_tek_tur/`). Önce kolu tek tur koştuğu için bu kol önce koluyla aynı tur sayısında karşılaştırılır. Ön kayıtlı H1 / H2 hükmü ön kayıtlı kol (`sonra/`) üstünden verilir; ek kol yalnız farkın nedenini ayırır.
 
 **Sonra kolu 23:00'da başladı** (Ollama ∥ S8 dizisi, `agac_sonra`); aynı anda tam takım (23:01) ve ek kol (23:03). Önce kolunun eşzamanlı yükü: S8 dizisi (22:33–22:47), profil (22:48–22:51), eski mutasyonlar (22:49–22:53); sonra kolununki: S8 dizisi, tam takım, ek Ollama kolu (daha ağır: sonra kolu aleyhine).
+
+## Kalem 6 — tam takım (23:01–23:13)
+
+- Çalışma verisi bağları (ORTAK_D1 §6: `vendor`, `scripts/node_modules`, `sigs`, `signatures.lmdb`, `signatures_homebrew{,_bytes,_bytes_v2}.json`, `sigs_macos_system.json`) koşudan önce kuruldu, sonra kaldırıldı; commit'lenmedi.
+- `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökünden, `1a539600` üstünde; yamasız; **yük altında**: yük 7,9 → 10,1, aynı anda bu paketin sonra kolu, ek Ollama kolu ve öbür iki ajan): **11 357 geçti / 26 atlandı / 152 seçilmedi / 1 kaldı** (722,8 sn). Taban `ed28e36b`: 11 321 / 26 / 0; fark = bu paketin 37 yeni sınaması − 1.
+- Tek kırmızı beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `kayıtta ama okunuyor: {'perf.desen_onbellegi_ust_sinir': ['karadul/reconstruction/c_namer.py']}`. Yama (`HZ7a__config.py.patch`) kapatır (yamalı kopyada 192 / 16 / 0, Kalem 3).
+- İlgili takımda 22:40'ta görülen `test_kalip_denetimi` kırmızıları tam takımda **yok** (8 / 8 geçti): yük kaynaklı geçici olduğu doğrulandı. Günlük koşu kökünde `ozet/tam_takim.log`.
