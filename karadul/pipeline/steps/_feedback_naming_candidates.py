@@ -14,7 +14,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from karadul.analyzers.ustveri.tutarlilik import DAMGA_TUTARSIZ, KARAR_UST_VERI_SUPHELI
 from karadul.core.naming_labels import (
+    METADATA_CHECK_FIELD,
     METADATA_EVIDENCE_SOURCES,
     METADATA_SOURCES,
     SOURCE_GO_PCLNTAB,
@@ -977,11 +979,23 @@ def _add_go_pclntab(
     records: dict[str, dict[str, Any]],
     evidence: list[dict[str, Any]],
 ) -> None:
-    """Go ``pclntab`` fonksiyon adları (``go_metadata_recovery``): adsız Ghidra fonksiyonuna aday."""
+    """Go ``pclntab`` fonksiyon adları (``go_metadata_recovery``): adsız Ghidra fonksiyonuna aday.
+
+    P-ÜV6c (tutarlılık damgası; üretici ``enable_go_metadata_integrity`` açıkken kayda
+    ``dogrulama`` ve durum sözlüğüne ``tutarlilik`` yazar): ``tutarsiz`` damgalı fonksiyonun adı
+    yazılmaz, kanıt satırı olur (neden + işaret). İkili kararı ``ust_veri_supheli`` ise bütün Go
+    adları kanıt satırına iner; ``uyari`` ise adlar yazılır (uyarıyı rapor taşır). Damga köken
+    kaydına ``ust_veri_dogrulama`` olarak geçer; etiket değişmez (``üst veriden``: tutarlı
+    sahtecilik hiçbir denetimde görünmüyor, ``cift_kaynak`` adı ``kesin`` yapmaz). Damga yoksa
+    (bayrak kapalı) davranış ve kayıt bugünküyle aynı.
+    """
     source = SOURCE_GO_PCLNTAB
     if not _metadata_gate(source, go_functions, go_status, "enable_go_metadata_recovery", stats):
         return
     ch = _channel(stats, source)
+    verdict, verdict_reason = _go_integrity_verdict(go_status)
+    if verdict is not None:
+        ch["ikili_karari"] = verdict
     for fn in go_functions:
         if not isinstance(fn, dict) or not isinstance(fn.get("ad"), str) or not fn["ad"]:
             continue
@@ -990,22 +1004,54 @@ def _add_go_pclntab(
         except (TypeError, ValueError):
             continue
         ch["kayit"] = ch.get("kayit", 0) + 1
+        check = fn.get("dogrulama")
+        if isinstance(check, str):
+            counts = ch.setdefault("dogrulama", {})
+            counts[check] = counts.get(check, 0) + 1
         pcsp = fn.get("pcsp_kapsama")
         if pcsp in PCSP_REJECTED:
             ch["pcsp_elendi"] = ch.get("pcsp_elendi", 0) + 1
             evidence.append(_evidence_row(source, addr, fn["ad"], [f"pcsp_{pcsp}"]))
             continue
+        if verdict == GO_VERDICT_SUSPECT:
+            ch["ust_veri_supheli_elendi"] = ch.get("ust_veri_supheli_elendi", 0) + 1
+            evidence.append(_evidence_row(source, addr, fn["ad"], [GO_VERDICT_SUSPECT],
+                                          ikili_karari_nedeni=verdict_reason or None))
+            continue
+        if check == GO_CHECK_INCONSISTENT:
+            ch["tutarsiz_elendi"] = ch.get("tutarsiz_elendi", 0) + 1
+            marks = [m for m in (fn.get("dogrulama_isaretleri") or []) if isinstance(m, str)]
+            evidence.append(_evidence_row(source, addr, fn["ad"], [GO_CHECK_INCONSISTENT],
+                                          isaretler=marks or None))
+            continue
         key, outcome = index.key_for(addr)
         ch[outcome] = ch.get(outcome, 0) + 1
         if key is None:
             continue
+        extra = {"pcsp_kapsama": pcsp or None, "paket": fn.get("paket") or None}
+        if isinstance(check, str):
+            extra[METADATA_CHECK_FIELD] = check
         _add_metadata_candidate(
             source=source, addr=addr, original=fn["ad"], key=key, outcome=outcome, index=index,
             candidates=candidates, stats=stats, records=records, evidence=evidence,
-            extra={"pcsp_kapsama": pcsp or None, "paket": fn.get("paket") or None},
+            extra=extra,
         )
     if ch.get("durum") is None:
         _set_status(stats, source, CH_RAN)
+
+
+# P-ÜV6c: Go tutarlılık damgası ve ikili kararı (tek tanım ``analyzers.ustveri.tutarlilik``).
+GO_CHECK_INCONSISTENT = DAMGA_TUTARSIZ
+GO_VERDICT_SUSPECT = KARAR_UST_VERI_SUPHELI
+
+
+def _go_integrity_verdict(go_status: Any) -> tuple[str | None, str]:
+    """Üreticinin durum sözlüğündeki ikili düzeyi karar (``tutarlilik``); yoksa ``(None, "")``."""
+    summary = go_status.get("tutarlilik") if isinstance(go_status, dict) else None
+    if not isinstance(summary, dict) or summary.get("durum") != CH_RAN:
+        return None, ""
+    verdict = summary.get("karar")
+    return (verdict if isinstance(verdict, str) else None), str(summary.get("karar_nedeni") or "")
 
 
 def _objc_rejections(m: dict[str, Any]) -> list[str]:

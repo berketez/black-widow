@@ -1,0 +1,157 @@
+{
+ "_comment": "P-ÜV6c: Go tutarlılık damgası (ad kanalı, köken kaydı, rapor), okuyucu düzeltmeleri (paket, okuyucu nesnesi), evrensel ikili iletisi, eski Go kanalı çakışması. Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_puv6c.json",
+ "mutants": [
+  {
+   "id": "puv6c_tutarsiz_suzgeci_kalkar",
+   "desc": "tutarsiz damgalı Go adı da aday olur (A-10 süzgeci kalkar)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "        if check == GO_CHECK_INCONSISTENT:",
+   "replace": "        if check == \"yok\":"
+  },
+  {
+   "id": "puv6c_supheli_ikilide_adlar_yazilir",
+   "desc": "ust_veri_supheli ikilide Go adları kanıt satırına inmez",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "        if verdict == GO_VERDICT_SUSPECT:",
+   "replace": "        if verdict == \"supheli_olmayan_karar\":"
+  },
+  {
+   "id": "puv6c_damga_kesin_etiketi",
+   "desc": "cift_kaynak damgalı ad kesin etiketi alır (hüküm 3 / H6 bozulur)",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "    out = {\n        \"label\": LABEL_METADATA,",
+   "replace": "    out = {\n        \"label\": \"kesin\" if meta.get(METADATA_CHECK_FIELD) == \"cift_kaynak\" else LABEL_METADATA,"
+  },
+  {
+   "id": "puv6c_damga_koken_kaydina_tasinmaz",
+   "desc": "köken kaydında damga yerine hep olculmedi",
+   "module": "karadul/pipeline/steps/_feedback_naming_merger.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "        METADATA_CHECK_FIELD: meta.get(METADATA_CHECK_FIELD) or METADATA_CHECK_UNMEASURED,",
+   "replace": "        METADATA_CHECK_FIELD: METADATA_CHECK_UNMEASURED,"
+  },
+  {
+   "id": "puv6c_bayrak_ontanimi_acik",
+   "desc": "bütünlük bayrağı yalnız açıkça False iken kapalı (öntanım / sahte değer açar)",
+   "module": "karadul/pipeline/steps/go_metadata_recovery.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "    return getattr(recon, \"enable_go_metadata_integrity\", False) is True",
+   "replace": "    return getattr(recon, \"enable_go_metadata_integrity\", True) is not False"
+  },
+  {
+   "id": "puv6c_bayrak_okunmaz_hep_damga",
+   "desc": "bayrak kapalıyken de damga yazılır (kapalı kol bayt bayt aynı değil)",
+   "module": "karadul/pipeline/steps/go_metadata_recovery.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "            if go_integrity_enabled(pc.config):",
+   "replace": "            if True or go_integrity_enabled(pc.config):"
+  },
+  {
+   "id": "puv6c_damga_yazilmaz",
+   "desc": "üretici her kayda tek_kaynak yazar (denetim sonucu taşınmaz)",
+   "module": "karadul/pipeline/steps/go_metadata_recovery.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "        k[\"dogrulama\"] = damga",
+   "replace": "        k[\"dogrulama\"] = \"tek_kaynak\""
+  },
+  {
+   "id": "puv6c_ozete_zayif_isaret_girer",
+   "desc": "rapor özetinin güçlü denetim dağılımına T3 / T4 de girer",
+   "module": "karadul/pipeline/steps/go_metadata_recovery.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "            if k in tutarlilik.GUCLU_DENETIMLER}",
+   "replace": "            if k}"
+  },
+  {
+   "id": "puv6c_uyari_rapora_girmez",
+   "desc": "uyari kararı rapora uyarı olarak girmez (yalnız şüpheli)",
+   "module": "karadul/reporting/report_data.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "GO_INTEGRITY_WARN_VERDICTS = (KARAR_UYARI, KARAR_UST_VERI_SUPHELI)",
+   "replace": "GO_INTEGRITY_WARN_VERDICTS = (KARAR_UST_VERI_SUPHELI,)"
+  },
+  {
+   "id": "puv6c_uyari_sayisi_yanlis_nicelik",
+   "desc": "uyarı metninde güçlü işaretli sayı yerine fonksiyon sayısı",
+   "module": "karadul/reporting/report_data.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "    strong = _int_or_none(gi.get(\"guclu_isaretli_fonksiyon\"))",
+   "replace": "    strong = _int_or_none(gi.get(\"fonksiyon\"))"
+  },
+  {
+   "id": "puv6c_evrensel_hata_yine_yazilir",
+   "desc": "yeni okuyucu çalıştığı hâlde statik aşamanın evrensel ikili hatası kalır",
+   "module": "karadul/pipeline/steps/go_metadata_recovery.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "            if _eski_evrensel_iletiyi_indir(pc):",
+   "replace": "            if False and _eski_evrensel_iletiyi_indir(pc):"
+  },
+  {
+   "id": "puv6c_evrensel_hata_okunamadan_duser",
+   "desc": "okuyucu çalışmadan (veri_yok) evrensel ikili hatası düşer",
+   "module": "karadul/pipeline/steps/go_metadata_recovery.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "        ts = None\n        if sonuc.durum == go_pclntab.DURUM_CALISTI:",
+   "replace": "        ts = None\n        _eski_evrensel_iletiyi_indir(pc)\n        if sonuc.durum == go_pclntab.DURUM_CALISTI:"
+  },
+  {
+   "id": "puv6c_statik_hata_dizgisi_tutulmaz",
+   "desc": "statik aşama hata dizgisini değil nedeni saklar (indirme birebir eşleşmez)",
+   "module": "karadul/stages.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "        result.stats[f\"{kind}_hatti_error\"] = error",
+   "replace": "        result.stats[f\"{kind}_hatti_error\"] = reason"
+  },
+  {
+   "id": "puv6c_paket_adi_eski_kural",
+   "desc": "okuyucu paket alanını eski runtime.funcpkgpath kuralıyla yazar",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "            f.paket = fonksiyon_paketi(f.ad)",
+   "replace": "            f.paket = paket_adi(f.ad)"
+  },
+  {
+   "id": "puv6c_satir_ici_kapanis_onek",
+   "desc": "satır içi kapanışta paket ilk '.(' önekinin tamamı olur",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "        return on if j < 0 else on[:j]",
+   "replace": "        return on"
+  },
+  {
+   "id": "puv6c_adsiz_sarmalayici_eski_kural",
+   "desc": "adsız tip sarmalayıcısında paket eski kuralla (go:(*struct { io)",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "            if govde[len(onek):].startswith(_ADSIZ_ALICI_BASLARI):\n                return onek",
+   "replace": "            if govde[len(onek):].startswith(_ADSIZ_ALICI_BASLARI):\n                return paket_adi(ad)"
+  },
+  {
+   "id": "puv6c_okuyucu_nesnesi_kullanilmaz",
+   "desc": "denetle sonuc= verildiğinde okuyucuyu yeniden kurar",
+   "module": "karadul/analyzers/ustveri/tutarlilik.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "        pcln = pcln if pcln is not None else getattr(sonuc, \"pcln\", None)",
+   "replace": "        pcln = pcln"
+  },
+  {
+   "id": "puv6c_okuyucu_nesnesi_tasinmaz",
+   "desc": "GoSonuc okuyucu nesnesini taşımaz",
+   "module": "karadul/analyzers/ustveri/go_pclntab.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "                   pclntab=ozet, sayim=sayim, pcln=p)",
+   "replace": "                   pclntab=ozet, sayim=sayim)"
+  },
+  {
+   "id": "puv6c_iki_go_kanali_ayni_adrese",
+   "desc": "go_demangler go_pclntab'ın aday verdiği adrese ikinci aday üretir (hüküm 6)",
+   "module": "karadul/pipeline/steps/_feedback_naming_candidates.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "            _add_go_demangler(syms, index, candidates, stats, exclude_keys=metadata_keys)",
+   "replace": "            _add_go_demangler(syms, index, candidates, stats, exclude_keys=None)"
+  }
+ ]
+}

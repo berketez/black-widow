@@ -105,6 +105,11 @@ def _note_universal_special_slices(target: Any, result: StageResult) -> None:
     P19 ``core/target.py`` dilim başına Go / Bun işaretini ``metadata``'ya yazar,
     tür UNIVERSAL_BINARY kalır (analizcileri şişman dosyayı açmıyor). Eskiden bu bilgi
     hiçbir aşamada görünmüyordu: analist Go adlarının neden kurtarılmadığını bilemezdi.
+
+    P-ÜV6c hüküm 5: hata dizgisi ``<tür>_hatti_error`` istatistiğinde de tutulur. Go için yeni
+    okuyucu (``go_metadata_recovery``) aynı koşuda ürün dilimini ``calisti`` ile okursa o adım bu
+    dizgiyi (birebir) hata listesinden çıkarır ve bilgi satırı yazar; okuyucu kapalıysa ya da
+    okuyamadıysa hata aynen kalır (aşama kısmi).
     """
     meta = getattr(target, "metadata", None) or {}
     for key, kind, hat in _UNIVERSAL_SPECIAL_SLICES:
@@ -114,9 +119,11 @@ def _note_universal_special_slices(target: Any, result: StageResult) -> None:
             f"evrensel ikilide {kind} dilimi tanındı ama {hat} şişman dosyayı açmıyor; "
             "yalnız yerel hat (seçilen dilim) koştu"
         )
+        error = f"Desteklenmiyor: {reason}"
         result.stats[f"{kind}_hatti_status"] = "desteklenmiyor"
         result.stats[f"{kind}_hatti_reason"] = reason
-        result.errors.append(f"Desteklenmiyor: {reason}")
+        result.stats[f"{kind}_hatti_error"] = error
+        result.errors.append(error)
 
 
 # Not (K-10, 2026-11-19): ``_collect_all_algorithms`` buradan silindi. Çağıranı yoktu

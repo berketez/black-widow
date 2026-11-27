@@ -98,8 +98,9 @@ def metadata_decision(meta: dict[str, Any], final_name: Any) -> dict[str, Any]:
     """Üst veri adayının köken alanları (P-ÜV6a; plan P-ÜV6 kalem 4–6).
 
     Birleştiricinin seçtiği ad üst veri adıysa: ``label = üst veriden`` (hiçbir zaman ``kesin``),
-    ``ozgun_ad`` (derleyicinin yazdığı ad), kanal, ``ust_veri_dogrulama`` (bugün ``olculmedi``:
-    tutarlılık denetimi P-ÜV7 main'de değil) ve güven = kanalın ölçülmüş kesinliğinin Wilson alt
+    ``ozgun_ad`` (derleyicinin yazdığı ad), kanal, ``ust_veri_dogrulama`` (P-ÜV6c: Go kanalının
+    künyesindeki damga — ``cift_kaynak`` / ``tek_kaynak``; damga yoksa — bayrak kapalı, ObjC, Swift —
+    ``olculmedi``; etiket damgadan bağımsız) ve güven = kanalın ölçülmüş kesinliğinin Wilson alt
     sınırı (tablodan; birleşik Bayes puanı değil). Başka bir kaynağın adı kazandıysa üst veri adayı
     yalnız kanıt olarak (``ust_veri_adayi``) yazılır; etiket ve güven değişmez.
     """
@@ -115,7 +116,7 @@ def metadata_decision(meta: dict[str, Any], final_name: Any) -> dict[str, Any]:
         "adres": meta.get("adres"),
         METADATA_CHANNEL_FIELD: source,
         ORIGINAL_NAME_FIELD: meta.get("ozgun_ad"),
-        METADATA_CHECK_FIELD: METADATA_CHECK_UNMEASURED,
+        METADATA_CHECK_FIELD: meta.get(METADATA_CHECK_FIELD) or METADATA_CHECK_UNMEASURED,
         "confidence": metadata_confidence(source),
         "evidence": f"üst veri ({source}) {meta.get('adres')}: {meta.get('ozgun_ad')}",
     }

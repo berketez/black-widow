@@ -49,7 +49,14 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from karadul.core.naming_labels import LABEL_CERTAIN, LABEL_METADATA, LABEL_UNVERIFIED, LABEL_VERIFIED
+from karadul.analyzers.ustveri.tutarlilik import DAMGA_TUTARSIZ, KARAR_UST_VERI_SUPHELI, KARAR_UYARI
+from karadul.core.naming_labels import (
+    LABEL_CERTAIN,
+    LABEL_METADATA,
+    LABEL_UNVERIFIED,
+    LABEL_VERIFIED,
+    SOURCE_GO_PCLNTAB,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -638,7 +645,56 @@ def _naming(result: Any, workspace: Any) -> Section:
     if gc is not None:
         sec.extra["gnulib_candidates"] = gc
         sec.summary += gnulib_candidates_note(gc)
+    warning = go_metadata_warning(_stage_stats(result, "reconstruct"))
+    if warning is not None:
+        sec.extra["go_metadata_warning"] = warning
+        sec.summary += "; WARNING: " + warning["text"]
     return sec
+
+
+# P-ÜV6c: Go üst verisinin tutarlılık denetimi (``go_metadata_recovery`` →
+# ``reconstruct.stats["go_metadata_integrity"]``). Uyarı yalnız ikili kararı ``uyari`` ya da
+# ``ust_veri_supheli`` iken; metin gerçek sayıları taşır (puan yok).
+GO_INTEGRITY_WARN_VERDICTS = (KARAR_UYARI, KARAR_UST_VERI_SUPHELI)
+
+
+def go_metadata_warning(st: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
+    """Go tutarlılık uyarısı (``extra["go_metadata_warning"]`` + özet satırı); yoksa ``None``."""
+    if not isinstance(st, dict):
+        return None
+    gi = st.get("go_metadata_integrity")
+    if not isinstance(gi, dict) or gi.get("karar") not in GO_INTEGRITY_WARN_VERDICTS:
+        return None
+    verdict = gi["karar"]
+    strong = _int_or_none(gi.get("guclu_isaretli_fonksiyon"))
+    total = _int_or_none(gi.get("fonksiyon"))
+    checks = gi.get("guclu_isaret_dagilimi") if isinstance(gi.get("guclu_isaret_dagilimi"), dict) else {}
+    stamps = gi.get("adli_damga") if isinstance(gi.get("adli_damga"), dict) else {}
+    inconsistent = _int_or_none(stamps.get(DAMGA_TUTARSIZ))
+    ch = ((st.get("naming_channels") or {}).get(SOURCE_GO_PCLNTAB) or {})
+    withheld = (_int_or_none(ch.get("ust_veri_supheli_elendi")) if verdict == KARAR_UST_VERI_SUPHELI
+                else _int_or_none(ch.get("tutarsiz_elendi")))
+    check_txt = ", ".join(f"{k}: {v}" for k, v in sorted(checks.items())) or "none"
+    parts = [f"Go metadata integrity check verdict '{verdict}'"]
+    if strong is not None and total is not None:
+        parts.append(f"{strong} of {total} Go functions carry a strong inconsistency signal "
+                     f"[{check_txt}]")
+    if gi.get("karar_nedeni"):
+        parts.append(f"reason: {gi['karar_nedeni']}")
+    if inconsistent is not None:
+        parts.append(f"{inconsistent} named function(s) stamped '{DAMGA_TUTARSIZ}'")
+    if verdict == KARAR_UST_VERI_SUPHELI:
+        parts.append("all Go metadata names withheld as evidence rows"
+                     + (f" ({withheld})" if withheld is not None else ""))
+    else:
+        parts.append(f"names stamped '{DAMGA_TUTARSIZ}' withheld as evidence rows"
+                     + (f" ({withheld})" if withheld is not None else "")
+                     + f"; the other Go names are written, labelled '{LABEL_METADATA}' "
+                     "(consistent forgery is not detectable)")
+    return {"verdict": verdict, "strong_signal_functions": strong, "functions": total,
+            "strong_checks": dict(checks), "stamped_inconsistent": inconsistent,
+            "withheld": withheld, "reason": gi.get("karar_nedeni") or None,
+            "text": "; ".join(parts)}
 
 
 def _naming_labels(result: Any, workspace: Any) -> Section:

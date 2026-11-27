@@ -167,8 +167,10 @@ ORIGINAL_NAME_FIELD = "ozgun_ad"                # derleyicinin yazdığı ad (C 
 METADATA_CHECK_FIELD = "ust_veri_dogrulama"     # cift_kaynak / tek_kaynak / tutarsiz / olculmedi
 METADATA_EVIDENCE_FIELD = "ust_veri_kanit"      # ad yazılmayan üst veri kayıtları (kanıt satırı)
 CHANNEL_METADATA_PREFIX = "ust_veri"            # ``provenance_channel`` biçimi: ust_veri:<kaynak>
-# ``ust_veri_dogrulama`` değerleri (plan P-ÜV6 kalem 5). Tutarlılık denetimi (P-ÜV7) main'de
-# değil: bugün her kayıt ``olculmedi``; öbür değerler P-ÜV6b'de yazılır.
+# ``ust_veri_dogrulama`` değerleri (plan P-ÜV6 kalem 5): ``cift_kaynak`` / ``tek_kaynak`` /
+# ``tutarsiz`` (tek tanım ``analyzers.ustveri.tutarlilik.DAMGALAR``; P-ÜV6c: Go adlarına
+# ``enable_go_metadata_integrity`` açıkken yazılır, ``tutarsiz`` adı yazılmaz) ya da ``olculmedi``
+# (bayrak kapalı; ObjC, Swift). Damga etiketi değiştirmez: üst veri adı her zaman ``üst veriden``.
 METADATA_CHECK_UNMEASURED = "olculmedi"
 
 # Ölçülmüş kanal düzeyi kesinliği: (doğru, ad verilen, Wilson %95 alt sınırı). Değerler SINAMA
