@@ -310,16 +310,16 @@
       "desc": "iptal edilen iş iptal olarak işaretlenmez",
       "module": "ui/server.py",
       "test": "tests/test_p17_iptal.py",
-      "find": "    j[\"cancelled\"] = True\n    _kill_proc(proc)",
-      "replace": "    _kill_proc(proc)"
+      "find": "    j[\"cancelled\"] = True\n    sonlandirma = _kill_proc(proc)",
+      "replace": "    sonlandirma = _kill_proc(proc)"
     },
     {
       "id": "i10_iptal_oldurmez",
       "desc": "iptal süreci sonlandırmaz",
       "module": "ui/server.py",
       "test": "tests/test_p17_iptal.py",
-      "find": "    _kill_proc(proc)\n    return {\"ok\": True, \"job\": job}",
-      "replace": "    return {\"ok\": True, \"job\": job}"
+      "find": "    sonlandirma = _kill_proc(proc)\n    return {\"ok\": True, \"job\": job, \"sonlandirma\": sonlandirma}",
+      "replace": "    sonlandirma = \"term\"\n    return {\"ok\": True, \"job\": job, \"sonlandirma\": sonlandirma}"
     },
     {
       "id": "i10_iptal_edilen_etkinlesir",
@@ -342,8 +342,8 @@
       "desc": "çocuk sunucunun grubundaysa killpg sunucuyu da vurur",
       "module": "ui/server.py",
       "test": "tests/test_p17_iptal.py",
-      "find": "        if proc.pid <= 0 or pgid == os.getpgrp():",
-      "replace": "        if proc.pid <= 0:"
+      "find": "    if proc.pid <= 0 or pgid == os.getpgrp():",
+      "replace": "    if proc.pid <= 0:"
     },
     {
       "id": "i10_js_sunucu_hatasi_yutulur",
