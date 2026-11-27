@@ -336,6 +336,15 @@ Berke (22:1x): "kaldığımız yerden başlayalım; en azından iki üç iş tam
 
 | Paket | Ajan | Model | Durum | Not |
 |---|---|---|---|---|
-| GS1 | — | Opus | gönderiliyor | A-36 |
-| HZ7a | — | Opus | gönderiliyor | |
-| PUV6c | — | Opus | gönderiliyor | |
+| GS1 | abf132b4e0a909dee | Opus | çalışıyor (22:21 gönderildi; sert son 00:45) | A-36 |
+| HZ7a | a1190420e5bc0ba1f | Opus | çalışıyor (22:21; sert son 00:45) | |
+| PUV6c | a72d36643fec4ac64 | Opus | çalışıyor (22:21; sert son 00:45) | |
+| GKB | — | Opus | sırada (ilk boşalan yuva; metni hazır) | A-42 hükmü: olasılık yüksek (neden tek ve belli; karşı olgu %12,3) |
+| GKA | — | Opus | sırada (metni hazır; yalnız yeni dosya) | |
+| GKC | — | Opus | sırada (metni hazır; yalnız yeni dosya) | |
+
+- 22:21 üç ajan gönderildi; bekçi kuruldu (`bekci_d0.py`, Monitor; 30 dk'da bir yeniden).
+- **S8 tabanı yenilendi (22:20 → 22:37; `ANA/s8_taban_ed28e36b`, 8 / 8 çıkış 0; özet `ozet/eski_taban_fark.md`).** Eski tabanla (`s8_taban_534e252b`) ham kıyas: `decompiled/*.c` 7 / 8 ikilide 0 fark, `out/naming_map.json` 8 / 8 eşit; 8 ikilinin hepsinde beklenen tek alan farkı `bsim_detail.scan_mode` (üç BSim dosyası). **zstd'de bilinen decompiler takası bu koşuda çıktı** (`FUN_001063c0.c` + `pcode_ops` + çalışma alanındaki iki `naming_map.json`; P16e'nin bulduğu belirlenimsizlik, P16f'nin işi): zstd'yi bu tabanla kıyaslayan paket o işlevdeki farkı kendi değişikliğine bağlamamalı (tekrar koşusuyla ayırır). Bundan sonra S8 kıyaslarının tabanı bu köktür; eski taban GK-A'nın H1'i (sayıların ölçüldüğü girdi) için duruyor.
+- **`ghidra_kuyruk.sh`'ye sıra eklendi (22:40; ilk gelen ilk girer).** Her çağrı `ghidra_kuyruk.sira/` altına bilet bırakır; kilidi yalnız en eski canlı biletin sahibi dener; komut başlayınca bilet silinir; sahibi ölmüş bilet atlanır. Geçici dizinde sınandı (iki yuva dolu, sonra uzun koşu + `--tek` + beş kez yeniden giren kısa döngücü): başlama sırası geliş sırasıyla aynı, `--tek` yalnız koştu, çıkış kodu taşındı (7), geride bilet / işaret dosyası kalmadı. Eski sürüm `ghidra_kuyruk.sh.2026-11-24.yedek`. Bekletme dosyası düzeni duruyor ama artık gerekmemeli.
+- **Berke (22:4x): "büyük denemeler yaparken işe yarama olasılığı fazla ise deneyelim; umut yoksa küçük test ile denersin, zamandan kazanırız."** → A-42; ajanlar için `ORTAK_D1.md` §7'ye satır. Uygulaması: GK-B doğrudan (olasılık yüksek); geri kurmanın "aynı davranış" tarafına (GK-D / GK-E) büyük paket gönderilmeden önce küçük sınama (eldeki tek işaret zayıf: Debian'da %25,3, 9 komut ve üstünde 0 / 274).
+- Yeni gönderim metinleri: `gonderim/{GKA,GKB,GKC}.md` (tanım tasarım belgesi §8.1–§8.3; ana oturum belgenin §0–§1.1, §8, §9'unu okudu; §2–§7'nin satır satır okuması duruyor).
