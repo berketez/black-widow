@@ -44,6 +44,134 @@ class StepFailedError(PipelineStageError):
         )
 
 
+# GS-1 (A-36): adım olayları. Koşan her adım için ``ILERLEME asama=<aşama> adim=<aşama>.<adım>
+# durum=basladi``; bitişte ``bitti gecen_sn=…``, adım hata bildirdiyse (``ctx.errors``'a ekledi ya da
+# istisna attı) ``kismi neden=…``, bayrakla iş yapmadan döndüyse ``atlandi neden=…``. Olay yalnız
+# gerçek adım başı / sonunda üretilir (adım içi "sürüyor" olayı ve zamanlayıcı yok). Aşama
+# ``PipelineContext.extra["_current_stage"]``'den; sözleşmedeki aşamalardan biri değilse olay yok.
+#
+# "Atlandı" işareti: adımın döndürdüğü yapıtlarda adı ``_status`` ile biten ve değeri bu kümede olan
+# bir anahtar (bayrak kapalıyken iş yapmayan adımların kendi bildirimi: ``pdb_status``,
+# ``trex_status``, ``bn_status`` = ``"disabled"``). Başka bir yolla iş yapmadan dönen adım ``bitti``.
+ATLAMA_DEGERLERI: tuple[str, ...] = ("disabled",)
+_DURUM_ANAHTARI_SONEKI = "_status"
+# ``neden`` alanına giren hata metninin en çok uzunluğu (olay tek satır kalsın).
+NEDEN_EN_COK = 200
+
+
+def _adim_asamasi(ctx: Any) -> str | None:
+    """Adımın koştuğu aşama (sözleşmedekilerden biriyse)."""
+    from karadul.core.ilerleme import ASAMALAR
+
+    extra = getattr(getattr(ctx, "pipeline_context", None), "extra", None)
+    asama = extra.get("_current_stage") if isinstance(extra, dict) else None
+    return asama if asama in ASAMALAR else None
+
+
+def _kisalt(metin: str) -> str:
+    metin = str(metin)
+    return metin if len(metin) <= NEDEN_EN_COK else metin[: NEDEN_EN_COK - 1] + "…"
+
+
+class _IzlenenHatalar(list):
+    """``ctx.errors``: eklenen her hatayı, ekleyen iş parçacığının o an koşturduğu adıma da yazar.
+
+    Paralel düzeyde adımlar aynı listeye yazar; hangi hatanın hangi adımdan geldiği böyle ayrılır
+    (adımın kendi iş parçacığından eklenenler; adımın açtığı başka iş parçacıklarından eklenenler
+    sayılmaz). Liste olarak davranışı değişmez.
+    """
+
+    def __init__(self, *args: Any) -> None:
+        super().__init__(*args)
+        self._yerel = threading.local()
+        self._kilit = threading.Lock()
+        self.adim_hatalari: dict[str, list[str]] = {}
+
+    def _kaydet(self, ogeler: list[Any]) -> None:
+        adim = getattr(self._yerel, "adim", None)
+        if adim is not None and ogeler:
+            with self._kilit:
+                self.adim_hatalari.setdefault(adim, []).extend(str(o) for o in ogeler)
+
+    def append(self, oge: Any) -> None:
+        super().append(oge)
+        self._kaydet([oge])
+
+    def extend(self, ogeler: Any) -> None:
+        ogeler = list(ogeler)
+        super().extend(ogeler)
+        self._kaydet(ogeler)
+
+    def __iadd__(self, ogeler: Any) -> "_IzlenenHatalar":
+        self.extend(ogeler)
+        return self
+
+    def insert(self, konum: Any, oge: Any) -> None:
+        super().insert(konum, oge)
+        self._kaydet([oge])
+
+
+class _AdimOlayi:
+    """Bir adımın baş ve bitiş olayı (tek zamanlayıcı: olay ``basla`` ile ``bitir`` arasını ölçer)."""
+
+    def __init__(self, ctx: Any, ad: str, paralel: bool) -> None:
+        self.ctx = ctx
+        self.ad = ad
+        self.paralel = paralel
+        self.asama = _adim_asamasi(ctx)
+        self.adim = "%s.%s" % (self.asama, ad) if self.asama else None
+        hatalar = getattr(ctx, "errors", None)
+        self._hata_basi = len(hatalar) if isinstance(hatalar, list) else 0
+        if isinstance(hatalar, _IzlenenHatalar):
+            hatalar._yerel.adim = ad
+        self._t0 = time.monotonic()
+        if self.adim is not None:
+            from karadul.core.ilerleme import olay_yaz
+            from karadul.ghidra.headless import OLAY_BASLADI
+
+            olay_yaz(self.asama, self.adim, OLAY_BASLADI)
+
+    def _bildirilen_hatalar(self) -> list[str]:
+        hatalar = getattr(self.ctx, "errors", None)
+        if not isinstance(hatalar, list):
+            return []
+        if self.paralel:
+            if isinstance(hatalar, _IzlenenHatalar):
+                return list(hatalar.adim_hatalari.get(self.ad, ()))
+            return []  # kimin eklediği bilinmiyor: adıma yazılmaz
+        return [str(h) for h in hatalar[self._hata_basi:]]
+
+    def bitir(self, artifacts: Any = None, istisna: BaseException | None = None) -> None:
+        hatalar = getattr(self.ctx, "errors", None)
+        if isinstance(hatalar, _IzlenenHatalar):
+            hatalar._yerel.adim = None
+        if self.adim is None:
+            return
+        from karadul.core.ilerleme import olay_yaz
+        from karadul.ghidra.headless import OLAY_ATLANDI, OLAY_BITTI, OLAY_KISMI
+
+        gecen = round(time.monotonic() - self._t0, 3)
+        if istisna is not None:
+            neden = "istisna: %s: %s" % (type(istisna).__name__, istisna)
+            olay_yaz(self.asama, self.adim, OLAY_KISMI, gecen_sn=gecen, neden=_kisalt(neden))
+            return
+        bildirilen = self._bildirilen_hatalar()
+        if bildirilen:
+            neden = bildirilen[0] if len(bildirilen) == 1 else "%d hata; ilki: %s" % (
+                len(bildirilen), bildirilen[0])
+            olay_yaz(self.asama, self.adim, OLAY_KISMI, gecen_sn=gecen, neden=_kisalt(neden))
+            return
+        if isinstance(artifacts, dict):
+            for anahtar in sorted(artifacts):
+                deger = artifacts[anahtar]
+                if (isinstance(anahtar, str) and anahtar.endswith(_DURUM_ANAHTARI_SONEKI)
+                        and isinstance(deger, str) and deger in ATLAMA_DEGERLERI):
+                    olay_yaz(self.asama, self.adim, OLAY_ATLANDI, gecen_sn=gecen,
+                             neden="%s=%s" % (anahtar, deger))
+                    return
+        olay_yaz(self.asama, self.adim, OLAY_BITTI, gecen_sn=gecen)
+
+
 # Adim sinifi bu ozniteligi tasirsa, adlari verilen girdi yapitlarinin
 # gosterdigi dizini / dosyayi YERINDE degistirdigini bildirir (or.
 # ``inline_detection``: ``final_decompiled_dir``'deki .c dosyalarini yeniden yazar).
@@ -103,6 +231,8 @@ class PipelineRunner:
         """
         levels = self._topological_levels(self._specs)
         ctx = StepContext(pipeline_context=pipeline_context)
+        # GS-1: paralel düzeyde hatanın hangi adımdan geldiği (adım olayının kismi / bitti kararı)
+        ctx.errors = _IzlenenHatalar(ctx.errors)
 
         # pipeline_context.metadata'dan gelen onceki artifact'lari import et.
         if pipeline_context.metadata:
@@ -244,8 +374,20 @@ class PipelineRunner:
         """Tek bir step calistir, artifact dict dondur (write etme!).
 
         Stats ve _current_step_meta'yi yonetir. Hata firlatirsa errors'a
-        ekler ve raise eder (sequential fail-fast).
+        ekler ve raise eder (sequential fail-fast). GS-1: adımın baş ve bitiş olayı.
         """
+        olay = _AdimOlayi(ctx, spec.name, paralel=False)
+        try:
+            new_artifacts = self._execute_step_govde(spec, ctx)
+        except BaseException as exc:
+            olay.bitir(istisna=exc.original if isinstance(exc, StepFailedError) else exc)
+            raise
+        olay.bitir(artifacts=new_artifacts)
+        return new_artifacts
+
+    def _execute_step_govde(
+        self, spec: StepSpec, ctx: StepContext,
+    ) -> dict[str, Any]:
         step = spec.cls()
         t0 = time.monotonic()
         ctx._current_step_meta = spec
@@ -372,7 +514,23 @@ class PipelineRunner:
         _current_step_meta thread-local oldugu icin sorun yok. stats'i
         kilit altinda yaziyoruz cunku dict.__setitem__ teknik olarak
         GIL-safe ama gozlemcinin tutarli okumasi icin defansif.
+        GS-1: adımın baş ve bitiş olayı (adımın iş parçacığında).
         """
+        olay = _AdimOlayi(ctx, spec.name, paralel=True)
+        try:
+            new_artifacts = self._execute_step_parallel_safe_govde(spec, ctx, stats_lock)
+        except BaseException as exc:
+            olay.bitir(istisna=exc)
+            raise
+        olay.bitir(artifacts=new_artifacts)
+        return new_artifacts
+
+    def _execute_step_parallel_safe_govde(
+        self,
+        spec: StepSpec,
+        ctx: StepContext,
+        stats_lock: threading.Lock,
+    ) -> dict[str, Any]:
         step = spec.cls()
         t0 = time.monotonic()
         # ctx._current_step_meta property setter -> thread-local

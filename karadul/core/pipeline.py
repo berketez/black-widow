@@ -96,6 +96,44 @@ def analysis_outcome(result: Any) -> dict:
     return {"status": status, "exit_code": code, "failed": failed, "partial": partial}
 
 
+# GS-1: aşama sonu olayının ``neden`` alanına giren metnin en çok uzunluğu (olay tek satır kalsın).
+_ASAMA_NEDEN_EN_COK = 200
+
+
+def _asama_sonu_olayi(asama: str, result: Any) -> None:
+    """Aşama sonu olayı, aşamanın gerçek sonucundan: atlandıysa ``atlandi``, başarısızsa ya da hata /
+    kısmi işareti taşıyorsa ``kismi`` (``neden`` ilk neden), yoksa ``bitti``; hepsinde ``gecen_sn``."""
+    from karadul.core.ilerleme import olay_yaz
+    from karadul.ghidra.headless import OLAY_ATLANDI, OLAY_BITTI, OLAY_KISMI
+
+    gecen = getattr(result, "duration_seconds", None)
+    gecen = round(float(gecen), 3) if isinstance(gecen, (int, float)) else None
+
+    def _kisa(metin: str) -> str:
+        return metin if len(metin) <= _ASAMA_NEDEN_EN_COK else metin[: _ASAMA_NEDEN_EN_COK - 1] + "…"
+
+    if getattr(result, "skipped", False):
+        neden = getattr(result, "skip_reason", None) or "aşama atlandı (neden bildirilmedi)"
+        olay_yaz(asama, asama, OLAY_ATLANDI, gecen_sn=gecen, neden=_kisa(str(neden)))
+        return
+    errors = [str(e) for e in (getattr(result, "errors", None) or [])]
+    if not getattr(result, "success", False):
+        neden = "aşama başarısız: " + (errors[0] if errors else "neden bildirilmedi")
+        olay_yaz(asama, asama, OLAY_KISMI, gecen_sn=gecen, neden=_kisa(neden))
+        return
+    stats = getattr(result, "stats", None)
+    nedenler = list(errors)
+    kismi_isareti = isinstance(stats, dict) and stats.get("partial") is True
+    if kismi_isareti:
+        nedenler +=[str(r) for r in (stats.get("partial_reasons") or [])] or [
+            "aşama kendini kısmi işaretledi (neden bildirilmedi)"]
+    if nedenler:
+        neden = nedenler[0] if len(nedenler) == 1 else "%d neden; ilki: %s" % (len(nedenler), nedenler[0])
+        olay_yaz(asama, asama, OLAY_KISMI, gecen_sn=gecen, neden=_kisa(neden))
+        return
+    olay_yaz(asama, asama, OLAY_BITTI, gecen_sn=gecen)
+
+
 # ---------------------------------------------------------------------------
 # Pipeline Context -- stage'ler arasi paylasilan veri
 # ---------------------------------------------------------------------------
@@ -498,7 +536,22 @@ class Pipeline:
         ilk denemede ``success=False`` + hata iletisi. Yalniz
         ``error_recovery.TRANSIENT_EXCEPTIONS`` en cok ``retry.max_retries`` kez
         yeniden denenir.
+
+        GS-1 (A-36): aşama başı ve sonu ``ILERLEME`` olayı (``asama=<aşama> adim=<aşama>``); aşama
+        adı sözleşmedekilerden biri değilse olay yok.
         """
+        from karadul.core.ilerleme import ASAMALAR, olay_yaz
+        from karadul.ghidra.headless import OLAY_BASLADI
+
+        asama = stage.name if stage.name in ASAMALAR else None
+        if asama is not None:
+            olay_yaz(asama, asama, OLAY_BASLADI)
+        result = self._execute_stage_govde(stage, context)
+        if asama is not None:
+            _asama_sonu_olayi(asama, result)
+        return result
+
+    def _execute_stage_govde(self, stage: Stage, context: PipelineContext) -> StageResult:
         start = time.monotonic()
 
         try:

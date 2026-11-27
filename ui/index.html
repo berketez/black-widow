@@ -11,7 +11,7 @@
      penceresinin köprüsü için: pywebview js_api, window.pywebview.api.* işlevlerini sayfada `new Function` ile kurar
      (webview/js/api.js); eval yasaklanırsa güncelleme banner'ının "İndir ve Aç" köprüsü kurulamaz. Sayfanın kendi
      kodunda eval / new Function yok (testli). Stil satır içi (öznitelik + dinamik @keyframes). -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-xVJqNUEkei+P+SvPklSpOiKzxcqoGLzYMI3zBxsoUfs=' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'sha256-IFN9YqApCjQD9Uk/0B64N3HIZSabmu3YcUcu9C9KqsY=' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <title>BLACK WIDOW — Karadul</title>
 <style>
   :root{
@@ -1025,6 +1025,16 @@ function renderStages(p){
       (why?`<div class="why">${esc(why)}</div>`:'')+`</div>`+
       `<div class="tm">${s.time!=null?s.time.toFixed(1)+'s':s.status==='running'?'çalışıyor…':''}</div>`;
     box.appendChild(row);
+    // ÖL-4 / GS-1: aşama sürerken son ILERLEME olayının kendi alanları, olayın kendi aşamasının altında
+    // (olay yoksa satır yok; animasyon yok)
+    if(s.status==='running' && p.ilerleme && p.ilerleme.asama===s.key){
+      const e=p.ilerleme, d=document.createElement('div'); d.className='substages';
+      d.style.cssText='font-size:11px;color:var(--dim)';
+      d.textContent=[e.adim, e.durum, e.islenen!=null?e.islenen+(e.toplam!=null?' / '+e.toplam:''):null,
+        e.gecen_sn!=null?e.gecen_sn.toFixed(1)+' sn':null, e.cozumleyici, e.neden]
+        .filter(x=>x!=null&&x!=='').join(' · ');
+      box.appendChild(d);
+    }
     // reconstruct altına deterministik naming kanalları
     if(s.key==='reconstruct' && (p.substages||[]).length){
       const sub=document.createElement('div'); sub.className='substages';
@@ -1040,6 +1050,13 @@ function renderStages(p){
       box.appendChild(sub);
     }
   });
+  // GS-1: iş günlüğüne son yazılmasından bu yana geçen süre (sunucunun ölçtüğü; eşik / renk / uyarı yok)
+  if(!p.finished && p.son_cikti_yasi_sn!=null){
+    const y=p.son_cikti_yasi_sn, d=document.createElement('div'); d.className='sonyas';
+    d.style.cssText='font-size:11px;color:var(--dim)';
+    d.textContent='son çıktı '+(y<60?Math.round(y)+' sn':Math.floor(y/60)+' dk')+' önce';
+    box.appendChild(d);
+  }
   if(p.tail) $('anTail').textContent=p.tail;
 }
 function binaryUnknown(){ return $('anBin').textContent==='—'||!$('anBin').textContent; }

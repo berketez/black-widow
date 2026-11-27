@@ -2729,7 +2729,19 @@ def _job_progress(job: str) -> dict:
         # ÖL-4: son ILERLEME olayının adim / durum / islenen / toplam / gecen_sn / cozumleyici /
         # neden'i (satırda olmayan alan null); olay yoksa null (sahte ilerleme yok).
         "ilerleme": gosterim_alanlari(gunluk.son_olay),
+        # GS-1: şimdi − iş günlüğünün son değişme zamanı (sn); dosya yoksa null. Eşik / uyarı yok:
+        # yorum analistin.
+        "son_cikti_yasi_sn": _son_cikti_yasi(j["log"]),
     }
+
+
+def _son_cikti_yasi(log_yolu: str) -> float | None:
+    """GS-1: iş günlüğüne son yazılmasından bu yana geçen süre (gerçek ``st_mtime``); dosya yoksa ``None``."""
+    try:
+        degisme = os.stat(log_yolu).st_mtime
+    except OSError:
+        return None
+    return round(max(0.0, time.time() - degisme), 1)
 
 
 def _progress_and_activate(job: str) -> dict:
