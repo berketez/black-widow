@@ -16,8 +16,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6c/` (özetler `ozet/`,
 | 2 | Okuyucu düzeltmeleri (hüküm 4) + H3 | bitti; H3 `ozgun_ad` farkı 0 TUTTU, `paket` sayısı TUTMADI (neden aşağıda) | `ad4ebe3f` |
 | 3 | Damga bağlama + testler + mutasyon → dondurma | bitti: 41 test, puv6c 20 / 20 mutant öldü; hüküm 5 + 6'nın kodu da `d6cc3fbd`'de (aynı dosya) | `d6cc3fbd`, DONDURMA `72b3a637`, rapor metni düzeltmesi (bu commit) |
 | 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | bitti: H1 (Ollama yarısı), H2, H4, H5 (yeniden oynatma), H6 TUTTU; H1'in S8 yarısı ürün koşusunda (sürüyor) | (bu commit) |
-| 5 | Hüküm 5 + 6 | — | — |
-| 6 | Ürün koşusu (isteğe bağlı) | — | — |
+| 5 | Hüküm 5 + 6 | bitti: kod  (kalem 3'le aynı commit; aynı dosya), H5 yeniden oynatmada TUTTU, hüküm 6 test + mutant | ,  |
+| 6 | Ürün koşusu (isteğe bağlı) | koşuldu: terminal-notifier ObjC 32 / 32 duruyor | (bu commit) |
 | 7 | Tam takım | — | — |
 
 ## Kalem 2 — okuyucu düzeltmeleri (hüküm 4) ve H3
@@ -209,6 +209,20 @@ dizini). Betik `PUV6c/betik/h4_bozuk_gh.py`; sonuç `PUV6c/ozet/h4_gh_A.json`.
   evidence rows (66; 1 more withheld earlier by the pcsp coverage check (K4)); the other Go names are written,
   labelled 'üst veriden' (consistent forgery is not detectable)".
 - `kesin` etiketli ad 0 (H6).
+
+## Kalem 6 — ürün koşusu: terminal-notifier (isteğe bağlı; koşuldu)
+
+Ağaç `~/karadul_olcum/urun-72b3a637` (dondurma; altı veri bağı), yaml `PUV6c/bayraklar_acik.yaml`: Ollama kabul
+koşusunun dört üst veri bayrağı (Go / ObjC üretici + ad) + `enable_go_metadata_integrity: true`. Komut
+`ustveri_urun.py kos --ad terminal-notifier` (soyulmuş kopya, sha256 ilk 12 `d352c10594f2`), Ghidra kuyruğunda
+(`PUV6c urun:terminal-notifier`, ikinci yuva), 22:53:23–22:54:29, 66,2 sn, yük altında (`uptime` 7,4 → 9,8). Sayım
+`ustveri_urun.py urun` → `PUV6c/ozet/urun_terminal-notifier.json`.
+
+- Çıkış `tamam` (0). **ObjC adı 32 / 32 duruyor** (haritada 32, kodda 32, `üst veriden` 32, `ozgun_ad` dolu 32, güven
+  tablodan 32, A-28 31, GT'ye göre doğru 32); ad bekleyen 40'ta doğru 1 / 40 (PUV6a / 6b ile aynı).
+- Go kanalı `veri_yok` (ikilide `pclntab` yok); `go_metadata_integrity` istatistiği yok (denetim yalnız `calisti`'da
+  koşar); rapora Go uyarısı 0. Yamasız ağaçta koşu günlüğünde "enable_go_metadata_integrity etkisiz … P-ÜV6
+  bağlayacak" uyarısı basılıyor (değer okunuyor; yama uygulanınca kalkar).
 
 ## Yama
 
