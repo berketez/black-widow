@@ -110,7 +110,8 @@ Değişenlerin kırılımı (adın biçimine göre):
   anahtarı `metadata_keys`'te değildir; sembollü ikilide nm o adrese aday verebilir (sembol tablosu ayrı kaynak; o
   durumda "ikinci aday" değil ilk aday). Soyulmuş Go ikilisinde (hedef seti) nm kanalı `veri_yok`.
 
-**Testler** `tests/test_puv6c_go_damga.py`: 26 test işlevi (parametrelerle 40 koşu) — okuyucu (14 ad biçimi, eski kural,
+**Testler** `tests/test_puv6c_go_damga.py`: 21 test işlevi (parametrelerle 40 koşu; dondurmadan sonra rapor sayısı
+testiyle 22 işlev / 41 koşu) — okuyucu (14 ad biçimi, eski kural,
 `oku` paket alanı, `pcln` alanı, `denetle(sonuc=)` okuyucuyu kurmaz, `FUNC_ID` tek tanım), üretici (kapalı kol bayt aynı,
 bayrak yalnız `True`, öntanım kapalı, açık kolda damga + özet), ad kanalı (tutarsız kanıt satırı, şüpheli ikili,
 uyarıda adlar yazılır / damgasız kayıt aynı, iki Go kanalı), köken kaydı (×3 damga; etiket `kesin` değil), rapor
