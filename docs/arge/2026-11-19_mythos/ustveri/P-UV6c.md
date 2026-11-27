@@ -13,8 +13,8 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6c/` (özetler `ozet/`,
 | Sıra | Kalem | Durum | Commit |
 |---|---|---|---|
 | 1 | Ön kayıt | yazıldı | `a10bb811` |
-| 2 | Okuyucu düzeltmeleri (hüküm 4) + H3 | bitti; H3 `ozgun_ad` farkı 0 TUTTU, `paket` sayısı TUTMADI (neden aşağıda) | (bu commit) |
-| 3 | Damga bağlama + testler + mutasyon → dondurma | — | — |
+| 2 | Okuyucu düzeltmeleri (hüküm 4) + H3 | bitti; H3 `ozgun_ad` farkı 0 TUTTU, `paket` sayısı TUTMADI (neden aşağıda) | `ad4ebe3f` |
+| 3 | Damga bağlama + testler + mutasyon → dondurma | bitti: 40 test, puv6c 19 / 19 mutant öldü; hüküm 5 + 6'nın kodu da bu commit'te (aynı dosya) | `d6cc3fbd`, dondurma (bu commit) |
 | 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | — | — |
 | 5 | Hüküm 5 + 6 | — | — |
 | 6 | Ürün koşusu (isteğe bağlı) | — | — |
@@ -71,3 +71,70 @@ Değişenlerin kırılımı (adın biçimine göre):
   bir parçası (Ollama 7, docker-cli 53; sınıf `derleyici`). Hüküm 4b alıcılı adları kapsıyor; dokunulmadı.
 - Okuma süresi (yük altında, `uptime` 22:31 yük 14,2 / 8,2 / 6,9): Ollama 0,29 → 0,43–0,55 sn, docker-cli 0,60 →
   0,54–0,73 sn (aynı makine yükünde tekrar dalgalanması; ayrı süre hükmü yok).
+
+## Kalem 3 — damga bağlama, testler, mutasyon
+
+**Tasarım (koddan):**
+
+- **Üretici** (`go_metadata_recovery.py`): `go_integrity_enabled(cfg)` (yalnız gerçek `True`). Açıkken ve okuyucu
+  `calisti` verdiyse `tutarlilik.denetle(g, sonuc=sonuc)` (okuyucu yeniden kurulmaz); `damgala` her fonksiyon kaydına
+  `dogrulama` (= `ts.damga(giris)`) ve `tutarsiz`'da `dogrulama_isaretleri` (güçlü T + K4 / K10) yazar;
+  `tutarlilik_ozeti` durum sözlüğüne `tutarlilik` (durum, karar, karar nedeni, fonksiyon / adlı sayısı, güçlü
+  işaretli, çift kaynaklı, K4 / K10, damga dağılımı, güçlü denetim dağılımı — T3 / T4 hariç) yazar; aynı özet
+  `reconstruct.stats["go_metadata_integrity"]`'de. Bayrak kapalıyken hiçbir alan eklenmez (test: kayıtlar
+  `f.kayit()` ile birebir; durum `{"durum", "neden"}`).
+- **Ad kanalı** (`_add_go_pclntab`): sıra pcsp (P-ÜV6a, değişmedi) → ikili kararı `ust_veri_supheli` ise kayıt kanıt
+  satırı (`ust_veri_supheli`, `ikili_karari_nedeni`) → damga `tutarsiz` ise kanıt satırı (`tutarsiz`, `isaretler`) →
+  aday. Damga künyeye (`ust_veri_dogrulama`) ve köken kaydına geçer. Sayaçlar: `dogrulama` (damga dağılımı),
+  `ikili_karari`, `tutarsiz_elendi`, `ust_veri_supheli_elendi`. Sabitler `tutarlilik.DAMGA_TUTARSIZ` /
+  `KARAR_UST_VERI_SUPHELI`'den (tek tanım).
+- **Köken kaydı** (`_feedback_naming_merger.metadata_decision`): `ust_veri_dogrulama = künyedeki damga ya da olculmedi`;
+  `label` her zaman `üst veriden` (hüküm 3; `cift_kaynak` `kesin` yapmaz), güven tablodan (değişmedi).
+- **Rapor** (tek dosya: `karadul/reporting/report_data.py`, `_naming` bölümü "Name Reliability"): karar `uyari` ya da
+  `ust_veri_supheli` ise `extra["go_metadata_warning"]` (karar, güçlü işaretli / fonksiyon, güçlü denetim dağılımı,
+  `tutarsiz` damgalı adlı fonksiyon, kanıt satırına inen ad sayısı, neden, metin) ve özet satırına
+  `; WARNING: Go metadata integrity check verdict '…'; N of M Go functions carry a strong inconsistency signal
+  [T1: …, T2: …]; …`. Var olan uyarı düzeni (`_sigdb_note`: özet satırında `WARNING:` + `extra` alanı) izlendi;
+  `report.json` bölüm özetine ve okunur rapora (`markdown` / `html` özet satırı) aynı cümle girer. Bölüm durumu
+  değişmez (temiz / bulgu sayımı etiket dağılımından).
+- **Hüküm 5** (`stages._note_universal_special_slices` + `go_metadata_recovery._eski_evrensel_iletiyi_indir`): statik
+  aşama hata dizgisini `go_hatti_error` istatistiğinde de tutar; üretici aynı koşuda `calisti` verince o dizgiyi
+  (birebir) statik aşamanın hata listesinden çıkarır, `go_hatti_status = bilgi`, `go_hatti_bilgi` = "eski
+  çözümleyici evrensel dosyayı açmıyor; ad ve fonksiyon bilgisi yeni okuyucudan (go_metadata_recovery, ürün
+  dilimi)", `go_hatti_eski_ileti` = eski dizgi; kendi istatistiğine `go_universal_note = bilgi`. Okuyucu kapalı /
+  `veri_yok` / `hata` → hata aynen kalır. Bun dilimine dokunulmaz. Statik aşama Faz 1'den önce bittiği için
+  `--verbose` canlı akışta ileti statik aşamanın bitişinde yine basılır (`core/pipeline.py`, GS1'in dosyası); son
+  durum (çıkış kodu, `partial` nedenleri, rapor) indirmeden sonra hesaplanır.
+- **Hüküm 6:** P-ÜV6a'nın düzeni (`exclude_keys = metadata_keys`; `go_demangler` sayacı `ust_veri_onde`) yeterli;
+  bu pakette test + mutant (`puv6c_iki_go_kanali_ayni_adrese`). Not: `tutarsiz` / şüpheli kayıt aday vermediği için
+  anahtarı `metadata_keys`'te değildir; sembollü ikilide nm o adrese aday verebilir (sembol tablosu ayrı kaynak; o
+  durumda "ikinci aday" değil ilk aday). Soyulmuş Go ikilisinde (hedef seti) nm kanalı `veri_yok`.
+
+**Testler** `tests/test_puv6c_go_damga.py`: 26 test işlevi (parametrelerle 40 koşu) — okuyucu (14 ad biçimi, eski kural,
+`oku` paket alanı, `pcln` alanı, `denetle(sonuc=)` okuyucuyu kurmaz, `FUNC_ID` tek tanım), üretici (kapalı kol bayt aynı,
+bayrak yalnız `True`, öntanım kapalı, açık kolda damga + özet), ad kanalı (tutarsız kanıt satırı, şüpheli ikili,
+uyarıda adlar yazılır / damgasız kayıt aynı, iki Go kanalı), köken kaydı (×3 damga; etiket `kesin` değil), rapor
+(uyarı sayıları, şüpheli, ×3 uyarısız), hüküm 5 (iniyor + tek iletide durum `tam`; kapalı / `veri_yok`'ta kalıyor;
+Bun'a dokunulmuyor).
+
+**Mutasyon** `scripts/measurement/mutation_specs_puv6c.json`: **19 / 19 öldü** (gönderimdeki sekiz zorunlu tür +
+11 ek: damga köken kaydına taşınmaz, bayrak okunmaz, damga yazılmaz, özete zayıf işaret, uyarı sayısı yanlış nicelik,
+statik hata dizgisi tutulmaz, satır içi kapanış, adsız sarmalayıcı, okuyucu nesnesi kullanılmaz / taşınmaz).
+Günlük `PUV6c/ozet/mutasyon_puv6c.log`; koşudan sonra `git status` temiz.
+
+## DONDURMA (ölçümden önce; bu commit)
+
+Bu commit'ten sonra H1 / H2 / H4 / H5 ölçümlerine dek aşağıdaki dosyaların kural yolları değişmez; ölçümler birer kez,
+bu kodla alınır. (Sınama ikilisi yok: hükümler keşif / hedef ikililerinde; docker-compose, iTerm2, llama-server
+açılmadı.)
+
+| Dosya | sha256 (ilk 16) |
+|---|---|
+| `karadul/analyzers/ustveri/go_pclntab.py` | `1fe9b08ca0a19865` |
+| `karadul/analyzers/ustveri/tutarlilik.py` | `a8118a39a0aaafeb` |
+| `karadul/pipeline/steps/go_metadata_recovery.py` | `df6764344234644d` |
+| `karadul/pipeline/steps/_feedback_naming_candidates.py` | `64dd303f4d650713` |
+| `karadul/pipeline/steps/_feedback_naming_merger.py` | `9bc69ef638d2e4f1` |
+| `karadul/reporting/report_data.py` | `3b407b0475cf742b` |
+| `karadul/stages.py` | `327e09c7a26d9d80` |
+| `karadul/core/naming_labels.py` | `c05bd8826276b6a9` |
