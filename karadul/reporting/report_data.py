@@ -674,6 +674,11 @@ def go_metadata_warning(st: Optional[dict[str, Any]]) -> Optional[dict[str, Any]
     ch = ((st.get("naming_channels") or {}).get(SOURCE_GO_PCLNTAB) or {})
     withheld = (_int_or_none(ch.get("ust_veri_supheli_elendi")) if verdict == KARAR_UST_VERI_SUPHELI
                 else _int_or_none(ch.get("tutarsiz_elendi")))
+    # K4 (pcsp kapsaması) uyumsuz kayıtlar damgadan önce kanıt satırına iner (P-ÜV6a); onlar da
+    # ``tutarsiz`` damgalıdır, ayrı sayılır (yoksa "damgalı N, inen N-1" gibi eksik sayı yazılırdı).
+    withheld_pcsp = _int_or_none(ch.get("pcsp_elendi"))
+    pcsp_txt = (f"; {withheld_pcsp} more withheld earlier by the pcsp coverage check (K4)"
+                if withheld_pcsp else "")
     check_txt = ", ".join(f"{k}: {v}" for k, v in sorted(checks.items())) or "none"
     parts = [f"Go metadata integrity check verdict '{verdict}'"]
     if strong is not None and total is not None:
@@ -685,15 +690,16 @@ def go_metadata_warning(st: Optional[dict[str, Any]]) -> Optional[dict[str, Any]
         parts.append(f"{inconsistent} named function(s) stamped '{DAMGA_TUTARSIZ}'")
     if verdict == KARAR_UST_VERI_SUPHELI:
         parts.append("all Go metadata names withheld as evidence rows"
-                     + (f" ({withheld})" if withheld is not None else ""))
+                     + (f" ({withheld}{pcsp_txt})" if withheld is not None else ""))
     else:
         parts.append(f"names stamped '{DAMGA_TUTARSIZ}' withheld as evidence rows"
-                     + (f" ({withheld})" if withheld is not None else "")
+                     + (f" ({withheld}{pcsp_txt})" if withheld is not None else "")
                      + f"; the other Go names are written, labelled '{LABEL_METADATA}' "
                      "(consistent forgery is not detectable)")
     return {"verdict": verdict, "strong_signal_functions": strong, "functions": total,
             "strong_checks": dict(checks), "stamped_inconsistent": inconsistent,
-            "withheld": withheld, "reason": gi.get("karar_nedeni") or None,
+            "withheld": withheld, "withheld_pcsp": withheld_pcsp,
+            "reason": gi.get("karar_nedeni") or None,
             "text": "; ".join(parts)}
 
 

@@ -82,6 +82,14 @@
    "replace": "    strong = _int_or_none(gi.get(\"fonksiyon\"))"
   },
   {
+   "id": "puv6c_uyari_pcsp_sayilmaz",
+   "desc": "uyarı metni pcsp ile inen tutarsiz adları saymaz (damgalı N, inen N-1 görünür)",
+   "module": "karadul/reporting/report_data.py",
+   "test": "tests/test_puv6c_go_damga.py",
+   "find": "    withheld_pcsp = _int_or_none(ch.get(\"pcsp_elendi\"))",
+   "replace": "    withheld_pcsp = None"
+  },
+  {
    "id": "puv6c_evrensel_hata_yine_yazilir",
    "desc": "yeni okuyucu çalıştığı hâlde statik aşamanın evrensel ikili hatası kalır",
    "module": "karadul/pipeline/steps/go_metadata_recovery.py",

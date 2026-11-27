@@ -14,7 +14,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6c/` (özetler `ozet/`,
 |---|---|---|---|
 | 1 | Ön kayıt | yazıldı | `a10bb811` |
 | 2 | Okuyucu düzeltmeleri (hüküm 4) + H3 | bitti; H3 `ozgun_ad` farkı 0 TUTTU, `paket` sayısı TUTMADI (neden aşağıda) | `ad4ebe3f` |
-| 3 | Damga bağlama + testler + mutasyon → dondurma | bitti: 40 test, puv6c 19 / 19 mutant öldü; hüküm 5 + 6'nın kodu da bu commit'te (aynı dosya) | `d6cc3fbd`, dondurma (bu commit) |
+| 3 | Damga bağlama + testler + mutasyon → dondurma | bitti: 41 test, puv6c 20 / 20 mutant öldü; hüküm 5 + 6'nın kodu da `d6cc3fbd`'de (aynı dosya) | `d6cc3fbd`, DONDURMA `72b3a637`, rapor metni düzeltmesi (bu commit) |
 | 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | — | — |
 | 5 | Hüküm 5 + 6 | — | — |
 | 6 | Ürün koşusu (isteğe bağlı) | — | — |
@@ -138,3 +138,15 @@ açılmadı.)
 | `karadul/reporting/report_data.py` | `3b407b0475cf742b` |
 | `karadul/stages.py` | `327e09c7a26d9d80` |
 | `karadul/core/naming_labels.py` | `c05bd8826276b6a9` |
+
+### Dondurmadan sonra tek değişiklik: rapor uyarısının sayısı (kural değil; bu commit)
+
+H4'ün ilk koşusunda (22:49) uyarı metni "67 named function(s) stamped 'tutarsiz'; … withheld as evidence rows (66)"
+yazdı: 67'nin 1'i K4 `kisa` (P-ÜV1) fonksiyonu, damgadan önce pcsp denetimiyle (P-ÜV6a) kanıt satırına iniyor; metin
+onu saymıyordu (eksik sayı = analisti yanıltır). Düzeltme yalnız `report_data.go_metadata_warning`'de: `withheld_pcsp`
+alanı ve metne "N; M more withheld earlier by the pcsp coverage check (K4)". Ad kararı, damga, kanal, köken kaydı
+değişmedi (H4'ün ad sayıları ilk koşuyla aynı: 66 yazılmadı / 134 yazıldı). Test +1
+(`test_rapor_pcsp_ile_inen_damgali_ad_ayri_sayilir`), mutant +1 (`puv6c_uyari_pcsp_sayilmaz`): **20 / 20 öldü**.
+`report_data.py` sha256 (ilk 16) `3b407b0475cf742b` → `39a3eb025541222f`; öbür yedi dosya dondurmadaki gibi. H2 / H4
+yeniden oynatmaları bu değişiklikten sonra yeniden koşuldu (aşağıdaki sayılar ikinci koşunun; ilk koşuyla ad
+sayıları aynı).

@@ -317,6 +317,14 @@ def test_rapor_uyari_gercek_sayilarla() -> None:
     assert "(66)" in sec.summary
 
 
+def test_rapor_pcsp_ile_inen_damgali_ad_ayri_sayilir() -> None:
+    # gh A bozması (H4): 67 adlı fonksiyon tutarsiz damgalı; 66'sı damgayla, 1'i (K4 kisa) pcsp ile iner.
+    sec = _rapor(_gi(T.KARAR_UYARI, 66, 67), {"tutarsiz_elendi": 66, "pcsp_elendi": 1})
+    w = sec.extra["go_metadata_warning"]
+    assert w["stamped_inconsistent"] == 67 and w["withheld"] == 66 and w["withheld_pcsp"] == 1
+    assert "(66; 1 more withheld earlier by the pcsp coverage check (K4))" in sec.summary
+
+
 def test_rapor_supheli_butun_adlar_kanit() -> None:
     sec = _rapor(_gi(T.KARAR_UST_VERI_SUPHELI, 900, 900), {"ust_veri_supheli_elendi": 40000})
     assert sec.extra["go_metadata_warning"]["withheld"] == 40000
