@@ -102,6 +102,7 @@ Dalga 1 aynı klasörde sürüyor: koşu kökün `~/karadul_olcum/runs/dalga1-20
 - **Ghidra kuyruğu:** ana oturumun S8 tabanı bir yuvayı ≈ 22:55'e kadar tutar. Sarmalayıcı sıra tutmuyor (24 Kasım'da iki kez açlık oldu): uzun tek koşun 10 dakikadan fazla başlayamazsa ilerleme dosyana yaz ve bekle; bekletme dosyasını sen koyma.
 - **Süre ölçümü:** saat geç ama üç ajan birlikte çalışıyor: her süre hükmü "yük altında" etiketli ve `uptime` künyeli; kesin oran HZ-9'da.
 - **Disk:** boş alan 22:18'de 194,6 GB (kullanılan 772,7 GB).
+- **Önce küçük sınama (A-42; Berke, 27 Kasım 22:4x):** 15 dakikadan uzun sürecek her ölçümden önce aynı ölçümü en küçük gerçek girdide koş (cat, tree, tek ikili ya da 100 işlevlik tohumlu örneklem). Küçük sınama beklentiyi tutmuyorsa büyüğünü KOŞMA: bulguyu ilerleme dosyana yaz, nedenini ayır, gerekiyorsa dön. Küçük sınama büyük ölçümün yerine geçmez; kabul hükmü tam ölçümle verilir.
 
 | Paket | Yazabileceği dosyalar (tam liste gönderim metninde) |
 |---|---|
