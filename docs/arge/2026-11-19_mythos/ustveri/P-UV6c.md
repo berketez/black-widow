@@ -15,7 +15,7 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6c/` (özetler `ozet/`,
 | 1 | Ön kayıt | yazıldı | `a10bb811` |
 | 2 | Okuyucu düzeltmeleri (hüküm 4) + H3 | bitti; H3 `ozgun_ad` farkı 0 TUTTU, `paket` sayısı TUTMADI (neden aşağıda) | `ad4ebe3f` |
 | 3 | Damga bağlama + testler + mutasyon → dondurma | bitti: 41 test, puv6c 20 / 20 mutant öldü; hüküm 5 + 6'nın kodu da `d6cc3fbd`'de (aynı dosya) | `d6cc3fbd`, DONDURMA `72b3a637`, rapor metni düzeltmesi (bu commit) |
-| 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | — | — |
+| 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | bitti: H1 (Ollama yarısı), H2, H4, H5 (yeniden oynatma), H6 TUTTU; H1'in S8 yarısı ürün koşusunda (sürüyor) | (bu commit) |
 | 5 | Hüküm 5 + 6 | — | — |
 | 6 | Ürün koşusu (isteğe bağlı) | — | — |
 | 7 | Tam takım | — | — |
@@ -150,3 +150,62 @@ değişmedi (H4'ün ad sayıları ilk koşuyla aynı: 66 yazılmadı / 134 yazı
 `report_data.py` sha256 (ilk 16) `3b407b0475cf742b` → `39a3eb025541222f`; öbür yedi dosya dondurmadaki gibi. H2 / H4
 yeniden oynatmaları bu değişiklikten sonra yeniden koşuldu (aşağıdaki sayılar ikinci koşunun; ilk koşuyla ad
 sayıları aynı).
+
+## Kalem 4 — Ghidra'sız yeniden oynatmalar (dondurma `72b3a637` + rapor sayısı `b3ce5bb1`; 22:49–22:50, yük altında `uptime` 7,7 / 8,3 / 9,2)
+
+### Ollama (H1'in Ollama yarısı, H2, H5, H6)
+
+Girdi (salt okundu): `ANA/ollama_kabul/ws/workspaces/Ollama/20261124_101017` — `raw/Ollama_arm64` (sha256 ilk 12
+`7d5b1e847e1b`, PUV7'nin Ollama.arm64 kopyasıyla aynı), `static/ghidra_functions.json` (Ghidra görüntü tabanı
+`ustveri_urun.goruntu_tabani`), `raw/target_info.json` (`universal_binary`, `go_slice: true`), `reports/pipeline_result.json`
+(statik aşamanın gerçek hata listesi). Betik `PUV6c/betik/oynat_puv6c.py`; sonuç `PUV6c/ozet/oynat_ollama.json`. Akış
+ürün kodu: `stages._note_universal_special_slices` (statik aşama, koşunun öbür hatası korunarak) →
+`GoMetadataRecoveryStep.run` (gerçek dilim) → `add_k4_channels` (yalnız Go kanalı) → `validate_merged_names` →
+`metadata_decision` → `report_data._naming`.
+
+| Kol | Üretici kaydı | Kanal adayı | Aday damgası | Kanıt satırı | Süzgeçten geçen (yazılan) | Yazılanın damgası | Etiket | `kesin` | Rapor uyarısı | Statik "evrensel ikilide go dilimi" iletisi | Statik aşama |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| bütünlük kapalı (H1) | 10 601 | **10 475** | **`olculmedi` 10 475** | 0 | 10 475 | `olculmedi` 10 475 | `üst veriden` 10 475 | 0 | 0 | **1 → 0** | kısmi (bekçi hatası kalır) |
+| bütünlük açık (H2) | 10 601 | 10 475 | **`cift_kaynak` 3 907, `tek_kaynak` 6 568, `tutarsiz` 0** | 0 | **10 475** | `cift_kaynak` 3 907, `tek_kaynak` 6 568 | `üst veriden` 10 475 | 0 | **0** | 1 → 0 | kısmi (aynı) |
+| okuyucu kapalı (H5 karşı kol) | 0 (`kapali`) | 0 | — | 0 | 0 | — | — | 0 | 0 | **1 → 1** | kısmi (iki hata) |
+
+- İkili kararı (açık kol): **`temiz`**, güçlü işaretli 0, çift kaynaklı 3 907, K4 / K10 uyumsuz 0 / 0; üretici düzeyinde
+  10 601 kaydın 3 907'si çift, 6 694'ü tek (1 adsız giriş; adlı 10 600'ün 6 693'ü tek — PUV7'nin sayısıyla aynı).
+- **H1 (Ollama yarısı) → TUTTU:** Go ad adayı 10 475, hepsinde `olculmedi`.
+- **H2 → TUTTU:** `cift_kaynak` 3 907 (= beklenen), `tek_kaynak` 6 568 (beklenen 6 568 ± 130; tam), `tutarsiz` 0; yazılan
+  10 475; karar `temiz`; rapora uyarı 0.
+- **H5 → TUTTU (yeniden oynatmada):** statik aşamanın hata listesinde evrensel ikili iletisi 1 → 0 (bilgi satırı:
+  `go_hatti_status = bilgi`, `go_hatti_bilgi` = "eski çözümleyici evrensel dosyayı açmıyor; ad ve fonksiyon bilgisi
+  yeni okuyucudan (go_metadata_recovery, ürün dilimi)"); okuyucu kapalı kolda 1 kalır. Statik aşama bu koşuda yine
+  `kismi`: öbür hata (ÖL-1 bekçisinin "Objective-C Message Analyzer"ı kapatması) gerçek ve kalıyor — ana oturumun
+  24 Kasım notundaki "çıkış 3'ün iki nedeni"nden yalnız yanıltıcı olanı kalktı. Statik aşamanın kendisi Ghidra'sız
+  koşulamadığı için ileti `_note_universal_special_slices` ile gerçek `target_info.json`'dan üretildi; uçtan uca ürün
+  koşusunda (Ollama) **ölçülmedi** (ana oturumun işi).
+- **H6 → TUTTU (bu akışlarda):** üst veri kaynaklı ad 10 475 / 10 475 `üst veriden`, `kesin` 0 (iki kolda da).
+- Ek gözlem (bu paketin değil): ad geçerliliği süzgeci 10 475 adın 587'sine ek veriyor (aynı C tanımlayıcısına inen
+  Go adları; `a/b.F` ile `a_b.F` gibi). Köken kaydında karar birleştiricinin adıyla yazıldığı için damga sayısı
+  etkilenmiyor.
+- Süre (yük altında): adım 0,29–0,30 sn (okuma + damga), damga (`denetle`) 0,12 sn.
+
+### H4 — bozuk `gh` (A türü), Ghidra'sız kanal sınaması
+
+Girdi: P-ÜV7'nin araştırma kopyası `arge-2026-11-19/ustveri/hedef/gh` (sha256 ilk 12 `ca6c859f0ff8`, PUV7 tablosuyla
+aynı). Bozma bellekte, `ustveri_bozma.deney`'in A kolunun satırlarıyla birebir (tohum 20261119, 200 fonksiyon, aynı aday
+süzgeci); bozuk görüntü `GoMetadataRecoveryStep.run`'a, kayıtlar `add_k4_channels`'a ("her fonksiyon adsız" sahte Ghidra
+dizini). Betik `PUV6c/betik/h4_bozuk_gh.py`; sonuç `PUV6c/ozet/h4_gh_A.json`.
+
+| Kol | Bozulan | ikinci kaynaklı / kaynaksız | ikinci kaynaklıda yazılmayan | ikinci kaynaksızda yazılan | İkili kararı | Güçlü işaret | Rapor uyarısı | `kesin` |
+|---|---|---|---|---|---|---|---|---|
+| bütünlük kapalı | 200 | 66 / 134 | 0 (66 bozuk ad yazıldı) | 134 | — | — | 0 | 0 |
+| **bütünlük açık** | 200 | 66 / 134 | **66** (kanıt satırı, neden `tutarsiz`) | **134** | **`uyari`** | T1 29, T2 66 (66 / 40 384 fonksiyon) | **1** | 0 |
+
+- **H4 → TUTTU:** ikinci kaynaklı 66 bozuk fonksiyonun 66'sı `tutarsiz` damgası aldı ve adı yazılmadı; ikinci
+  kaynaksız 134'ün bozuk adı yazıldı (beklenen sınır: denetimin ikinci kaynağı yok, ad `tek_kaynak`); karar `uyari`;
+  rapora uyarı 1. Bozulmayan fonksiyonlarda yeni kanıt satırı 0 (tek kanıt satırı P-ÜV1'in K4 `kisa` fonksiyonu, iki
+  kolda da `pcsp_kisa`).
+- Raporun metni (naming bölümü, `report.json` bölüm özeti ve okunur rapor): "WARNING: Go metadata integrity check
+  verdict 'uyari'; 66 of 40384 Go functions carry a strong inconsistency signal [T1: 29, T2: 66]; reason: güçlü
+  işaretli 66 / 40384 fonksiyon; 67 named function(s) stamped 'tutarsiz'; names stamped 'tutarsiz' withheld as
+  evidence rows (66; 1 more withheld earlier by the pcsp coverage check (K4)); the other Go names are written,
+  labelled 'üst veriden' (consistent forgery is not detectable)".
+- `kesin` etiketli ad 0 (H6).
