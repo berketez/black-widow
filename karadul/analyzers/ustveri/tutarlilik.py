@@ -48,6 +48,9 @@ from typing import Any
 from karadul.analyzers.ustveri.go_pclntab import (
     DURUM_TUTARSIZ,
     FUNC_FLAG_ASM,
+    FUNC_ID,
+    FUNC_ID_ADI,
+    FUNC_ID_SARMALAYICI,
     PCSP_KISA,
     PCSP_TASAN,
     GoOkumaHatasi,
@@ -102,18 +105,8 @@ UNREACHABLE_METHOD = "runtime.unreachableMethod"
 # Derleyicinin ürettiği adların önekleri (paket yolu taşımaz): T2p ve T3 / T4 bunlara uygulanmaz.
 DERLEYICI_ONEKLERI = ("type:", "go:")
 
-# funcID sırası (Go 1.26 / 1.27 ``internal/abi/symtab.go``; ARGE başvurusu
-# ``scripts/arge/ustveri/go_pclntab.py`` ``FUNC_ID``). Sarmalayıcı kimliği bu tablonun son
-# girdisiyle aynıysa tam ad denetlenir; değilse (başka sürüm) yalnız ``runtime.`` öneki.
-FUNC_ID = (
-    "Normal", "abort", "asmcgocall", "asyncPreempt", "cgocallback", "corostart", "debugCallV2",
-    "gcBgMarkWorker", "goexit", "gogo", "gopanic", "handleAsyncEvent", "mcall", "morestack", "mstart",
-    "panicwrap", "rt0_go", "runtime_main", "runFinalizers", "runCleanups", "sigpanic", "systemstack",
-    "systemstack_switch", "Wrapper",
-)
-FUNC_ID_SARMALAYICI = len(FUNC_ID) - 1
-FUNC_ID_ADI = {k: "runtime." + k for k in FUNC_ID[1:-1]}
-FUNC_ID_ADI["runtime_main"] = "runtime.main"
+# funcID sırası (``FUNC_ID``, ``FUNC_ID_ADI``, ``FUNC_ID_SARMALAYICI``): tek tanım
+# ``go_pclntab.py``'de (P-ÜV6c hüküm 4c); yukarıda içe aktarılır.
 
 _SURUM_EKI_RE = re.compile(r"@v[^/]+")
 _KACIS_RE = re.compile(r"%([0-9a-fA-F]{2})")
@@ -357,6 +350,8 @@ def denetle(
     buildinfo: dict[str, Any] | None = None,
     butunluk: dict[str, Any] | None = None,
     k10: bool = True,
+    *,
+    sonuc: Any = None,
 ) -> TutarlilikSonucu:
     """Görüntüdeki Go modülünün adlarını denetle. İstisna atmaz.
 
@@ -364,7 +359,17 @@ def denetle(
     (``go_pclntab.oku`` sonucundan gelenler yeniden kullanılabilir). ``butunluk`` verilmezse
     P-ÜV1'in yapı denetimleri koşulur (fonksiyon başına ``pcsp_kapsama`` için de gerekir).
     ``k10`` yanlışsa K10 koşulmaz (yalnız ölçüm karşılaştırması için).
+
+    ``sonuc`` (P-ÜV6c hüküm 4a): ``go_pclntab.oku``'nun ``calisti`` sonucu verilirse okuyucu
+    nesnesi (``sonuc.pcln``), fonksiyonlar, buildinfo ve yapı denetimleri ondan alınır; okuyucu
+    yeniden kurulmaz. Açıkça verilen argüman önce gelir.
     """
+    if sonuc is not None:
+        pcln = pcln if pcln is not None else getattr(sonuc, "pcln", None)
+        if pcln is not None:
+            fonksiyonlar = fonksiyonlar if fonksiyonlar is not None else sonuc.fonksiyonlar
+            butunluk = butunluk if butunluk is not None else (sonuc.butunluk or None)
+        buildinfo = buildinfo if buildinfo is not None else sonuc.buildinfo
     try:
         return _denetle_ic(goruntu, pcln, fonksiyonlar, buildinfo, butunluk, k10)
     except GoOkumaHatasi as e:

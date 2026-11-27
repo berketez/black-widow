@@ -99,6 +99,24 @@ SINIF_CALISMA_ZAMANI = "calisma_zamani"
 SINIF_DERLEYICI = "derleyici"
 SINIF_PAKETSIZ = "paketsiz"
 SINIF_ADSIZ = "adsiz"
+# Derleyicinin ürettiği adların önekleri (paket yolu taşımaz; sınıf ``derleyici``).
+DERLEYICI_ONEKLERI = ("type:", "go:")
+# Derleyici sarmalayıcısında adsız alıcı tipin başı (``fonksiyon_paketi``; ``go:(*struct { … }).M``).
+_ADSIZ_ALICI_BASLARI = ("(", "struct {", "interface {")
+
+# funcID sırası (Go 1.26 / 1.27 ``internal/abi/symtab.go``; ARGE başvurusu
+# ``scripts/arge/ustveri/go_pclntab.py`` ``FUNC_ID``). Üründeki TEK tanım (P-ÜV6c hüküm 4c;
+# ``tutarlilik.py`` buradan içe aktarır). Sarmalayıcı kimliği bu tablonun son girdisiyle aynıysa
+# T5 tam adı denetler; değilse (başka sürüm, ör. 1.23 / 1.24'te 22) yalnız ``runtime.`` öneki.
+FUNC_ID = (
+    "Normal", "abort", "asmcgocall", "asyncPreempt", "cgocallback", "corostart", "debugCallV2",
+    "gcBgMarkWorker", "goexit", "gogo", "gopanic", "handleAsyncEvent", "mcall", "morestack", "mstart",
+    "panicwrap", "rt0_go", "runtime_main", "runFinalizers", "runCleanups", "sigpanic", "systemstack",
+    "systemstack_switch", "Wrapper",
+)
+FUNC_ID_SARMALAYICI = len(FUNC_ID) - 1
+FUNC_ID_ADI = {k: "runtime." + k for k in FUNC_ID[1:-1]}
+FUNC_ID_ADI["runtime_main"] = "runtime.main"
 
 # K4 fonksiyon başına sonuç.
 PCSP_TAM = "tam"
@@ -182,6 +200,10 @@ class GoSonuc:
     pclntab: dict[str, Any] = field(default_factory=dict)
     sayim: dict[str, Any] = field(default_factory=dict)
     sure_sn: float | None = None
+    # P-ÜV6c (hüküm 4a): okuyucu nesnesi; tutarlılık denetimi (``tutarlilik.denetle``) tip verisi
+    # ve K10 için onu yeniden kurmadan kullanır. Serileştirilmez (``kayit`` / ``go_functions.json``
+    # bu alanı yazmaz); yalnız ``calisti`` sonucunda dolu.
+    pcln: "GoPclntab | None" = field(default=None, repr=False, compare=False)
 
 
 # ---------------------------------------------------------------------------
@@ -259,7 +281,11 @@ def _cstr(buf: bytes, pos: int) -> str | None:
 
 
 def paket_adi(ad: str) -> str:
-    """``runtime.funcpkgpath`` kuralı; tip parametresi köşeli ayracı önce kesilir."""
+    """``runtime.funcpkgpath`` kuralı; tip parametresi köşeli ayracı önce kesilir.
+
+    Araştırma tanımı: P-ÜV7'nin T3 / T4 ve araştırma T2p sayaçları (ve ``ustveri_bozma.py``'nin
+    örneklemi) bu kuralla dondurulmuş sayılara bağlı; o yüzden değişmez. Ürünün ``paket`` alanı
+    ``fonksiyon_paketi`` ile yazılır (aşağıda; P-ÜV6c hüküm 4b)."""
     kes = ad.find("[")
     govde = ad if kes < 0 else ad[:kes]
     i = govde.rfind("/")
@@ -269,11 +295,43 @@ def paket_adi(ad: str) -> str:
     return govde[:j]
 
 
+def fonksiyon_paketi(ad: str) -> str:
+    """Ürünün ``paket`` alanı (P-ÜV6c hüküm 4b): alıcılı adda paket, alıcıdan (tip adından)
+    önceki önekten çıkarılır.
+
+    ``paket_adi`` (son ``/``'tan sonraki ilk nokta) alıcının ARDINDA ``/`` olan adlarda yanılır:
+    (a) başka paketten yükseltilmiş dışa kapalı yöntem — sembol yöntem paketinin yoluyla
+    nitelenir (``a/b.(*T).golang.org/x/net/http2.streamEnded``), son ``/`` yöntem adının
+    içindedir; (b) derleyicinin adsız yapı sarmalayıcısı (``go:(*struct { io.Reader }).Read``):
+    paket yolu yok, eski kural ``go:(*struct { io`` yazıyordu. Kural: paket yolu ``(``
+    taşıyamaz; ilk ``.(``'dan önceki önekte (``a/b`` ya da satır içi kapanışta ``a/b.F``) paket
+    yolu, o önekte son ``/``'tan sonraki ilk noktaya kadardır (P-ÜV7'nin T2p önek denetimiyle aynı
+    sonuç: ad ``paket + "."`` ile başlar). Derleyici sarmalayıcısında alıcı tip adsızsa
+    (``go:(*struct { … })``, ``go:struct { … }``, ``go:interface { … }``) tip adından önceki önek
+    paket yerine yazılır (``go:``; sınıf ``derleyici`` değişmez). Alıcısız adlar (``type:.eq.…``
+    dahil) eski kuralla aynı. Ad (``ozgun_ad``) değişmez; yalnız ``paket`` / ``sinif`` yan alanları
+    değişir.
+    """
+    kes = ad.find("[")
+    govde = ad if kes < 0 else ad[:kes]
+    for onek in DERLEYICI_ONEKLERI:
+        if govde.startswith(onek):
+            if govde[len(onek):].startswith(_ADSIZ_ALICI_BASLARI):
+                return onek
+            return paket_adi(ad)
+    i = govde.find(".(")
+    if i > 0:
+        on = govde[:i]
+        j = on.find(".", on.rfind("/") + 1)
+        return on if j < 0 else on[:j]
+    return paket_adi(ad)
+
+
 def paket_sinifi(paket: str, ana_modul: str | None) -> str:
     """Paket sınıfı (başvuru: ``scripts/arge/ustveri/go_pclntab.py`` ``sinif``)."""
     if paket == "":
         return SINIF_PAKETSIZ
-    if paket.startswith(("type:", "go:")):
+    if paket.startswith(DERLEYICI_ONEKLERI):
         return SINIF_DERLEYICI
     if ana_modul and paket.startswith(ana_modul + "/vendor/"):
         return SINIF_UCUNCU_TARAF  # ana modülün içine kopyalanmış bağımlılıklar
@@ -892,7 +950,7 @@ def _oku_ic(goruntu: Any) -> GoSonuc:
         fs = p.fonksiyonlar()
         for f in fs:
             f.dosya = p.dosya_oku(f)
-            f.paket = paket_adi(f.ad)
+            f.paket = fonksiyon_paketi(f.ad)
             f.sinif = paket_sinifi(f.paket, ana_modul) if f.ad else SINIF_ADSIZ
         d = butunluk_denetle(p, fs)
         dizgiler = p.funcnametab_dizgileri()
@@ -909,4 +967,4 @@ def _oku_ic(goruntu: Any) -> GoSonuc:
         return GoSonuc(durum=DURUM_TUTARSIZ, neden=neden, fonksiyonlar=[], buildinfo=bi,
                        butunluk=d, pclntab=ozet, sayim=sayim)
     return GoSonuc(durum=DURUM_CALISTI, fonksiyonlar=fs, buildinfo=bi, butunluk=d,
-                   pclntab=ozet, sayim=sayim)
+                   pclntab=ozet, sayim=sayim, pcln=p)
