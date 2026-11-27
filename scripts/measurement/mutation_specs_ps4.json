@@ -174,7 +174,7 @@
       "desc": "özel dilim aşamayı kısmi yapmaz (hata satırı yok)",
       "module": "karadul/stages.py",
       "test": "tests/test_ps4_evrensel.py::test_evrensel_ozel_dilim_desteklenmiyor_yazilir",
-      "find": "        result.errors.append(f\"Desteklenmiyor: {reason}\")",
+      "find": "        result.errors.append(error)",
       "replace": "        result.errors.extend([])"
     },
     {

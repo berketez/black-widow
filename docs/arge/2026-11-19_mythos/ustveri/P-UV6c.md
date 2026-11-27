@@ -224,6 +224,33 @@ koşusunun dört üst veri bayrağı (Go / ObjC üretici + ad) + `enable_go_meta
   koşar); rapora Go uyarısı 0. Yamasız ağaçta koşu günlüğünde "enable_go_metadata_integrity etkisiz … P-ÜV6
   bağlayacak" uyarısı basılıyor (değer okunuyor; yama uygulanınca kalkar).
 
+## Eski mutasyon tanımları (22:52–22:57; kod `b3ce5bb1`)
+
+Dokunulan sekiz ürün dosyasına (`go_pclntab.py`, `tutarlilik.py`, `go_metadata_recovery.py`,
+`_feedback_naming_candidates.py`, `_feedback_naming_merger.py`, `report_data.py`, `stages.py`, `naming_labels.py`) bakan
+bütün eski tanımlar (`grep`: 22 tanım dosyası, 222 mutant); her tanımdan **yalnız bu dosyalardaki mutantlar** (`--id`)
+koşuldu. Önce bayatlık denetimi: `find` metninin `c59d3c0e`'deki ve bugünkü sayısı (tekil mi). Bayatlayan tek mutant
+`mutation_specs_ps4.json` `ps4_k4_hata_satiri_yok` (`stages.py`; hüküm 5 hata satırını `error` değişkenine aldı): `find`
+`result.errors.append(f"Desteklenmiyor: {reason}")` → `result.errors.append(error)` (yalnız `find`; `replace` aynı).
+Betik `PUV6c/betik/eski_mutasyon.sh`, günlükler `PUV6c/ozet/mutasyon_eski/<ad>.log`; her tanımdan sonra `git diff --
+karadul` temiz.
+
+| Tanım | Sonuç | Tanım | Sonuç |
+|---|---|---|---|
+| puv6a | 18 / 18 | ps4 (`find` düzeltildi) | 21 / 21 |
+| puv6b | 17 / 17 | rapor_sayaclari | 3 / 3 |
+| puv1 | 19 / 19 | p12a | 2 / 2 |
+| puv7 | 12 / 12 | bayrak | 3 / 3 |
+| pk1 | 3 / 3 | pguv | 7 / 7 |
+| p13b | 10 / 10 | p13a | 8 / 8 |
+| puv5 | 15 / 15 | ps1 | 15 / 15 |
+| adim3_hat | 28 / 28 | ps2 | 8 / 8 |
+| ps3 | 7 / 7 | ps3b | 3 / 3 |
+| ps3b_yama | 5 / 5 | p07 | 9 / 9 |
+| p15c | 4 / 4 | adim3_bicimlendirici | 5 / 5 |
+
+**Toplam 222 / 222 öldü**, hayatta 0, hata 0. Başka paketin dosyasına bakan mutantlara dokunulmadı ve koşulmadı.
+
 ## Yama
 
 `docs/arge/2026-11-23_dalga1/yamalar/PUV6c__config.py.patch`: `enable_go_metadata_integrity` alanının yorumu
