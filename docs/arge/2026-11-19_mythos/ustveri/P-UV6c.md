@@ -211,6 +211,34 @@ dizini). Betik `PUV6c/betik/h4_bozuk_gh.py`; sonuç `PUV6c/ozet/h4_gh_A.json`.
   labelled 'üst veriden' (consistent forgery is not detectable)".
 - `kesin` etiketli ad 0 (H6).
 
+### H1'in S8 yarısı — ürün koşusu, bayraklar öntanım (kapalı) ↔ `ANA/s8_taban_ed28e36b` (`BITTI` var)
+
+Ağaç `~/karadul_olcum/urun-72b3a637` (dondurma), ana oturumun komutuyla aynı (`urun_kos.py`, 8 ikili aynı sırayla, tek
+kök, tek önbellek; betik `PUV6c/betik/s8_kos.sh`, kök `PUV6c/s8_sonra`), 22:47:16–23:05:24, yük altında (`uptime` 5,7
+→ 12,9). Karşılaştırma `PUV6c/betik/h1_h2.py` (P-ÜV6b'nin betiği) + `h1_outsrc.py` (out/src'de farklı dosyanın adı;
+`compile_commands.json` kök yolu ve çalışma alanı zaman damgası normalleştirilince eşitlik) → `PUV6c/ozet/h1_esitlik.json`,
+`h1_outsrc.json`. Sekizin sekizi çıkış 0.
+
+| İkili | `naming_map` out / src / src_iter1 | `decompiled/*.c` farklı / dosya | `out/src` farklı / dosya | `go_metadata_recovery` süresi |
+|---|---|---|---|---|
+| **debian/coreutils/cat** | aynı / aynı / aynı | 0 / 296 | 1 / 138 (`compile_commands.json`, yol) | 0,0 sn |
+| debian/coreutils/sort | aynı / aynı / aynı | 0 / 625 | 1 / 295 (aynı) | 0,0 |
+| debian/tree/tree | aynı / aynı / aynı | 0 / 250 | 1 / 145 (aynı) | 0,0 |
+| debian/sqlite3/sqlite3 | aynı / aynı / aynı | 0 / 1 144 | 1 / 458 (aynı) | 0,0 |
+| debian/htop/htop | aynı / aynı / aynı | 0 / 1 148 | 1 / 661 (aynı) | 0,0 |
+| debian/tmux/tmux | aynı / aynı / aynı | 0 / 2 588 | 1 / 1 955 (aynı) | 0,0 |
+| debian/zstd/zstd | aynı / **farklı** / **farklı** | **1** / 1 444 | 2 / 1 119 | 0,0 |
+| **mac/tmux** | aynı / aynı / aynı | 0 / 2 821 | 1 / 2 633 (aynı) | 0,0 |
+
+- **H1 (S8 yarısı) → TUTTU:** cat ve mac/tmux çıktısı tabanla aynı (`naming_map` üç dosya bayt bayt, `decompiled/*.c`
+  bayt bayt; `out/src`'de tek fark `compile_commands.json`'daki mutlak çalışma alanı yolu, normalleştirilince eşit).
+- Ek altı ikilinin beşi de aynı. **zstd'de fark var, kaynağı Ghidra:** `decompiled/FUN_001063c0.c`'de Ghidra'nın
+  çözümleyicisi iki yerel değişkeni (`iVar11` ↔ `iVar12`) yer değiştirmiş yazmış (Ghidra çıktısı, Karadul'un hiçbir
+  adımından önce; bu paket `karadul/ghidra/`'ya dokunmadı); `src` / `src_iter1` ad haritasındaki 2 fark ve `out/src`'deki
+  ikinci dosya (`src/subsystem_memory/FUN_001063c0.c`) yalnız bu fonksiyonun bu iki yereli. Fonksiyon adları (`out`
+  haritası) aynı. Bu ağaçta A/A tekrarı yok; belirlenimsizlik olarak sınıflanması ana oturumun A/A koşusuna bağlı
+  (yön gösterici: farkın tamamı tek bir Ghidra decompile dosyasında).
+
 ## Kalem 6 — ürün koşusu: terminal-notifier (isteğe bağlı; koşuldu)
 
 Ağaç `~/karadul_olcum/urun-72b3a637` (dondurma; altı veri bağı), yaml `PUV6c/bayraklar_acik.yaml`: Ollama kabul
