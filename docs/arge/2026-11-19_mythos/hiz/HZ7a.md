@@ -54,7 +54,7 @@
 - **H4: TUTMADI** (%5,57 > %5). Kalan derlemeler soğuk ıskalar (her (şablon, ad) çifti süreç başına bir kez); ayrıca `re`'nin kendi önbelleğinden gelen 1,76 M `_compile` çağrısı (başka modüllerin `re.match(r"…", …)` biçimli çağrıları; isabetli ama çağrı başına ~0,3 µs). Yeni yanlış alarm değil, ölçülen pay.
 - Bellek (ayrı küçük deney, 64 000 girdi): girdi başına ~0,6 KB (`tracemalloc`) / ~1 KB (en yüksek RSS artışı). Sınır 200 000'e varan bir işçide TAHMİN 120–200 MB; Ollama'da işçi sayısı kadar katlanır (aşağıda Ollama sayıları).
 
-## Bekleniyor (22:5x)
+## Bekleniyor (22:5x; 23:22'de bitti)
 
 - Ollama "önce" kolu (22:32'de başladı; S8 "önce" dizisi 22:47'de bitti, 8 / 8 `basari True`). TAHMİN bitiş 23:10–23:25. Bitince "sonra" kolu (Ollama ∥ S8 dizisi, ağaç `agac_sonra`) ve tam takım; sonra kolu TAHMİN 30–45 dk.
 
@@ -72,3 +72,85 @@
 - `PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider` (worktree kökünden, `1a539600` üstünde; yamasız; **yük altında**: yük 7,9 → 10,1, aynı anda bu paketin sonra kolu, ek Ollama kolu ve öbür iki ajan): **11 357 geçti / 26 atlandı / 152 seçilmedi / 1 kaldı** (722,8 sn). Taban `ed28e36b`: 11 321 / 26 / 0; fark = bu paketin 37 yeni sınaması − 1.
 - Tek kırmızı beklenen: `tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — `kayıtta ama okunuyor: {'perf.desen_onbellegi_ust_sinir': ['karadul/reconstruction/c_namer.py']}`. Yama (`HZ7a__config.py.patch`) kapatır (yamalı kopyada 192 / 16 / 0, Kalem 3).
 - İlgili takımda 22:40'ta görülen `test_kalip_denetimi` kırmızıları tam takımda **yok** (8 / 8 geçti): yük kaynaklı geçici olduğu doğrulandı. Günlük koşu kökünde `ozet/tam_takim.log`.
+
+## Kalem 5 — sonuçlar (23:25)
+
+Sonra kolu bitti: S8 8 / 8 `basari True` (23:00–23:11), Ollama `basari True` 1 315 sn (23:00:44 → 23:22:39, yük 7,5 → 5,9). Ek kol (tek tur) `basari True` 1 297 sn (23:01:23 → 23:23:00). Karşılaştırma `esitlik.py` (koşu kökü; ham `ozet/h1_*.json`).
+
+**Öngörü tutmadı (23:01'deki satır):** sonra kolunda Ollama'nın 1. turu 656,7 sn sürdü (> 600) → yine `iteration_timeout`, yine tek tur. Tur sayısı iki kolda aynı (1 / 1); ön kayıttaki bilinen risk gerçekleşmedi. Ek kol (tek tur) bu yüzden ayrıştırma için gerekmedi; yalnız ek bir eşitlik denetimi olarak kaldı.
+
+### H1 — eşitlik
+
+| ikili | `naming_map.json` | `naming_provenance.json` | `reconstructed/src/` (dosya) | not |
+|---|---|---|---|---|
+| debian/coreutils/cat | bayt eşit | yalnız ağaç yolu farkı | 298 / 298; öbür 297 bayt eşit | aynı yoldan ayrıca: **ham bayt eşit** |
+| debian/coreutils/sort | bayt eşit | yalnız ağaç yolu | 627 / 627; 626 bayt eşit | |
+| debian/tree/tree | bayt eşit | yalnız ağaç yolu | 252 / 252; 251 bayt eşit | aynı yoldan ayrıca: **ham bayt eşit** |
+| debian/sqlite3/sqlite3 | bayt eşit | yalnız ağaç yolu | 1 146 / 1 146; 1 145 bayt eşit | |
+| debian/htop/htop | bayt eşit | yalnız ağaç yolu | 1 150 / 1 150; 1 149 bayt eşit | |
+| debian/tmux/tmux | bayt eşit | yalnız ağaç yolu | 2 590 / 2 590; 2 589 bayt eşit | |
+| debian/zstd/zstd | bayt eşit | yalnız ağaç yolu | 1 446 / 1 446; 1 445 bayt eşit | |
+| mac/tmux | bayt eşit | yalnız ağaç yolu | 2 823 / 2 823; 2 822 bayt eşit | |
+| **Ollama** | **bayt eşit** | yalnız ağaç yolu | **13 556 / 13 556; 13 555 bayt eşit** | ek kol (tek tur) da aynı |
+
+- Provenance'taki tek fark `ngram_locals/db_dir` alanı: ürün ağacının **çözülmüş mutlak yolu** (`…/urun-ed28e36b/sigs/ngram_name_db` ↔ `…/HZ7a/agac_sonra/sigs/ngram_name_db`; ikisi de aynı `sigs` dizinine bağlı). Kollar farklı dizinden koştuğu için; ölçüm düzeneğinin farkı, kodun değil. Bu yol eşitlenince 9 / 9 dosya dosya bayt eşit. Sembolik bağla aynı yolu vermek işe yaramadı (alan bağı çözüyor); bu yüzden cat ve tree önce / sonra kodu **aynı gerçek dizinden** sırayla koşuldu (`ayni_yol/agac_tek`: önce ürün kodu, sonra dalın iki dosyası üstüne kopyalandı): **ham bayt eşit 2 / 2** (provenance dahil bütün `src/`).
+- **H1: TUTTU** — ad haritası 9 / 9 ham bayt eşit; `src/`'nin bütün dosyaları ağaç yolu eşitlenince 9 / 9 bayt eşit, aynı yoldan koşulan iki ikilide ham bayt eşit. Ham `src/` bayt eşitliği 9 / 9 için iddia edilmiyor (yol alanı yüzünden).
+
+### H2 / H3 — süre (yük altında, art arda)
+
+| | önce (sn) | sonra (sn) | oran | eşik | hüküm |
+|---|---:|---:|---:|---:|---|
+| **Ollama `c_naming`** (tek tur) | **715,1** | **431,7** | **0,604** | ≤ 0,6 | **TUTMADI** (sınırda) |
+| Ollama (ek kol, tek tur ayarıyla; ön kayıt dışı) | 715,1 | 427,0 | 0,597 | — | yalnız bilgi |
+| sqlite3 `c_naming` (iki tur) | 39,1 | 16,7 | 0,427 | ≤ 0,5 | tuttu |
+| mac/tmux `c_naming` (iki tur) | 49,3 | 28,7 | 0,582 | ≤ 0,5 | tutmadı |
+| **H3** (ikisi birlikte) | | | | | **TUTMADI** |
+| öbür S8: cat / sort / tree / htop / debian tmux / zstd | 7,8 / 13,1 / 8,5 / 17,5 / 76,4 / 126,6 | 6,5 / 7,9 / 7,4 / 13,6 / 30,5 / 29,7 | 0,83 / 0,60 / 0,87 / 0,78 / 0,40 / 0,23 | — | bilgi |
+| aynı yoldan cat / tree (ayrı koşu, 23:2x) | 8,0 / 7,9 | 5,8 / 5,7 | 0,73 / 0,72 | — | bilgi |
+| Ollama yeniden kurma duvarı | 1 619,7 | 1 285,3 | 0,794 | — | bilgi |
+
+- Yük: önce Ollama 22:32 → 23:00 (yük 10,8 → 11,3; eşzamanlı: S8 dizisi, profil, eski mutasyonlar, öbür iki ajan); sonra Ollama 23:00 → 23:22 (yük 7,5 → 5,9; eşzamanlı: S8 dizisi, **tam takım, ek Ollama kolu**, öbür iki ajan). Bu paketin kendi yükü sonra kolunda daha ağırdı: HZ-7a'nın dokunmadığı Ollama adımları sonra kolunda yavaşladı — `kesin_anchors` 93,4 → 115,8 (1,24×), `algorithm_id` 60,1 → 92,0 (1,53×), `name_eng_parallel` 70,2 → 103,6 (1,48×), `signature_db` 9,2 → 15,3 (1,66×), `type_recovery` 28,3 → 39,3 (1,39×). Oranlar bu yüzden sonra kolu aleyhine; düzeltilmiş oran hesaplanmadı (hüküm ön kayıtlı ham orandan). Kesin oran boş makinede (HZ-9).
+- **Ollama'da `c_naming`'in kalan 432 sn'si ölçülmedi** (Ollama'da profil koşulmadı). mac/tmux seri profilinde (Kalem 4) HZ-7a sonrası `analyze_and_rename`'in 55,5 sn'si: işçi stratejileri 32,3 (yerel değişken 21,9: satır araması 11,8 + soğuk derleme 10,1; api param 3,6; veri akışı 3,2; gövde param 2,1), ana süreçte seri `_propagate_passthrough_params` 16,6 (öz 12,7), gövde çıkarma 2,3. Ollama'da (13 160 fonksiyon) bunlardan hangisinin büyüdüğü bilinmiyor; aday: süreç başına soğuk derleme (her işçi kendi önbelleğini kurar, havuz her `analyze_and_rename`'de yeniden açılıyor), işçi başlatıcısına taşınan büyük sözlükler (`func_bodies` …), seri `_propagate_passthrough_params`. TAHMİN; HZ-7d / sonraki profil ölçer.
+
+## Ön kayıt hükümleri (`1c4acca5`; eşikler değişmedi)
+
+| H | beklenti | ölçülen | hüküm |
+|---|---|---|---|
+| H1 | S8 8 + Ollama: `naming_map.json`, `naming_provenance.json`, `src/` önce ↔ sonra bayt eşit (9 / 9) | `naming_map` 9 / 9 ham bayt eşit; `src/` 9 / 9 dosya dosya eşit, tek fark provenance'taki ürün ağacı yolu (yol eşitlenince eşit; aynı gerçek dizinden koşulan cat ve tree'de ham bayt eşit) | **TUTTU** (provenance için yol eşitlemesiyle) |
+| H2 | Ollama `c_naming` oranı ≤ 0,6 | 715,1 → 431,7 sn, **0,604** (sonra kolunda eşzamanlı yük daha ağır) | **TUTMADI** (sınırda) |
+| H3 | sqlite3 ve mac/tmux `c_naming` oranı ≤ 0,5 | sqlite3 0,427; mac/tmux 0,582 | **TUTMADI** (mac/tmux) |
+| H4 | seri profilde `re._compile` kümülatif payı ≤ %5 | mac/tmux **%5,57** (BULGULAR %50,5) | **TUTMADI** (sınırda) |
+| H5 | ön süzgeç koşulunu sağlamayan desen (ilk ölçüm) | 5 / 160 (`_PARAM_USAGE_PATTERNS` 0 / 35, `_LOCAL_VAR_USAGE_PATTERNS` 5 / 125: `PARAM` iki kez) | ilk ölçüm |
+
+Asıl kabul (eşitlik) tuttu; üç süre beklentisi tutmadı (ikisi sınırda). Süre hükümleri yük altında; kesin oran HZ-9.
+
+## HZ-7b / HZ-7d ve ana oturum için notlar
+
+1. **Kalan derleme soğuk ıska:** önbellek süreç başına; mac/tmux seri koşuda 98 516 tekil (şablon, ad) çifti, isabet %97,4. Paralel kipte her işçi kendi önbelleğini sıfırdan kurar ve `analyze_and_rename` her turda yeni `ProcessPoolExecutor` açtığı için iki turda iki kez ısınır: soğuk derleme yaklaşık işçi sayısı × tur sayısı kadar katlanır. **HZ-7d** (koşu boyunca yaşayan havuz) bu ısınmayı turlar arasında paylaştırır; önbellek sözlüğü süreç düzeyinde olduğu için HZ-7d ek kod gerektirmez.
+2. **Bellek:** girdi başına ~0,6–1 KB (64 000 girdilik deney). Sınır 200 000 → işçi başına TAHMİN 120–200 MB; HZ-7d ile işçiler uzun yaşayınca sözlük sınıra kadar dolabilir. Sınırı (`perf.desen_onbellegi_ust_sinir`) donanımdan türetmek (A-9) HZ-5'in formülüyle düşünülebilir; bu pakette öntanım aynı.
+3. **Sayaçlar yalnız süreç içinde:** `_OZEL_DESEN_SAYAC` işçilerden ana sürece taşınmıyor, `stats`'a yazılmıyor (izinli dosya dışı). HZ-9'da üretim koşusunda isabet oranı istenirse küçük bir toplayıcı gerekir.
+4. **HZ-7b:** bu paket `_read_and_extract`'e dokunmadı; HZ-7b'nin `c_namer.py` satırı çakışmasız. mac/tmux seri profilinde HZ-7a sonrası en büyük öz süre `_io.open` (122 053 çağrı, 23,6 sn): HZ-7b'nin hedefi artık birinci sırada.
+5. **Ollama'da `c_naming` 432 sn'de kaldı** (ölçülmedi, yukarıda); `_propagate_passthrough_params` ana süreçte seri (mac/tmux'ta 16,6 sn) — büyük ikilide ilk bakılacak yer.
+6. **Ölçüm düzeneği notu (sonraki eşitlik ölçümleri için):** `naming_provenance.json`'daki `ngram_locals/db_dir` ürün ağacının çözülmüş mutlak yolunu taşıyor; farklı dizinden koşulan iki kol bu alanda her zaman farklılaşır. Ham bayt eşitliği isteyen ölçüm kolları aynı gerçek dizinden sırayla koşmalı ya da bu alanı yol eşitleyerek karşılaştırmalı (sembolik bağ yetmiyor).
+7. Plan metnindeki "`_LOCAL_VAR_USAGE_PATTERNS` 125 / 125'te `PARAM` bir kez" notu tutmuyor (5'inde iki kez); süzgeç bu 5'te uygulanmıyor (hüküm 4).
+8. `docs/mutation_specs.json`'daki `t4_aggressive_075_ge_to_gt` main'de de bayat (Kalem 3).
+9. Takım tartışma dosyasına yazılmadı (izinli dosya dışı).
+
+## Kalan
+
+- Yok (gönderimin bütün kalemleri bitti). Ölçülmeyenler: Ollama'da `c_naming`'in kalan süresinin dağılımı (profil yok); boş makinede oran (HZ-9); ham `src/` bayt eşitliği yalnız iki ikilide aynı yoldan (öbür yedi + Ollama yol eşitlemesiyle).
+
+## Özet
+
+| Kalem | Durum | Önce → sonra | Test / mutant | Commit |
+|---|---|---|---|---|
+| Ön kayıt | ölçümden önce | — | — | `1c4acca5` |
+| Kod | `_ozel_desen` + satır ön süzgeci (c_namer), örnek başına desen (api_param_db) | Ollama `c_naming` 715,1 → 431,7 sn; S8 0,23–0,87 | 37 sınama (eski kodda 37 kırmızı) | `36cc1593` |
+| Mutasyon + yama | 15 / 15; eski tanımlar 106 / 106; yama `git apply --check` geçti | — | — | `c4fc91fd` |
+| Profil (H4) | %5,57 (tutmadı) | `re._compile` %50,5 → %5,57 | — | `e699faa3` |
+| Eşitlik (H1) | 9 / 9 (provenance yol eşitlemesiyle) | — | — | bu commit |
+| Tam takım | 11 357 / 26 / 1 (beklenen) | — | — | `9998d4d1` |
+
+Koşu kökü `~/karadul_olcum/runs/dalga1-2026-11-23/HZ7a/` (8,5 GB; `ozet/` 332 KB: eşitlik JSON'ları, süre dosyaları, yük künyeleri, profil özetleri, tam takım günlüğü, betikler). `once/`, `sonra/`, `sonra_tek_tur/`, `ayni_yol/`, `agac_sonra/`, `yamali/`, `profil_sonra_mac_tmux/` ara ürün (A-35'e göre silinebilir).
+
+## PAKET BİTTİ
