@@ -134,6 +134,7 @@ def adimlar():
     @kaydet("gs1_b", requires=["gs1_x"], produces=["gs1_y"])
     class _B(Step):
         def run(self, ctx):
+            time.sleep(0.02)  # paralel düzeyde gs1_c koşarken eklesin
             ctx.errors.append("gs1_b: bir hata")
             return {"gs1_y": 2}
 

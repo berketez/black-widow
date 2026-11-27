@@ -178,7 +178,7 @@ def test_kendi_grubu_hic_vurulmaz(srv, monkeypatch):
 
 def test_kill_jobs_tek_bekleme_ve_ayni_yol(srv, tmp_path, monkeypatch):
     """Sunucu kapanışı (``_kill_jobs``): hepsine SIGTERM, TEK bekleme, yaşayanlara SIGKILL."""
-    monkeypatch.setattr(srv, "IPTAL_BEKLEME_SN", 1.0)
+    monkeypatch.setattr(srv, "IPTAL_BEKLEME_SN", 1.5)
     p1, t1 = _baslat(tmp_path, "k1", lider_yok_sayar=True, torun_yok_sayar=True)
     p2, t2 = _baslat(tmp_path, "k2", lider_yok_sayar=True, torun_yok_sayar=False)
     p3, t3 = _baslat(tmp_path, "k3", lider_yok_sayar=False, torun_yok_sayar=False)
@@ -187,7 +187,7 @@ def test_kill_jobs_tek_bekleme_ve_ayni_yol(srv, tmp_path, monkeypatch):
     t0 = time.monotonic()
     srv._kill_jobs()
     gecen = time.monotonic() - t0
-    assert gecen < 1.0 + 2.0 + 1.0  # üç ayrı bekleme (3 sn+) değil
+    assert gecen < 2.5  # tek bekleme (≈ 1,5 sn); iki ayrı bekleme ≥ 3 sn olurdu
     assert p1.poll() == -signal.SIGKILL and p2.poll() == -signal.SIGKILL
     assert p3.poll() == -signal.SIGTERM
     for t in (t1, t2, t3):

@@ -1,0 +1,237 @@
+{
+  "_comment": "GS1 (2026-11-27, GS-1 / A-36): kesin iptal (SIGTERM → bekle → SIGKILL), Ghidra sonrası adım ve aşama olayları, son çıktının yaşı, index.html satırları. Her mutant bir korumayı bozar; hedef test KIRMIZI olmalı. Üretici: ~/karadul_olcum/runs/dalga1-2026-11-23/GS1/betik/spec_uret.py (find tekil, replace farklı uzunlukta). index.html mutantlarının hedefi davranış testi (CSP karma testi her değişikliği yakalardı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_gs1.json",
+  "mutants": [
+    {
+      "id": "gs1_sigkill_gonderilmez",
+      "desc": "SIGTERM'den sonra yaşayana SIGKILL gönderilmez",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_kesin_iptal.py",
+      "find": "            _isaret_gonder(proc, pgid, signal.SIGKILL)\n            sonuc.append(SONLANDIRMA_KILL)",
+      "replace": "            sonuc.append(SONLANDIRMA_KILL)"
+    },
+    {
+      "id": "gs1_bekleme_yok",
+      "desc": "SIGTERM'den sonra beklenmez (uyan süreç de kill sayılır)",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_kesin_iptal.py",
+      "find": "    while time.monotonic() < son and any(_yasiyor(p, g) for p, g in hedefler):\n        time.sleep(_IPTAL_YOKLAMA_SN)\n    sonuc = []",
+      "replace": "    sonuc = []"
+    },
+    {
+      "id": "gs1_grup_denetlenmez",
+      "desc": "yalnız lider denetlenir; gruptaki torun yaşarken iptal bitti sayılır",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_kesin_iptal.py",
+      "find": "    try:\n        os.killpg(pgid, 0)\n        return True",
+      "replace": "    try:\n        return False"
+    },
+    {
+      "id": "gs1_kill_term_yazilir",
+      "desc": "SIGKILL gerektiği hâlde dönüş term der",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_kesin_iptal.py",
+      "find": "            sonuc.append(SONLANDIRMA_KILL)",
+      "replace": "            sonuc.append(\"term\")"
+    },
+    {
+      "id": "gs1_kendi_grubu_vurulur",
+      "desc": "sunucunun kendi süreç grubuna killpg gider",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_kesin_iptal.py",
+      "find": "    if proc.pid <= 0 or pgid == os.getpgrp():\n        return None\n    return pgid",
+      "replace": "    return pgid"
+    },
+    {
+      "id": "gs1_donus_kaydinda_sonlandirma_yok",
+      "desc": "iptalin dönüş kaydı hangisinin gerektiğini yazmaz",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_kesin_iptal.py",
+      "find": "    return {\"ok\": True, \"job\": job, \"sonlandirma\": sonlandirma}",
+      "replace": "    return {\"ok\": True, \"job\": job}"
+    },
+    {
+      "id": "gs1_kill_jobs_ayri_beklemeler",
+      "desc": "sunucu kapanışı her iş için ayrı bekler (eski tek tek yol)",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_kesin_iptal.py",
+      "find": "    _sonlandir([p for p in procs if p is not None and p.poll() is None])",
+      "replace": "    for p in procs:\n        if p is not None and p.poll() is None:\n            _kill_proc(p)"
+    },
+    {
+      "id": "gs1_bekleme_sabiti_okunmaz",
+      "desc": "bekleme modül sabitinden değil sabit 5 sn",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_kesin_iptal.py",
+      "find": "    bekleme = IPTAL_BEKLEME_SN if bekleme is None else bekleme",
+      "replace": "    bekleme = 5.0 if bekleme is None else bekleme"
+    },
+    {
+      "id": "gs1_yas_alani_hep_null",
+      "desc": "son_cikti_yasi_sn hep null",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "\"son_cikti_yasi_sn\": _son_cikti_yasi(j[\"log\"]),",
+      "replace": "\"son_cikti_yasi_sn\": None,"
+    },
+    {
+      "id": "gs1_yas_ters_hesap",
+      "desc": "yaş şimdi − mtime değil mtime'ın kendisi",
+      "module": "ui/server.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "    return round(max(0.0, time.time() - degisme), 1)",
+      "replace": "    return round(max(0.0, degisme), 1)"
+    },
+    {
+      "id": "gs1_basladi_yok",
+      "desc": "adım başı olayı üretilmez",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "            olay_yaz(self.asama, self.adim, OLAY_BASLADI)",
+      "replace": "            pass"
+    },
+    {
+      "id": "gs1_hata_kismi_sayilmaz",
+      "desc": "ctx.errors'a hata ekleyen adım bitti görünür",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "        bildirilen = self._bildirilen_hatalar()\n        if bildirilen:",
+      "replace": "        bildirilen = []\n        if bildirilen:"
+    },
+    {
+      "id": "gs1_paralel_hata_atfi_yok",
+      "desc": "paralel düzeyde hata adıma göre değil liste farkıyla atfedilir",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "                return list(hatalar.adim_hatalari.get(self.ad, ()))",
+      "replace": "                return [str(h) for h in hatalar[self._hata_basi:]]"
+    },
+    {
+      "id": "gs1_izlenen_liste_kurulmaz",
+      "desc": "koşucu ctx.errors'u izlenen listeyle değiştirmez",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "        ctx.errors = _IzlenenHatalar(ctx.errors)",
+      "replace": "        pass"
+    },
+    {
+      "id": "gs1_atlandi_bitti_olur",
+      "desc": "bayrakla atlanan adım bitti görünür",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "                    olay_yaz(self.asama, self.adim, OLAY_ATLANDI, gecen_sn=gecen,",
+      "replace": "                    olay_yaz(self.asama, self.adim, OLAY_BITTI, gecen_sn=gecen,"
+    },
+    {
+      "id": "gs1_istisnada_kapanis_yok",
+      "desc": "istisna atan adımın bitiş olayı yok (sıralı)",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "            olay.bitir(istisna=exc.original if isinstance(exc, StepFailedError) else exc)\n            raise",
+      "replace": "            raise"
+    },
+    {
+      "id": "gs1_asama_oneki_yok",
+      "desc": "adım adı aşamayla öneklenmez",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "        self.adim = \"%s.%s\" % (self.asama, ad) if self.asama else None",
+      "replace": "        self.adim = ad if self.asama else None"
+    },
+    {
+      "id": "gs1_asama_denetimsiz",
+      "desc": "sözleşme dışı / bilinmeyen aşamada da olay denenir",
+      "module": "karadul/pipeline/runner.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "    return asama if asama in ASAMALAR else None",
+      "replace": "    return asama or \"reconstruct\""
+    },
+    {
+      "id": "gs1_asama_basi_yok",
+      "desc": "aşama başı olayı yok",
+      "module": "karadul/core/pipeline.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "            olay_yaz(asama, asama, OLAY_BASLADI)",
+      "replace": "            pass"
+    },
+    {
+      "id": "gs1_asama_sonu_yok",
+      "desc": "aşama sonu olayı yok",
+      "module": "karadul/core/pipeline.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "        if asama is not None:\n            _asama_sonu_olayi(asama, result)",
+      "replace": "        pass"
+    },
+    {
+      "id": "gs1_asama_hatasi_bitti_olur",
+      "desc": "hata / kısmi işaretli aşama bitti görünür",
+      "module": "karadul/core/pipeline.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "    if nedenler:\n        neden = nedenler[0]",
+      "replace": "    if False:\n        neden = nedenler[0]"
+    },
+    {
+      "id": "gs1_asama_atlandi_yok",
+      "desc": "atlanan aşama atlandi olayı vermez",
+      "module": "karadul/core/pipeline.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "    if getattr(result, \"skipped\", False):\n        neden = getattr(result, \"skip_reason\"",
+      "replace": "    if False:\n        neden = getattr(result, \"skip_reason\""
+    },
+    {
+      "id": "gs1_uretici_tirnaksiz",
+      "desc": "üretici boşluklu / tırnaklı değeri tırnaklamaz (köprüyle aynı biçim değil)",
+      "module": "karadul/core/ilerleme.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "    if metin == \"\" or re.search(r'[\\s\"=\\\\]', metin):",
+      "replace": "    if metin == \"\":"
+    },
+    {
+      "id": "gs1_uretici_asama_denetimi_yok",
+      "desc": "üretici sözleşme dışı aşamayı kabul eder",
+      "module": "karadul/core/ilerleme.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "    if asama not in ASAMALAR:\n        raise ValueError",
+      "replace": "    if False:\n        raise ValueError"
+    },
+    {
+      "id": "gs1_gosterimde_asama_yok",
+      "desc": "arayüze giden alanlarda asama yok",
+      "module": "karadul/core/ilerleme.py",
+      "test": "tests/test_gs1_adim_olaylari.py",
+      "find": "    \"asama\", \"adim\", \"durum\", \"islenen\",",
+      "replace": "    \"adim\", \"durum\", \"islenen\","
+    },
+    {
+      "id": "gs1_ui_asama_kosulu_yok",
+      "desc": "bitmiş aşamanın olayı süren başka aşamanın altında görünür",
+      "module": "ui/index.html",
+      "test": "tests/test_gs1_adim_olaylari.py::test_bitmis_asamanin_olayi_baska_asamada_gosterilmez",
+      "find": "if(s.status==='running' && p.ilerleme && p.ilerleme.asama===s.key){",
+      "replace": "if(s.status==='running' && p.ilerleme){"
+    },
+    {
+      "id": "gs1_ui_yas_satiri_yok",
+      "desc": "son çıktı satırı hiç çizilmez",
+      "module": "ui/index.html",
+      "test": "tests/test_gs1_adim_olaylari.py::test_son_cikti_satiri_oldugu_gibi",
+      "find": "if(!p.finished && p.son_cikti_yasi_sn!=null){",
+      "replace": "if(false){"
+    },
+    {
+      "id": "gs1_ui_bitmis_iste_yas",
+      "desc": "iş bitince de son çıktı satırı çizilir",
+      "module": "ui/index.html",
+      "test": "tests/test_gs1_adim_olaylari.py::test_son_cikti_yoksa_ya_da_is_bittiyse_satir_yok",
+      "find": "if(!p.finished && p.son_cikti_yasi_sn!=null){",
+      "replace": "if(p.son_cikti_yasi_sn!=null){"
+    },
+    {
+      "id": "gs1_ui_dakika_cevrimi_yok",
+      "desc": "60 sn üstü de saniye yazılır",
+      "module": "ui/index.html",
+      "test": "tests/test_gs1_adim_olaylari.py::test_son_cikti_satiri_oldugu_gibi",
+      "find": "(y<60?Math.round(y)+' sn':Math.floor(y/60)+' dk')",
+      "replace": "(Math.round(y)+' sn')"
+    }
+  ]
+}
