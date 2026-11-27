@@ -771,8 +771,8 @@ class BinaryReconstructionConfig:
     enable_swift_metadata_naming: bool = False  # okuyan: pipeline/steps/_feedback_naming_candidates.py (P-ÜV6b)
     # P-ÜV5: Mach-O LC_MAIN girişindeki fonksiyona main adı verilir.
     enable_macho_entry_main: bool = False  # okuyan: stages.py _recover_main_from_entry (P-ÜV5)
-    # P-ÜV6 (P-ÜV7'nin denetimi): Go adlarına tutarlılık damgası.
-    enable_go_metadata_integrity: bool = False  # ETKİSİZ: P-ÜV6 bağlayacak (INERT_SETTINGS)
+    # P-ÜV6c (P-ÜV7'nin denetimi): Go adlarına tutarlılık damgası; `tutarsiz` damgalı ad yazılmaz.
+    enable_go_metadata_integrity: bool = False  # okuyan: pipeline/steps/go_metadata_recovery.py (P-ÜV6c)
     # HIZ. HZ-7c (koşullu paket): ölçülmüş koşulda ikinci feedback_loop turu atlanır.
     pipeline_tek_tur_kosulu: bool = False  # ETKİSİZ: HZ-7c bağlayacak (INERT_SETTINGS)
 
@@ -1334,8 +1334,6 @@ INERT_SETTINGS: dict[str, str] = {
     # PK-5 (Dalga 3)
     "binary_reconstruction.enable_separate_debug_naming": _pending_binding("PK-5"),
     "binary_reconstruction.debug_file_dirs": _pending_binding("PK-5"),
-    # P-ÜV6 (Dalga 3)
-    "binary_reconstruction.enable_go_metadata_integrity": _pending_binding("P-ÜV6"),
     # PK-4 (Dalga 3)
     "binary_reconstruction.enable_anchored_reference_matching": _pending_binding("PK-4"),
     # PK-7 (Dalga 3)
