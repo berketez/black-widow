@@ -1,0 +1,125 @@
+{
+  "_comment": "HZ7a (HZ-7a: düzenli ifade deseni önbelleği ve satır ön süzgeci; çıktıyı değiştirmez) mutasyon koruması. Mutantlar süreyle değil eşitlik / sayaç / yapı sınamasıyla öldürülür (gönderim hüküm 7). Mutant metninin uzunluğu özgününden farklı (.pyc tuzağı). Koşum: PYTHONDONTWRITEBYTECODE=1 python scripts/mutation_probe.py --spec scripts/measurement/mutation_specs_hz7a.json",
+  "mutants": [
+    {
+      "id": "hz7a_anahtar_adsiz",
+      "desc": "desen anahtarına ad katılmaz: başka adın derlenmiş deseni döner; 20 gövdenin aday özeti eski kodunkiyle tutmaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_yeni_yol_eski_kodun_ozetiyle_ayni",
+      "find": "anahtar = (kalip_metni, ad)",
+      "replace": "anahtar = (kalip_metni, \"\")"
+    },
+    {
+      "id": "hz7a_suzgec_ters_veri_akisi",
+      "desc": "_strategy_dataflow ön süzgeci ters: adı İÇERMEYEN satırlarda aranır; aday özeti tutmaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_yeni_yol_eski_kodun_ozetiyle_ayni",
+      "find": "ad_satirlari = [ln for ln in body_lines if ad in ln]",
+      "replace": "ad_satirlari = [ln for ln in body_lines if ad not in ln]"
+    },
+    {
+      "id": "hz7a_suzgec_ters_yerel",
+      "desc": "_strategy_local_var_naming ön süzgeci ters; aday özeti tutmaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_yeni_yol_eski_kodun_ozetiyle_ayni",
+      "find": "ad_satirlari = [ln for ln in body_lines if var_name in ln]",
+      "replace": "ad_satirlari = [ln for ln in body_lines if var_name not in ln]"
+    },
+    {
+      "id": "hz7a_hata_onbellege_girmez",
+      "desc": "re.error önbelleğe 'derlenemedi' olarak girmez, doğrudan yükselir (hata sayacı artmaz); re.error sınaması kırmızı",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_re_error_yerel_degisken_atlar_ve_onbellege_girer",
+      "find": "sonuc = (_OZEL_DESEN_DERLENEMEDI, hata.msg, hata.pattern, hata.pos)",
+      "replace": "raise"
+    },
+    {
+      "id": "hz7a_yerel_hata_yolu_duser",
+      "desc": "yerel değişken stratejisi re.error'u yakalamaz (atla + günlük yolu düşer); bozuk şablonla sınama kırmızı",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_re_error_yerel_degisken_atlar_ve_onbellege_girer",
+      "find": "except re.error as e:",
+      "replace": "except KeyError as e:"
+    },
+    {
+      "id": "hz7a_hata_none_doner",
+      "desc": "önbellekteki hata yükseltilmez, None döner; çağıran None üstünde arama yapar",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_re_error_yerel_degisken_atlar_ve_onbellege_girer",
+      "find": "raise re.error(sonuc[1], sonuc[2], sonuc[3])",
+      "replace": "return None"
+    },
+    {
+      "id": "hz7a_api_propagate_her_cagrida",
+      "desc": "propagate_params büyük deseni her çağrıda yeniden kurar; derleme sayacı 1 değil",
+      "module": "karadul/reconstruction/api_param_db.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_api_propagate_bir_kez_kurar_ve_ayni_sonuc",
+      "find": "if call_re is None:",
+      "replace": "if True:"
+    },
+    {
+      "id": "hz7a_api_reverse_her_cagrida",
+      "desc": "reverse_propagate_function_names çağrı başlangıcı desenini her çağrıda yeniden kurar; derleme sayacı 2 değil",
+      "module": "karadul/reconstruction/api_param_db.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_api_reverse_bir_kez_kurar_ve_ayni_sonuc",
+      "find": "if call_start_re is None:",
+      "replace": "if True:"
+    },
+    {
+      "id": "hz7a_sifirla_bosaltmaz",
+      "desc": "_desenleri_sifirla saklı call_re'yi boşaltmaz; yeni API sıfırlamadan sonra da görülmez",
+      "module": "karadul/reconstruction/api_param_db.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_api_desenleri_sifirla",
+      "find": "        self._call_re: re.Pattern[str] | None = None",
+      "replace": "        self._call_re = getattr(self, \"_call_re\", None)"
+    },
+    {
+      "id": "hz7a_sinir_islemez",
+      "desc": "önbellek üst sınırı fiilen işlemez; sınır 7 iken sözlük 7'yi aşar",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_onbellek_siniri_dolunca_sonuc_ayni",
+      "find": "if len(_OZEL_DESEN_ONBELLEGI) >= ust_sinir:",
+      "replace": "if len(_OZEL_DESEN_ONBELLEGI) >= ust_sinir * 1000:"
+    },
+    {
+      "id": "hz7a_suzgec_cift_param",
+      "desc": "PARAM iki kez geçen şablon da süzgeçli sayılır; liste öğesi denetimi (H5 kümesi) kırmızı",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_suzgec_kosulu_her_oge",
+      "find": "if kalip_metni.count(\"PARAM\") != 1 or",
+      "replace": "if kalip_metni.count(\"PARAM\") < 1 or"
+    },
+    {
+      "id": "hz7a_suzgec_buyuk_kucuk",
+      "desc": "büyük / küçük harf duyarsız şablon süzgeçli sayılır; (?i)PARAM yapısal sınaması kırmızı",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_suzgec_kosulu_yapisal",
+      "find": "if agac.state.flags & re.IGNORECASE:",
+      "replace": "if agac.state.flags & 0:"
+    },
+    {
+      "id": "hz7a_suzgec_istege_bagli",
+      "desc": "en az sıfır kez yinelenen öğedeki PARAM zorunlu sayılır; (?:PARAM)?x yapısal sınaması kırmızı",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_suzgec_kosulu_yapisal",
+      "find": "if en_az >= 1 and _zorunlu(alt):",
+      "replace": "if _zorunlu(alt):"
+    },
+    {
+      "id": "hz7a_isaret_cifti_ayrilir",
+      "desc": "işaret çiftinin ikinci karakteri denetlenmez; PARAM? (son karakter isteğe bağlı) süzgeçli sayılır",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_suzgec_kosulu_yapisal",
+      "find": "if av == ilk and i + 1 < len(ogeler) and ogeler[i + 1] == (_rc.LITERAL, ikinci):",
+      "replace": "if av == ilk:"
+    },
+    {
+      "id": "hz7a_ret_anahtari_sabit",
+      "desc": "dönüş yakalama deseni yanlış adla kurulur; FUN_00102000'da iVar2 inflateEnd_ret adını yitirir, özet tutmaz",
+      "module": "karadul/reconstruction/c_namer.py",
+      "test": "tests/test_hz7a_desen_onbellegi.py::test_yeni_yol_eski_kodun_ozetiyle_ayni",
+      "find": "_ret_capture_re = _ozel_desen(ret_kalip, var_name, ust_sinir)",
+      "replace": "_ret_capture_re = _ozel_desen(ret_kalip, \"uVar1\", ust_sinir)"
+    }
+  ]
+}
