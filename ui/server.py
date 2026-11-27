@@ -2343,22 +2343,100 @@ def _start_analysis_locked(binary: str) -> dict:
     return {"job": job, "binary": rp.stem}
 
 
-def _kill_proc(proc) -> None:
-    """Analiz sürecini ve süreç grubunu (Ghidra JVM dahil) SIGTERM ile sonlandır.
+# GS-1 (A-36): iptal önce süreç grubuna SIGTERM gönderir, bu kadar saniye bekler; grupta hâlâ yaşayan
+# varsa gruba SIGKILL. Süreç içi JVM SIGTERM'i kendi kapanışına çevirir ve kapanış kancası GIL'i
+# bekler: C düzeyinde takılı bir düzenli ifade GIL'i bırakmadığı için süreç SIGTERM'le ölmez
+# (`docs/arge/2026-11-23_dalga1/GS1.md` kalem 1). Kesebilen tek şey dışarıdan SIGKILL.
+IPTAL_BEKLEME_SN = 5.0
+_IPTAL_YOKLAMA_SN = 0.05
+# SIGKILL'den sonra grubun gerçekten boşaldığını görmek için en çok bu kadar beklenir.
+_OLUM_BEKLEME_SN = 2.0
+SONLANDIRMA_TERM = "term"
+SONLANDIRMA_KILL = "kill"
 
-    Süreç grubu sunucunun kendi grubuysa (çocuk ayrı gruba alınamamışsa) killpg sunucuyu da
-    vururdu: o durumda yalnız süreç sonlandırılır.
+
+def _sonlandirma_grubu(proc):
+    """Sinyalin gideceği süreç grubu; ``None``: grup sinyali yok (süreç yok ya da sunucunun grubu).
+
+    Süreç grubu sunucunun kendi grubuysa (çocuk ayrı gruba alınamamışsa) killpg sunucuyu da vururdu:
+    o durumda yalnız süreç sonlandırılır.
     """
     try:
         pgid = os.getpgid(proc.pid)
-        if proc.pid <= 0 or pgid == os.getpgrp():
-            raise ProcessLookupError("ortak süreç grubu")
-        os.killpg(pgid, signal.SIGTERM)
     except Exception:
+        return None
+    if proc.pid <= 0 or pgid == os.getpgrp():
+        return None
+    return pgid
+
+
+def _isaret_gonder(proc, pgid, sig) -> None:
+    if pgid is not None:
         try:
-            proc.terminate()
+            os.killpg(pgid, sig)
+            return
+        except ProcessLookupError:
+            return  # grupta kimse yok
         except Exception:
             pass
+    try:
+        if sig == signal.SIGKILL:
+            proc.kill()
+        else:
+            proc.terminate()
+    except Exception:
+        pass
+
+
+def _yasiyor(proc, pgid) -> bool:
+    """Süreç ya da (ayrı gruptaysa) grubunun bir üyesi hâlâ yaşıyor mu (gerçek denetim)."""
+    try:
+        if proc.poll() is None:
+            return True
+    except Exception:
+        return False
+    if pgid is None:
+        return False
+    try:
+        os.killpg(pgid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+
+
+def _sonlandir(procs, bekleme: float | None = None) -> list[str]:
+    """Süreçleri (ve gruplarını) kesin sonlandır: SIGTERM → bekle → hâlâ yaşayana SIGKILL.
+
+    Her süreç için ``"term"`` (SIGTERM yetti) ya da ``"kill"`` (SIGKILL gerekti) döner (aynı sırada).
+    """
+    bekleme = IPTAL_BEKLEME_SN if bekleme is None else bekleme
+    hedefler = [(proc, _sonlandirma_grubu(proc)) for proc in procs]
+    for proc, pgid in hedefler:
+        _isaret_gonder(proc, pgid, signal.SIGTERM)
+    son = time.monotonic() + bekleme
+    while time.monotonic() < son and any(_yasiyor(p, g) for p, g in hedefler):
+        time.sleep(_IPTAL_YOKLAMA_SN)
+    sonuc = []
+    for proc, pgid in hedefler:
+        if _yasiyor(proc, pgid):
+            _isaret_gonder(proc, pgid, signal.SIGKILL)
+            sonuc.append(SONLANDIRMA_KILL)
+        else:
+            sonuc.append(SONLANDIRMA_TERM)
+    if SONLANDIRMA_KILL in sonuc:
+        son = time.monotonic() + _OLUM_BEKLEME_SN
+        while time.monotonic() < son and any(_yasiyor(p, g) for p, g in hedefler):
+            time.sleep(_IPTAL_YOKLAMA_SN)
+    return sonuc
+
+
+def _kill_proc(proc) -> str:
+    """Analiz sürecini ve süreç grubunu (Ghidra JVM dahil) kesin sonlandır; ``"term"`` / ``"kill"``."""
+    return _sonlandir([proc])[0]
 
 
 def cancel_job(job: str) -> dict:
@@ -2371,8 +2449,8 @@ def cancel_job(job: str) -> dict:
     if proc.poll() is not None:
         return {"__code": 409, "error": "iş zaten bitti", "rc": proc.returncode}
     j["cancelled"] = True
-    _kill_proc(proc)
-    return {"ok": True, "job": job}
+    sonlandirma = _kill_proc(proc)
+    return {"ok": True, "job": job, "sonlandirma": sonlandirma}
 
 
 def current_job() -> dict:
@@ -3254,11 +3332,9 @@ def _kill_jobs():
     """Çalışan analizleri (ve altlarındaki Ghidra JVM'i) sonlandır; açık KaradulLM oturumunu ve yerel model
     sunucusunu kapat (P22c1; G7: arayüz kapanınca süreç ölür)."""
     with _JOBS_LOCK:
-        for j in _JOBS.values():
-            proc = j.get("proc")
-            if proc is None or proc.poll() is not None:
-                continue
-            _kill_proc(proc)
+        procs = [j.get("proc") for j in _JOBS.values()]
+    # GS-1: hepsine birlikte SIGTERM → tek bekleme → yaşayanlara SIGKILL (kilit dışında beklenir)
+    _sonlandir([p for p in procs if p is not None and p.poll() is None])
     _lm_close_current(lm_session.CLOSE_UI, wait=_LM_SHUTDOWN_JOIN_SEC)
 
 
