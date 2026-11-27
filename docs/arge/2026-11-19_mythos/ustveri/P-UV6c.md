@@ -251,6 +251,12 @@ karadul` temiz.
 
 **Toplam 222 / 222 öldü**, hayatta 0, hata 0. Başka paketin dosyasına bakan mutantlara dokunulmadı ve koşulmadı.
 
+## Bekleme (22:58)
+
+Şu an: tam takım arka planda (worktree kökünden, yamasız; günlük `PUV6c/ozet/tam_takim.log`; TAHMİN bitiş 23:08–23:20,
+yük altında) ve H1'in S8 koşusu (`PUV6c/s8_sonra`, 8 ikili, ana oturumun sırası; 6 / 8 bitti, TAHMİN bitiş 23:05).
+Çalışma verisi bağları tam takım için geçici kuruldu (commit'lenmez; bitince kaldırılacak).
+
 ## Yama
 
 `docs/arge/2026-11-23_dalga1/yamalar/PUV6c__config.py.patch`: `enable_go_metadata_integrity` alanının yorumu
