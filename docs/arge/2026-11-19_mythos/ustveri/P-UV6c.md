@@ -14,10 +14,10 @@ Koşu kökü: `~/karadul_olcum/runs/dalga1-2026-11-23/PUV6c/` (özetler `ozet/`,
 |---|---|---|---|
 | 1 | Ön kayıt | yazıldı | `a10bb811` |
 | 2 | Okuyucu düzeltmeleri (hüküm 4) + H3 | bitti; H3 `ozgun_ad` farkı 0 TUTTU, `paket` sayısı TUTMADI (neden aşağıda) | `ad4ebe3f` |
-| 3 | Damga bağlama + testler + mutasyon → dondurma | bitti: 41 test, puv6c 20 / 20 mutant öldü; hüküm 5 + 6'nın kodu da `d6cc3fbd`'de (aynı dosya) | `d6cc3fbd`, DONDURMA `72b3a637`, rapor metni düzeltmesi (bu commit) |
-| 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | bitti: H1 (Ollama yarısı), H2, H4, H5 (yeniden oynatma), H6 TUTTU; H1'in S8 yarısı ürün koşusunda (sürüyor) | (bu commit) |
-| 5 | Hüküm 5 + 6 | bitti: kod  (kalem 3'le aynı commit; aynı dosya), H5 yeniden oynatmada TUTTU, hüküm 6 test + mutant | ,  |
-| 6 | Ürün koşusu (isteğe bağlı) | koşuldu: terminal-notifier ObjC 32 / 32 duruyor | (bu commit) |
+| 3 | Damga bağlama + testler + mutasyon → dondurma | bitti: 41 test, puv6c 20 / 20 mutant öldü; hüküm 5 + 6'nın kodu da `d6cc3fbd`'de (aynı dosya) | `d6cc3fbd`, **DONDURMA `72b3a637`**, rapor sayısı düzeltmesi `b3ce5bb1` |
+| 4 | Ghidra'sız yeniden oynatmalar (H1, H2, H4) | bitti: H1 (Ollama yarısı), H2, H4, H5 (yeniden oynatma), H6 TUTTU; H1'in S8 yarısı ürün koşusunda | `68bcd268` |
+| 5 | Hüküm 5 + 6 | bitti: kod `d6cc3fbd` (kalem 3'le aynı commit; aynı dosya), H5 yeniden oynatmada TUTTU, hüküm 6 test + mutant | `d6cc3fbd`, `68bcd268` |
+| 6 | Ürün koşusu (isteğe bağlı) | koşuldu: terminal-notifier ObjC 32 / 32 duruyor | `0c1af921` |
 | 7 | Tam takım | — | — |
 
 ## Kalem 2 — okuyucu düzeltmeleri (hüküm 4) ve H3
