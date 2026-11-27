@@ -16,7 +16,7 @@ Takım tartışma dosyasına yazılmadı: gönderim yalnız listelenen dosyalara
 | 5 | `son_cikti_yasi_sn` + `index.html` (OL4 yaması + iki satır) + testler | bitti | `8b5ae8e7` |
 | 6 | Mutasyon (yeni tanım 29 / 29 + sekiz eski tanım 234 / 234; `p17`'de üç bayat `find` düzeltildi) | bitti | `a191c5d3` (tanım), bu commit |
 | 7 | Tek ürün koşusu (debian `cat`; H1, H2, H5) | bitti: H1 **TUTTU**, H2 metne göre **TUTMADI** (4 / 143 dosyada yalnız zaman / süre / yol / anahtar sırası), H5 **TUTTU** | bu commit |
-| 8 | Tam takım | | |
+| 8 | Tam takım (yamasız) | bitti: **11 415 geçti / 26 atlandı / 11 kaldı** (11'i de iki test yamasının kapsadığı beklenen kırmızı) | bu commit |
 
 ## Kalem 1 — hüküm 7: SIGTERM'e yanıtsızlığın nedeni (ürün kodu değişmeden; H4)
 
@@ -69,7 +69,7 @@ Betik `scripts/arge/gs1/sigterm_olc.py` (her koşul ayrı çocuk süreçte, kend
 - `index.html`: OL4 yaması (`yamalar/OL4__index.html.patch`; `git apply --check` temizdi, elle aynı fark) + düzeltme: koşul `s.key==='static'` → `p.ilerleme.asama===s.key` (olay kendi aşamasının satırının altında; köprünün son olayı yeniden kurma sürerken gösterilmez). Hüküm 4'ün satırı: iş sürerken ve alan doluyken aşama kutusunun sonunda `son çıktı N sn önce` (< 60 sn) / `son çıktı N dk önce` (sınıf `sonyas`, stil kuralı yok; renk / eşik / uyarı / animasyon yok). CSP karması yenilendi: `IFN9YqApCjQD9Uk/0B64N3HIZSabmu3YcUcu9C9KqsY=` (`~/karadul_olcum/runs/dalga1-2026-11-23/OL4/betik/csp_karma.py`). `node --check` 0.
 - **Arayüzde görünen yeni satırlar (metin):** `reconstruct.c_naming · basladi`; `reconstruct.engineering_annotation · kismi · 61.0 sn · 1 hata`; `ghidra.decompile · suruyor · 500 / 13559 · 45.3 sn` (statik sürerken, eskisi gibi); `son çıktı 43 sn önce`; `son çıktı 31 dk önce`.
 - Testler (aynı dosyada, 15): sunucu alanı (31 dk önce yazılmış günlük → 1 859–1 870 sn; dosya yok → `null`; yeni günlük < 5 sn); gerçek `renderStages` node'da sahte DOM ile (olay kendi aşamasının altında, bitmiş aşamanın olayı başka aşamada yok, statik olayı, kısmi alanlar, beş yaş değeri, iş bitince / alan yokken satır yok); yeni satırlarda `animation` / `@keyframes` / `ilerliyor` / zamanlayıcı yok; CSP karması betikle aynı. Var olan arayüz testleri (`tests/test_ui_*.py`) yeşil.
-- **Yama:** `yamalar/GS1__test_ol4_ilerleme.py.patch` — iki tam eşitlik denetimine `"asama": "static"` ve anahtar kümesi denetimine `son_cikti_yasi_sn`. Yamasız ağaçta bu üç denetim kırmızı (beklenen). Yamalı kopyada `test_ol4_ilerleme.py` 52 / 52.
+- **Yama:** `yamalar/GS1__test_ol4_ilerleme.py.patch` — iki tam eşitlik denetimine `"asama": "static"` ve anahtar kümesi denetimine `son_cikti_yasi_sn`. Yamasız ağaçta bu üç denetim 10 sınamayı kırmızı yapıyor (biri 8 parametreli; beklenen, kalem 8). Yamalı kopyada `test_ol4_ilerleme.py` 52 / 52.
 
 ## Kalem 6 — mutasyon
 
@@ -88,7 +88,7 @@ Betik `scripts/arge/gs1/sigterm_olc.py` (her koşul ayrı çocuk süreçte, kend
 | p15a | 45 | 45 | 0 | 0 | — |
 | **toplam** | **234** | **234** | **0** | **0** | |
 
-- Gönderimin listesindeki `pguv` ve `surum_oncesi` tanımlarında bu paketin dokunduğu dosyaya bakan mutant yok (0 / 34, 0 / 28; `cli.py` / `config.py` / `naming/pipeline.py`): aşağıda tam takımdan sonra koşuldu ya da "kalan".
+- Gönderimin listesindeki `pguv` ve `surum_oncesi` tanımlarında bu paketin dokunduğu dosyaya bakan mutant yok (0 / 34, 0 / 28); yine de tam takımdan sonra koşuldu (23:21–23:23, aynı sürücü): **surum_oncesi 28 / 28 öldü; pguv 31 / 31 öldü + 3 bayat `find`** — `g07_bool_donusum_yok`, `g07_yalniz_security_bolumu` (`karadul/config.py`) ve `m03_kaynak_esleme_ana_anahtarsiz` (`karadul/reconstruction/naming/pipeline.py`). Üçü OL4'ün bildirdiği aynı üç tanım (bu paketten önce bayattı; dosyalar bu paketin değil): düzeltilmedi, bildirildi (MUTBAKIM-2'nin listesinde). Ham `…/GS1/mutasyon/eski2.{log,json}`.
 - Koşu sonunda kod dosyaları temiz (`git status`: yalnız belge ve tanım dosyası). Ham `…/GS1/mutasyon/eski.{log,json}`.
 
 ## Kalem 7 — tek ürün koşusu: debian `cat` (H1, H2, H5)
@@ -98,6 +98,12 @@ Betik `scripts/arge/gs1/sigterm_olc.py` (her koşul ayrı çocuk süreçte, kend
 - **H1: TUTTU.** Günlükte `Step '<ad>' tamam` satırı olan adım **35**; olay olan adım 35; yeniden kurma adım olayı **70 = 2 × 35**; her adımda tam bir `basladi` + bir bitiş (bozuk çift 0, eksik 0, fazla 0); bitişler `bitti` 34, `atlandi` 1 (`binaryninja_analysis`, `bn_status=disabled`), `kismi` 0. Aşama olayları: identify, static, deobfuscate, reconstruct, report — her biri `basladi` + `bitti`.
 - **H2: metne göre TUTMADI; `naming_map.json` bayt eşit.** `out/` 143 / 143 dosya iki yanda; 139 bayt eşit, 4 farklı: `README.md` (üretim zamanı, süreler), `src/compile_commands.json` (çalışma alanı yolu), `report.json` (63 anahtar yolu: üretim zamanı, aşama / adım süreleri, `flirt_load_seconds`, `yara_scan_time_ms`, ürün ağacının yolu `flirt_data_root` / `sigdb_data_root` / `ngram_db_dizini` / IOC özetindeki veri kökü; ayrıca `reconstruct.stats`'ın anahtar SIRASI farklı, anahtar kümesi aynı 266 / 266), `report.html` (aynı alanlar). Yol / zaman / süre normalleştirilince `README.md` ve `compile_commands.json` eşit. Anahtar sırası farkı bu paketin değişikliğine bağlı değil: OL4'ün aynı kodla iki `cat` koşusunda da (`OL4/cat/ontanim` ↔ `quiet`) `reconstruct.stats` sırası farklı (paralel adımların bitiş sırası). Ön kayıt bu tür dosyaları adıyla yazmayı öngörüyordu; hüküm metne göre verildi.
 - **H5: TUTTU.** Olay başına maliyet (baş + bitiş, `_AdimOlayi` gerçek günlük işleyicisiyle dosyaya yazarken, 7 × 5 000 çift, ortanca): **11,4 µs**; bu koşuda GS-1 olayı 80 (70 adım + 10 aşama) → 0,91 ms / 33,7 sn duvar = **%0,0027** (≤ %0,1). Yük altında.
+
+## Kalem 8 — tam takım (yamasız)
+
+23:09:12–23:20:12 (657,7 sn; 1 dk yük 7,96 → 5,34; aynı anda HZ7a / PUV6c ajanları: **yük altında**), worktree kökünden, kod `8e8801b5` (son kod commit'i `8b5ae8e7` + sınama / tanım / belge), worktree'de geçici çalışma verisi bağları (`vendor`, `scripts/node_modules`, `sigs`, `signatures.lmdb`, `signatures_homebrew{,_bytes,_bytes_v2}.json`, `sigs_macos_system.json`; commit'lenmedi, bitince kaldırıldı): **11 415 geçti / 26 atlandı / 11 kaldı** (152 seçilmedi). Taban `ed28e36b` 11 321 / 26 / 0; bu paketin yeni sınaması 105 (96 + 9): 11 415 + 11 = 11 426 = 11 321 + 105.
+- **Kalan 11'in hepsi beklenen ve yamalı:** `tests/test_ol4_ilerleme.py` 10 (`test_gosterim_alanlari_uydurmaz`, `test_tek_seferde_okuma_da_ayni_ve_beklenen_degerler`: `ilerleme` sözlüğüne `asama` eklendi; `test_parcali_okuma_tek_seferlik_tam_okumayla_ayni[0–7]`: `_job_progress`'in anahtar kümesine `son_cikti_yasi_sn` eklendi) → `yamalar/GS1__test_ol4_ilerleme.py.patch`; `tests/test_p17_iptal.py::test_cancel_kills_process_group` 1 (dönüş kaydına `sonlandirma`) → `yamalar/GS1__test_p17_iptal.py.patch`. Yamalı kopyada iki dosya 52 / 52 + 8 / 8 (`…/GS1/yamali_kopya/`, `karadul` / `ui` worktree'ye bağlı). Başka kırmızı yok. Bu pakette `config.py` yaması yok.
+- Uyarılar (3) bu paketten değil (`jpype.isThreadAttachedToJVM` ÖL-1'den; iki `ComputationRecoveryConfig`). Günlük `…/GS1/tam_takim/pytest.log`.
 
 ## Ön kayıt hükümleri (`21bec7ac`; eşikler değişmedi)
 
@@ -136,6 +142,17 @@ Betik `scripts/arge/gs1/sigterm_olc.py` (her koşul ayrı çocuk süreçte, kend
 
 ### Ana oturum
 
-- İki test yaması (`GS1__test_p17_iptal.py.patch`, `GS1__test_ol4_ilerleme.py.patch`) bu dal main'e alınırken uygulanmalı; yamasız tam takımda beklenen kırmızılar aşağıda.
+- İki test yaması (`GS1__test_p17_iptal.py.patch`, `GS1__test_ol4_ilerleme.py.patch`; ikisi de `git apply --check` temiz) bu dal main'e alınırken uygulanmalı; yamasız tam takımda beklenen 11 kırmızı kalem 8'de.
 - `ui/index.html`'deki OL4 yaması bu dalda uygulandı (ana oturumun ayrıca uygulamasına gerek yok; uygularsa bağlam tutmaz).
 - `mutation_specs_p17.json`'da üç `find` düzeltildi (kalem 6).
+- Riskler: (1) `_IzlenenHatalar` `ctx.errors`'un türünü `list` alt sınıfına çeviriyor (eşitlik, `+`, JSON, dilim aynı; `type(x) is list` denetimi yapan kod bozulur — depoda `ctx.errors` için böyle bir denetim aranmadı). (2) Adımın kendi açtığı iş parçacığından paralel düzeyde eklenen hata o adıma yazılmaz → `bitti` görünür (sıralı kipte görünür). (3) `atlandi` yalnız `*_status = "disabled"` döndüren üç adımda. (4) `cancel_job` HTTP isteği en çok ≈ 7 sn sürebilir. (5) `son_cikti_yasi_sn` günlüğün `st_mtime`'ı: `--verbose` dışı satır (ör. Rich çubuğu) da günlüğü tazeler; yaş "son olay" değil "son çıktı"dır (hükmün tanımı).
+
+## Koşu kökü
+
+`~/karadul_olcum/runs/dalga1-2026-11-23/GS1/` — **29 MB** (23:23, `du -sh`; `ozet/` 236 KB). Özet `ozet/`: `h7_abd.json`, `h7_c.json`, `h7_ce.json`, `ornek_c.txt`, `ek_xrs.json`, `h3_iptal.json`, `h3_iptal_jvm.json`, `cat_olc.json`, `h2_ayri.json`, `cat_ilerleme_satirlari.txt` (126), `cat_uptime_{bas,son}.txt`, `kuyruk_GS1.txt`, `gs1.log`, `eski.log`, `cocuk_*.stderr`. Betikler `betik/` (`cat_kos.zsh`, `cat_olc.py`, `h2_ayri.py`, `spec_uret.py`, `eski_mutasyon.py`, `mutasyon.zsh`, `tam_takim.zsh`, `yama_uret.py`); depoda `scripts/arge/gs1/{sigterm_olc,iptal_olc,xrs_olc}.py`. Ara ürün (silinebilir; ana oturum siler): `cat/{ws,out,cache}`, `yamali_kopya/`, `mutasyon/`, `tam_takim/`, `olcum/`. Ürün ağacı `~/karadul_olcum/urun-8b5ae8e7` (detached worktree, altı bağ; kökte `karadul.yaml` yok) silinmedi.
+
+## Commit'ler (dal `worktree-agent-abf132b4e0a909dee`, push yok)
+
+`8cc80acf` ilerleme dosyası · `21bec7ac` ön kayıt · `a836acaf` hüküm 7 ölçümü · `0c6531c3` kesin iptal + testler + p17 test yaması · `8b5ae8e7` adım / aşama olayları + son çıktının yaşı + `index.html` + testler + ol4 test yaması · `a191c5d3` mutasyon tanımı + iki sınamanın ayırt ediciliği · `8e8801b5` H1–H5, mutasyon, p17 tanım düzeltmesi · bu commit kapanış.
+
+## PAKET BİTTİ
