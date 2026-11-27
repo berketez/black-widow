@@ -182,9 +182,9 @@ Girdi (salt okundu): `ANA/ollama_kabul/ws/workspaces/Ollama/20261124_101017` —
   koşulamadığı için ileti `_note_universal_special_slices` ile gerçek `target_info.json`'dan üretildi; uçtan uca ürün
   koşusunda (Ollama) **ölçülmedi** (ana oturumun işi).
 - **H6 → TUTTU (bu akışlarda):** üst veri kaynaklı ad 10 475 / 10 475 `üst veriden`, `kesin` 0 (iki kolda da).
-- Ek gözlem (bu paketin değil): ad geçerliliği süzgeci 10 475 adın 587'sine ek veriyor (aynı C tanımlayıcısına inen
-  Go adları; `a/b.F` ile `a_b.F` gibi). Köken kaydında karar birleştiricinin adıyla yazıldığı için damga sayısı
-  etkilenmiyor.
+- Ek gözlem (bu paketin değil): ad geçerliliği süzgeci (`validate_merged_names`) 10 475 adın 587'sine ek veriyor
+  (adı değiştiriyor). Nedeni bu pakette incelenmedi (TAHMİN: aynı C tanımlayıcısına inen ya da var olan bir adla
+  çakışan Go adları). Köken kaydında karar birleştiricinin adıyla yazıldığı için damga sayısı etkilenmiyor.
 - Süre (yük altında): adım 0,29–0,30 sn (okuma + damga), damga (`denetle`) 0,12 sn.
 
 ### H4 — bozuk `gh` (A türü), Ghidra'sız kanal sınaması
@@ -209,3 +209,43 @@ dizini). Betik `PUV6c/betik/h4_bozuk_gh.py`; sonuç `PUV6c/ozet/h4_gh_A.json`.
   evidence rows (66; 1 more withheld earlier by the pcsp coverage check (K4)); the other Go names are written,
   labelled 'üst veriden' (consistent forgery is not detectable)".
 - `kesin` etiketli ad 0 (H6).
+
+## Yama
+
+`docs/arge/2026-11-23_dalga1/yamalar/PUV6c__config.py.patch`: `enable_go_metadata_integrity` alanının yorumu
+(`ETKİSİZ: P-ÜV6 bağlayacak` → `okuyan: pipeline/steps/go_metadata_recovery.py (P-ÜV6c)`; üstteki açıklama satırı
+"`tutarsiz` damgalı ad yazılmaz") ve `INERT_SETTINGS`'teki satır (+ "P-ÜV6 (Dalga 3)" başlığı) silinir. Öntanım
+`False` kalır. `git apply --check` temiz; ağaca uygulanmadı (A-34). Yamasız dalda beklenen tek kırmızı:
+`tests/test_p15a_etkisiz.py::test_inert_registry_is_accurate` — "kayıtta ama okunuyor:
+{'binary_reconstruction.enable_go_metadata_integrity': ['karadul/pipeline/steps/go_metadata_recovery.py']}"
+(P-ÜV6a / 6b'den farklı olarak bu alan `getattr(…, "enable_go_metadata_integrity", …)` dizgisiyle okunuyor; `_reads`
+bunu okuma sayar). Yama uygulanınca kayıt kalkar ve test yeşile döner (yamalı kopyada koşulmadı: worktree dışı kopya
+kurulmadı).
+
+## PUV6d ve açılış ölçümü için notlar
+
+- **Bayrağın öntanımda açılması (açılış ölçümü, A-14):** bütünlük denetimi ad yazmaz, yalnız ad SİLER (`tutarsiz`,
+  şüpheli ikili). Bozulmamış 11 / 11 dilimde (PUV7) ve Ollama'da (bu paket) `tutarsiz` damgası yalnız P-ÜV1'in K4
+  `kisa` fonksiyonunda (gh / limactl / arduino-cli'de 1'er; o kayıt pcsp denetimiyle zaten kanıt satırına iniyor) →
+  doğru ada maliyet bugüne dek ölçülen her ikilide 0. Süre: Ollama'da 0,12 sn (yük altında). Bu yüzden bütünlük
+  bayrağının Go ad kanalı bayrağıyla birlikte açılması önerilir (Go ad kanalı damgasız çalışırsa A-10'un tek
+  koruyucusu devre dışı kalır). Karar ana oturumun.
+- **Rapor alanı:** uyarı `report.json`'da `sections.naming.extra.go_metadata_warning` (+ `summary`'de "WARNING: …");
+  `report.md` / `report.html` aynı özet cümlesini basıyor. Arayüzde ayrıca gösterilmiyor (`ui/` bu paketin dosyası
+  değil).
+- **Ad haritası:** `output_formatter._merger_metadata_records` köken kararını ad haritasına taşırken
+  `ust_veri_dogrulama`'yı taşıyor mu, bu pakette bakılmadı (`output_formatter.py` dokunulmaz listesinde). Taşımıyorsa
+  damga yalnız köken kaydında (`naming_provenance.json` → `name_merger.decisions`) görünür; PUV6d ya da arayüz paketi
+  için not.
+- **Tutarsız ad ile nm:** `tutarsiz` / şüpheli kaydın anahtarı `metadata_keys`'e girmediği için sembollü bir Go
+  ikilisinde `go_demangler` (nm) o adrese aday verebilir (sembol tablosu ayrı kaynak). Soyulmuş hedeflerde nm kanalı
+  `veri_yok`; sembollü ve oynanmış ikilide hangisinin yazılması gerektiği ölçülmedi.
+- **`paket_adi` iki kural:** ürün `fonksiyon_paketi`'ni, araştırma sayaçları (P-ÜV7 T2p araştırma, T3, T4,
+  `ustveri_bozma.py`) `paket_adi`'yi kullanıyor. T3 / T4 zayıf işaretler; kararı etkilemiyor. İleride T3 / T4'ün yeni
+  kurala geçmesi dondurulmuş PUV7 sayılarını değiştirir: ayrı ön kayıtla.
+- **Evrensel ikili iletisi canlı akışta:** `--verbose`'da statik aşama bitince ileti yine basılır (aşama sonucunun
+  hata listesi o an dolu); son durum (çıkış kodu, `partial`, rapor) indirmeden sonra. Canlı akışı da düzeltmek
+  `core/pipeline.py`'de (GS1'in dosyası) ayrı iş.
+- **Ollama çıkış kodu:** bu düzeltmeyle evrensel ileti kalkıyor; ÖL-1 bekçisi koşuda çözümleyici kapatırsa statik aşama
+  yine `kismi` (dürüst). Bekçi devreye girmezse Ollama koşusunun `tam` (çıkış 0) olması beklenir — uçtan uca
+  ölçülmedi.
