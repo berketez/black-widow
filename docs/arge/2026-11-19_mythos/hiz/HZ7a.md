@@ -53,3 +53,7 @@
 - **Önbellek sayaçları (seri kip; işçi işi bu süreçte):** isabet **3 684 531**, derleme **98 516**, hata 0, temizleme 0; isabet oranı **%97,4**; koşu sonunda 98 516 girdi (sınır 200 000'in altında). Süzgeç kararı 160 + 1 şablon için hesaplandı, 5'i süzgeçsiz.
 - **H4: TUTMADI** (%5,57 > %5). Kalan derlemeler soğuk ıskalar (her (şablon, ad) çifti süreç başına bir kez); ayrıca `re`'nin kendi önbelleğinden gelen 1,76 M `_compile` çağrısı (başka modüllerin `re.match(r"…", …)` biçimli çağrıları; isabetli ama çağrı başına ~0,3 µs). Yeni yanlış alarm değil, ölçülen pay.
 - Bellek (ayrı küçük deney, 64 000 girdi): girdi başına ~0,6 KB (`tracemalloc`) / ~1 KB (en yüksek RSS artışı). Sınır 200 000'e varan bir işçide TAHMİN 120–200 MB; Ollama'da işçi sayısı kadar katlanır (aşağıda Ollama sayıları).
+
+## Bekleniyor (22:5x)
+
+- Ollama "önce" kolu (22:32'de başladı; S8 "önce" dizisi 22:47'de bitti, 8 / 8 `basari True`). TAHMİN bitiş 23:10–23:25. Bitince "sonra" kolu (Ollama ∥ S8 dizisi, ağaç `agac_sonra`) ve tam takım; sonra kolu TAHMİN 30–45 dk.
