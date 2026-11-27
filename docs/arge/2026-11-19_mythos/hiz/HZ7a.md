@@ -57,3 +57,11 @@
 ## Bekleniyor (22:5x)
 
 - Ollama "önce" kolu (22:32'de başladı; S8 "önce" dizisi 22:47'de bitti, 8 / 8 `basari True`). TAHMİN bitiş 23:10–23:25. Bitince "sonra" kolu (Ollama ∥ S8 dizisi, ağaç `agac_sonra`) ve tam takım; sonra kolu TAHMİN 30–45 dk.
+
+## Kalem 5 — yeniden oynatmalar (H1, H2, H3)
+
+**Önce kolu bitti (23:00).** S8: 8 / 8 `basari True` (22:33–22:47). Ollama: `basari True`, 1 645 sn (22:32:39 → 23:00:04, yük 10,8 → 11,3); `c_naming` **715,1 sn** (yalnız 1. tur: `pipeline_loop` 939,6 sn > 600 → `iteration_timeout`, 2. tur koşmadı; özgün koşudaki gibi).
+
+**Ön kayıttaki bilinen risk gerçekleşecek (öngörü, 23:01):** sonra kolunda `c_naming` profildeki oranla düşerse 1. tur ≈ 939,6 − 715 + (50–100) sn ≈ 300 sn < 600 olur ve 2. tur koşar; Ollama çıktısı süre yüzünden farklılaşır. Bu yüzden ön kayıttaki "ayrıştırma" için **ön kayıt dışı ek kol** açıldı: sonra ağacı + aynı ayar + `binary_reconstruction.pipeline_iterations: 1` (`ollama_bayraklar_tek_tur.yaml`; kök `sonra_tek_tur/`). Önce kolu tek tur koştuğu için bu kol önce koluyla aynı tur sayısında karşılaştırılır. Ön kayıtlı H1 / H2 hükmü pre-registered kol (`sonra/`) üstünden verilir; ek kol yalnız farkın nedenini ayırır.
+
+**Sonra kolu 23:00'da başladı** (Ollama ∥ S8 dizisi, `agac_sonra`); aynı anda tam takım (23:01) ve ek kol (23:03). Önce kolunun eşzamanlı yükü: S8 dizisi (22:33–22:47), profil (22:48–22:51), eski mutasyonlar (22:49–22:53); sonra kolununki: S8 dizisi, tam takım, ek Ollama kolu (daha ağır: sonra kolu aleyhine).
