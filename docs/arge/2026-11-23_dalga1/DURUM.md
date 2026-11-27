@@ -323,3 +323,19 @@ Bayrak arkasında, öntanımda kapalı: Swift ad kanalı ve RTTI kanıt satırı
 
 Çalışan ajan, koşu ve Ghidra süreci yok; bekçiler kapandı; kuyrukta bekletme dosyası yok.
 
+
+## 2026-11-27 (22:1x – ) — uygulama oturumu 5
+
+Berke (22:1x): "kaldığımız yerden başlayalım; en azından iki üç iş tamamlayalım; aynı anda 3 ajan yollayabilirsin; zor mimari işler Mythos, gerisi Opus."
+
+- **Düzen:** ana oturum Mythos 5.2 (plan, gönderim metni, birleştirme, bağımsız doğrulama); aynı anda en çok **3** ajan. **İlk dilim 3 ajan:** GS1, HZ7a, PUV6c (üçü Opus; metinleri 24 Kasım'da yazıldı, önkoşulları main'de; dosya kümeleri ayrık: `ORTAK_D1.md` §7). Yer açıldıkça sıradaki: GK-A + GK-B (geri kurmanın ilk iki paketi; metinleri bu oturumda yazılacak, önce GK-0 belgesinin kabulü).
+- **Durum doğrulaması (22:18):** main `9062436e`, ağaç temiz, origin'in 100 commit önünde (push 24 Kasım kapanışında sorulmuştu; yapılmadı); çalışan Ghidra / ajan yok; yük 3,4; boş alan 194,6 GB (kullanılan 772,7 GB; 24 Kasım 13:09'da 721,6 GB'tı).
+- **Ürün ağacı:** `~/karadul_olcum/urun-ed28e36b` açıldı (altı bağ kurulu).
+- **S8 tabanı yenileniyor** (22:2x başladı): `ANA/s8_taban_ed28e36b/` (HZ2'nin `scan_mode` alanı + HZ4a sonrası).
+- **Berke (22:2x): "yapılacak her şeyin planları belli değil mi; işe yarayacağını mı varsayıyoruz?"** Ana oturumun cevabı: planlar belli, başarı varsayılmıyor (her paket ön kayıtlı; tutmayanlar kayıtta). En büyük açık soru geri kurma: tasarım var, ürün kodu yok; başlıksız karşı olguda derlenen dosya S8'de %12,3, derlenenlerde özgün komut dizisiyle aynı çıkan Mac tmux'ta %59,5, Debian'da %25,3; Go dosyalarının %27,6'sı geçerli C sözdizimi; KaradulLM dolgusu hiç ölçülmedi. Belirsizliği en ucuz azaltan iki paket GK-A ve GK-B → bu oturumda öne alındı.
+
+| Paket | Ajan | Model | Durum | Not |
+|---|---|---|---|---|
+| GS1 | — | Opus | gönderiliyor | A-36 |
+| HZ7a | — | Opus | gönderiliyor | |
+| PUV6c | — | Opus | gönderiliyor | |

@@ -89,3 +89,24 @@ Dalga 1 aynı klasörde sürüyor: koşu kökün `~/karadul_olcum/runs/dalga1-20
 | BA2 | `karadul/reconstruction/c_namer.py` (yalnız kalıp satırları), `recovery_layers/constraint_solver.py`, taramada bulunan ve başka paketin listesinde olmayan dosyalarda yalnız kalıp satırları, yeni `scripts/measurement/kalip_denetimi.py` |
 | HZ2 | `karadul/ghidra/bsim.py` |
 
+
+## 7. 27 Kasım eki (2026-11-27'de gönderilen paketler)
+
+§6'daki "taban", "S8 tabanı", "sabit ürün ağacı", "bu dilim" ve "Ghidra kuyruğu" satırlarının yerine bunlar geçerlidir; §6'nın kalanı (eksik çalışma verisi bağları, eski mutasyon tanımları) aynen.
+
+- **Taban:** main `9062436e` (ürün kodu commit'i `ed28e36b`; ondan sonra main'e yalnız belge girdi). Tam takım `ed28e36b`'de 11 321 geçti / 26 atlandı / 0 kaldı (585 sn). 24 Kasım'da main'e girenler: BA2, OL4, PUV6b, HZ2, HZ4a (kod) + GK-0, ÇA-0 (tasarım belgesi). Gönderim metinlerindeki "… çalışıyor / çalışıyor olabilir" notları bayat: o paketlerin hepsi bitti ve main'de. Dosya listeleri ve "Dokunma" satırları aynen geçerli.
+- **Öntanımlar 24 Kasım'da değişti:** `bsim.paralel_tarama` açık (her koşuda `bsim_detail.scan_mode` alanı), `analysis.dokum_tek_gecis` açık, `analyze` ilerleme olaylarını `--verbose` olmadan da basıyor. Bunları kendi değişikliğine bağlama.
+- **S8 tabanı YENİ:** `~/karadul_olcum/runs/dalga1-2026-11-23/ANA/s8_taban_ed28e36b/` (2026-11-27 22:2x'te başladı; kökte `BITTI` dosyası olunca tamamdır, TAHMİN 22:55). **Gönderim metninde `s8_taban_534e252b` yazan her yerde bunu kullan:** eskisi `scan_mode` alanı yüzünden bayat. `BITTI` yokken tabanla kıyas yapma; bekle.
+- **Sabit ürün ağacı (bugünkü ürün):** `~/karadul_olcum/urun-ed28e36b`.
+- **Bu dilim 3 paket, aynı anda en çok 3** (Berke, 27 Kasım 22:1x): GS1, HZ7a, PUV6c. Üçü de Opus. Dosya kümeleri ayrık (aşağıdaki tablo).
+- **Ghidra kuyruğu:** ana oturumun S8 tabanı bir yuvayı ≈ 22:55'e kadar tutar. Sarmalayıcı sıra tutmuyor (24 Kasım'da iki kez açlık oldu): uzun tek koşun 10 dakikadan fazla başlayamazsa ilerleme dosyana yaz ve bekle; bekletme dosyasını sen koyma.
+- **Süre ölçümü:** saat geç ama üç ajan birlikte çalışıyor: her süre hükmü "yük altında" etiketli ve `uptime` künyeli; kesin oran HZ-9'da.
+- **Disk:** boş alan 22:18'de 194,6 GB (kullanılan 772,7 GB).
+
+| Paket | Yazabileceği dosyalar (tam liste gönderim metninde) |
+|---|---|
+| GS1 | `karadul/pipeline/runner.py`, `karadul/core/pipeline.py`, `karadul/core/ilerleme.py`, `ui/server.py` (yalnız iptal + `_job_progress`'in yeni alanı), `ui/index.html` |
+| HZ7a | `karadul/reconstruction/c_namer.py` (yalnız `_strategy_dataflow`, `_strategy_local_var_naming` ve yardımcıları), `karadul/reconstruction/api_param_db.py` |
+| PUV6c | `karadul/pipeline/steps/{_feedback_naming_candidates,_feedback_naming_merger,go_metadata_recovery}.py`, `karadul/analyzers/ustveri/{go_pclntab,tutarlilik}.py`, `karadul/core/naming_labels.py`, `karadul/stages.py` (yalnız hüküm 5), rapora uyarıyı taşıyan tek dosya |
+
+Eski mutasyon tanım dosyalarında (`scripts/measurement/mutation_specs_*.json`) yalnız kendi dokunduğun ürün dosyasına bakan mutantın `find` / `replace` metnini düzelt; başka paketin dosyasına bakan mutanta dokunma, yalnız bildir.
