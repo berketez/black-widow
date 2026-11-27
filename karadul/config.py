@@ -996,7 +996,7 @@ class PerfConfig:
     # HZ-5 adım 8 (koşullu): JVM AppCDS arşivi.
     jvm_cds: bool = False  # ETKİSİZ: HZ-5 bağlayacak (INERT_SETTINGS)
     # HZ-7a: düzenli ifade deseni önbelleğinin girdi üst sınırı (dolunca temizlenir).
-    desen_onbellegi_ust_sinir: int = 200_000  # ETKİSİZ: HZ-7a bağlayacak (INERT_SETTINGS)
+    desen_onbellegi_ust_sinir: int = 200_000  # okuyan: reconstruction/c_namer.py _ozel_desen_ust_siniri (HZ-7a)
     # HZ-7b: .c metni önbelleğinin bayt sınırı (MB; 0 = kapalı).
     metin_onbellegi_mb: int = 0  # ETKİSİZ: HZ-7b bağlayacak (INERT_SETTINGS)
     # HZ-7d: koşu boyunca tek süreç havuzu.
@@ -1358,8 +1358,7 @@ INERT_SETTINGS: dict[str, str] = {
     "reconstruct.ara_kopyalar": _pending_binding("ÖL-7"),
     # ÖL-11 (Dalga 4)
     "paket.bilinen_bilesen": _pending_binding("ÖL-11"),
-    # HZ-7a / HZ-7b / HZ-7c / HZ-7d (Dalga 4; HZ-7c koşullu)
-    "perf.desen_onbellegi_ust_sinir": _pending_binding("HZ-7a"),
+    # HZ-7b / HZ-7c / HZ-7d (Dalga 4; HZ-7c koşullu)
     "perf.metin_onbellegi_mb": _pending_binding("HZ-7b"),
     "binary_reconstruction.pipeline_tek_tur_kosulu": _pending_binding("HZ-7c"),
     "perf.ortak_havuz": _pending_binding("HZ-7d"),
