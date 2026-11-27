@@ -71,7 +71,7 @@ def test_cancel_kills_process_group(srv, tmp_path):
     jid = _job(srv, tmp_path, proc)
     assert srv.current_job()["job"] == jid
     r = srv.cancel_job(jid)
-    assert r == {"ok": True, "job": jid}
+    assert r == {"ok": True, "job": jid, "sonlandirma": "term"}
     proc.wait(10)
     for _ in range(100):
         if not _alive(child):

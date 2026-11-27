@@ -102,7 +102,7 @@ def test_gosterim_alanlari_uydurmaz():
     assert gosterim_alanlari(None) is None
     g = gosterim_alanlari(ilerleme_ayristir("ILERLEME asama=static adim=ghidra.cfg durum=basladi"))
     assert list(g) == list(GOSTERILEN_ALANLAR)
-    assert g == {"adim": "ghidra.cfg", "durum": "basladi", "islenen": None, "toplam": None,
+    assert g == {"asama": "static", "adim": "ghidra.cfg", "durum": "basladi", "islenen": None, "toplam": None,
                  "gecen_sn": None, "cozumleyici": None, "neden": None}
 
 
@@ -412,7 +412,7 @@ def test_parcali_okuma_tek_seferlik_tam_okumayla_ayni(srv, tmp_path, tohum):
     proc.rc = 0
     p = srv._job_progress("j")
     assert _secili(p) == _tam_okuma(srv, log)
-    assert set(p) == _ESKI_ANAHTARLAR | {"ilerleme"}
+    assert set(p) == _ESKI_ANAHTARLAR | {"ilerleme", "son_cikti_yasi_sn"}
     # bitmiş işte yeniden yoklama aynı sonucu verir
     assert _secili(srv._job_progress("j")) == _secili(p)
 
@@ -430,7 +430,7 @@ def test_tek_seferde_okuma_da_ayni_ve_beklenen_degerler(srv, tmp_path):
         {"label": "main entry recovery", "count": None},
         {"label": "gnulib string-fingerprint", "count": "12"},
         {"label": "ELF/CRT boilerplate", "count": "3"}]
-    assert p["ilerleme"] == {"adim": "ghidra.xref", "durum": "kismi", "islenen": 1144,
+    assert p["ilerleme"] == {"asama": "static", "adim": "ghidra.xref", "durum": "kismi", "islenen": 1144,
                              "toplam": 1144, "gecen_sn": 1.023, "cozumleyici": None,
                              "neden": "xrefs: adım bütçesi (1 sn) doldu; genel sembol sayımı yarıda"}
     assert p["tail"].endswith("son yarım satır é")
