@@ -358,7 +358,7 @@ Berke (23:1x): "bu ajanlar bitince duralım, hafıza ve günlüğü yazarsın."
 - **Birleşik main `e33c0a02` tam takımı: 11 502 geçti / 28 atlandı / 0 kaldı (614 sn; `dogrulama-d2`).** Oturum başında 11 321 / 26 / 0'dı. Yeni 183 testin hepsi geçiyor (atlanan 0); 11 321 + 183 = 11 504 beklenirdi: **eski testlerden 2'si bu koşuda atlandı, hangileri olduğuna bakılmadı** (sonraki oturum: `-rs` ile).
 - **Ana oturumun işleri:** S8 tabanı yenilendi (`ANA/s8_taban_ed28e36b`); `ghidra_kuyruk.sh`'ye sıra eklendi; A-42; `gonderim/{GKA,GKB,GKC}.md`; ürün ağacı `urun-ed28e36b`.
 - **Kararlar:** A-42 (büyük denemeden önce olasılık hükmü; düşükse ya da bilinmiyorsa önce küçük sınama).
-- **Push:** yapılmadı; main origin'in 139 commit önünde (24 Kasım'ın 100'ü + bugün). Berke'ye soruldu.
+- **Push:** Berke'nin onayıyla (28 Kasım 00:0x: "ikisini de yap") yapıldı: `c9d3f217..be4ec309`, 140 commit; öncesinde tarama temiz (99 dosya: 45 py, 27 md, 18 json — hepsi mutasyon tanımı —, 8 patch, 1 html; 1 MB üstü 0, ikili 0, gizli anahtar kalıbı 0). Aynı onayla hafıza dizini (`MEMORY.md`) sıkıştırıldı (kayıt silinmedi).
 
 **Öntanımda değişen ürün davranışı (bugün):**
 1. GS1: `analyze` Ghidra sonrası her adım ve her aşama için `ILERLEME` satırı basıyor (günlük satırı; `naming_map.json` aynı). Arayüzde aşama satırlarının altında adım olayları ve "son çıktı … önce"; "İptal" 5 sn sonra SIGKILL'e yükseliyor.
